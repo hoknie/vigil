@@ -1,0 +1,39 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+remove)
+    if [ -f /etc/audit/plugins.d/vigil.conf ]; then
+        echo "vigil: /etc/audit/plugins.d/vigil.conf is still here (dpkg keeps configuration"
+        echo "vigil: until purge) and names a program that has just been removed. Purge the"
+        echo "vigil: package, or set 'active = no' in it, before auditd is next restarted."
+    fi
+    if [ -d /run/systemd/system ]; then
+        systemctl disable vigild.service >/dev/null 2>&1 || true
+        systemctl daemon-reload >/dev/null 2>&1 || true
+    fi
+    ;;
+purge)
+    rmdir /etc/vigil 2>/dev/null || true
+
+    if command -v auditctl >/dev/null 2>&1; then
+        echo "vigil: the vigil_exec audit rule stays loaded in the kernel until the rules are"
+        echo "vigil: reloaded:  augenrules --load  (and restart auditd to drop the plugin)."
+    fi
+
+    if [ -d /run/systemd/system ]; then
+        systemctl daemon-reload >/dev/null 2>&1 || true
+    fi
+
+    kept=""
+    [ -d /var/lib/vigil ] && kept="$kept /var/lib/vigil"
+    [ -d /var/log/vigil ] && kept="$kept /var/log/vigil"
+    if [ -n "$kept" ]; then
+        echo "vigil: kept on purpose —$kept"
+        echo "vigil: findings are the record of what happened on this machine."
+        echo "vigil: remove them deliberately if you want them gone:  rm -rf$kept"
+    fi
+    ;;
+esac
+
+exit 0

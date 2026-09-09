@@ -1,0 +1,4 @@
+/etc/vigil/vigil.yaml
+/etc/logrotate.d/vigil
+/etc/audit/rules.d/vigil-exec.rules
+/etc/audit/plugins.d/vigil.conf
