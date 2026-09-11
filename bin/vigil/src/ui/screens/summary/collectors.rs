@@ -87,12 +87,6 @@ pub(super) fn collectors(
         }
     }
 
-    if !saying && agent.collectors.iter().any(|it| !says(it).is_empty()) {
-        report.push(Line::styled(
-            format!("   {MARK} a collector with something to say about itself: press d to read it"),
-            look.palette.quiet(),
-        ));
-    }
     report.blank();
 }
 
