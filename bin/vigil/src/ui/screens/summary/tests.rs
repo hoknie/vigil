@@ -75,11 +75,15 @@ fn a_collector_switched_off_has_its_row_and_reads_as_a_decision() {
         !row.contains("never") && !row.contains("not yet"),
         "a collector that is off is not one whose first reading is due: {row}"
     );
-    assert!(page.contains("not named in `collectors:`"), "{page}");
-    assert!(
-        page.contains("not failing"),
-        "the row has to say whose decision this was: {page}"
-    );
+    let reason = fixture::collector_off()
+        .reason
+        .expect("a collector that is off names its cause");
+    for word in reason.split_whitespace() {
+        assert!(
+            page.contains(word),
+            "the reason the daemon gave is cut before {word}: {page}"
+        );
+    }
 }
 
 #[test]
@@ -107,8 +111,19 @@ fn the_row_that_is_off_is_told_apart_without_any_colour_at_all() {
 #[test]
 fn what_the_agent_cannot_do_yet_is_on_the_first_screen() {
     let page = drawn(80);
+    let said = fixture::agent::agent()
+        .limitations
+        .first()
+        .cloned()
+        .expect("the daemon names what it cannot do yet");
 
-    assert!(page.contains("Nothing is marked resolved yet"), "{page}");
+    for word in said.split_whitespace() {
+        assert!(
+            page.contains(word),
+            "a limitation longer than the pane is wrapped rather than cut, and {word} went \
+             missing: {page}"
+        );
+    }
 }
 
 #[test]
@@ -154,10 +169,34 @@ fn each_of_the_four_numbers_called_dropped_says_which_ceiling_it_is_about() {
     assert!(page.contains("41 past the retention window"), "{page}");
     assert!(page.contains("0 at the ceiling"), "{page}");
     assert!(
-        page.contains("dropped from this screen"),
+        page.contains("on the findings screen"),
         "the ring in the daemon is a fourth ceiling and has to name itself: {page}"
     );
     assert!(page.contains("nothing is buffered"), "{page}");
+}
+
+#[test]
+fn the_history_that_does_not_fit_the_screen_is_named_as_kept_and_not_as_dropped() {
+    let mut view = with_a_store();
+    if let Some(status) = view.status.as_mut() {
+        status.agent.findings.retained = 500;
+        status.agent.findings.capacity = 500;
+        status.agent.findings.total = 1_200;
+        status.agent.findings.dropped = 700;
+    }
+
+    let page = drawn_from(&view, 200);
+
+    assert!(page.contains("500 of 500 on the findings screen"), "{page}");
+    assert!(page.contains("700 of them in the journal only"), "{page}");
+    assert!(
+        !page.contains("700 dropped"),
+        "they are on disk and `jq` reads them: {page}"
+    );
+    assert!(
+        !page.contains("raised"),
+        "the word meant this run alone and the number no longer does: {page}"
+    );
 }
 
 #[test]

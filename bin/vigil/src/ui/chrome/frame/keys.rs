@@ -1,7 +1,5 @@
-use super::hints::{Back, Hints};
+use super::hints::Hints;
 use crate::ui::{Level, Screen};
-
-const ROW_OF_LISTS: &str = "the row of lists";
 
 pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
     if hints.typing {
@@ -18,28 +16,30 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
             hints.back.named()
         ),
         (Level::Detail, Screen::Ports | Screen::Programs | Screen::Startup) => {
-            " j/k ↑↓ PgUp/PgDn scroll · ← close it · Esc back to the list · ? keys · q quit"
-                .to_string()
+            " j/k ↑↓ PgUp/PgDn scroll · ← or Esc back to the list · ? keys · q quit".to_string()
         }
         (Level::Detail, _) => {
-            " j/k ↑↓ PgUp/PgDn scroll · ← close it · Esc back to the list · o object · ? keys"
-                .to_string()
+            " j/k ↑↓ PgUp/PgDn scroll · ← or Esc back to the list · o object · ? keys".to_string()
+        }
+        (Level::List, _) if hints.panel => {
+            " j/k ↑↓ move · → detail · / search · ← or Esc close the panel · ? keys".to_string()
         }
         (Level::List, Screen::Findings) => format!(
-            " j/k ↑↓ move · → detail · o object · / search · s severity · Esc {} · ? keys",
+            " j/k ↑↓ move · → detail · o object · / search · s severity · ← {} · ? keys",
             hints.back.named()
         ),
         (Level::List, Screen::Summary) => format!(
-            " j/k ↑↓ scroll · Esc {} · r refresh · ? keys · q quit",
+            " j/k ↑↓ scroll · ← or Esc {} · r refresh · ? keys · q quit",
             hints.back.named()
         ),
-        (Level::List, _) => match hints.back {
-            Back::Finding => format!(
-                " j/k ↑↓ move · → detail · / search · ← {ROW_OF_LISTS} · Esc {} · ? keys",
-                hints.back.named()
-            ),
-            _ => format!(" j/k ↑↓ move · → detail · / search · ← or Esc {ROW_OF_LISTS} · ? keys"),
-        },
+        (Level::List, Screen::Startup) => format!(
+            " j/k ↑↓ move · → detail · t view · / search · ← or Esc {} · ? keys",
+            hints.back.named()
+        ),
+        (Level::List, _) => format!(
+            " j/k ↑↓ move · → detail · / search · ← or Esc {} · ? keys",
+            hints.back.named()
+        ),
     };
 
     match long.chars().count() <= width as usize {
@@ -50,6 +50,7 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
 
 #[cfg(test)]
 mod tests {
+    use super::super::hints::Back;
     use super::*;
 
     fn hints(level: Level, back: Back) -> Hints<'static> {
@@ -58,6 +59,7 @@ mod tests {
             level,
             message: None,
             back,
+            panel: false,
         }
     }
 
@@ -79,6 +81,47 @@ mod tests {
 
         assert!(home.contains("1-9"), "{home}");
         assert!(!home.contains("Tab"), "{home}");
+    }
+
+    #[test]
+    fn the_two_keys_that_go_back_are_named_together_because_they_do_the_same_thing() {
+        let line = keys(
+            &hints(Level::Detail, Back::MainScreen),
+            Screen::Findings,
+            200,
+        );
+
+        assert!(line.contains("← or Esc back to the list"), "{line}");
+        assert!(
+            !line.contains("← close it"),
+            "one key that closes and another that steps back is the split that was undone: \
+             {line}"
+        );
+    }
+
+    #[test]
+    fn the_rung_where_the_panel_is_open_beside_the_list_says_the_key_puts_the_panel_away() {
+        let beside = Hints {
+            panel: true,
+            ..hints(Level::List, Back::MainScreen)
+        };
+
+        let line = keys(&beside, Screen::Findings, 200);
+
+        assert!(line.contains("← or Esc close the panel"), "{line}");
+        assert!(
+            !line.contains("back to the main screen"),
+            "the rung above is two presses away, not one: {line}"
+        );
+    }
+
+    #[test]
+    fn the_key_that_switches_the_view_is_offered_where_it_means_something() {
+        let startup = keys(&hints(Level::List, Back::MainScreen), Screen::Startup, 200);
+        let ports = keys(&hints(Level::List, Back::MainScreen), Screen::Ports, 200);
+
+        assert!(startup.contains("t view"), "{startup}");
+        assert!(!ports.contains("t view"), "{ports}");
     }
 
     #[test]

@@ -57,7 +57,7 @@ pub fn render(
     }
 
     Paragraph::new(Line::styled(
-        tally(view, filter, passing.len()),
+        tally(view, filter, footer),
         look.palette.quiet(),
     ))
     .render(footer, buffer);

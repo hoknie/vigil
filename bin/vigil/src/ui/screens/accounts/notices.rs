@@ -55,8 +55,9 @@ pub(super) fn empty(view: &View, showing: &Showing<'_>) -> Notice {
         None => Notice::plain(format!("No {} in this reading.", subject.thing())).saying(
             match subject {
                 Subject::LoggedIn => {
-                    "Nobody is logged in, by this host's login records. That is the only \
-                     source read."
+                    "This reading names no session and no source of logins either. An agent \
+                     older than this console says nothing about its sources; a newer one \
+                     always lists them, answering or not."
                 }
                 Subject::Keys | Subject::SshUsers => {
                     "No authorized_keys file was found for any account the agent could look at."

@@ -50,7 +50,9 @@ impl App {
                 accounts::printed_height(&self.view, self.look, subject, search, width)
             }
             Band::Program(program) => programs::printed_height(&self.view, program, search, width),
-            Band::Startup(list) => starting::printed_height(&self.view, list, search, width),
+            Band::Startup(list) => {
+                starting::printed_height(&self.view, &starting::Showing::plain(list, search), width)
+            }
         }
     }
 
@@ -85,13 +87,7 @@ impl App {
             Band::Startup(list) => starting::render(
                 &self.view,
                 self.look,
-                &starting::Showing {
-                    list,
-                    search,
-                    cursor: 0,
-                    elsewhere: 0,
-                    arrows: Arrows::Away,
-                },
+                &starting::Showing::plain(list, search),
                 area,
                 buffer,
             ),

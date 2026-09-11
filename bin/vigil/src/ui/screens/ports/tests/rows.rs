@@ -70,8 +70,19 @@ fn the_keys_are_the_snapshots_own_so_a_jump_from_a_finding_lands_on_the_right_ro
     assert_eq!(
         keys(&fixture::view(), &Given::default().showing(0)),
         vec![
+            "tcp6|:::443".to_string(),
+            "tcp6|:::8080".to_string(),
             "tcp|0.0.0.0:443".to_string(),
-            "tcp|0.0.0.0:4444".to_string()
+            "tcp|0.0.0.0:4444".to_string(),
+            "tcp|0.0.0.0:9000".to_string(),
+            "tcp|127.0.0.1:5432".to_string(),
+            "udp6|:::5353".to_string(),
+            "udp6|:::546".to_string(),
+            "udp|0.0.0.0:53".to_string(),
+            "udp|0.0.0.0:68".to_string(),
+            "unix|/run/docker.sock".to_string(),
+            "unix|@/tmp/.X11-unix/X0".to_string(),
+            "unix|unnamed".to_string(),
         ]
     );
 }

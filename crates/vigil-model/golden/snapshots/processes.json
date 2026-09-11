@@ -1,0 +1,95 @@
+{
+  "source": "processes",
+  "classes": {
+    "exec": {
+      "cmdline": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "cmdline_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "cmdline_varies": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "exe": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "exe_deleted": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "exe_resolved": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "parents": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "parents/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "parents_truncated": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "uid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "user": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "writable_path": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      }
+    },
+    "processes": {
+      "exe_resolved": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "reason": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    }
+  }
+}

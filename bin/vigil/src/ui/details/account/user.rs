@@ -200,13 +200,17 @@ pub(super) fn account(report: &mut Report, row: &Row<'_>, view: &View, look: Loo
                     look,
                     "session",
                     &format!(
-                        "{} from {} (pid {})",
-                        accounts::text(session, "line").unwrap_or("?"),
+                        "{} from {} (pid {}, seen by {})",
+                        match accounts::text(session, "line") {
+                            Some(line) if !line.is_empty() => line,
+                            _ => "no terminal",
+                        },
                         match accounts::text(session, "from") {
                             Some(from) if !from.is_empty() => from,
                             _ => "this host's console",
                         },
-                        accounts::number(session, "pid")
+                        accounts::number(session, "pid"),
+                        accounts::seen_by(session)
                     ),
                     width,
                 );

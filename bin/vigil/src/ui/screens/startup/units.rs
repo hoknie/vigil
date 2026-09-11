@@ -4,6 +4,8 @@ use ratatui::widgets::Row as TableRow;
 use super::row::Row;
 use crate::ui::screens::programs::{flag, strings, text};
 
+const DEEPEST_INDENT: usize = 8;
+
 pub(super) fn header(wide: bool) -> TableRow<'static> {
     match wide {
         true => TableRow::new(vec![
@@ -20,14 +22,14 @@ pub(super) fn header(wide: bool) -> TableRow<'static> {
 pub(super) fn widths(wide: bool) -> Vec<Constraint> {
     match wide {
         true => vec![
-            Constraint::Min(18),
+            Constraint::Min(28),
             Constraint::Length(10),
             Constraint::Fill(3),
             Constraint::Fill(3),
             Constraint::Fill(2),
         ],
         false => vec![
-            Constraint::Min(18),
+            Constraint::Min(28),
             Constraint::Length(10),
             Constraint::Fill(3),
         ],
@@ -36,7 +38,7 @@ pub(super) fn widths(wide: bool) -> Vec<Constraint> {
 
 pub(super) fn cells(row: &Row<'_>, wide: bool) -> Vec<String> {
     let mut cells = vec![
-        text(row.item, "name").unwrap_or(&row.key).to_string(),
+        named(row),
         text(row.item, "run_as").unwrap_or("root").to_string(),
         first_command(row),
     ];
@@ -45,6 +47,15 @@ pub(super) fn cells(row: &Row<'_>, wide: bool) -> Vec<String> {
         cells.push(text(row.item, "description").unwrap_or("—").to_string());
     }
     cells
+}
+
+pub(super) fn named(row: &Row<'_>) -> String {
+    let name = text(row.item, "name").unwrap_or(&row.key);
+    let indent = " ".repeat((row.depth * 2).min(DEEPEST_INDENT));
+    match row.parents > 1 {
+        true => format!("{indent}{name} +{}", row.parents - 1),
+        false => format!("{indent}{name}"),
+    }
 }
 
 pub(super) fn first_command(row: &Row<'_>) -> String {

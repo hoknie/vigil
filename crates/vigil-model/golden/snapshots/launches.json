@@ -1,0 +1,96 @@
+{
+  "source": "launches",
+  "classes": {
+    "launches": {
+      "from": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "named": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "reason": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "run": {
+      "arguments": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "arguments_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "audit_id": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "auid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "exe": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "exe_lossy": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "exe_present": {
+        "types": [
+          "boolean",
+          "null"
+        ],
+        "always": true
+      },
+      "exe_shown": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "first_seen": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "user": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "writable_path": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      }
+    }
+  }
+}

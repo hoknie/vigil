@@ -48,7 +48,7 @@ pub(super) fn strip_sessions(view: &mut View) {
     };
     let mut kept = Snapshot::new("users", snapshot.taken_at.clone());
     for (key, item) in &snapshot.items {
-        if Kind::of(key) != Kind::Session {
+        if !matches!(Kind::of(key), Kind::Session | Kind::SessionSource) {
             kept = kept.with(key.clone(), item.clone());
         }
     }

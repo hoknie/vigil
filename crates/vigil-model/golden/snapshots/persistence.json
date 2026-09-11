@@ -1,0 +1,361 @@
+{
+  "source": "persistence",
+  "classes": {
+    "cron": {
+      "command": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "command_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "schedule": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "source": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "user": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "module": {
+      "dependencies": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "dependencies/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "size": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "state": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "modules": {
+      "readable": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "reason": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "preload": {
+      "entries": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "entries/[]": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "path": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "present": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "readable": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "sha256": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "script": {
+      "family": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "gid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "mode": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "path": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "present": {
+        "types": [
+          "boolean",
+          "null"
+        ],
+        "always": true
+      },
+      "readable": {
+        "types": [
+          "boolean",
+          "null"
+        ],
+        "always": true
+      },
+      "sha256": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "shown": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "size": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "uid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      }
+    },
+    "timer": {
+      "activates": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "description": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "on_boot": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "on_calendar": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "on_calendar/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "path": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "readable": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "type": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "unit": {
+      "commands": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "commands/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "commands_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "description": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "part_of": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "part_of/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "path": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "readable": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "required_by": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "required_by/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "requires": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "requires/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "run_as": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "type": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "wanted_by": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "wanted_by/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "wants": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "wants/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      }
+    }
+  }
+}

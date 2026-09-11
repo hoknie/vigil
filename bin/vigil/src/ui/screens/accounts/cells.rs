@@ -2,7 +2,7 @@ use ratatui::widgets::Row as TableRow;
 use serde_json::Value;
 
 use super::columns::where_from;
-use super::facts::{password, readable, route_to_root};
+use super::facts::{password, readable, route_to_root, seen_by, what};
 use super::fields::{members, number, objects, rules, text};
 use super::kind::Kind;
 use super::row::Row;
@@ -78,14 +78,25 @@ pub(super) fn cells(
                 _ => "not in /etc/passwd".to_string(),
             },
         ],
+        Subject::LoggedIn if row.kind == Kind::SessionSource => vec![
+            name(row),
+            "—".to_string(),
+            text(row.item, "path").unwrap_or("?").to_string(),
+            format!("login source, {}", standing(row.item)),
+            name(row),
+        ],
         Subject::LoggedIn => vec![
             name(row),
-            text(row.item, "line").unwrap_or("?").to_string(),
+            match text(row.item, "line") {
+                Some(line) if !line.is_empty() => line.to_string(),
+                _ => "—".to_string(),
+            },
             match text(row.item, "from") {
                 Some(from) if !from.is_empty() => from.to_string(),
                 _ => "this host's console".to_string(),
             },
-            number(row.item, "pid"),
+            what(row.item),
+            seen_by(row.item),
         ],
         Subject::Other => vec![
             row.key.clone(),
@@ -120,7 +131,11 @@ fn source(subject: Subject, row: &Row<'_>, view: &View) -> String {
             .unwrap_or("—")
             .to_string(),
         Subject::Other => row.key.split('|').next().unwrap_or("?").to_string(),
-        Subject::Groups | Subject::LoggedIn => String::new(),
+        Subject::LoggedIn => match row.kind {
+            Kind::SessionSource => "—".to_string(),
+            _ => number(row.item, "pid"),
+        },
+        Subject::Groups => String::new(),
     }
 }
 
@@ -159,8 +174,23 @@ fn reaches(view: &View, row: &Row<'_>) -> String {
     }
 }
 
+fn standing(source: &Value) -> String {
+    match (
+        source.get("present").and_then(Value::as_bool),
+        source.get("read").and_then(Value::as_bool),
+    ) {
+        (Some(false), _) => "not on this host".to_string(),
+        (_, Some(false)) => "on this host and not read".to_string(),
+        _ => match number(source, "sessions").as_str() {
+            "1" => "read: 1 session".to_string(),
+            many => format!("read: {many} sessions"),
+        },
+    }
+}
+
 pub(super) fn name(row: &Row<'_>) -> String {
     match row.kind {
+        Kind::SessionSource => text(row.item, "source").unwrap_or("?").to_string(),
         Kind::Sudoer => text(row.item, "who").unwrap_or("?").to_string(),
         Kind::Key | Kind::Session => text(row.item, "user").unwrap_or("?").to_string(),
         _ => text(row.item, "name")

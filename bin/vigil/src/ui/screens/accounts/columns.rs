@@ -10,7 +10,7 @@ pub(super) fn header(subject: Subject, wide: bool) -> TableRow<'static> {
         Subject::Sudo => vec!["WHO", "MAY RUN", "PASSWORD", "REACHES"],
         Subject::Keys => vec!["ACCOUNT", "ALGORITHM", "FINGERPRINT", "USE"],
         Subject::SshUsers => vec!["ACCOUNT", "UID", "KEYS", "SHELL"],
-        Subject::LoggedIn => vec!["ACCOUNT", "LINE", "FROM", "PID"],
+        Subject::LoggedIn => vec!["ACCOUNT", "LINE", "FROM", "WHAT", "SEEN BY"],
         Subject::Other => vec!["KEY", "WHAT THIS CONSOLE CAN SAY"],
     };
     if let Some(extra) = wide.then(|| where_from(subject)).flatten() {
@@ -25,7 +25,8 @@ pub(super) fn where_from(subject: Subject) -> Option<&'static str> {
         Subject::Sudo => Some("FROM THE FILE"),
         Subject::Keys | Subject::SshUsers => Some("KEY FILE"),
         Subject::Other => Some("KIND"),
-        Subject::Groups | Subject::LoggedIn => None,
+        Subject::LoggedIn => Some("PID"),
+        Subject::Groups => None,
     }
 }
 
@@ -63,10 +64,11 @@ pub(super) fn widths(subject: Subject, wide: bool) -> Vec<Constraint> {
             Constraint::Fill(2),
         ],
         Subject::LoggedIn => vec![
-            Constraint::Min(12),
-            Constraint::Length(10),
+            Constraint::Min(10),
+            Constraint::Length(9),
             Constraint::Fill(2),
-            Constraint::Length(7),
+            Constraint::Fill(2),
+            Constraint::Length(13),
         ],
         Subject::Other => vec![Constraint::Min(20), Constraint::Fill(2)],
     };

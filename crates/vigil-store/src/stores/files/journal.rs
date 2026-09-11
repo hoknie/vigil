@@ -9,6 +9,7 @@ use crate::StoreError;
 pub struct Replay {
     pub records: Vec<Finding>,
     pub damaged: usize,
+    pub absent: bool,
 }
 
 pub struct Journal {
@@ -34,15 +35,16 @@ impl Journal {
     }
 
     fn replay(path: &Path) -> Result<Replay, StoreError> {
-        let text = match fs::read_to_string(path) {
-            Ok(text) => text,
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => String::new(),
+        let (text, absent) = match fs::read_to_string(path) {
+            Ok(text) => (text, false),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => (String::new(), true),
             Err(error) => return Err(StoreError::Io(format!("{}: {error}", path.display()))),
         };
 
         let mut replay = Replay {
             records: Vec::new(),
             damaged: 0,
+            absent,
         };
         for line in text.lines() {
             if line.trim().is_empty() {
@@ -139,6 +141,22 @@ mod tests {
         assert_eq!(replay.records.len(), 2);
         assert_eq!(replay.records[0].finding_key, "a");
         assert_eq!(replay.records[1].finding_key, "b");
+        let _ = fs::remove_file(&path);
+    }
+
+    #[test]
+    fn a_journal_that_is_not_there_yet_is_not_a_journal_that_holds_nothing() {
+        let path = temporary_path("absent");
+
+        let (_, first) = Journal::open(path.clone()).expect("opens");
+        let (_, second) = Journal::open(path.clone()).expect("reopens");
+
+        assert!(first.absent, "there was no file to read on the first open");
+        assert!(
+            !second.absent,
+            "the file exists after the first open, and an empty one is a fact rather than a gap"
+        );
+        assert!(first.records.is_empty() && second.records.is_empty());
         let _ = fs::remove_file(&path);
     }
 

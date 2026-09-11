@@ -1,7 +1,12 @@
+#[cfg(test)]
+mod tests;
+
 pub mod accounts;
 pub mod agent;
+pub mod answers;
 pub mod findings;
 pub mod host;
+pub mod launches;
 pub mod look;
 pub mod programs;
 pub mod sockets;

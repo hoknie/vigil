@@ -5,6 +5,7 @@ pub struct Hints<'a> {
     pub level: Level,
     pub message: Option<&'a str>,
     pub back: Back,
+    pub panel: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

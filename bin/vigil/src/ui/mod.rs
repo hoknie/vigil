@@ -18,6 +18,7 @@ pub use theme::look::Look;
 pub use theme::palette::Palette;
 pub use types::content::audience::Audience;
 pub use types::content::group::Group;
+pub use types::content::nesting::Nesting;
 pub use types::content::program::Program;
 pub use types::content::readings::Reading;
 pub use types::content::refusal::Refusal;

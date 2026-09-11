@@ -1,6 +1,7 @@
 use super::App;
 
-use crate::ui::{Cursor, Level, Offset, Screen, Search};
+use crate::ui::types::content::nesting;
+use crate::ui::{Cursor, Level, Offset, Screen, Search, Startup};
 
 impl App {
     pub(super) fn typing(&self) -> bool {
@@ -30,20 +31,32 @@ impl App {
     }
 
     pub(super) fn letter(&mut self, key: char) {
-        if self.nav.at() != Screen::Ports {
-            return;
-        }
-        let moved = match key {
-            'a' => {
-                self.ports_protocols.clear();
-                true
-            }
-            other => self.ports_protocols.toggle(other),
+        let moved = match self.nav.at() {
+            Screen::Ports => match key {
+                'a' => {
+                    self.ports_protocols.clear();
+                    true
+                }
+                other => self.ports_protocols.toggle(other),
+            },
+            Screen::Startup if key == nesting::KEY => self.switch_the_view(),
+            _ => false,
         };
         if moved {
             self.nav.difference = Offset::default();
             self.settle();
         }
+    }
+
+    fn switch_the_view(&mut self) -> bool {
+        if self.nav.lists.startup.showing() != Startup::Units {
+            self.message = Some(
+                "The tree is a view of the units list: press ← or → to it, then t.".to_string(),
+            );
+            return false;
+        }
+        self.startup_nesting.toggle();
+        true
     }
 
     pub(super) fn narrowed(&self) -> bool {

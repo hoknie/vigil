@@ -46,22 +46,23 @@ impl App {
             self.widen();
             return;
         }
-        let rungs = self.rungs();
+        if self.level == Level::Detail {
+            self.level = Level::List;
+            if split::beside(self.body.get()).is_none() {
+                self.detail_open = false;
+            }
+            return;
+        }
+        if self.detail_open {
+            self.detail_open = false;
+            return;
+        }
         if self.level == Level::List && self.nav.came_from().is_some() {
             self.leave_section();
             return;
         }
-        match self.level.shallower(rungs) {
-            Some(Level::List) => {
-                self.level = Level::List;
-                if split::beside(self.body.get()).is_none() {
-                    self.detail_open = false;
-                }
-            }
-            Some(level) => {
-                self.detail_open = false;
-                self.level = level;
-            }
+        match self.level.shallower(self.rungs()) {
+            Some(level) => self.level = level,
             None => self.leave_section(),
         }
     }
@@ -120,18 +121,11 @@ impl App {
         }
     }
 
-    pub(super) fn shallower(&mut self) {
-        if let Some(level) = self.level.shallower(self.rungs()) {
-            self.detail_open = false;
-            self.level = level;
-        }
-    }
-
     pub(super) fn sideways(&mut self, by: isize) {
         if !self.level.is_a_row_of_names() {
             return match by > 0 {
                 true => self.open(),
-                false => self.shallower(),
+                false => self.go_back(),
             };
         }
         match self.nav.at() {

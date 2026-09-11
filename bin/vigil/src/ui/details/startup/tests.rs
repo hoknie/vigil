@@ -3,13 +3,13 @@ use ratatui::layout::Rect;
 
 use super::render;
 use crate::ui::helpers::words::text;
-use crate::ui::screens::startup::rows;
+use crate::ui::screens::startup::{Showing, rows};
 use crate::ui::{Search, Startup, fixture};
 
 fn drawn(list: Startup, key: &str) -> String {
     let view = fixture::view();
     let search = Search::default();
-    let listed = rows(&view, list, &search);
+    let listed = rows(&view, &Showing::plain(list, &search));
     let row = listed
         .iter()
         .find(|row| row.key == key)
@@ -26,7 +26,19 @@ fn a_unit_says_its_path_what_it_runs_and_as_whom() {
 
     assert!(page.contains("/lib/systemd/system/nginx.service"), "{page}");
     assert!(page.contains("/usr/sbin/nginx -g"), "{page}");
-    assert!(page.contains("root"), "{page}");
+    assert!(page.contains("www-data"), "{page}");
+}
+
+#[test]
+fn a_command_with_a_secret_taken_out_is_still_shown_beside_the_note_that_says_so() {
+    let page = drawn(Startup::Units, "unit|nginx.service");
+
+    assert!(page.contains("/usr/sbin/nginx -t"), "{page}");
+    assert!(page.contains("[redacted]"), "{page}");
+    assert!(
+        page.contains("hidden on this host"),
+        "and the note stays, because a reader must know something was taken out: {page}"
+    );
 }
 
 #[test]

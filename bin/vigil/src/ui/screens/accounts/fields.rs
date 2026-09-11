@@ -44,3 +44,7 @@ pub fn rules(grant: &Value) -> impl Iterator<Item = &Value> {
         .unwrap_or_default()
         .iter()
 }
+
+pub fn flag(item: &Value, field: &str) -> bool {
+    item.get(field).and_then(Value::as_bool) == Some(true)
+}

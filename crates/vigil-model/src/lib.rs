@@ -12,7 +12,7 @@ pub use protocol::{
     FindingsSummary, ProtocolError, ReporterStatus, Request, Response, Silence, StoreDropped,
     StoreStatus,
 };
-pub use snapshot::{Change, Snapshot};
+pub use snapshot::{Change, Golden, Shape, ShapeField, Snapshot, class_of};
 
 pub type Rfc3339 = String;
 

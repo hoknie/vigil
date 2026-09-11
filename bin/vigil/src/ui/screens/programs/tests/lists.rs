@@ -18,11 +18,18 @@ fn each_list_answers_for_its_own_collector_and_never_for_a_neighbour() {
 }
 
 #[test]
-fn a_list_whose_collector_is_switched_off_names_the_key_that_turns_it_on() {
+fn a_reason_longer_than_the_pane_is_wrapped_rather_than_cut() {
     let page = drawn(&fixture::view(), Program::Launches, 80);
+    let reason = fixture::collector_off()
+        .reason
+        .expect("a collector that is off names its cause");
 
-    assert!(page.contains("collectors:"), "{page}");
-    assert!(page.contains("not failing"), "{page}");
+    for word in reason.split_whitespace() {
+        assert!(
+            page.contains(word),
+            "the daemon's reason is cut before {word}: {page}"
+        );
+    }
 }
 
 #[test]

@@ -38,3 +38,42 @@ fn a_keys_detail_carries_the_whole_fingerprint() {
     assert!(page.contains("person@laptop"), "{page}");
     assert!(page.contains("no command, source or expiry"), "{page}");
 }
+
+#[test]
+fn a_sessions_detail_says_who_saw_it_and_what_kind_of_session_it_is() {
+    let page = drawn(&fixture::view(), "session|deploy|pts/0", 80);
+
+    assert!(page.contains("DEPLOY"), "{page}");
+    assert!(page.contains("pts/0"), "{page}");
+    assert!(page.contains("10.0.0.5"), "{page}");
+    assert!(page.contains("sshd"), "{page}");
+    assert!(page.contains("logind, utmp"), "{page}");
+    assert!(page.contains("83"), "the logind session number: {page}");
+}
+
+#[test]
+fn a_session_nobody_is_sitting_at_says_so_instead_of_reading_like_a_login() {
+    let page = drawn(&fixture::view(), "session|root|logind:84", 80);
+
+    assert!(page.contains("closing"), "{page}");
+    assert!(page.contains("Nobody is at a terminal"), "{page}");
+    assert!(
+        page.contains("none: this session holds no terminal"),
+        "{page}"
+    );
+}
+
+#[test]
+fn a_login_source_says_where_it_is_read_from_and_whether_it_answered() {
+    let there = drawn(&fixture::view(), "session-source|logind", 80);
+    let missing = drawn(&fixture::view(), "session-source|utmp", 80);
+
+    assert!(there.contains("/run/systemd/sessions"), "{there}");
+    assert!(there.contains("LOGIND"), "{there}");
+
+    assert!(missing.contains("/run/utmp"), "{missing}");
+    assert!(
+        missing.contains("nothing writes a utmp"),
+        "an absent source says why, so nobody reads it as 'nobody is logged in': {missing}"
+    );
+}

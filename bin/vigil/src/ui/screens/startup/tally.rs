@@ -1,14 +1,14 @@
 use vigil_model::Snapshot;
 
-use super::rows::{COLLECTOR, in_the_reading, objects, rows};
+use super::rows::{COLLECTOR, in_the_reading, marks, objects, rows};
 use super::showing::Showing;
+use crate::ui::View;
 use crate::ui::helpers::words::moment;
-use crate::ui::{Search, View};
 
 pub(super) fn tally(view: &View, showing: &Showing<'_>, snapshot: &Snapshot, width: u16) -> String {
     let list = showing.list;
     let held = objects(view, list);
-    let shown = rows(view, list, showing.search)
+    let shown = rows(view, showing)
         .into_iter()
         .filter(|row| !row.mark())
         .count();
@@ -27,12 +27,12 @@ pub(super) fn tally(view: &View, showing: &Showing<'_>, snapshot: &Snapshot, wid
         ),
     }];
 
-    let marks = rows(view, list, &Search::default())
-        .into_iter()
-        .filter(|row| row.mark())
-        .count();
-    if marks > 0 {
-        parts.push(format!("{marks} row(s) about the reading itself"));
+    if let Some(mark) = shared(view, showing) {
+        parts.push(mark);
+    }
+    let marked = marks(view, list);
+    if marked > 0 {
+        parts.push(format!("{marked} row(s) about the reading itself"));
     }
     if showing.elsewhere > 0 {
         parts.push(format!(
@@ -57,4 +57,18 @@ pub(super) fn tally(view: &View, showing: &Showing<'_>, snapshot: &Snapshot, wid
         line = next;
     }
     format!(" {line}")
+}
+
+fn shared(view: &View, showing: &Showing<'_>) -> Option<String> {
+    if !showing.as_a_tree() {
+        return None;
+    }
+    match rows(view, showing)
+        .into_iter()
+        .filter(|row| row.parents > 1)
+        .count()
+    {
+        0 => None,
+        _ => Some("+N means N more pull it in".to_string()),
+    }
 }

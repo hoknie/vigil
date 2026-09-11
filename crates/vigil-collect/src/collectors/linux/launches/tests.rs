@@ -289,3 +289,24 @@ fn a_host_reading_the_log_with_no_plugin_registered_is_healthy() {
 
     assert_eq!(collector(&path).available(), Health::Ok);
 }
+
+#[test]
+fn the_agent_never_says_a_file_it_was_not_shown_has_been_deleted() {
+    use super::reading::look_on_disk;
+    use crate::Presence;
+
+    assert_eq!(
+        look_on_disk("/tmp/there-is-no-such-file"),
+        Presence::NotShown
+    );
+    assert_eq!(
+        look_on_disk("/var/tmp/there-is-no-such-file"),
+        Presence::NotShown
+    );
+    assert_eq!(
+        look_on_disk("/usr/there-is-no-such-file"),
+        Presence::Gone,
+        "outside the two private directories the agent does see the host"
+    );
+    assert_eq!(look_on_disk("/etc/passwd"), Presence::OnDisk);
+}

@@ -5,8 +5,9 @@ mod persistence;
 mod processes;
 
 pub use accounts::{
-    AccountsReading, PasswdEntry, Session, ShadowFacts, SudoGrant, UserKeyFile, accounts_snapshot,
-    parse_authorized_keys, parse_group, parse_passwd, parse_passwd_entries, parse_shadow,
+    AccountsReading, LOGIND, PasswdEntry, Session, SessionSource, ShadowFacts, SudoGrant, UTMP,
+    UserKeyFile, accounts_snapshot, is_session_file, merge_sessions, parse_authorized_keys,
+    parse_group, parse_logind_session, parse_passwd, parse_passwd_entries, parse_shadow,
     parse_sudoers, parse_utmp,
 };
 pub use launches::{AUDIT_KEY, LaunchReading, launches_snapshot, parse_audit_log, record_is_read};

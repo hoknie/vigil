@@ -43,6 +43,26 @@ pub fn accounts() -> Snapshot {
             }),
         )
         .with(
+            "account|contractor",
+            json!({
+                "name": "contractor", "uid": 1001, "gid": 1001, "home": "/home/contractor",
+                "shell": "/bin/bash", "interactive": true, "password": "set",
+                "password_permits_login": true, "password_last_change_day": 19500,
+                "password_max_age_days": 90, "account_expires_day": 20000,
+                "shadow_readable": true,
+            }),
+        )
+        .with(
+            "account|svc-runner",
+            json!({
+                "name": "svc-runner", "uid": 998, "gid": 998, "home": "/var/lib/runner",
+                "shell": "/bin/sh", "interactive": true, "password": null,
+                "password_permits_login": null, "password_last_change_day": null,
+                "password_max_age_days": null, "account_expires_day": null,
+                "shadow_readable": false,
+            }),
+        )
+        .with(
             "group|root",
             json!({
                 "name": "root", "gid": 0, "members": ["backdoor", "root"],
@@ -91,6 +111,15 @@ pub fn accounts() -> Snapshot {
             }),
         )
         .with(
+            "sshkey|contractor|SHA256:kAeGqLq6Y4oQDPLEkLrGuLpZ1hgP4yTtCqHkZbLgAcQ",
+            json!({
+                "user": "contractor", "uid": 1001, "algorithm": "ssh-ed25519",
+                "fingerprint": "SHA256:kAeGqLq6Y4oQDPLEkLrGuLpZ1hgP4yTtCqHkZbLgAcQ",
+                "comment": null, "options": "from=\"10.0.0.0/8\",no-pty",
+                "source": "/home/contractor/.ssh/authorized_keys", "readable": true,
+            }),
+        )
+        .with(
             "sshkey|backup|unreadable",
             json!({
                 "user": "backup", "uid": 1001,
@@ -100,8 +129,43 @@ pub fn accounts() -> Snapshot {
         .with(
             "session|deploy|pts/0",
             json!({
-                "user": "deploy", "line": "pts/0", "from": "10.0.0.5", "remote": true,
-                "pid": 4242,
+                "user": "deploy", "uid": 1000, "line": "pts/0", "from": "10.0.0.5",
+                "remote": true, "pid": 4242, "session_id": "83", "service": "sshd",
+                "type": "tty", "class": "user", "state": "active", "attended": true,
+                "seen_by": ["logind", "utmp"],
+            }),
+        )
+        .with(
+            "session|root|logind:84",
+            json!({
+                "user": "root", "uid": 0, "line": "", "from": "", "remote": false,
+                "pid": 900, "session_id": "84", "service": "systemd-user",
+                "type": "unspecified", "class": "background", "state": "closing",
+                "attended": false, "seen_by": ["logind"],
+            }),
+        )
+        .with(
+            "session|unknown|pts/3",
+            json!({
+                "user": "unknown", "uid": null, "line": "pts/3", "from": "203.0.113.9",
+                "remote": true, "pid": 5150, "session_id": "85", "service": "sshd",
+                "type": "tty", "class": "user", "state": "opening", "attended": true,
+                "seen_by": ["utmp"],
+            }),
+        )
+        .with(
+            "session-source|logind",
+            json!({
+                "source": "logind", "path": "/run/systemd/sessions", "present": true,
+                "read": true, "answers": true, "sessions": 2, "reason": null,
+            }),
+        )
+        .with(
+            "session-source|utmp",
+            json!({
+                "source": "utmp", "path": "/run/utmp", "present": false, "read": false,
+                "answers": false, "sessions": 0,
+                "reason": "neither /run/utmp nor /var/run/utmp is on this host: nothing writes a utmp login record here",
             }),
         )
 }

@@ -29,3 +29,9 @@ cost:
     for name in ports users persistence processes launches; do \
         {{ CARGO }} run --release --example cost -p vigil-collect -- "$name"; \
     done
+
+# Write the shape samples again from what the parsers build, then show what the console owes
+[group('quality')]
+golden:
+    VIGIL_GOLDEN=write {{ CARGO }} test -p vigil-collect -p vigild
+    -{{ CARGO }} test -p vigil

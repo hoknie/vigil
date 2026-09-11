@@ -41,13 +41,11 @@ pub(super) fn identity(report: &mut Report, view: &View, look: Look, width: usiz
         (
             "findings",
             format!(
-                "{} held of {} · {} raised · {} dropped from this screen",
-                agent.findings.retained,
-                agent.findings.capacity,
-                agent.findings.total,
-                agent.findings.dropped,
+                "{} of {} on the findings screen",
+                agent.findings.retained, agent.findings.capacity,
             ),
         ),
+        ("history", history(agent)),
     ];
 
     if width < ROOM_FOR_TWO_COLUMNS as usize {
@@ -84,6 +82,15 @@ pub(super) fn identity(report: &mut Report, view: &View, look: Look, width: usiz
         report.push(Line::from(spans));
     }
     report.blank();
+}
+
+fn history(agent: &vigil_model::AgentStatus) -> String {
+    let total = agent.findings.total;
+    match (total, agent.findings.dropped) {
+        (0, _) => "nothing open has been recorded yet".to_string(),
+        (total, 0) => format!("{total} open, and the screen holds them all"),
+        (total, elsewhere) => format!("{total} open, {elsewhere} of them in the journal only"),
+    }
 }
 
 fn cost(agent: &vigil_model::AgentStatus) -> String {

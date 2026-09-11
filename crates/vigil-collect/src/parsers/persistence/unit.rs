@@ -1,3 +1,4 @@
+use super::links::{Setting, UnitLinks};
 use crate::parsers::processes::redact;
 use crate::parsers::processes::split_command;
 
@@ -10,6 +11,7 @@ pub struct UnitFacts {
     pub on_calendar: Vec<String>,
     pub on_boot: Option<String>,
     pub activates: Option<String>,
+    pub links: UnitLinks,
 }
 
 const DESCRIPTION_LIMIT: usize = 120;
@@ -18,6 +20,10 @@ pub fn parse_unit(text: &str) -> UnitFacts {
     let mut facts = UnitFacts::default();
 
     for (key, value, section) in lines(text) {
+        if let Some(setting) = Setting::of(&section, &key) {
+            facts.links.add(setting, &value);
+            continue;
+        }
         match (section.as_str(), key.as_str()) {
             ("Unit", "Description") => {
                 facts.description = Some(shorten(&value, DESCRIPTION_LIMIT));
@@ -125,6 +131,47 @@ mod tests {
             ]
         );
         assert!(!facts.commands_redacted);
+        assert_eq!(
+            facts.links.wanted_by,
+            vec!["multi-user.target".to_string()],
+            "what pulls this unit in is written in the file, and is read from it"
+        );
+    }
+
+    #[test]
+    fn the_five_settings_that_say_what_pulls_what_are_all_read() {
+        let facts = parse_unit(
+            "[Unit]\n\
+             Wants=network-online.target\n\
+             Requires=basic.target\n\
+             PartOf=nginx.service\n\
+             After=network.target\n\
+             Before=shutdown.target\n\
+             [Install]\n\
+             WantedBy=multi-user.target\n\
+             RequiredBy=graphical.target\n",
+        );
+
+        assert_eq!(facts.links.wants, vec!["network-online.target".to_string()]);
+        assert_eq!(facts.links.requires, vec!["basic.target".to_string()]);
+        assert_eq!(facts.links.part_of, vec!["nginx.service".to_string()]);
+        assert_eq!(facts.links.wanted_by, vec!["multi-user.target".to_string()]);
+        assert_eq!(
+            facts.links.required_by,
+            vec!["graphical.target".to_string()]
+        );
+    }
+
+    #[test]
+    fn what_runs_after_what_is_an_order_and_not_a_dependency_so_it_is_not_read() {
+        let facts = parse_unit("[Unit]\nAfter=network.target\nBefore=shutdown.target\n");
+
+        assert_eq!(
+            facts,
+            UnitFacts::default(),
+            "After and Before say when, not what pulls what in; a tree drawn from them \
+             would show units nothing pulls as children of units that do not pull them"
+        );
     }
 
     #[test]

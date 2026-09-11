@@ -1,8 +1,9 @@
 use serde_json::Value;
 use vigil_model::Snapshot;
 
-use super::facts::{could_log_in, privileged, readable};
+use super::facts::{attended, could_log_in, privileged, readable};
 use super::fields::objects;
+use super::fields::text;
 use super::kind::Kind;
 use super::rows::rows;
 use super::showing::Showing;
@@ -17,7 +18,17 @@ pub(super) fn tally(
     width: u16,
 ) -> String {
     let subject = showing.subject;
-    let held = rows(view, subject, &Search::default()).len();
+    let counted = |search: &Search| {
+        rows(view, subject, search)
+            .iter()
+            .filter(|row| row.kind != Kind::SessionSource)
+            .count()
+    };
+    let held = counted(&Search::default());
+    let shown = match showing.search.holding_back() {
+        true => counted(showing.search),
+        false => shown,
+    };
 
     let mut parts = vec![match showing.search.holding_back() {
         false => format!(
@@ -61,7 +72,16 @@ pub(super) fn tally(
                 parts.push(format!("{refused} key file(s) the agent was refused"));
             }
         }
-        Subject::Sudo | Subject::LoggedIn | Subject::Other => {}
+        Subject::LoggedIn => {
+            let watched = objects(view, Kind::Session)
+                .filter(|(_, session)| attended(session))
+                .count();
+            parts.push(format!("{watched} with somebody at a terminal"));
+            for (_, source) in objects(view, Kind::SessionSource) {
+                parts.push(standing(source));
+            }
+        }
+        Subject::Sudo | Subject::Other => {}
     }
 
     if showing.elsewhere > 0 {
@@ -87,4 +107,22 @@ pub(super) fn tally(
         line = next;
     }
     format!(" {line}")
+}
+
+fn standing(source: &Value) -> String {
+    let name = text(source, "source").unwrap_or("?");
+    match (
+        source.get("present").and_then(Value::as_bool),
+        source.get("read").and_then(Value::as_bool),
+    ) {
+        (Some(false), _) => format!("{name}: not on this host"),
+        (_, Some(false)) => format!("{name}: on this host and not read"),
+        _ => format!(
+            "{name}: read, {}",
+            source
+                .get("sessions")
+                .and_then(Value::as_u64)
+                .unwrap_or_default()
+        ),
+    }
 }

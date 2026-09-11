@@ -4,5 +4,6 @@ mod menu;
 mod narrowing;
 mod notices;
 mod rows;
+mod sessions;
 mod shape;
 mod tally;

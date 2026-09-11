@@ -11,7 +11,7 @@ use super::tally::tally;
 use crate::ui::helpers::layout::listing;
 use crate::ui::helpers::layout::panes;
 use crate::ui::helpers::layout::wrap;
-use crate::ui::{Arrows, Look, Reading, Search, Startup, View};
+use crate::ui::{Arrows, Look, Reading, Startup, View};
 
 const ROOM_FOR_THE_SOURCE: u16 = 118;
 
@@ -31,22 +31,28 @@ pub fn render(view: &View, look: Look, showing: &Showing<'_>, area: Rect, buffer
         return;
     };
 
-    let said: Vec<Line<'static>> = wrap::wrap(
-        showing.list.about(),
-        (area.width as usize).saturating_sub(4),
-    )
-    .into_iter()
-    .take(LINES_OF_DEFINITION)
-    .map(|part| Line::styled(format!("   {part}"), look.palette.quiet()))
-    .collect();
+    let said: Vec<Line<'static>> =
+        wrap::wrap(definition(showing), (area.width as usize).saturating_sub(4))
+            .into_iter()
+            .take(LINES_OF_DEFINITION)
+            .map(|part| Line::styled(format!("   {part}"), look.palette.quiet()))
+            .collect();
 
     let (about, rest) = panes::about(rest, look, said.len() as u16);
     if let Some(about) = about {
         Paragraph::new(said).render(about, buffer);
     }
 
+    let (chooser, rest) = match showing.list == Startup::Units {
+        true => panes::menu(rest),
+        false => (None, rest),
+    };
+    if let Some(chooser) = chooser {
+        Paragraph::new(showing.nesting.line(look)).render(chooser, buffer);
+    }
+
     let (box_, rest) = panes::search_box(rest, showing.search);
-    let rows = rows(view, showing.list, showing.search);
+    let rows = rows(view, showing);
     let (table, footer) = panes::footer(rest, look, rows.len() + 1);
 
     if let Some(box_) = box_ {
@@ -83,12 +89,23 @@ pub fn render(view: &View, look: Look, showing: &Showing<'_>, area: Rect, buffer
     .render(footer, buffer);
 }
 
-pub fn printed_height(view: &View, list: Startup, search: &Search, width: u16) -> u16 {
-    let rows = rows(view, list, search);
-    let about = wrap::wrap(list.about(), (width as usize).saturating_sub(4))
+pub fn printed_height(view: &View, showing: &Showing<'_>, width: u16) -> u16 {
+    let rows = rows(view, showing);
+    let about = wrap::wrap(definition(showing), (width as usize).saturating_sub(4))
         .len()
         .min(LINES_OF_DEFINITION) as u16;
-    1 + about + (rows.len() as u16 + 1).max(2) + 1 + 1
+    let chooser = u16::from(showing.list == Startup::Units);
+    1 + about + chooser + (rows.len() as u16 + 1).max(2) + 1 + 1
+}
+
+fn definition(showing: &Showing<'_>) -> &'static str {
+    match showing.list == Startup::Units {
+        true => showing
+            .nesting
+            .about()
+            .unwrap_or_else(|| showing.list.about()),
+        false => showing.list.about(),
+    }
 }
 
 fn row_of_names(look: Look, view: &View, showing: &Showing<'_>) -> Line<'static> {

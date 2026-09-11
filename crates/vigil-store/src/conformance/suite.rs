@@ -270,6 +270,38 @@ pub fn a_store_says_what_it_is_holding_and_what_it_threw_away(store: &dyn Store)
     );
 }
 
+pub fn a_store_says_how_much_of_its_history_is_still_open(store: &dyn Store) {
+    let closed_later = "port.listen|tcp|0.0.0.0:4444";
+    store
+        .record(&finding(closed_later, "2026-09-09T10:00:00.000Z"))
+        .expect("recorded");
+    store
+        .record(&finding(
+            "port.listen|tcp|0.0.0.0:8080",
+            "2026-09-09T10:01:00.000Z",
+        ))
+        .expect("recorded");
+
+    store
+        .resolve(closed_later, "port.listen.new", "2026-09-09T10:30:00.000Z")
+        .expect("resolves");
+
+    let kept = store.kept().expect("answers");
+    assert_eq!(
+        kept.records.held, 2,
+        "a closed finding is history and stays kept: {kept:?}"
+    );
+    assert_eq!(
+        kept.open, 1,
+        "a closed finding is kept and is not open: {kept:?}"
+    );
+    assert_eq!(
+        kept.open as usize,
+        store.open_findings(100).expect("readable").len(),
+        "the count of what is open and the list of it are one answer, not two"
+    );
+}
+
 pub fn what_a_ceiling_threw_away_is_named_by_the_ceiling_that_threw_it(store: &dyn Store) {
     store
         .record(&finding("old", "2026-06-01T10:00:00.000Z"))
@@ -308,5 +340,6 @@ pub fn run_all(new_store: &dyn Fn() -> Box<dyn Store>) {
     open_findings_come_back_newest_first_and_within_the_limit(new_store().as_ref());
     pruning_drops_the_old_and_keeps_the_rest(new_store().as_ref());
     a_store_says_what_it_is_holding_and_what_it_threw_away(new_store().as_ref());
+    a_store_says_how_much_of_its_history_is_still_open(new_store().as_ref());
     what_a_ceiling_threw_away_is_named_by_the_ceiling_that_threw_it(new_store().as_ref());
 }

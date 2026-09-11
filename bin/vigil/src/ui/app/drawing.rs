@@ -28,6 +28,7 @@ impl App {
                 level: self.level,
                 message: self.message.as_deref(),
                 back: self.back(),
+                panel: self.detail_showing(self.body.get()),
             },
             area,
             buffer,

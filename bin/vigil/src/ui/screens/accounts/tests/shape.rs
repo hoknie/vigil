@@ -26,7 +26,7 @@ fn a_files_page_puts_the_tally_under_the_table() {
     let page = page::to_text(&buffer);
     assert!(page.lines().count() < 20, "{page}");
     assert!(
-        page.lines().last().expect("a page").contains("4 accounts"),
+        page.lines().last().expect("a page").contains("6 accounts"),
         "{page}"
     );
 }

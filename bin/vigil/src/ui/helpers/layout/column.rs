@@ -15,6 +15,16 @@ pub fn fit(text: &str, width: usize) -> String {
     cell
 }
 
+pub fn right(text: &str, width: usize) -> String {
+    let length = text.chars().count();
+    if length >= width {
+        return fit(text, width);
+    }
+    let mut cell = " ".repeat(width - length);
+    cell.push_str(text);
+    cell
+}
+
 pub fn columns(cells: &[(&str, usize)]) -> String {
     cells
         .iter()
@@ -36,6 +46,21 @@ mod tests {
     #[test]
     fn a_cut_cell_says_that_it_was_cut() {
         assert_eq!(fit("/usr/sbin/nginx", 10), "/usr/sbin…");
+    }
+
+    #[test]
+    fn a_column_of_numbers_lines_up_on_its_right_edge_or_it_stops_being_a_column() {
+        assert_eq!(right("152.0 KB", 10), "  152.0 KB");
+        assert_eq!(right("7 B", 10), "       7 B");
+        assert_eq!(
+            right("152.0 KB", 10).chars().count(),
+            right("7 B", 10).chars().count()
+        );
+    }
+
+    #[test]
+    fn a_number_too_wide_for_its_column_is_cut_and_says_so_like_any_other_cell() {
+        assert_eq!(right("1023.9 PB", 6), "1023.…");
     }
 
     #[test]

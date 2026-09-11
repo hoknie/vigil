@@ -78,20 +78,23 @@ impl Subject {
                 "accounts with an authorized_keys file: let in by a key, not a password \
                  (what sshd allows is not in this reading)"
             }
-            Subject::LoggedIn => "who is logged in right now, by this host's login records",
+            Subject::LoggedIn => {
+                "who is logged in right now, from every one of this host's login records, \
+                 and which of those records answered"
+            }
             Subject::Other => "objects of a kind this console does not know, from a newer agent",
         }
     }
 
-    pub fn kind(self) -> Option<Kind> {
+    pub fn kinds(self) -> &'static [Kind] {
         match self {
-            Subject::Users => Some(Kind::Account),
-            Subject::Groups => Some(Kind::Group),
-            Subject::Sudo => Some(Kind::Sudoer),
-            Subject::Keys => Some(Kind::Key),
-            Subject::LoggedIn => Some(Kind::Session),
-            Subject::Other => Some(Kind::Unknown),
-            Subject::SshUsers => None,
+            Subject::Users => &[Kind::Account],
+            Subject::Groups => &[Kind::Group],
+            Subject::Sudo => &[Kind::Sudoer],
+            Subject::Keys => &[Kind::Key],
+            Subject::LoggedIn => &[Kind::Session, Kind::SessionSource],
+            Subject::Other => &[Kind::Unknown],
+            Subject::SshUsers => &[],
         }
     }
 
@@ -128,7 +131,7 @@ impl Subject {
             Kind::Group => Subject::Groups,
             Kind::Sudoer => Subject::Sudo,
             Kind::Key => Subject::Keys,
-            Kind::Session => Subject::LoggedIn,
+            Kind::Session | Kind::SessionSource => Subject::LoggedIn,
             Kind::Unknown => Subject::Other,
         }
     }
@@ -227,6 +230,6 @@ mod tests {
         }
         assert!(Subject::SshUsers.about().contains("authorized_keys"));
         assert!(Subject::SshUsers.about().contains("sshd"));
-        assert_eq!(Subject::SshUsers.kind(), None);
+        assert!(Subject::SshUsers.kinds().is_empty());
     }
 }

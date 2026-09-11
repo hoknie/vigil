@@ -2,7 +2,7 @@ use ratatui::layout::Constraint;
 use ratatui::widgets::Row as TableRow;
 
 use super::row::Row;
-use crate::ui::screens::programs::{flag, text};
+use crate::ui::screens::programs::{strings, text};
 
 pub(super) fn header(wide: bool) -> TableRow<'static> {
     match wide {
@@ -14,15 +14,15 @@ pub(super) fn header(wide: bool) -> TableRow<'static> {
 pub(super) fn widths(wide: bool) -> Vec<Constraint> {
     match wide {
         true => vec![
-            Constraint::Min(18),
-            Constraint::Length(16),
-            Constraint::Fill(2),
+            Constraint::Length(18),
+            Constraint::Fill(5),
             Constraint::Fill(3),
+            Constraint::Fill(4),
         ],
         false => vec![
-            Constraint::Min(18),
             Constraint::Length(16),
-            Constraint::Fill(2),
+            Constraint::Fill(5),
+            Constraint::Fill(3),
         ],
     }
 }
@@ -40,11 +40,20 @@ pub(super) fn cells(row: &Row<'_>, wide: bool) -> Vec<String> {
 }
 
 pub(super) fn when(row: &Row<'_>) -> String {
-    match text(row.item, "on_calendar") {
-        Some(calendar) => calendar.to_string(),
-        None => match flag(row.item, "on_boot") {
-            true => "on boot".to_string(),
-            false => "not stated in the file".to_string(),
+    let calendar = schedules(row);
+    match calendar.len() {
+        0 => match text(row.item, "on_boot") {
+            Some(_) => "on boot".to_string(),
+            None => "not stated in the file".to_string(),
         },
+        1 => calendar[0].to_string(),
+        several => format!("{} and {} more", calendar[0], several - 1),
+    }
+}
+
+pub fn schedules<'a>(row: &Row<'a>) -> Vec<&'a str> {
+    match text(row.item, "on_calendar") {
+        Some(one) => vec![one],
+        None => strings(row.item, "on_calendar"),
     }
 }

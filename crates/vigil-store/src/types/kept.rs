@@ -4,6 +4,7 @@ use super::dropped::Dropped;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Kept {
     pub records: Counted,
+    pub open: u64,
     pub bytes: Counted,
     pub oldest_at: Option<String>,
     pub dropped: Dropped,
@@ -31,5 +32,20 @@ mod tests {
 
         assert!(nothing.is_empty());
         assert_eq!(nothing.oldest_at, None, "and names no oldest record");
+    }
+
+    #[test]
+    fn how_much_is_kept_and_how_much_is_still_open_are_two_numbers() {
+        let mostly_closed = Kept {
+            records: Counted::new(40, 10_000),
+            open: 3,
+            ..Kept::default()
+        };
+
+        assert!(!mostly_closed.is_empty());
+        assert_ne!(
+            mostly_closed.open, mostly_closed.records.held,
+            "a record that was closed is kept and is not something to show as open"
+        );
     }
 }

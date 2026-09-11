@@ -13,6 +13,27 @@ fn drawn(view: &crate::ui::View, at: usize, width: u16) -> String {
     drawn_grouped(view, Arrangement::Flat, at, width)
 }
 
+fn drawn_keyed(view: &crate::ui::View, key: &str, width: u16) -> String {
+    let protocols = crate::ui::Protocols::default();
+    let search = crate::ui::Search::default();
+    let listed = ports::rows(
+        view,
+        &ports::Showing {
+            arrangement: Arrangement::Flat,
+            protocols: &protocols,
+            search: &search,
+            cursor: 0,
+            arrows: crate::ui::Arrows::Away,
+        },
+    );
+    let at = listed
+        .iter()
+        .position(|row| row.key == key)
+        .unwrap_or_else(|| panic!("no row keyed {key}"));
+
+    drawn_grouped(view, Arrangement::Flat, at, width)
+}
+
 fn drawn_grouped(
     view: &crate::ui::View,
     arrangement: Arrangement,
@@ -40,7 +61,7 @@ fn drawn_grouped(
 fn it_carries_the_whole_path_the_table_had_no_room_for() {
     let view = fixture::view();
 
-    let detail = drawn(&view, 1, 60);
+    let detail = drawn_keyed(&view, "tcp|0.0.0.0:4444", 60);
 
     assert!(detail.contains("/tmp/.x/nc"), "{detail}");
     assert!(
@@ -55,7 +76,7 @@ fn it_carries_the_whole_path_the_table_had_no_room_for() {
 
 #[test]
 fn a_binary_deleted_from_disk_is_called_the_finding_that_it_is() {
-    let detail = drawn(&fixture::view(), 1, 60);
+    let detail = drawn_keyed(&fixture::view(), "tcp|0.0.0.0:4444", 60);
 
     assert!(detail.contains("unlinked"), "{detail}");
 }
@@ -107,7 +128,7 @@ fn a_command_line_with_something_scrubbed_out_of_it_says_so() {
 
 #[test]
 fn it_spells_the_configuration_entry_that_would_silence_this_socket() {
-    let detail = drawn(&fixture::view(), 1, 70);
+    let detail = drawn_keyed(&fixture::view(), "tcp|0.0.0.0:4444", 70);
 
     assert!(detail.contains("suppressions:"), "{detail}");
     assert!(
@@ -164,7 +185,7 @@ fn the_heading_of_a_group_the_agent_could_not_resolve_is_not_a_program_called_un
 #[test]
 fn nothing_runs_off_the_side_at_any_of_the_widths_this_is_read_at() {
     for width in [56u16, 80, 120] {
-        for line in drawn(&fixture::view(), 1, width).lines() {
+        for line in drawn_keyed(&fixture::view(), "tcp|0.0.0.0:4444", width).lines() {
             assert!(
                 line.chars().count() <= width as usize,
                 "{width} columns: {line}"

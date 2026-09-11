@@ -28,6 +28,20 @@ impl Ring {
         self.items.push_back(finding);
     }
 
+    pub fn recall(&mut self, history: Vec<Finding>, held: u64) {
+        let shown = history.len().min(self.capacity);
+        self.total += held.max(shown as u64);
+        self.dropped += held.saturating_sub(shown as u64);
+
+        for finding in history.into_iter().take(shown).rev() {
+            if self.items.len() == self.capacity {
+                self.items.pop_front();
+                self.dropped += 1;
+            }
+            self.items.push_back(finding);
+        }
+    }
+
     pub fn latest(&self, limit: Option<usize>) -> Vec<Finding> {
         let wanted = limit.unwrap_or(self.items.len()).min(self.items.len());
         self.items.iter().rev().take(wanted).cloned().collect()
@@ -105,6 +119,98 @@ mod tests {
         assert_eq!(latest[1].title, "second");
         assert_eq!(ring.dropped(), 1, "the loss has to be countable");
         assert_eq!(ring.total(), 3, "and so does what was raised");
+    }
+
+    fn aged(title: &str, observed_at: &str) -> Finding {
+        let mut it = finding(title);
+        it.observed_at = observed_at.to_string();
+        it.first_seen_at = observed_at.to_string();
+        it
+    }
+
+    #[test]
+    fn what_the_journal_holds_and_what_this_run_raised_are_one_list_in_one_order() {
+        let mut ring = Ring::new(10);
+
+        ring.recall(
+            vec![
+                aged("yesterday-late", "2026-09-08T23:00:00.000Z"),
+                aged("yesterday-early", "2026-09-08T08:00:00.000Z"),
+            ],
+            2,
+        );
+        ring.push(aged("just-now", "2026-09-09T09:00:00.000Z"));
+
+        let latest = ring.latest(None);
+        let titles: Vec<&str> = latest.iter().map(|it| it.title.as_str()).collect();
+        assert_eq!(
+            titles,
+            vec!["just-now", "yesterday-late", "yesterday-early"],
+            "newest first, whichever run raised it"
+        );
+    }
+
+    #[test]
+    fn what_the_journal_holds_beyond_the_ring_is_counted_rather_than_forgotten() {
+        let mut ring = Ring::new(2);
+
+        ring.recall(
+            vec![
+                aged("newest", "2026-09-08T12:00:00.000Z"),
+                aged("middle", "2026-09-08T11:00:00.000Z"),
+            ],
+            9,
+        );
+
+        let titles: Vec<String> = ring
+            .latest(None)
+            .iter()
+            .map(|it| it.title.clone())
+            .collect();
+        assert_eq!(titles, vec!["newest", "middle"]);
+        assert_eq!(
+            ring.dropped(),
+            7,
+            "nine in the journal and two on the screen is seven the reader cannot see"
+        );
+        assert_eq!(ring.total(), 9);
+    }
+
+    #[test]
+    fn the_three_numbers_about_the_list_always_add_up() {
+        let mut ring = Ring::new(3);
+        ring.recall(
+            vec![
+                aged("a", "2026-09-08T12:00:00.000Z"),
+                aged("b", "2026-09-08T11:00:00.000Z"),
+                aged("c", "2026-09-08T10:00:00.000Z"),
+            ],
+            20,
+        );
+
+        for index in 0..4 {
+            ring.push(aged(&format!("fresh-{index}"), "2026-09-09T09:00:00.000Z"));
+        }
+
+        assert_eq!(
+            ring.len() as u64 + ring.dropped(),
+            ring.total(),
+            "held plus out of reach is everything there has been: {} + {} vs {}",
+            ring.len(),
+            ring.dropped(),
+            ring.total()
+        );
+    }
+
+    #[test]
+    fn a_journal_with_nothing_open_in_it_leaves_nothing_behind_to_count() {
+        let mut ring = Ring::new(500);
+
+        ring.recall(Vec::new(), 0);
+
+        assert_eq!(ring.len(), 0);
+        assert_eq!(ring.dropped(), 0, "an empty journal hid nothing");
+        assert_eq!(ring.total(), 0);
     }
 
     #[test]

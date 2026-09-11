@@ -1,74 +1,13 @@
-use std::collections::BTreeMap;
-
 use serde_json::Value;
-use vigil_model::Snapshot;
 
-use super::key_file::UserKeyFile;
-use super::reading::AccountsReading;
-use super::snapshot::accounts_snapshot;
-use crate::parsers::accounts::authorized_keys::parse_authorized_keys;
-use crate::parsers::accounts::group::{GroupEntry, parse_group};
-use crate::parsers::accounts::passwd::{PasswdEntry, parse_passwd_entries};
-use crate::parsers::accounts::shadow::{ShadowFacts, parse_shadow};
-use crate::parsers::accounts::sudoers::{SudoGrant, parse_sudoers};
-use crate::parsers::accounts::utmp::Session;
-
-const PASSWD: &str = "\
-root:x:0:0:root:/root:/bin/bash
-www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
-deploy:x:1000:1000:deploy:/home/deploy:/bin/bash
-";
-const GROUP: &str = "\
-root:x:0:
-sudo:x:27:deploy
-docker:x:998:
-deploy:x:1000:
-";
-const SHADOW: &str = "\
-root:$6$salt$hash:19000:0:99999:7:::
-www-data:*:19000:0:99999:7:::
-deploy:!$6$salt$hash:19100:0:99999:7:::
-";
-const KEY: &str = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB2xUXJ7lFTDnPTk1YuHnRvzTZ7nJRPWTZKGHzAtqjRr deploy@builder";
-
-struct Parts {
-    passwd: Vec<PasswdEntry>,
-    groups: Vec<GroupEntry>,
-    shadow: BTreeMap<String, ShadowFacts>,
-    sudo: Vec<SudoGrant>,
-    keys: Vec<UserKeyFile>,
-}
-
-fn reading_parts() -> Parts {
-    Parts {
-        passwd: parse_passwd_entries(PASSWD),
-        groups: parse_group(GROUP),
-        shadow: parse_shadow(SHADOW),
-        sudo: parse_sudoers("deploy ALL=(ALL) NOPASSWD: ALL\n", "/etc/sudoers.d/deploy").grants,
-        keys: vec![UserKeyFile {
-            user: "deploy".into(),
-            uid: 1000,
-            path: "/home/deploy/.ssh/authorized_keys".into(),
-            readable: true,
-            keys: parse_authorized_keys(KEY),
-        }],
-    }
-}
-
-fn snapshot_of(shadow: Option<&BTreeMap<String, ShadowFacts>>) -> Snapshot {
-    let parts = reading_parts();
-    accounts_snapshot(
-        "2026-09-09T12:00:00.000Z",
-        &AccountsReading {
-            passwd: &parts.passwd,
-            groups: &parts.groups,
-            shadow,
-            sudo: &parts.sudo,
-            keys: &parts.keys,
-            sessions: None,
-        },
-    )
-}
+use super::super::key_file::UserKeyFile;
+use super::super::reading::AccountsReading;
+use super::super::snapshot::accounts_snapshot;
+use super::harness::{GROUP, PASSWD, reading_parts, snapshot_of};
+use crate::parsers::accounts::group::parse_group;
+use crate::parsers::accounts::passwd::parse_passwd_entries;
+use crate::parsers::accounts::sessions::{Session, SessionSource, UTMP};
+use crate::parsers::accounts::sudoers::parse_sudoers;
 
 #[test]
 fn keys_every_object_in_a_form_a_person_can_copy_into_a_suppression() {
@@ -145,7 +84,8 @@ fn a_primary_group_membership_is_a_membership_like_any_other() {
             shadow: None,
             sudo: &[],
             keys: &[],
-            sessions: None,
+            sessions: &[],
+            session_sources: &[],
         },
     );
 
@@ -177,7 +117,8 @@ fn an_unreadable_authorized_keys_file_leaves_a_marker_not_a_silence() {
             shadow: None,
             sudo: &[],
             keys: &keys,
-            sessions: None,
+            sessions: &[],
+            session_sources: &[],
         },
     );
 
@@ -191,8 +132,12 @@ fn the_same_reading_twice_produces_the_same_document() {
         user: "deploy".into(),
         line: "pts/0".into(),
         from: "10.0.0.7".into(),
+        remote: true,
         pid: 4021,
+        sources: std::collections::BTreeSet::from([UTMP]),
+        ..Session::default()
     }];
+    let sources = [SessionSource::read(UTMP, "/run/utmp", 1)];
     let build = |taken_at: &str| {
         accounts_snapshot(
             taken_at,
@@ -202,7 +147,8 @@ fn the_same_reading_twice_produces_the_same_document() {
                 shadow: Some(&parts.shadow),
                 sudo: &parts.sudo,
                 keys: &parts.keys,
-                sessions: Some(&sessions),
+                sessions: &sessions,
+                session_sources: &sources,
             },
         )
     };
@@ -228,7 +174,8 @@ fn a_sudoers_grant_is_one_item_per_principal_whatever_the_file_looks_like() {
             shadow: None,
             sudo: &sudo,
             keys: &[],
-            sessions: None,
+            sessions: &[],
+            session_sources: &[],
         },
     );
 

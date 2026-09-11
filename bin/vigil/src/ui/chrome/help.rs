@@ -46,7 +46,7 @@ fn rows() -> Vec<(&'static str, &'static str)> {
     vec![
         (
             "",
-            "EVERY RUNG: the arrows move whatever has them; → in, ← a rung back",
+            "EVERY RUNG: the arrows move whatever has them; → in, ← out",
         ),
         ("▸ in a heading", "what has them now"),
         (
@@ -65,6 +65,7 @@ fn rows() -> Vec<(&'static str, &'static str)> {
             "t T u U x, a",
             "show / hide kinds of socket, or all (ports)",
         ),
+        ("t", "units as a list or as a tree (startup)"),
         ("", "THE LISTS OF A SECTION: ← → along them, ↓ into one"),
         ("", "  ports: sockets · by program"),
         (
@@ -74,9 +75,8 @@ fn rows() -> Vec<(&'static str, &'static str)> {
         ("", "  programs: running · launches"),
         ("", "  startup: units · timers · cron · modules · files"),
         ("", "EVERYWHERE"),
-        ("←", "a rung back; it closes the detail and stays in the section"),
-        ("Esc", "a search first, then one rung out"),
-        ("↑ or Esc", "from the top of a section, back to the main screen"),
+        ("← or Esc", "a search, the detail, the panel, then a rung"),
+        ("", "  from the top of a section, back to the main screen"),
         ("r / ? / q", "ask now / this list / leave"),
     ]
 }
@@ -96,7 +96,17 @@ mod tests {
         render(fixture::look(), buffer.area, &mut buffer);
 
         let page = text::to_text(&buffer);
-        for key in ["1 - 9", "PgUp", "Enter", "o", "/", "s / S", "Esc", "r"] {
+        for key in [
+            "1 - 9",
+            "PgUp",
+            "Enter",
+            "o",
+            "/",
+            "s / S",
+            "Esc",
+            "r",
+            "as a tree",
+        ] {
             assert!(page.contains(key), "{key} is not on the list: {page}");
         }
         assert!(
@@ -109,6 +119,25 @@ mod tests {
         );
         assert!(page.contains("comes back to it"), "{page}");
         assert!(page.contains("any key closes this"), "{page}");
+    }
+
+    #[test]
+    fn the_two_keys_that_go_back_are_one_line_because_they_mean_the_same_thing() {
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 80, 30));
+
+        render(fixture::look(), buffer.area, &mut buffer);
+
+        let page = text::to_text(&buffer);
+        assert!(page.contains("← or Esc"), "{page}");
+        assert!(
+            page.contains("a search, the detail, the panel, then a rung"),
+            "the order of what one press undoes is the thing to look up: {page}"
+        );
+        assert!(page.contains("back to the main screen"), "{page}");
+        assert!(
+            !page.contains("closes the panel"),
+            "the two keys were told apart and are not any more: {page}"
+        );
     }
 
     #[test]

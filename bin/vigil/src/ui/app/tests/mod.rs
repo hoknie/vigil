@@ -7,3 +7,4 @@ mod keys;
 mod levels;
 mod motion;
 mod narrowing;
+mod views;

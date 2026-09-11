@@ -36,14 +36,14 @@ impl Policy {
             .collect()
     }
 
-    pub fn judge(&mut self, finding: &Finding, now: &str) -> Verdict {
-        let kind = finding.kind.as_str();
-
-        if self
-            .suppressions
+    pub fn covers(&self, finding: &Finding, now: &str) -> bool {
+        self.suppressions
             .iter()
-            .any(|entry| entry.covers(&finding.finding_key, kind, now))
-        {
+            .any(|entry| entry.covers(&finding.finding_key, finding.kind.as_str(), now))
+    }
+
+    pub fn judge(&mut self, finding: &Finding, now: &str) -> Verdict {
+        if self.covers(finding, now) {
             self.suppressed += 1;
             return Verdict::Suppressed;
         }
@@ -118,6 +118,27 @@ mod tests {
             ),
             Verdict::Report
         );
+        assert_eq!(policy.suppressed(), 1);
+    }
+
+    #[test]
+    fn reading_a_silenced_finding_back_off_the_disk_does_not_raise_the_count_of_silences() {
+        let mut policy = Policy::new(vec![suppression("port.listen|tcp|10.0.0.5:")]);
+        let silenced = finding(
+            "port.listen|tcp|10.0.0.5:9000",
+            KnownKind::PortListenNew,
+            Severity::Critical,
+        );
+        let now = "2026-09-09T10:00:00.000Z";
+
+        assert!(policy.covers(&silenced, now));
+        assert_eq!(
+            policy.suppressed(),
+            0,
+            "asking whether the operator silenced this is not the same event as silencing it"
+        );
+
+        policy.judge(&silenced, now);
         assert_eq!(policy.suppressed(), 1);
     }
 

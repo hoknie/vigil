@@ -33,6 +33,43 @@ pub(super) fn remote(session: &Value) -> bool {
     session.get("remote").and_then(Value::as_bool) == Some(true)
 }
 
+pub fn attended(session: &Value) -> bool {
+    session.get("attended").and_then(Value::as_bool) != Some(false)
+}
+
+pub fn answers(source: &Value) -> bool {
+    source.get("answers").and_then(Value::as_bool) == Some(true)
+}
+
+pub fn what(session: &Value) -> String {
+    let said: Vec<&str> = ["class", "state", "type"]
+        .iter()
+        .filter_map(|field| text(session, field))
+        .filter(|value| !value.is_empty() && *value != "unspecified")
+        .collect();
+
+    match said.is_empty() {
+        true => "a login this host recorded and said no more about".to_string(),
+        false => said.join(" · "),
+    }
+}
+
+pub fn seen_by(session: &Value) -> String {
+    let sources: Vec<&str> = session
+        .get("seen_by")
+        .and_then(Value::as_array)
+        .map(Vec::as_slice)
+        .unwrap_or_default()
+        .iter()
+        .filter_map(Value::as_str)
+        .collect();
+
+    match sources.is_empty() {
+        true => "?".to_string(),
+        false => sources.join(", "),
+    }
+}
+
 pub fn groups_of<'a>(view: &'a View, name: &str) -> Vec<(&'a str, &'a Value)> {
     objects(view, Kind::Group)
         .filter(|(_, group)| members(group).any(|member| member == name))

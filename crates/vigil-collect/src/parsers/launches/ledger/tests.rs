@@ -8,6 +8,7 @@ use super::snapshot::{
     AUID_UNSET, CAPPED, DROPPING, LIMIT, SOURCE_ROW, UNNAMED, launches_snapshot,
 };
 use crate::parsers::launches::audit::Execution;
+use crate::types::Presence;
 
 fn logins() -> BTreeMap<u32, String> {
     BTreeMap::from([(1000, "alice".to_string()), (0, "root".to_string())])
@@ -24,8 +25,8 @@ fn launch(auid: u32, executable: &str, arguments: &[&str]) -> Execution {
     }
 }
 
-fn everything_is_there(_path: &str) -> bool {
-    true
+fn everything_is_there(_path: &str) -> Presence {
+    Presence::OnDisk
 }
 
 fn snapshot_of(known: &BTreeMap<String, Value>, executions: &[Execution]) -> Snapshot {
@@ -83,7 +84,7 @@ fn the_same_program_run_a_hundred_times_is_one_row_and_the_row_does_not_move() {
 #[test]
 fn the_value_of_a_row_that_is_already_there_is_never_rewritten() {
     let logins = logins();
-    let gone = |_path: &str| false;
+    let gone = |_path: &str| Presence::Gone;
     let known = fresh(&[launch(1000, "/usr/bin/nc", &["nc"])]).items;
 
     let later = launches_snapshot(
@@ -225,7 +226,7 @@ fn arguments_the_operator_asked_for_arrive_with_their_secrets_already_taken_out(
 #[test]
 fn a_program_that_is_no_longer_on_disk_says_so_in_the_row_that_recorded_it() {
     let logins = logins();
-    let gone = |_path: &str| false;
+    let gone = |_path: &str| Presence::Gone;
     let snapshot = launches_snapshot(
         "2026-09-09T12:00:00.000Z",
         &BTreeMap::new(),
@@ -284,4 +285,41 @@ fn the_collector_says_when_it_has_stopped_adding_instead_of_growing_for_ever() {
             .contains_key("run|alice|/usr/bin/one-too-many")
     );
     assert_eq!(snapshot.items[CAPPED]["named"], json!(false));
+}
+
+#[test]
+fn a_path_the_agent_was_never_shown_is_not_a_file_that_is_gone() {
+    let logins = logins();
+    let not_shown = |_path: &str| Presence::NotShown;
+    let snapshot = launches_snapshot(
+        "2026-09-09T12:00:00.000Z",
+        &BTreeMap::new(),
+        &LaunchReading {
+            executions: &[launch(1000, "/tmp/build/tool", &["tool"])],
+            logins: &logins,
+            any_unnamed: false,
+            keep_arguments: false,
+            on_disk: &not_shown,
+            from_plugin: true,
+            dropped: false,
+        },
+    );
+
+    let item = &snapshot.items["run|alice|/tmp/build/tool"];
+    assert_eq!(
+        item["exe_present"],
+        Value::Null,
+        "the shipped unit keeps a /tmp of its own: not seeing a file there is not the file being deleted"
+    );
+    assert_eq!(item["exe_shown"], json!(false));
+    assert_eq!(item["writable_path"], json!(true));
+}
+
+#[test]
+fn a_file_the_agent_looked_at_says_so_and_the_row_carries_the_answer() {
+    let snapshot = fresh(&[launch(1000, "/usr/bin/nc", &["nc"])]);
+
+    let item = &snapshot.items["run|alice|/usr/bin/nc"];
+    assert_eq!(item["exe_present"], json!(true));
+    assert_eq!(item["exe_shown"], json!(true));
 }

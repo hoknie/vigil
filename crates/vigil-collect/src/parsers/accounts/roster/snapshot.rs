@@ -17,6 +17,7 @@ pub fn accounts_snapshot(taken_at: &str, reading: &AccountsReading<'_>) -> Snaps
     add_sudoers(&mut snapshot, reading);
     add_keys(&mut snapshot, reading);
     add_sessions(&mut snapshot, reading);
+    add_session_sources(&mut snapshot, reading);
 
     snapshot
 }
@@ -147,19 +148,40 @@ fn add_keys(snapshot: &mut Snapshot, reading: &AccountsReading<'_>) {
 }
 
 fn add_sessions(snapshot: &mut Snapshot, reading: &AccountsReading<'_>) {
-    let Some(sessions) = reading.sessions else {
-        return;
-    };
-
-    for session in sessions {
+    for session in reading.sessions {
         snapshot.items.insert(
-            format!("session|{}|{}", session.user, session.line),
+            session.key(),
             json!({
-                "user": session.user,
+                "user": session.who(),
+                "uid": session.uid,
                 "line": session.line,
                 "from": session.from,
                 "remote": session.is_remote(),
                 "pid": session.pid,
+                "session_id": session.id,
+                "service": session.service,
+                "type": session.kind,
+                "class": session.class,
+                "state": session.state,
+                "attended": session.attended(),
+                "seen_by": session.seen_by(),
+            }),
+        );
+    }
+}
+
+fn add_session_sources(snapshot: &mut Snapshot, reading: &AccountsReading<'_>) {
+    for source in reading.session_sources {
+        snapshot.items.insert(
+            format!("session-source|{}", source.name),
+            json!({
+                "source": source.name,
+                "path": source.path,
+                "present": source.present,
+                "read": source.read,
+                "answers": source.answers(),
+                "sessions": source.sessions,
+                "reason": source.reason,
             }),
         );
     }

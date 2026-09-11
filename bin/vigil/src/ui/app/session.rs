@@ -10,7 +10,7 @@ use crate::cli::{Console, Opening};
 use super::App;
 use crate::link::Link;
 
-use crate::ui::{Audience, Filter, Level, Look, Nav, Palette, Protocols, Screen, View};
+use crate::ui::{Audience, Filter, Level, Look, Nav, Nesting, Palette, Protocols, Screen, View};
 
 const REFRESH: Duration = Duration::from_secs(2);
 const TICK: Duration = Duration::from_millis(250);
@@ -27,6 +27,7 @@ impl App {
             detail_open: opening.difference,
             level: Level::default(),
             ports_protocols: Protocols::default(),
+            startup_nesting: Nesting::default(),
             helping: false,
             message: None,
             body: Cell::new(Rect::ZERO),

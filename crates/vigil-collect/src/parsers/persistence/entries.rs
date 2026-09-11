@@ -40,8 +40,9 @@ impl ScriptFamily {
 pub struct WatchedScript {
     pub path: String,
     pub family: ScriptFamily,
-    pub present: bool,
-    pub readable: bool,
+    pub present: Option<bool>,
+    pub shown: bool,
+    pub readable: Option<bool>,
     pub digest: Option<String>,
     pub size: u64,
     pub mode: String,
@@ -98,9 +99,8 @@ fn add_units(snapshot: &mut Snapshot, reading: &PersistenceReading<'_>) {
                     }),
                 }),
             ),
-            kind => (
-                "unit",
-                json!({
+            kind => {
+                let mut value = json!({
                     "name": unit.name,
                     "type": kind,
                     "path": unit.path,
@@ -109,8 +109,14 @@ fn add_units(snapshot: &mut Snapshot, reading: &PersistenceReading<'_>) {
                     "commands": unit.facts.commands,
                     "commands_redacted": unit.facts.commands_redacted,
                     "run_as": unit.facts.run_as.clone().unwrap_or_else(|| "root".into()),
-                }),
-            ),
+                });
+                for (setting, named) in unit.facts.links.named() {
+                    if !named.is_empty() {
+                        value[setting] = json!(named);
+                    }
+                }
+                ("unit", value)
+            }
         };
 
         snapshot
@@ -167,6 +173,7 @@ fn add_scripts(snapshot: &mut Snapshot, reading: &PersistenceReading<'_>) {
                 "path": script.path,
                 "family": script.family.as_str(),
                 "present": script.present,
+                "shown": script.shown,
                 "readable": script.readable,
                 "sha256": script.digest,
                 "size": script.size,
@@ -222,6 +229,47 @@ mod tests {
         }
     }
 
+    fn script(path: &str, present: Option<bool>, shown: bool) -> WatchedScript {
+        WatchedScript {
+            path: path.into(),
+            family: ScriptFamily::Profile,
+            present,
+            shown,
+            readable: shown.then_some(true),
+            digest: None,
+            size: 0,
+            mode: String::new(),
+            uid: 0,
+            gid: 0,
+        }
+    }
+
+    #[test]
+    fn a_file_the_agent_was_not_shown_is_not_a_file_that_is_no_longer_there() {
+        let preload = preload_absent();
+        let scripts = [
+            script("/tmp/.hidden/.bashrc", None, false),
+            script("/etc/profile", Some(false), true),
+        ];
+        let mut reading = reading(&[], &[], &preload);
+        reading.scripts = &scripts;
+
+        let snapshot = persistence_snapshot("2026-09-09T12:00:00.000Z", &reading);
+
+        let unseen = &snapshot.items["script|/tmp/.hidden/.bashrc"];
+        assert_eq!(unseen["present"], json!(null));
+        assert_eq!(unseen["shown"], json!(false));
+        assert_eq!(
+            unseen["readable"],
+            json!(null),
+            "a path the agent has its own copy of answers nothing about the host's"
+        );
+
+        let gone = &snapshot.items["script|/etc/profile"];
+        assert_eq!(gone["present"], json!(false));
+        assert_eq!(gone["shown"], json!(true));
+    }
+
     #[test]
     fn a_timer_and_a_service_are_different_kinds_of_key() {
         let units = vec![
@@ -253,6 +301,41 @@ mod tests {
         assert!(
             !snapshot.items.contains_key("unit|certbot.timer"),
             "a timer must not also be a unit, or one file is two findings"
+        );
+    }
+
+    #[test]
+    fn a_unit_carries_what_the_file_says_pulls_it_in_and_what_it_pulls() {
+        let units = vec![UnitFile {
+            name: "nginx.service".into(),
+            path: "/lib/systemd/system/nginx.service".into(),
+            readable: true,
+            facts: parse_unit(
+                "[Unit]\nWants=network-online.target\nAfter=network.target\n\
+                 [Service]\nExecStart=/usr/sbin/nginx\n\
+                 [Install]\nWantedBy=multi-user.target\n",
+            ),
+        }];
+
+        let preload = preload_absent();
+        let snapshot =
+            persistence_snapshot("2026-09-09T12:00:00.000Z", &reading(&units, &[], &preload));
+
+        let unit = &snapshot.items["unit|nginx.service"];
+        assert_eq!(unit["wanted_by"], json!(["multi-user.target"]));
+        assert_eq!(unit["wants"], json!(["network-online.target"]));
+        for absent in ["required_by", "requires", "part_of"] {
+            assert_eq!(
+                unit.get(absent),
+                None,
+                "a setting the file does not carry costs nothing in the snapshot"
+            );
+        }
+        assert_eq!(
+            unit.get("after"),
+            None,
+            "the order units start in is not what pulls them in, and is not recorded as if \
+             it were"
         );
     }
 

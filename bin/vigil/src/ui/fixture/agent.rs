@@ -7,8 +7,8 @@ pub fn collector_off() -> CollectorStatus {
         name: "launches".into(),
         state: CollectorState::Off,
         reason: Some(
-            "not named in `collectors:`, so nothing is watching what people run, from the \
-             kernel's audit records: switched off, not failing"
+            "no line of the configuration on this host asks for this reading, so nothing is \
+             looking at what it looks at: a decision somebody made, not a failure"
                 .into(),
         ),
         last_run_at: None,
@@ -42,6 +42,72 @@ pub fn collector(name: &str, every_seconds: u32, items: usize, skipped: u64) -> 
     }
 }
 
+pub fn collector_degraded(name: &str) -> CollectorStatus {
+    CollectorStatus {
+        name: name.into(),
+        state: CollectorState::Degraded,
+        reason: Some(
+            "the owner of one socket could not be resolved: some rows name no program".into(),
+        ),
+        last_run_at: None,
+        duration_ms: None,
+        items: 0,
+        readings: 0,
+        failures: 0,
+        last_error: None,
+        baseline: false,
+        every_seconds: Some(300),
+        next_run_at: None,
+        skipped: 0,
+    }
+}
+
+pub fn collector_failing(name: &str) -> CollectorStatus {
+    CollectorStatus {
+        last_error: Some("not permitted to read /proc/modules".into()),
+        reason: Some("not permitted to read /proc/modules".into()),
+        state: CollectorState::Degraded,
+        failures: 1,
+        ..collector(name, 300, 7, 0)
+    }
+}
+
+pub fn collector_unavailable(name: &str) -> CollectorStatus {
+    CollectorStatus {
+        state: CollectorState::Unavailable,
+        reason: Some(
+            "auditd is not running on this host, so nothing is delivering launches".into(),
+        ),
+        last_run_at: None,
+        duration_ms: None,
+        next_run_at: None,
+        readings: 0,
+        baseline: false,
+        items: 0,
+        ..collector(name, 30, 0, 0)
+    }
+}
+
+pub fn reporter(name: &str) -> ReporterStatus {
+    ReporterStatus {
+        name: name.into(),
+        deliveries: 4,
+        failures: 0,
+        last_sent_at: Some("2026-09-09T09:00:00.000Z".into()),
+        last_error: None,
+    }
+}
+
+pub fn reporter_failing(name: &str) -> ReporterStatus {
+    ReporterStatus {
+        name: name.into(),
+        deliveries: 0,
+        failures: 2,
+        last_sent_at: None,
+        last_error: Some("the receiver answered 503".into()),
+    }
+}
+
 pub fn agent() -> AgentStatus {
     AgentStatus {
         version: "0.1.0".into(),
@@ -58,13 +124,7 @@ pub fn agent() -> AgentStatus {
             collector("persistence", 300, 7, 0),
             collector_off(),
         ],
-        reporters: vec![ReporterStatus {
-            name: "ndjson".into(),
-            deliveries: 4,
-            failures: 0,
-            last_sent_at: Some("2026-09-09T09:00:00.000Z".into()),
-            last_error: None,
-        }],
+        reporters: vec![reporter("ndjson")],
         findings: FindingsSummary {
             retained: 3,
             capacity: 500,
@@ -76,13 +136,13 @@ pub fn agent() -> AgentStatus {
         },
         silence: vigil_model::Silence {
             suppressed: 1,
-            suppressions: vec![
-                "port.listen|tcp|10.0.0.5:* — the staging api, expected".into(),
-            ],
+            suppressions: vec!["port.listen|tcp|10.0.0.5:* — the staging api, expected".into()],
         },
         store: None,
         limitations: vec![
-            "Nothing is marked resolved yet: a port that closed arrives as its own finding, beside the one that said it opened.".into(),
+            "A thing this build cannot do yet is written here in a sentence about that long, so \
+             the screen is drawn against a line of the size the daemon really sends."
+                .into(),
         ],
     }
 }

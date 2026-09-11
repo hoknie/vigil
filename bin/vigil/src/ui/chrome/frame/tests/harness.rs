@@ -12,6 +12,7 @@ pub(super) fn quiet() -> Hints<'static> {
         level: Level::List,
         message: None,
         back: Back::MainScreen,
+        panel: false,
     }
 }
 

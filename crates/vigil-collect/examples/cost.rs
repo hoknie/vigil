@@ -32,7 +32,14 @@ fn main() {
     };
 
     let started = Instant::now();
-    let first = collector.collect().expect("one reading");
+    let first = match collector.collect() {
+        Ok(first) => first,
+        Err(refusal) => {
+            println!("{name}: health {:?}", collector.available());
+            println!("{name}: nothing to measure here: {refusal}");
+            return;
+        }
+    };
     let first_took = started.elapsed();
 
     println!("{name}: health {:?}", collector.available());
@@ -49,7 +56,7 @@ fn main() {
     let before = peak_resident_kb();
     let started = Instant::now();
     for _ in 0..rounds {
-        let _ = collector.collect().expect("reading");
+        let _ = collector.collect();
     }
     let elapsed = started.elapsed();
 

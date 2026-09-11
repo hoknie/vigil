@@ -6,6 +6,8 @@ pub struct Row<'a> {
     pub key: String,
     pub kind: Kind,
     pub item: &'a Value,
+    pub depth: usize,
+    pub parents: usize,
 }
 
 impl Row<'_> {

@@ -1,0 +1,19 @@
+{
+  "source": "refusal",
+  "classes": {
+    "refusal": {
+      "reason": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "state": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    }
+  }
+}

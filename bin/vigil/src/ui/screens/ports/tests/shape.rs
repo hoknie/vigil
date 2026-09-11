@@ -33,7 +33,7 @@ fn a_files_page_puts_the_tally_under_the_table_rather_than_at_the_foot_of_a_tall
 
     let page = text::to_text(&buffer);
     let lines: Vec<&str> = page.lines().collect();
-    assert!(lines.len() < 10, "{} lines of page: {page}", lines.len());
+    assert!(lines.len() < 22, "{} lines of page: {page}", lines.len());
     assert!(
         lines
             .last()

@@ -70,6 +70,10 @@ impl State {
         }
     }
 
+    pub fn recall_findings(&mut self, history: Vec<Finding>, held: u64) {
+        self.findings.recall(history, held);
+    }
+
     pub fn record_policy(&mut self, suppressions: Vec<String>, suppressed: u64) {
         self.silence = Silence {
             suppressed,

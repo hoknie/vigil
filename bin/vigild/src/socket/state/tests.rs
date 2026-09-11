@@ -322,3 +322,27 @@ fn the_cost_of_the_agent_reaches_the_console_or_says_it_was_not_measured() {
         "not measured here is not measured as zero"
     );
 }
+
+#[test]
+fn the_summary_of_the_list_counts_the_journal_and_this_run_as_one_history() {
+    let mut state = fixture::state();
+
+    state.recall_findings(vec![fixture::finding("from-the-journal")], 40);
+    state.record_findings(&[fixture::finding("from-this-run")]);
+
+    let findings = state.agent().findings;
+    assert_eq!(findings.retained, 2);
+    assert_eq!(
+        findings.total, 41,
+        "forty in the journal and one raised since is forty-one things that happened"
+    );
+    assert_eq!(
+        findings.dropped, 39,
+        "thirty-nine are on disk and off the screen, and the reader is owed that number"
+    );
+    assert_eq!(
+        findings.retained as u64 + findings.dropped,
+        findings.total,
+        "held plus out of reach is everything, or one of the three numbers is wrong"
+    );
+}

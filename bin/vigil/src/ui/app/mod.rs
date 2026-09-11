@@ -19,7 +19,7 @@ use std::cell::Cell;
 use ratatui::layout::Rect;
 
 use crate::link::Link;
-use crate::ui::{Filter, Level, Look, Nav, Protocols, View};
+use crate::ui::{Filter, Level, Look, Nav, Nesting, Protocols, View};
 
 pub struct App {
     link: Link,
@@ -30,6 +30,7 @@ pub struct App {
     detail_open: bool,
     level: Level,
     ports_protocols: Protocols,
+    startup_nesting: Nesting,
     helping: bool,
     message: Option<String>,
     body: Cell<Rect>,

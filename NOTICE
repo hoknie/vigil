@@ -1,0 +1,15 @@
+vigil — third-party attribution notices
+=======================================
+
+Copyright (c) 2026 RSQA
+
+vigil is licensed under the Apache License, Version 2.0; the terms are in `LICENSE`.
+This file carries the attribution notices required by the open-source components it
+incorporates. Those components remain governed by their own licences.
+
+  * Component inventory (name / version / licence / source): `THIRD-PARTY.md`,
+    generated from the resolved dependency graph.
+
+The dependency list of this product is deliberately short, and every entry is a
+decision recorded in the `Cargo.toml` that carries it: what runs here runs on
+hosts we do not own.

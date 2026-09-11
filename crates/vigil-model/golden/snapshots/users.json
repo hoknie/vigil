@@ -1,0 +1,381 @@
+{
+  "source": "users",
+  "classes": {
+    "account": {
+      "account_expires_day": {
+        "types": [
+          "null",
+          "number"
+        ],
+        "always": true
+      },
+      "gid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "home": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "interactive": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "password": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "password_last_change_day": {
+        "types": [
+          "null",
+          "number"
+        ],
+        "always": true
+      },
+      "password_max_age_days": {
+        "types": [
+          "null",
+          "number"
+        ],
+        "always": true
+      },
+      "password_permits_login": {
+        "types": [
+          "boolean",
+          "null"
+        ],
+        "always": true
+      },
+      "shadow_readable": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "shell": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "uid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      }
+    },
+    "group": {
+      "gid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "members": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "members/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "privilege": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "privileged": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      }
+    },
+    "session": {
+      "attended": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "class": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "from": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "line": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "pid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "remote": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "seen_by": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "seen_by/[]": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "service": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "session_id": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "state": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "type": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "uid": {
+        "types": [
+          "null",
+          "number"
+        ],
+        "always": true
+      },
+      "user": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "session-source": {
+      "answers": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "path": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "present": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "read": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "reason": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "sessions": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "source": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "sshkey": {
+      "algorithm": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "comment": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": false
+      },
+      "fingerprint": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "options": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": false
+      },
+      "readable": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "source": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "uid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "user": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "sudoer": {
+      "all_commands": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "group": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "nopasswd": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "rules": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "rules/[]": {
+        "types": [
+          "object"
+        ],
+        "always": true
+      },
+      "rules/[]/all_commands": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "rules/[]/nopasswd": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "rules/[]/source": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "rules/[]/spec": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "rules/[]/spec_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "spec_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "who": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    }
+  }
+}

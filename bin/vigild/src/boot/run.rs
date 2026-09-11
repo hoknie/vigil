@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use super::{console, greeting, history, policy, reporters, schedule, watches};
+use super::{baselines, console, greeting, history, policy, reporters, schedule, watches};
 use crate::budget::Meter;
 use crate::helpers::rfc3339;
 use crate::loops::Round;
@@ -47,13 +47,16 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let at_start = greeting.findings();
 
     let delivery = Delivery::new(host, reporters, shared.clone());
+    let policy = policy::of(&config);
+
+    history::prune(&store, config.retention_days);
+    history::recall(&store, &shared, &policy);
+
     delivery.send(&at_start);
     shared.with(|state| state.record_findings(&at_start));
 
-    let policy = policy::of(&config);
-    history::prune(&store, config.retention_days);
-    history::forget(&store, &switched_off);
-    history::restore(&store, &mut watches);
+    baselines::forget(&store, &switched_off);
+    baselines::restore(&store, &mut watches);
 
     console::listen(&config, &schedule, &shared)?;
 

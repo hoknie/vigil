@@ -6,6 +6,7 @@ mod key;
 mod lines;
 mod render;
 mod session;
+mod session_source;
 mod sudoer;
 mod unknown;
 mod user;

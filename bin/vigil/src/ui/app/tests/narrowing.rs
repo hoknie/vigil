@@ -36,7 +36,7 @@ fn the_ports_views_are_a_submenu_and_the_filter_holds_across_both_of_them() {
     let grouped = drawn_at(&app, 120, 24);
     assert_eq!(app.nav.lists.ports.showing(), ports::Arrangement::ByProgram);
     assert!(grouped.contains("grouped by program"), "{grouped}");
-    assert!(grouped.contains("nginx (1)"), "{grouped}");
+    assert!(grouped.contains("nginx (2)"), "{grouped}");
 
     press(&mut app, KeyCode::Down);
     press(&mut app, KeyCode::Char('t'));
@@ -280,7 +280,7 @@ fn a_search_belongs_to_the_list_it_was_typed_into_and_the_others_say_they_are_na
     press(&mut app, KeyCode::Left);
     assert_eq!(app.nav.lists.accounts.showing(), Subject::Users);
 
-    let page = drawn_at(&app, 120, 40);
+    let page = drawn_at(&app, 160, 40);
     assert!(page.contains("backdoor"), "the other list is whole: {page}");
     assert!(
         page.contains("other list(s) narrowed by a search"),

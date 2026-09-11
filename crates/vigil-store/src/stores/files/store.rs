@@ -40,6 +40,7 @@ impl FileStore {
             limits,
             tally: Tally {
                 damaged_on_open: replay.damaged,
+                journal_absent_on_open: replay.absent,
                 ..Tally::default()
             },
         };
@@ -56,6 +57,12 @@ impl FileStore {
             .lock()
             .map(|s| s.tally.damaged_on_open)
             .unwrap_or(0)
+    }
+    pub fn journal_absent_on_open(&self) -> bool {
+        self.state
+            .lock()
+            .map(|s| s.tally.journal_absent_on_open)
+            .unwrap_or(false)
     }
     pub fn compactions(&self) -> u64 {
         self.state.lock().map(|s| s.tally.compactions).unwrap_or(0)
@@ -92,6 +99,13 @@ impl State {
 
     fn oldest(&self) -> Option<&str> {
         self.by_age.first().map(|(at, _)| at.as_str())
+    }
+
+    fn open_records(&self) -> u64 {
+        self.findings
+            .values()
+            .filter(|finding| finding.state == vigil_model::State::Open)
+            .count() as u64
     }
 
     fn enforce_limits(&mut self) -> Result<(), StoreError> {
@@ -226,6 +240,7 @@ impl Store for FileStore {
 
         Ok(Kept {
             records: Counted::new(state.findings.len() as u64, state.limits.findings as u64),
+            open: state.open_records(),
             bytes: Counted::new(state.journal.bytes(), state.limits.journal_bytes),
             oldest_at: state.oldest().map(str::to_string),
             dropped: state.tally.dropped,

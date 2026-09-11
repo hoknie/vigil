@@ -1,3 +1,4 @@
+mod baselines;
 mod console;
 mod greeting;
 mod history;

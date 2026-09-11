@@ -30,8 +30,8 @@ fn the_row_that_says_the_reading_stopped_growing_is_not_counted_as_a_program_tha
         .find(|line| line.contains("read at"))
         .expect("a footer");
     assert!(
-        footer.contains("3 program"),
-        "the fixture holds three programs and one row about the reading: {footer}"
+        footer.contains("4 program"),
+        "the fixture holds four programs and one row about the reading: {footer}"
     );
     assert!(footer.contains("about the reading itself"), "{footer}");
 }

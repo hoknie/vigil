@@ -40,6 +40,7 @@ impl App {
         startup::Showing {
             list: self.nav.lists.startup.showing(),
             search: self.nav.lists.startup.search(),
+            nesting: self.startup_nesting,
             cursor: self.nav.lists.startup.at(),
             elsewhere: self.nav.lists.startup.narrowed_elsewhere(),
             arrows: Arrows::at(self.level),
@@ -87,19 +88,11 @@ impl App {
     }
 
     pub(super) fn startup_rows(&self) -> Vec<startup::Row<'_>> {
-        startup::rows(
-            &self.view,
-            self.nav.lists.startup.showing(),
-            self.nav.lists.startup.search(),
-        )
+        startup::rows(&self.view, &self.starting())
     }
 
     pub(super) fn startup_keys(&self) -> Vec<String> {
-        startup::keys(
-            &self.view,
-            self.nav.lists.startup.showing(),
-            self.nav.lists.startup.search(),
-        )
+        startup::keys(&self.view, &self.starting())
     }
 
     pub(super) fn selected_finding(&self) -> Option<&Finding> {

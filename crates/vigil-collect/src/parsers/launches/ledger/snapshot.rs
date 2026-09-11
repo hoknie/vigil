@@ -61,6 +61,7 @@ pub fn launches_snapshot(
             _ => (Value::Null, false),
         };
 
+        let seen = (reading.on_disk)(executable);
         snapshot.items.insert(
             key,
             json!({
@@ -68,7 +69,8 @@ pub fn launches_snapshot(
                 "auid": auid,
                 "exe": executable,
                 "exe_lossy": execution.executable_lossy,
-                "exe_present": (reading.on_disk)(executable),
+                "exe_present": seen.on_disk(),
+                "exe_shown": seen.shown(),
                 "writable_path": is_writable_path(executable),
                 "first_seen": taken_at,
                 "audit_id": execution.id,

@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod fixture;
+pub(crate) mod fixture;
 
 mod answer;
 mod listener;

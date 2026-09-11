@@ -36,8 +36,8 @@ just package-systemd  # the unit under a real systemd; measures what its hardeni
 ## Build and run
 
 ```bash
-cargo test --workspace          # test the project
-cargo run --bin vigild -- config/vigil.example.yaml
-cargo run --bin vigil -- ui     # the console
-cargo run --bin vigil -- capture # print info for a script or a pipe
+cargo test --workspace                                  # test the project
+cargo run --bin vigild -- config/vigil.example.yaml     # daemon start
+cargo run --bin vigil -- ui                             # the console
+cargo run --bin vigil -- capture                        # print info for a script or a pipe
 ```

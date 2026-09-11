@@ -7,9 +7,10 @@ use vigil_model::Snapshot;
 
 use super::LaunchesCollector;
 use super::chunk::read_chunk;
+use crate::helpers::shown_to_the_agent;
 use crate::parsers::{LaunchReading, launches_snapshot, parse_audit_log, parse_passwd};
 use crate::spool::{Cursor, cursor_path, dropped_note};
-use crate::{CollectError, Collector};
+use crate::{CollectError, Collector, Presence};
 
 const FIRST_READING_TAIL: u64 = 2 * 1024 * 1024;
 
@@ -88,7 +89,7 @@ impl LaunchesCollector {
                 logins: &logins,
                 any_unnamed: reading.unnamed > 0,
                 keep_arguments: self.keep_arguments,
-                on_disk: &|path: &str| Path::new(path).exists(),
+                on_disk: &look_on_disk,
                 from_plugin,
                 dropped,
             },
@@ -124,5 +125,15 @@ impl LaunchesCollector {
                 .entry(key.clone())
                 .or_insert_with(|| value.clone());
         }
+    }
+}
+
+pub(super) fn look_on_disk(path: &str) -> Presence {
+    if !shown_to_the_agent(path) {
+        return Presence::NotShown;
+    }
+    match Path::new(path).exists() {
+        true => Presence::OnDisk,
+        false => Presence::Gone,
     }
 }

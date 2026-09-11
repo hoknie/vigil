@@ -79,7 +79,7 @@ mod tests {
                 assert_eq!(agent.interval_seconds, 30);
                 assert_eq!(agent.collectors.len(), 1);
                 assert_eq!(agent.collectors[0].duration_ms, Some(5));
-                assert_eq!(agent.collectors[0].items, 1);
+                assert_eq!(agent.collectors[0].items, fixture::snapshot().items.len());
             }
             other => panic!("answered with {other:?}"),
         }
@@ -143,7 +143,10 @@ mod tests {
     fn a_reading_that_arrived_incomplete_carries_the_reason_beside_it() {
         let mut state = fixture::state();
         state.record_reading(fixture::reading(fixture::snapshot()));
-        state.record_health("ports", &Health::Degraded("no owner for 2 socket(s)".into()));
+        state.record_health(
+            "ports",
+            &Health::Degraded("no owner for 2 socket(s)".into()),
+        );
 
         match answer(
             &Request::Snapshot {
@@ -168,7 +171,11 @@ mod tests {
     #[test]
     fn every_way_a_collector_can_fall_into_trouble_leaves_words_to_show_the_reader() {
         let failed = |mut state: State| {
-            state.record_failure("ports", now(), "/proc/net/tcp is not present on this system");
+            state.record_failure(
+                "ports",
+                now(),
+                "/proc/net/tcp is not present on this system",
+            );
             state
         };
         let unwell = |mut state: State| {

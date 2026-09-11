@@ -14,6 +14,7 @@ mod rows;
 mod showing;
 mod tally;
 mod timers;
+mod tree;
 mod units;
 
 pub use kind::Kind;
@@ -21,3 +22,4 @@ pub use render::{printed_height, render};
 pub use row::Row;
 pub use rows::{COLLECTOR, keys, rows};
 pub use showing::Showing;
+pub use timers::schedules;

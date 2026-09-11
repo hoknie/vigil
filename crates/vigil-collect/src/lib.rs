@@ -1,4 +1,6 @@
 mod collectors;
+#[cfg(test)]
+mod fixture;
 #[cfg_attr(not(target_os = "linux"), allow(dead_code, unused_imports))]
 mod helpers;
 #[cfg_attr(not(target_os = "linux"), allow(dead_code, unused_imports))]
@@ -9,8 +11,8 @@ mod types;
 
 pub use ports::Collector;
 pub use types::{
-    COLLECTORS, CollectError, Health, KnownCollector, collector_names, every_seconds_of_collector,
-    is_known_collector, subject_of_collector,
+    COLLECTORS, CollectError, Health, KnownCollector, Presence, collector_names,
+    every_seconds_of_collector, is_known_collector, subject_of_collector,
 };
 
 pub use spool::{

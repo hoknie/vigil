@@ -1,0 +1,79 @@
+{
+  "source": "store",
+  "classes": {
+    "store": {
+      "bytes": {
+        "types": [
+          "object"
+        ],
+        "always": true
+      },
+      "bytes/ceiling": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "bytes/held": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "damaged": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "dropped": {
+        "types": [
+          "object"
+        ],
+        "always": true
+      },
+      "dropped/at_the_ceiling": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "dropped/past_the_window": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "journal_path": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "oldest_at": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "records": {
+        "types": [
+          "object"
+        ],
+        "always": true
+      },
+      "records/ceiling": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "records/held": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      }
+    }
+  }
+}

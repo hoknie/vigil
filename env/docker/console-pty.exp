@@ -207,12 +207,16 @@ set page [drawn 3]
 check_loose "the section opened" $page "▸ What has run here"
 check_loose "and the caret is on its row of lists" $page "▸ \[running\] · launches"
 
-note "→: the second list, which nothing on this host fills"
+note "→: the second list, which this host has nothing to fill from"
 send $Right
 set page [steady 3]
 check_loose "the second list is open" $page "running · \[launches\]"
-check_loose "and the empty list says what state it is in" $page "The agent has not taken this reading yet."
-check_loose "rather than leaving the reader to guess" $page "The first one is due within the period on the summary screen."
+check_loose "the list itself says the reading was refused" $page "This reading was refused: launches is unavailable."
+check_loose "in the words the agent used" $page "auditd is not running"
+check_loose "naming the file it went to" $page "/var/log/audit/audit.log"
+check_loose "and what is missing because of it" $page "No launch is listed here"
+check_absent_loose "rather than promising a reading that is on its way" $page "The agent has not taken this reading yet."
+check_absent_loose "or a first one due within the period" $page "The first one is due within the period"
 check_absent_loose "so there is no empty table under it" $page "WHO PROGRAM FIRST SEEN"
 check_loose "and the screen says a collector here is not reading everything" $page "not reading everything"
 
@@ -237,6 +241,32 @@ set page [steady 3]
 check_loose "the accounts section opened" $page "▸ Who can log in"
 check_loose "on its top rung, the row of lists" $page "▸ \[users\]"
 check_absent_loose "and not in a detail" $page "THE SELECTED PROGRAM"
+
+note "→ five times: the last of the accounts lists, who is logged in"
+for {set step 0} {$step < 5} {incr step} {
+    send $Right
+    after 200
+}
+set page [steady 3]
+check_loose "the last list is open" $page "\[logged in\]"
+check_loose "and it says what it reads" $page "login records"
+check_loose "the table names who saw each row" $page "SEEN BY"
+check_loose "this workbench keeps no utmp, and the row says so" $page "/run/utmp"
+check_loose "nor does logind run here" $page "/run/systemd/sessions"
+check_loose "and each of them is named a source that is not on this host" $page "loginsource,notonthishost"
+check_loose "the tally says it too, rather than leaving a blank list to speak" $page "logind:notonthishost"
+check_absent_loose "and nothing here reads as a host nobody has logged in to" $page "Nobodyisloggedin"
+send $Left
+after 200
+send $Left
+after 200
+send $Left
+after 200
+send $Left
+after 200
+send $Left
+set page [steady 3]
+check_loose "and ← comes back along the row to the first list" $page "\[users\]"
 
 note "Esc from the top rung of a section: the main screen, cursor where it was left"
 send $Esc
@@ -309,7 +339,35 @@ check_loose "and what the search hid is back" $page "agent.collector.degraded"
 
 note "Esc once more: nothing left to undo, so this one is the ladder"
 send $Esc
-set page [drawn 3]
+set page [drawn 2]
+check_loose "the main screen" $page "▸ What this agent watches"
+
+note "6, →: a finding and its detail, side by side on a terminal wide enough for both"
+send "6"
+after 400
+send $Right
+set page [drawn 2]
+check_loose "the detail of the finding opened" $page "THE SELECTED FINDING"
+check_loose "and the hint names one meaning for both keys back" $page "← or Esc back to the list"
+check_absent_loose "and not one meaning each" $page "← close it"
+
+note "← once: the focus goes to the list and the panel stays beside it"
+send $Left
+set page [drawn 2]
+check_loose "the panel is still drawn" $page "THE SELECTED FINDING"
+check_loose "the findings are still the screen open" $page "▸ What the agent has found"
+check_loose "and the hint says what the next press does" $page "← or Esc close the panel"
+
+note "← twice: the panel goes away and the list has the width to itself"
+send $Left
+set page [drawn 2]
+check_absent_loose "the panel is off the screen" $page "THE SELECTED FINDING"
+check_loose "and the findings are still the screen open" $page "▸ What the agent has found"
+check_absent_loose "that press was one step, not two" $page "▸ What this agent watches"
+
+note "← three times: the findings have no row of lists, so this rung is the main screen"
+send $Left
+set page [drawn 2]
 check_loose "the main screen" $page "▸ What this agent watches"
 
 note "the port opened for this run is closed behind it"
@@ -346,8 +404,10 @@ send $Esc
 after 300
 send $Esc
 after 300
+send $Esc
+after 300
 set before [drawn 3]
-check_loose "three rungs out of the socket detail is the main screen" $before "▸ What this agent watches"
+check_loose "four presses out of the socket detail is the main screen" $before "▸ What this agent watches"
 send "\t"
 set after [drawn 3]
 check_loose "the main screen did not move under Tab" $after "▸ What this agent watches"
@@ -359,6 +419,11 @@ set page [drawn 3]
 check_loose "the summary opened" $page "▸ This host and its agent"
 check_loose "the collectors table says how often each one reads" $page "EVERY"
 check_loose "and there is a place for what is kept on disk" $page "WHATISKEPTONDISK"
+
+note "j: to the foot of the summary, where the agent says what it cannot do yet"
+for {set scrolled 0} {$scrolled < 30} {incr scrolled} { send "j" }
+set page [drawn 3]
+check_loose "the agent names a limitation of this build, in its own words" $page "Nothingisbuffered"
 
 note "q: the console leaves and gives the terminal back"
 send "q"
@@ -388,6 +453,84 @@ if {$code == 0} {
 }
 
 catch { exec kill $listener }
+
+note "a second agent is started over a small tree of unit files, to drive the units view"
+catch { exec sh -c {
+rm -rf /tmp/vigil-tree
+mkdir -p /tmp/vigil-tree /etc/systemd/system
+printf '[Unit]\nDescription=Multi-User System\n' > /etc/systemd/system/multi-user.target
+printf '[Unit]\nDescription=Web server\n[Service]\nExecStart=/usr/sbin/nginx\n[Install]\nWantedBy=multi-user.target\n' > /etc/systemd/system/nginx.service
+printf '[Unit]\nDescription=Key value store\n[Service]\nExecStart=/usr/bin/redis-server\n[Install]\nWantedBy=multi-user.target\n' > /etc/systemd/system/redis.service
+printf '[Unit]\nDescription=Sidecar of the web server\nPartOf=nginx.service\n[Service]\nExecStart=/usr/bin/sidecar\n' > /etc/systemd/system/sidecar.service
+printf '[Unit]\nDescription=Nothing pulls this one in\n[Service]\nExecStart=/bin/sh\n' > /etc/systemd/system/lonely.service
+printf 'state_dir: /tmp/vigil-tree\nsocket_path: /tmp/vigil-tree/vigil.sock\nretention_days: 1\ninterval_seconds: 5\ncollectors:\n  - persistence\nschedule:\n  persistence: 5\nsuppressions: []\nrecord_launch_arguments: false\nreporters: []\n' > /tmp/vigil-tree/vigil.yaml
+} } seeding
+
+set daemon 0
+if {[catch { exec /build/target/debug/vigild /tmp/vigil-tree/vigil.yaml > /tmp/vigil-tree/log 2>@1 & } daemon]} {
+    incr failures
+    puts "  FAIL the second agent would not start: $daemon"
+    set daemon 0
+} else {
+    after 4000
+    puts "  ok   a second agent is watching /etc/systemd/system, pid $daemon"
+}
+
+spawn $console ui --socket /tmp/vigil-tree/vigil.sock
+match_max 400000
+settle
+
+note "4, ↓: the startup section and its units, drawn as the list"
+send "4"
+after 600
+send $Down
+set page [waiting_for "nginx.service" 40]
+check_loose "the units list is the one open" $page "\[units\] · timers"
+check_loose "and the key that switches the view is drawn beside it" $page "\[t list\] t tree"
+check "nginx is a row of it" $page "nginx.service"
+check_loose "and the rows are in the order of the alphabet" $page "nginx.service Web server │ │ redis.service"
+
+note "↓ ↓ ↓: the cursor onto the third unit down"
+send $Down
+after 200
+send $Down
+after 200
+send $Down
+set page [drawn 3]
+check "the cursor is on redis" $page " > redis.service"
+
+note "t: the same units, drawn as the tree the files describe"
+send "t"
+set page [drawn 3]
+check_loose "the view switched" $page "t list \[t tree\]"
+check_loose "and it says which of the two answers it draws" $page "as written in the files"
+check "the reader is still on the same unit, one level in under its target" $page " >   redis.service"
+check_loose "what a unit pulls in comes directly under it" $page "nginx.service Web server │ │ sidecar.service"
+check "a unit nothing pulls in is still a row" $page "lonely.service"
+check_loose "and the footer counts the same units the list counted" $page "5 units of"
+
+note "t again: back to the list, and the reader has not moved"
+send "t"
+set page [drawn 3]
+check_loose "the view switched back" $page "\[t list\] t tree"
+check "the reader is still on the same unit, with no indent now" $page " > redis.service"
+check_loose "and the rows are in the order of the alphabet again" $page "nginx.service Web server │ │ > redis.service"
+
+note "5: the summary of an agent whose configuration names one collector out of five"
+send "5"
+set page [waiting_for "collectors:" 20]
+check_loose "a collector the configuration leaves out names the key that turns it on" $page "collectors:"
+check_loose "and says that being off is a decision and not a failure" $page "notfailing"
+
+send "q"
+expect {
+    -re {.+} { exp_continue }
+    eof {}
+    timeout { incr failures; puts "  FAIL the second console did not exit on q" }
+}
+catch wait
+if {$daemon != 0} { catch { exec kill $daemon } }
+
 
 puts ""
 if {$failures == 0} {

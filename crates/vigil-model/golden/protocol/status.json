@@ -1,0 +1,623 @@
+{
+  "source": "status",
+  "classes": {
+    "agent": {
+      "budget": {
+        "types": [
+          "object"
+        ],
+        "always": true
+      },
+      "budget/duty_percent": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "budget/resident_kb": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "collectors": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "collectors/[]": {
+        "types": [
+          "object"
+        ],
+        "always": false
+      },
+      "collectors/[]/baseline": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "collectors/[]/duration_ms": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "collectors/[]/every_seconds": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "collectors/[]/failures": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "collectors/[]/items": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "collectors/[]/last_error": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "collectors/[]/last_run_at": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "collectors/[]/name": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "collectors/[]/next_run_at": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "collectors/[]/readings": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "collectors/[]/reason": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "collectors/[]/skipped": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "collectors/[]/state": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "findings": {
+        "types": [
+          "object"
+        ],
+        "always": true
+      },
+      "findings/by_severity": {
+        "types": [
+          "object"
+        ],
+        "always": false
+      },
+      "findings/by_severity/critical": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "findings/by_severity/low": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "findings/capacity": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "findings/dropped": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "findings/retained": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "findings/total": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "interval_seconds": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "limitations": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "limitations/[]": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "reporters": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "reporters/[]": {
+        "types": [
+          "object"
+        ],
+        "always": false
+      },
+      "reporters/[]/deliveries": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "reporters/[]/failures": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "reporters/[]/last_error": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "reporters/[]/last_sent_at": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "reporters/[]/name": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "silence": {
+        "types": [
+          "object"
+        ],
+        "always": true
+      },
+      "silence/suppressed": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "silence/suppressions": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "silence/suppressions/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "started_at": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "store": {
+        "types": [
+          "object"
+        ],
+        "always": false
+      },
+      "store/bytes": {
+        "types": [
+          "object"
+        ],
+        "always": false
+      },
+      "store/bytes/ceiling": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "store/bytes/held": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "store/damaged": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "store/dropped": {
+        "types": [
+          "object"
+        ],
+        "always": false
+      },
+      "store/dropped/at_the_ceiling": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "store/dropped/past_the_window": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "store/journal_path": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "store/oldest_at": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "store/records": {
+        "types": [
+          "object"
+        ],
+        "always": false
+      },
+      "store/records/ceiling": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "store/records/held": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "version": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "collector-degraded": {
+      "baseline": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "duration_ms": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "every_seconds": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "failures": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "items": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "last_error": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "last_run_at": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "next_run_at": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "readings": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "reason": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "skipped": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "state": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "collector-off": {
+      "baseline": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "failures": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "items": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "readings": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "reason": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "skipped": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "state": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "collector-ok": {
+      "baseline": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "duration_ms": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "every_seconds": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "failures": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "items": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "last_run_at": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "next_run_at": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "readings": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "skipped": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "state": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "collector-unavailable": {
+      "baseline": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "every_seconds": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "failures": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "items": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "readings": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "reason": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "skipped": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "state": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "reporter": {
+      "deliveries": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "failures": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "last_error": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "last_sent_at": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    }
+  }
+}

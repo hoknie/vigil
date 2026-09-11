@@ -9,6 +9,7 @@ use super::group::group;
 use super::key::key;
 use super::lines::silencing;
 use super::session::session;
+use super::session_source::session_source;
 use super::sudoer::sudoer;
 use super::unknown::unknown;
 use super::user::account;
@@ -81,6 +82,7 @@ fn report(row: &Row<'_>, view: &View, look: Look, width: usize) -> Report {
         Kind::Sudoer => sudoer(&mut report, row, view, look, width),
         Kind::Key => key(&mut report, row, look, width),
         Kind::Session => session(&mut report, row, look, width),
+        Kind::SessionSource => session_source(&mut report, row, look, width),
         Kind::Unknown => unknown(&mut report, row, look, width),
     }
     silencing(&mut report, &row.key, look, width);

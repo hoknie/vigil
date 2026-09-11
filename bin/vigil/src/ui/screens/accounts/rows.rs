@@ -1,7 +1,7 @@
 use serde_json::Value;
 
 use super::cells::name;
-use super::facts::{could_log_in, privileged, readable, remote};
+use super::facts::{attended, could_log_in, privileged, readable, remote};
 use super::fields::{objects, text};
 use super::kind::Kind;
 use super::row::Row;
@@ -12,9 +12,10 @@ pub fn rows<'a>(view: &'a View, subject: Subject, search: &Search) -> Vec<Row<'a
     if subject == Subject::SshUsers {
         return ssh_users(view, search);
     }
-    let Some(kind) = subject.kind() else {
+    let kinds = subject.kinds();
+    if kinds.is_empty() {
         return Vec::new();
-    };
+    }
     let Reading::Taken(snapshot) = view.reading("users") else {
         return Vec::new();
     };
@@ -22,28 +23,32 @@ pub fn rows<'a>(view: &'a View, subject: Subject, search: &Search) -> Vec<Row<'a
     let mut rows: Vec<Row<'a>> = snapshot
         .items
         .iter()
-        .filter(|(key, _)| Kind::of(key) == kind)
+        .filter(|(key, _)| kinds.contains(&Kind::of(key)))
         .filter(|(key, item)| search.matches(&haystack::haystack(key, item)))
         .map(|(key, item)| Row {
             key: key.clone(),
-            kind,
+            kind: Kind::of(key),
             item,
         })
         .collect();
 
-    rows.sort_by_key(|row| {
-        (
-            match row.kind {
-                Kind::Account => !could_log_in(row.item),
-                Kind::Group => !privileged(row.item),
-                Kind::Key => readable(row.item),
-                Kind::Session => !remote(row.item),
-                _ => false,
-            },
-            row.key.clone(),
-        )
-    });
+    rows.sort_by_key(|row| (rank(row), row.key.clone()));
     rows
+}
+
+fn rank(row: &Row<'_>) -> u8 {
+    match row.kind {
+        Kind::Account => u8::from(!could_log_in(row.item)),
+        Kind::Group => u8::from(!privileged(row.item)),
+        Kind::Key => u8::from(readable(row.item)),
+        Kind::Session => match (attended(row.item), remote(row.item)) {
+            (true, true) => 0,
+            (true, false) => 1,
+            (false, _) => 2,
+        },
+        Kind::SessionSource => 3,
+        _ => 0,
+    }
 }
 
 fn ssh_users<'a>(view: &'a View, search: &Search) -> Vec<Row<'a>> {

@@ -32,6 +32,8 @@ fn preamble(taken_at: &str) -> String {
         "This is a reading of THIS host, not a template. Every collector below was asked whether it can run here, and the answer put its name in the list or in a comment. Ask again without writing anything: `vigild configure --dry-run`.".into(),
         String::new(),
         "Every value here is also its default, so a removed line changes nothing. The one exception is the list of collectors: see the note above it.".into(),
+        String::new(),
+        "Under the shipped systemd unit this agent has a /tmp and a /var/tmp of its own (PrivateTmp=yes). A path under either reads as absent even when the host has a file there, so a binary run from /tmp can be reported as no longer on disk. Drop PrivateTmp with `systemctl edit vigild` to watch those two directories.".into(),
     ] {
         out.push_str(&comment(&line));
     }
