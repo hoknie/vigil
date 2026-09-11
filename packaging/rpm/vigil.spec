@@ -6,20 +6,20 @@
 Name:           vigil
 Version:        %{vigil_version}
 Release:        1%{?dist}
-Summary:        Host protection agent — watches the machine it runs on
-License:        LicenseRef-RSQA-Proprietary
+Summary:        Host protection agent — watches the host it runs on
+License:        Apache-2.0
 Vendor:         RSQA
 AutoReqProv:    no
 Packager:       RSQA <vigil@rsqa.space>
 
 %description
-vigil reads the machine it is installed on — listening sockets, accounts and
+vigil reads the host it is installed on — listening sockets, accounts and
 logins, and the files that decide who may enter — compares each reading with the
 previous one, and turns the difference into findings.
 
 This package installs three programs: vigild, the daemon systemd runs, vigil,
 the terminal console that reads its local socket, and vigil-audit-plugin, which
-auditd starts to hand this machine's program launches over.
+auditd starts to hand this host's program launches over.
 
 %prep
 
@@ -76,8 +76,8 @@ vigil watches program launches through auditd, and auditd has to be told twice:
   augenrules --load          loads /etc/audit/rules.d/vigil-exec.rules
   systemctl restart auditd   starts the plugin in /etc/audit/plugins.d/vigil.conf
 
-Neither is done by this package. Until both are done vigil reads /var/log/audit/audit.log
-instead, and its own health says which of the two is missing.
+This package does neither. Until both are done vigil reads /var/log/audit/audit.log instead, a
+reading late and exposed to rotation, and its own health says which of the two is missing.
 
 AUDIT
 fi
@@ -87,7 +87,7 @@ cat <<'NOTICE'
 
 vigil is installed and is not running yet.
 
-  1. vigild configure --dry-run  — ask THIS machine what it can watch, and print the
+  1. vigild configure --dry-run  — ask THIS host what it can watch, and print the
      configuration for it without writing anything. `vigild configure --force` then
      writes it to /etc/vigil/vigil.yaml, keeping the current file as .previous;
   2. read /etc/vigil/vigil.yaml — every value in it is already the default, so the
@@ -119,8 +119,8 @@ if [ "$1" -eq 0 ]; then
     [ -d /var/lib/vigil ] && kept="$kept /var/lib/vigil"
     [ -d /var/log/vigil ] && kept="$kept /var/log/vigil"
     if [ -n "$kept" ]; then
-        echo "vigil: kept on purpose —$kept"
-        echo "vigil: findings are the record of what happened on this machine."
+        echo "vigil: kept on purpose:$kept"
+        echo "vigil: findings are the record of what happened on this host."
         echo "vigil: remove them deliberately if you want them gone:  rm -rf$kept"
     fi
 fi

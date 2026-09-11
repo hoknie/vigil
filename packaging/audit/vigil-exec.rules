@@ -1,16 +1,11 @@
-## Every execve inside a human login session, tagged so that vigil reads its own records and
-## nobody else's.
+## Every execve inside a human login session, tagged so that vigil reads its own records.
 ##
 ##   auid>=1000 auid!=unset   only what a person started. Without them every exec of every
-##                            service on this machine enters the stream, which is a volume
-##                            nobody asked for. The cost is stated rather than hidden: what
-##                            daemons and service accounts run is not seen here — that is what
-##                            vigil's process collector is for.
-##   arch=b64 and arch=b32    both, because a 32-bit process walks straight past a b64-only
-##                            rule; it is the classic hole in an audit rule set. On a kernel
-##                            with no 32-bit support the second line is refused and augenrules
-##                            says so, which is why it is second.
-##   -k vigil_exec            the tag. It is the whole of how vigil tells its records from
-##                            yours, and it is why nothing here touches your rules.
+##                            service enters the stream. What daemons and service accounts run
+##                            is not seen here; vigil's process collector reads that.
+##   arch=b64 and arch=b32    both: a 32-bit process walks past a b64-only rule. b32 is second
+##                            because a kernel without 32-bit support refuses it and augenrules
+##                            reports the refusal. Keep the order.
+##   -k vigil_exec            the tag vigil selects its own records by. Your rules are untouched.
 -a always,exit -F arch=b64 -S execve -F auid>=1000 -F auid!=unset -k vigil_exec
 -a always,exit -F arch=b32 -S execve -F auid>=1000 -F auid!=unset -k vigil_exec

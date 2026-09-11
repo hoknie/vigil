@@ -23,10 +23,10 @@ vigil watches program launches through auditd, and auditd has to be told twice:
   augenrules --load          loads /etc/audit/rules.d/vigil-exec.rules
   systemctl restart auditd   starts the plugin in /etc/audit/plugins.d/vigil.conf
 
-Neither is done by this package: loading audit rules and restarting the audit daemon on a
-running machine are events, not steps in an installation. Until both are done vigil reads
-/var/log/audit/audit.log instead — a reading late, and a rotation can take what it held — and
-its own health says which of the two is missing.
+This package does neither: loading audit rules and restarting the audit daemon on a running
+host are events, not steps in an installation. Until both are done vigil reads
+/var/log/audit/audit.log instead, a reading late and exposed to rotation, and its own health
+says which of the two is missing.
 
 AUDIT
     fi
@@ -36,7 +36,7 @@ AUDIT
 
 vigil is installed and is not running yet.
 
-  1. vigild configure --dry-run  — ask THIS machine what it can watch, and print the
+  1. vigild configure --dry-run  — ask THIS host what it can watch, and print the
      configuration for it without writing anything. `vigild configure --force` then
      writes it to /etc/vigil/vigil.yaml, keeping the current file as .previous;
   2. read /etc/vigil/vigil.yaml — every value in it is already the default, so the

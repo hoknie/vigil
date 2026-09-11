@@ -5,10 +5,10 @@ Maintainer: RSQA <vigil@rsqa.space>
 Section: admin
 Priority: optional
 Installed-Size: @INSTALLED_SIZE@
-Description: vigil reads the machine it is installed on — listening sockets, accounts and
+Description: vigil reads the host it is installed on — listening sockets, accounts and
  logins, and the files that decide who may enter — compares each reading with the
  previous one, and turns the difference into findings.
  .
  This package installs three programs: vigild, the daemon systemd runs, vigil,
  the terminal console that reads its local socket, and vigil-audit-plugin, which
- auditd starts to hand this machine's program launches over.
+ auditd starts to hand this host's program launches over.

@@ -29,8 +29,8 @@ purge)
     [ -d /var/lib/vigil ] && kept="$kept /var/lib/vigil"
     [ -d /var/log/vigil ] && kept="$kept /var/log/vigil"
     if [ -n "$kept" ]; then
-        echo "vigil: kept on purpose —$kept"
-        echo "vigil: findings are the record of what happened on this machine."
+        echo "vigil: kept on purpose:$kept"
+        echo "vigil: findings are the record of what happened on this host."
         echo "vigil: remove them deliberately if you want them gone:  rm -rf$kept"
     fi
     ;;
