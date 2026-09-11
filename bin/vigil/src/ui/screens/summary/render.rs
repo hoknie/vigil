@@ -13,13 +13,13 @@ use super::silence::silence;
 use super::storage::storage;
 use crate::ui::{Look, Report, View};
 
-pub fn render(view: &View, look: Look, top: usize, area: Rect, buffer: &mut Buffer) {
+pub fn render(view: &View, look: Look, top: usize, saying: bool, area: Rect, buffer: &mut Buffer) {
     if view.status.is_none() {
         return;
     }
 
     let gutter = area.width - look.text_width(area.width) as u16;
-    let report = report(view, look, look.text_width(area.width));
+    let report = report(view, look, look.text_width(area.width), saying);
     let page = area.height as usize;
     let top = top.min(report.len().saturating_sub(page));
 
@@ -54,21 +54,21 @@ pub fn render(view: &View, look: Look, top: usize, area: Rect, buffer: &mut Buff
     }
 }
 
-pub fn height(view: &View, look: Look, width: usize) -> usize {
+pub fn height(view: &View, look: Look, width: usize, saying: bool) -> usize {
     match view.status.is_some() {
-        true => report(view, look, width).len(),
+        true => report(view, look, width, saying).len(),
         false => 0,
     }
 }
 
-fn report(view: &View, look: Look, width: usize) -> Report {
+fn report(view: &View, look: Look, width: usize, saying: bool) -> Report {
     let mut report = Report::default();
     let Some(status) = &view.status else {
         return report;
     };
 
     identity(&mut report, view, look, width);
-    collectors(&mut report, &status.agent, look, width);
+    collectors(&mut report, &status.agent, look, width, saying);
     reporters(&mut report, &status.agent, look, width);
     storage(&mut report, &status.agent, look, width);
     silence(&mut report, &status.agent, look, width);

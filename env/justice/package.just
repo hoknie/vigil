@@ -46,7 +46,7 @@ package-systemd: package-deb
     trap 'docker rm --force vigil-systemd-check >/dev/null' EXIT INT TERM; \
         docker exec vigil-systemd-check timeout -s KILL 900 /work/env/scripts/package-systemd-check.sh
 
-# `systemd-analyze verify` over the unit, as installed
+# `systemd-analyze verify` over every unit the package ships, as installed
 [group('package')]
 package-unit: package-deb
-    {{ CLEAN }} {{ CLEAN_DEB }} bash -c 'timeout -s KILL 600 sh -c "apt-get -qq update && apt-get -qq install -y --no-install-recommends systemd >/dev/null && dpkg -i \"\$(ls dist/vigil_*_amd64.deb | head -1)\" >/dev/null && systemd-analyze verify /usr/lib/systemd/system/vigild.service && echo \"the unit verifies\""'
+    {{ CLEAN }} {{ CLEAN_DEB }} bash -c 'timeout -s KILL 600 sh -c "apt-get -qq update && apt-get -qq install -y --no-install-recommends systemd nftables >/dev/null && dpkg -i \"\$(ls -t dist/vigil_*_amd64.deb | head -1)\" >/dev/null && systemd-analyze verify /usr/lib/systemd/system/vigild.service /usr/lib/systemd/system/vigil-firewall.service /usr/lib/systemd/system/vigil-firewall.timer && echo \"the units verify\""'

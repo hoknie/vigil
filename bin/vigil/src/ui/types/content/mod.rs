@@ -1,6 +1,7 @@
 pub mod audience;
 pub mod change;
 pub mod found;
+pub mod gone;
 pub mod group;
 pub mod nesting;
 pub mod program;

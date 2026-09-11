@@ -14,12 +14,15 @@ pub const LAUNCHES: &str = "run";
 
 pub const SPOOL: &str = "agent.buffer";
 
+pub const FIREWALL: &str = "firewall";
+
 const DROPPING: &str = "launches|dropping";
 
 enum Reach {
     Rest,
     Whole,
     Row(&'static str),
+    Prefixed(&'static str),
 }
 
 const TABLE: &[(&str, Screen, Reach)] = &[
@@ -29,7 +32,10 @@ const TABLE: &[(&str, Screen, Reach)] = &[
     (PERSISTENCE, Screen::Startup, Reach::Rest),
     (LAUNCHES, Screen::Programs, Reach::Whole),
     (SPOOL, Screen::Programs, Reach::Row(DROPPING)),
+    (FIREWALL, Screen::Firewall, Reach::Prefixed(FIREWALL_ROW)),
 ];
+
+const FIREWALL_ROW: &str = "fw-";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Anchor {
@@ -48,6 +54,7 @@ impl Anchor {
                 Reach::Rest => rest.to_string(),
                 Reach::Whole => finding.finding_key.clone(),
                 Reach::Row(row) => (*row).to_string(),
+                Reach::Prefixed(prefix) => format!("{prefix}{rest}"),
             },
         })
     }
@@ -126,6 +133,30 @@ mod tests {
             anchor.key, "launches|dropping",
             "the finding is keyed by the buffer and its object is the row about the loss"
         );
+    }
+
+    #[test]
+    fn every_row_of_the_firewall_reading_is_reached_from_its_finding_by_one_rule_and_not_four() {
+        for (finding_key, row) in [
+            ("firewall|summary|nftables", "fw-summary|nftables"),
+            ("firewall|table|inet filter", "fw-table|inet filter"),
+            (
+                "firewall|chain|inet filter|input",
+                "fw-chain|inet filter|input",
+            ),
+            ("firewall|backend|legacy", "fw-backend|legacy"),
+        ] {
+            let anchor = Anchor::of(&keyed(finding_key))
+                .unwrap_or_else(|| panic!("{finding_key} is a finding a reader cannot walk to"));
+
+            assert_eq!(anchor.screen, Screen::Firewall);
+            assert_eq!(
+                anchor.key, row,
+                "the rule reads the whole family: the finding names it with the word the \
+                 contract uses and the reading with the short one, and one substitution \
+                 turns either into the other. Four of them would be four places to forget"
+            );
+        }
     }
 
     #[test]

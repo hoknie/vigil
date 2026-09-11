@@ -2,8 +2,10 @@ use std::process::ExitCode;
 
 use clap::Parser;
 
-use crate::cli::{Cli, Command, NEEDS_A_CONFIGURATION};
-use crate::wizard;
+use clap::CommandFactory;
+
+use crate::cli::{Cli, Command, Switch};
+use crate::{collector, wizard};
 
 pub fn start(arguments: impl IntoIterator<Item = String>) -> ExitCode {
     let cli = match Cli::try_parse_from(arguments) {
@@ -28,6 +30,23 @@ pub fn start(arguments: impl IntoIterator<Item = String>) -> ExitCode {
                 ExitCode::FAILURE
             }
         },
+        (Some(Command::Collector(asked)), _) => {
+            let options = asked.options();
+            let (doing, outcome) = match asked.doing {
+                Switch::Enable(_) => ("enable", collector::enable(&options)),
+                Switch::Disable(_) => ("disable", collector::disable(&options)),
+            };
+            match outcome {
+                Ok(said) => {
+                    eprintln!("vigild collector {} {doing}:\n  {said}", options.name);
+                    ExitCode::SUCCESS
+                }
+                Err(error) => {
+                    eprintln!("vigild collector {} {doing}: {error}", options.name);
+                    ExitCode::FAILURE
+                }
+            }
+        }
         (None, Some(path)) => match super::run(&path) {
             Ok(()) => ExitCode::SUCCESS,
             Err(error) => {
@@ -36,7 +55,7 @@ pub fn start(arguments: impl IntoIterator<Item = String>) -> ExitCode {
             }
         },
         (None, None) => {
-            eprintln!("{NEEDS_A_CONFIGURATION}");
+            let _ = Cli::command().print_help();
             ExitCode::from(2)
         }
     }

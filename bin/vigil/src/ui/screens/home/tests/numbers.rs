@@ -6,11 +6,11 @@ fn numbers_drawn(page: &str) -> Vec<(String, String)> {
     page.lines()
         .filter_map(|line| {
             let letters: Vec<char> = line.chars().collect();
-            let number = *letters.get(3)?;
-            if !number.is_ascii_digit() || *letters.get(4)? != ' ' {
+            let number = *letters.get(5)?;
+            if !number.is_ascii_digit() || *letters.get(6)? != ' ' {
                 return None;
             }
-            let name = line.chars().skip(5).collect::<String>();
+            let name = line.chars().skip(7).collect::<String>();
             Some((
                 number.to_string(),
                 name.split_whitespace().next()?.to_string(),

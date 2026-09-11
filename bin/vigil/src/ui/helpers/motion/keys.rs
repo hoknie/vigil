@@ -88,7 +88,8 @@ mod tests {
     #[test]
     fn the_digits_name_the_sections_in_the_order_the_main_screen_lists_them() {
         assert_eq!(plain(KeyCode::Char('1')), Action::Go(Screen::Ports));
-        assert_eq!(plain(KeyCode::Char('6')), Action::Go(Screen::Findings));
+        assert_eq!(plain(KeyCode::Char('5')), Action::Go(Screen::Firewall));
+        assert_eq!(plain(KeyCode::Char('7')), Action::Go(Screen::Findings));
         assert_eq!(
             plain(KeyCode::Char('9')),
             Action::Ignore,

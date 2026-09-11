@@ -24,6 +24,7 @@ fn main() {
         "users" => Box::new(vigil_collect::UsersCollector::new(now)),
         "persistence" => Box::new(vigil_collect::PersistenceCollector::new(now)),
         "processes" => Box::new(vigil_collect::ProcessesCollector::new(now)),
+        "firewall" => Box::new(vigil_collect::FirewallCollector::new(now)),
         "launches" => Box::new(vigil_collect::LaunchesCollector::new(now, false)),
         other => {
             eprintln!("no collector named {other}");

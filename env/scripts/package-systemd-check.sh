@@ -6,7 +6,7 @@ ok()  { printf '  ok    %s\n' "$*"; }
 bad() { printf '  FAIL  %s\n' "$*"; fail=$((fail + 1)); }
 say() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 
-DEB="${DEB:-$(ls /work/dist/vigil_*_amd64.deb 2>/dev/null | grep -v -- '-upgrade' | head -1)}"
+DEB="${DEB:-$(ls -t /work/dist/vigil_*_amd64.deb 2>/dev/null | grep -v -- '-upgrade' | head -1)}"
 DROPIN=/etc/systemd/system/vigild.service.d
 
 ask()   { printf '%s\n' "$1" | nc -U -q 2 /run/vigil/vigil.sock 2>/dev/null; }
@@ -73,6 +73,155 @@ done
 grep -q 'port.listen|tcp|0.0.0.0:4444' /var/log/vigil/findings.ndjson 2>/dev/null \
     && ok "$(grep -o '"finding_key":"port[^"]*"' /var/log/vigil/findings.ndjson | tail -1)" \
     || bad "the port on :4444 never reached the ndjson reporter"
+
+say "the firewall reading: a unit runs nft, the agent reads the file it leaves"
+systemctl start vigil-firewall.service
+sleep 2
+ruleset=/var/lib/vigil/firewall/ruleset.json
+mode="$(stat -c '%a %U:%G' "$ruleset" 2>/dev/null)"
+[ "$mode" = "600 root:root" ] \
+    && ok "$ruleset  $mode" \
+    || bad "$ruleset is ${mode:-missing}, expected 600 root:root"
+if [ -s "$ruleset" ] && head -c 40 "$ruleset" | grep -q '"nftables"'; then
+    ok "$(head -c 110 "$ruleset")"
+else
+    bad "the unit left nothing readable in $ruleset: $(head -c 200 "$ruleset" 2>/dev/null)"
+fi
+nft add table inet vigil-probe 2>/dev/null
+nft add chain inet vigil-probe input "{ type filter hook input priority 0 ; policy drop ; }" 2>/dev/null
+systemctl start vigil-firewall.service
+sleep 2
+if grep -q 'vigil-probe' "$ruleset"; then
+    ok "a table added between two runs of the timer is in the next reading"
+else
+    bad "the table added on this host never reached $ruleset"
+fi
+nft delete table inet vigil-probe 2>/dev/null
+if [ "$(systemctl show vigild -p Wants --value | tr ' ' '\n' | grep -c vigil-firewall.timer)" = 1 ]; then
+    ok "vigild pulls vigil-firewall.timer in"
+else
+    bad "vigild does not want vigil-firewall.timer, so enabling the agent leaves the firewall unread"
+fi
+systemctl mask vigil-firewall.timer >/dev/null 2>&1
+if [ "$(systemctl is-enabled vigil-firewall.timer 2>/dev/null)" = masked ]; then
+    ok "systemctl mask vigil-firewall.timer switches the privileged half off"
+else
+    bad "the timer cannot be masked, so the only way to stop the reading is to remove the package"
+fi
+systemctl unmask vigil-firewall.timer >/dev/null 2>&1
+
+say "vigild collector firewall enable|disable, the command an operator types"
+systemctl disable --now vigil-firewall.timer >/dev/null 2>&1
+SWITCH=/tmp/vigil-switch.yaml
+cp /work/config/vigil.example.yaml "$SWITCH"
+sed -i '/  - firewall/d;/  firewall: 60/d' "$SWITCH"
+printf '\n# a line of the administrator\x27s own, which this command must not move\n' >> "$SWITCH"
+kept="$(md5sum < "$SWITCH")"
+
+/usr/sbin/vigild collector firewall enable --config "$SWITCH" 2>&1 | sed 's/^/  /'
+grep -q '^  - firewall$' "$SWITCH" \
+    && ok "the line is in collectors:" || bad "no line in collectors:"
+grep -q '^  firewall: 60$' "$SWITCH" \
+    && ok "and the period is in schedule:" || bad "no period in schedule:"
+grep -q "administrator" "$SWITCH" \
+    && ok "and the administrator's own line is untouched" \
+    || bad "a line this command did not write is gone"
+[ "$(systemctl is-enabled vigil-firewall.timer)" = enabled ] \
+    && ok "the timer is enabled" || bad "the timer is $(systemctl is-enabled vigil-firewall.timer)"
+[ -f "$SWITCH.previous" ] \
+    && ok "and what was there is kept as $SWITCH.previous" \
+    || bad "the previous file was not kept"
+
+after="$(md5sum < "$SWITCH")"
+/usr/sbin/vigild collector firewall enable --config "$SWITCH" 2>&1 | sed 's/^/  /'
+if [ "$(md5sum < "$SWITCH")" = "$after" ]; then
+    ok "running it again changes not one byte"
+else
+    bad "a second run edited the file again"
+fi
+
+systemctl mask vigil-firewall.timer >/dev/null 2>&1
+if /usr/sbin/vigild collector firewall enable --config "$SWITCH" >/tmp/masked.out 2>&1; then
+    bad "it walked past a masked unit: $(cat /tmp/masked.out)"
+else
+    grep -q "masked" /tmp/masked.out \
+        && ok "a masked timer stops it, and it says so" \
+        || bad "$(cat /tmp/masked.out)"
+fi
+[ "$(systemctl is-enabled vigil-firewall.timer)" = masked ] \
+    && ok "and it did not unmask anything behind the administrator" \
+    || bad "the mask is gone"
+systemctl unmask vigil-firewall.timer >/dev/null 2>&1
+
+/usr/sbin/vigild collector firewall disable --config "$SWITCH" 2>&1 | sed 's/^/  /'
+grep -q 'firewall' "$SWITCH" \
+    && bad "disable left the collector named in the file" \
+    || ok "disable took out exactly what enable put in"
+[ "$(md5sum < "$SWITCH")" = "$kept" ] \
+    && ok "and the file is byte for byte the one it started as" \
+    || { bad "disable left the file different from how enable found it"; diff <(echo "$kept") <(md5sum < "$SWITCH"); }
+[ "$(systemctl is-enabled vigil-firewall.timer)" = disabled ] \
+    && ok "the timer is disabled again" \
+    || bad "the timer is $(systemctl is-enabled vigil-firewall.timer)"
+
+say "the legacy iptables backend, on the one distribution that still ships it"
+nft flush ruleset
+iptables-legacy -A INPUT -p tcp --dport 4444 -j DROP 2>/dev/null
+registered="$(tr '\n' ' ' < /proc/net/ip_tables_names 2>/dev/null)"
+if [ -n "$registered" ]; then
+    ok "/proc/net/ip_tables_names names the tables the old backend registered: $registered"
+else
+    bad "iptables-legacy took a rule and /proc/net/ip_tables_names is still empty: the \
+discriminator this collector rests on does not work here"
+fi
+systemctl start vigil-firewall.service
+sleep 2
+mkdir -p /tmp/vigil-legacy
+cat > /tmp/vigil-legacy/vigil.yaml <<'YAML'
+state_dir: /tmp/vigil-legacy
+socket_path: /tmp/vigil-legacy/vigil.sock
+retention_days: 1
+interval_seconds: 3
+collectors: [firewall]
+schedule: {firewall: 3}
+suppressions: []
+reporters: []
+YAML
+/usr/sbin/vigild /tmp/vigil-legacy/vigil.yaml > /tmp/vigil-legacy/log 2>&1 &
+legacy=$!
+sleep 7
+said="$(printf '%s\n' '{"query":"status"}' | nc -U -q 2 /tmp/vigil-legacy/vigil.sock 2>/dev/null)"
+reading="$(printf '%s\n' '{"query":"snapshot","collector":"firewall"}' | nc -U -q 2 /tmp/vigil-legacy/vigil.sock 2>/dev/null)"
+kill "$legacy" 2>/dev/null
+wait "$legacy" 2>/dev/null
+
+case "$said" in
+*"held by the legacy backend"*)
+    ok "the collector answers degraded, and says the rules are in the old backend" ;;
+*)
+    bad "nftables is empty and the old backend holds the rules, and the agent did not say so"
+    echo "$said" | head -c 900 ;;
+esac
+case "$said" in
+*'"state":"degraded"'*) ok "and degraded is the state it reports, not unavailable" ;;
+*)                      bad "the state the agent reports is not degraded: $(echo "$said" | grep -o '"name":"firewall"[^}]*' | head -c 200)" ;;
+esac
+case "$reading" in
+*'"legacy_backend":true'*)
+    ok "the reading itself carries the marker: legacy_backend is true" ;;
+*)
+    bad "the reading does not carry the legacy marker"; echo "$reading" | head -c 600 ;;
+esac
+case "$reading" in
+*"fw-backend|legacy"*) ok "and a row of its own says which tables the old backend holds" ;;
+*)                     bad "no fw-backend row in the reading" ;;
+esac
+if grep -q "firewall.disabled" /tmp/vigil-legacy/log 2>/dev/null; then
+    bad "the agent called this host a host without a firewall: the worst outcome of the two"
+else
+    ok "and nothing anywhere calls this a host without a firewall"
+fi
+iptables-legacy -D INPUT -p tcp --dport 4444 -j DROP 2>/dev/null
 
 say "what each capability buys"
 printf '  %-30s %-14s %-24s %s\n' 'CapabilityBoundingSet' 'CapEff' 'owner of :4444' "tester's ssh keys"

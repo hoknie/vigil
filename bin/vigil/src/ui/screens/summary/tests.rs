@@ -10,8 +10,12 @@ fn drawn(width: u16) -> String {
 }
 
 fn drawn_from(view: &View, width: u16) -> String {
+    saying(view, width, true)
+}
+
+fn saying(view: &View, width: u16, saying: bool) -> String {
     let mut buffer = Buffer::empty(Rect::new(0, 0, width, 60));
-    render(view, fixture::look(), 0, buffer.area, &mut buffer);
+    render(view, fixture::look(), 0, saying, buffer.area, &mut buffer);
     text::to_text(&buffer)
 }
 
@@ -328,4 +332,130 @@ fn nothing_runs_off_the_side_at_any_of_the_widths_this_is_read_at() {
             }
         }
     }
+}
+
+#[test]
+fn the_agent_column_starts_in_the_same_place_on_every_line_of_the_summary() {
+    let page = drawn(120);
+    let block: Vec<&str> = page
+        .lines()
+        .skip_while(|line| !line.contains("THIS HOST, AND THE AGENT WATCHING IT"))
+        .skip(1)
+        .take_while(|line| !line.trim().is_empty())
+        .collect();
+
+    let at = |label: &str| -> usize {
+        block
+            .iter()
+            .find(|line| line.contains(label))
+            .and_then(|line| line.find(label))
+            .unwrap_or_else(|| panic!("no line holds {label}: {page}"))
+    };
+
+    let first = at("version");
+    for label in ["costs", "answered", "findings", "history"] {
+        assert_eq!(
+            at(label),
+            first,
+            "{label} sits one column away from the rest of the agent: {page}"
+        );
+    }
+}
+
+#[test]
+fn the_field_too_long_for_its_cell_is_cut_a_column_short_of_the_edge() {
+    let page = drawn(120);
+    let line = page
+        .lines()
+        .find(|line| line.contains("reads "))
+        .unwrap_or_else(|| panic!("no line holds the reading period: {page}"));
+
+    assert!(
+        line.contains('…'),
+        "this is the field that gets cut: {line}"
+    );
+    assert!(
+        line.chars().count() <= 119,
+        "a cut that ends against the edge reads as a broken line: {line}"
+    );
+}
+
+#[test]
+fn a_reason_is_folded_away_until_it_is_asked_for_and_the_row_says_there_is_one() {
+    let mut view = fixture::view();
+    if let Some(status) = view.status.as_mut() {
+        status.agent.collectors[0].state = vigil_model::CollectorState::Degraded;
+        status.agent.collectors[0].reason = Some("cannot resolve socket owners".into());
+    }
+
+    let folded = saying(&view, 80, false);
+    let unfolded = saying(&view, 80, true);
+
+    assert!(
+        !folded.contains("cannot resolve socket owners"),
+        "a table with prose wrapped between its rows cannot be read down a column: {folded}"
+    );
+    assert!(
+        folded
+            .lines()
+            .any(|line| line.contains("ports") && line.contains('!')),
+        "the row has to say there is something to read, or folding it away hides it: {folded}"
+    );
+    assert!(folded.contains("press d to read it"), "{folded}");
+    assert!(
+        unfolded.contains("cannot resolve socket owners"),
+        "{unfolded}"
+    );
+    assert!(
+        !unfolded.contains("press d to read it"),
+        "once it is open the invitation is noise: {unfolded}"
+    );
+}
+
+#[test]
+fn a_table_where_every_collector_is_well_offers_nothing_to_unfold() {
+    let mut view = fixture::view();
+    if let Some(status) = view.status.as_mut() {
+        for collector in status.agent.collectors.iter_mut() {
+            collector.reason = None;
+            collector.last_error = None;
+            collector.skipped = 0;
+        }
+    }
+
+    let folded = saying(&view, 80, false);
+
+    assert!(!folded.contains("press d to read it"), "{folded}");
+    assert!(
+        folded
+            .lines()
+            .filter(|line| line.contains("every 30 s"))
+            .all(|line| !line.contains('!')),
+        "{folded}"
+    );
+}
+
+#[test]
+fn the_mark_on_a_row_that_has_something_to_say_reads_the_same_with_no_colour() {
+    let mut view = fixture::view();
+    if let Some(status) = view.status.as_mut() {
+        status.agent.collectors[0].reason = Some("cannot resolve socket owners".into());
+    }
+
+    let mut buffer = Buffer::empty(Rect::new(0, 0, 80, 60));
+    render(
+        &view,
+        crate::ui::Look::new(fixture::monochrome(), crate::ui::Audience::Person),
+        0,
+        false,
+        buffer.area,
+        &mut buffer,
+    );
+    let plain = text::to_text(&buffer);
+
+    assert_eq!(
+        plain,
+        saying(&view, 80, false),
+        "the mark is a character before it is a colour"
+    );
 }

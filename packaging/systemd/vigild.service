@@ -5,6 +5,11 @@ Documentation=file:/usr/share/doc/vigil/README.md
 After=network.target
 After=systemd-journald-dev-log.socket syslog.socket
 
+# The firewall reading is taken by a unit of its own, because reading the nftables ruleset
+# needs a privilege this daemon is not given. Wants= starts it with the agent; to stop the
+# reading without stopping the agent: systemctl mask vigil-firewall.timer
+Wants=vigil-firewall.timer
+
 StartLimitIntervalSec=60
 StartLimitBurst=5
 

@@ -49,10 +49,7 @@ fn rows() -> Vec<(&'static str, &'static str)> {
             "EVERY RUNG: the arrows move whatever has them; → in, ← out",
         ),
         ("▸ in a heading", "what has them now"),
-        (
-            "1 - 9",
-            "open a section from any rung (the numbers are on it)",
-        ),
+        ("1 - 9", "open one; the numbers are on the main screen"),
         ("", "IN A LIST OR A REPORT"),
         ("j / k, ↑ ↓", "a row at a time"),
         ("PgUp / PgDn", "a screenful"),
@@ -65,7 +62,10 @@ fn rows() -> Vec<(&'static str, &'static str)> {
             "t T u U x, a",
             "show / hide kinds of socket, or all (ports)",
         ),
-        ("t", "units as a list or as a tree (startup)"),
+        (
+            "t / d",
+            "units as a tree (startup); a section's words (main)",
+        ),
         ("", "THE LISTS OF A SECTION: ← → along them, ↓ into one"),
         ("", "  ports: sockets · by program"),
         (
@@ -106,6 +106,7 @@ mod tests {
             "Esc",
             "r",
             "as a tree",
+            "a section's words",
         ] {
             assert!(page.contains(key), "{key} is not on the list: {page}");
         }
@@ -114,7 +115,7 @@ mod tests {
             "a key the console ignores must not be offered: {page}"
         );
         assert!(
-            page.contains("the numbers are on it"),
+            page.contains("the numbers are on the main screen"),
             "a number is read off the main screen, not remembered: {page}"
         );
         assert!(page.contains("comes back to it"), "{page}");

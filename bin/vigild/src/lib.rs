@@ -1,6 +1,7 @@
 mod boot;
 mod budget;
 mod cli;
+mod collector;
 mod config;
 mod helpers;
 mod identity;

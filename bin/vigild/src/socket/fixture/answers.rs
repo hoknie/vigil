@@ -16,6 +16,8 @@ const UNAVAILABLE: &str = "auditd is not running on this host, so nothing is del
 
 const FAILED: &str = "not permitted to read /proc/modules";
 
+const NO_RULESET_YET: &str = "the ruleset in /var/lib/vigil/firewall/ruleset.json was written 214 seconds ago, more than the 120 this collector allows: what it says about this host may have been true and no longer is";
+
 pub fn store() -> StoreStatus {
     StoreStatus {
         records: Counted {
@@ -42,7 +44,7 @@ pub fn every_state() -> State {
             host: host(),
             started_at: "2026-09-09T08:00:00.000Z".into(),
             interval_seconds: 30,
-            periods: ["ports", "users", "persistence", "processes"]
+            periods: ["ports", "users", "persistence", "processes", "firewall"]
                 .into_iter()
                 .map(|name| (name.to_string(), period(name)))
                 .collect(),
@@ -52,6 +54,7 @@ pub fn every_state() -> State {
             ("users", Health::Degraded(DEGRADED.to_string())),
             ("processes", Health::Unavailable(UNAVAILABLE.to_string())),
             ("persistence", Health::Ok),
+            ("firewall", Health::Degraded(NO_RULESET_YET.to_string())),
         ],
         &["ndjson".to_string(), "webhook".to_string()],
         &["launches".to_string()],

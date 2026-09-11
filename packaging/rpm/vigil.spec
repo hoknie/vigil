@@ -43,8 +43,11 @@ cp -a %{vigil_stage}/. %{buildroot}/
 %config(noreplace) %attr(0640,root,root) /etc/audit/rules.d/vigil-exec.rules
 %config(noreplace) %attr(0640,root,root) /etc/audit/plugins.d/vigil.conf
 %attr(0644,root,root) /usr/lib/systemd/system/vigild.service
+%attr(0644,root,root) /usr/lib/systemd/system/vigil-firewall.service
+%attr(0644,root,root) /usr/lib/systemd/system/vigil-firewall.timer
 %attr(0644,root,root) /usr/lib/tmpfiles.d/vigil.conf
 %dir %attr(0700,root,root) /var/lib/vigil
+%dir %attr(0700,root,root) /var/lib/vigil/firewall
 %dir %attr(0700,root,root) /var/log/vigil
 %dir %attr(0755,root,root) /usr/share/doc/vigil
 %doc %attr(0644,root,root) /usr/share/doc/vigil/README.md
@@ -56,7 +59,7 @@ cp -a %{vigil_stage}/. %{buildroot}/
 if [ -x /usr/bin/systemd-tmpfiles ]; then
     /usr/bin/systemd-tmpfiles --create /usr/lib/tmpfiles.d/vigil.conf >/dev/null 2>&1 || true
 fi
-for directory in /run/vigil /var/lib/vigil /var/log/vigil; do
+for directory in /run/vigil /var/lib/vigil /var/lib/vigil/firewall /var/log/vigil; do
     [ -d "$directory" ] || mkdir -p "$directory"
     chmod 0700 "$directory"
 done
@@ -95,13 +98,33 @@ vigil is installed and is not running yet.
   3. systemctl enable --now vigild
   4. vigil ui                    — the console, once the daemon is up
 
+Reading the nftables ruleset is done by vigil-firewall.timer, which vigild.service pulls in:
+/usr/sbin/nft runs there and not inside the agent, so the agent keeps the two capabilities it
+had. To stop that reading and keep everything else:  systemctl mask vigil-firewall.timer
+
 NOTICE
+# A first installation writes the line and starts the timer; an upgrade never touches the
+# administrator's file, for the same reason this package does not load audit rules or restart
+# auditd on a running host. Neither outcome may fail the installation.
+if /usr/sbin/vigild collector firewall enable > /tmp/vigil-firewall-enable.$$ 2>&1; then
+    sed 's/^/  /' /tmp/vigil-firewall-enable.$$
+else
+    echo "vigil: the firewall collector was left switched off on this host:"
+    sed 's/^/  /' /tmp/vigil-firewall-enable.$$
+    echo "vigil: switch it on when that is fixed:  vigild collector firewall enable"
+fi
+rm -f /tmp/vigil-firewall-enable.$$
+else
+echo
+echo "vigil: this is an upgrade, so /etc/vigil/vigil.yaml was not touched. To switch"
+echo "vigil: the firewall collector on:  vigild collector firewall enable"
+echo
 fi
 
 %preun
 if [ "$1" -eq 0 ] && [ -d /run/systemd/system ]; then
-    systemctl --no-reload disable vigild.service >/dev/null 2>&1 || true
-    systemctl stop vigild.service >/dev/null 2>&1 || true
+    systemctl --no-reload disable vigild.service vigil-firewall.timer >/dev/null 2>&1 || true
+    systemctl stop vigild.service vigil-firewall.timer >/dev/null 2>&1 || true
 fi
 
 %postun

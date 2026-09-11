@@ -2,7 +2,7 @@ use ratatui::layout::Rect;
 
 use super::App;
 
-use crate::ui::details::{account, program, socket, startup};
+use crate::ui::details::{account, firewall, program, socket, startup};
 use crate::ui::helpers::finding::diff;
 use crate::ui::helpers::layout::split;
 use crate::ui::{Level, Screen};
@@ -15,11 +15,15 @@ impl App {
             Screen::Accounts => !self.accounts_keys().is_empty(),
             Screen::Programs => !self.programs_keys().is_empty(),
             Screen::Startup => !self.startup_keys().is_empty(),
+            Screen::Firewall => !self.firewall_keys().is_empty(),
             Screen::Home | Screen::Summary => false,
         }
     }
 
     pub(super) fn detail_showing(&self, body: Rect) -> bool {
+        if self.nav.at() == Screen::Home {
+            return self.detail_open;
+        }
         self.detail_open && (split::beside(body).is_some() || self.level == Level::Detail)
     }
 
@@ -55,6 +59,10 @@ impl App {
             Screen::Startup => {
                 let rows = self.startup_rows();
                 startup::height(rows.get(self.nav.lists.startup.at()), self.look, width)
+            }
+            Screen::Firewall => {
+                let rows = self.firewall_rows();
+                firewall::height(rows.get(self.nav.firewall.at()), self.look, width)
             }
             _ => diff::height(self.selected_finding(), self.look, width),
         }

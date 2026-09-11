@@ -7,6 +7,7 @@ pub struct Nav {
     origin: Option<Origin>,
     pub sections: Cursor,
     pub lists: Lists,
+    pub firewall: Cursor,
     pub findings: Cursor,
     pub summary: Offset,
     pub difference: Offset,

@@ -1,0 +1,137 @@
+{
+  "source": "firewall",
+  "classes": {
+    "fw-chain": {
+      "family": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "hook": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "policy": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "priority": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "rules": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "table": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "type": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "fw-summary": {
+      "base_chains": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "chains": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "families": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "families/[]": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "hooked_on_input": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "legacy_backend": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "rules": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "tables": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "version": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "fw-table": {
+      "chains": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "family": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "rules": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      }
+    }
+  }
+}

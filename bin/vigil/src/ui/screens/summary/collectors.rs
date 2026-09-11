@@ -12,12 +12,19 @@ pub(super) const NOT_REPORTED: &str = "not reported";
 
 const NOTHING: &str = "—";
 
-pub(super) fn collectors(report: &mut Report, agent: &AgentStatus, look: Look, width: usize) {
+pub(super) fn collectors(
+    report: &mut Report,
+    agent: &AgentStatus,
+    look: Look,
+    width: usize,
+    saying: bool,
+) {
     report.push(section::rule(look, "COLLECTORS", width));
 
     let wide = width >= ROOM_FOR_TWO_COLUMNS as usize;
     let roomy = width >= ROOM_FOR_THE_NEXT_READING as usize;
     let mut headings = vec![
+        ("", 1),
         ("NAME", 10),
         ("STATE", 11),
         ("EVERY", 12),
@@ -40,7 +47,15 @@ pub(super) fn collectors(report: &mut Report, agent: &AgentStatus, look: Look, w
 
     for collector in &agent.collectors {
         let cells = row(collector);
+        let said = says(collector);
         let mut drawn: Vec<(&str, usize)> = vec![
+            (
+                match said.is_empty() {
+                    true => "",
+                    false => MARK,
+                },
+                1,
+            ),
             (&collector.name, 10),
             (collector.state.as_str(), 11),
             (&cells.every, 12),
@@ -62,21 +77,41 @@ pub(super) fn collectors(report: &mut Report, agent: &AgentStatus, look: Look, w
                 .style(look.palette.collector(&collector.state)),
         );
 
-        for line in note(&collector.reason.clone().unwrap_or_default(), width) {
-            report.push(line);
+        if !saying {
+            continue;
         }
-        if collector.skipped > 0 {
-            for line in note(&skipped(collector), width) {
-                report.push(line);
-            }
-        }
-        if let Some(error) = &collector.last_error {
-            for line in note(&format!("last failure: {error}"), width) {
+        for sentence in said {
+            for line in note(&sentence, width) {
                 report.push(line);
             }
         }
     }
+
+    if !saying && agent.collectors.iter().any(|it| !says(it).is_empty()) {
+        report.push(Line::styled(
+            format!("   {MARK} a collector with something to say about itself: press d to read it"),
+            look.palette.quiet(),
+        ));
+    }
     report.blank();
+}
+
+pub(super) const MARK: &str = "!";
+
+pub(super) fn says(collector: &CollectorStatus) -> Vec<String> {
+    let mut said = Vec::new();
+    if let Some(reason) = collector.reason.as_deref()
+        && !reason.is_empty()
+    {
+        said.push(reason.to_string());
+    }
+    if collector.skipped > 0 {
+        said.push(skipped(collector));
+    }
+    if let Some(error) = &collector.last_error {
+        said.push(format!("last failure: {error}"));
+    }
+    said
 }
 
 fn skipped(collector: &CollectorStatus) -> String {

@@ -6,7 +6,7 @@ configure)
     if command -v systemd-tmpfiles >/dev/null 2>&1; then
         systemd-tmpfiles --create /usr/lib/tmpfiles.d/vigil.conf >/dev/null 2>&1 || true
     fi
-    for directory in /run/vigil /var/lib/vigil /var/log/vigil; do
+    for directory in /run/vigil /var/lib/vigil /var/lib/vigil/firewall /var/log/vigil; do
         [ -d "$directory" ] || mkdir -p "$directory"
         chmod 0700 "$directory"
     done
@@ -44,7 +44,27 @@ vigil is installed and is not running yet.
   3. systemctl enable --now vigild
   4. vigil ui                    — the console, once the daemon is up
 
+Reading the nftables ruleset is done by vigil-firewall.timer, which vigild.service pulls in:
+/usr/sbin/nft runs there and not inside the agent, so the agent keeps the two capabilities it
+had. To stop that reading and keep everything else:  systemctl mask vigil-firewall.timer
+
 NOTICE
+        # A first installation writes the line and starts the timer; an upgrade never touches
+        # the administrator's file, for the same reason this package does not load audit rules
+        # or restart auditd on a running host. Neither outcome may fail the installation.
+        if /usr/sbin/vigild collector firewall enable >/tmp/vigil-firewall-enable.$$ 2>&1; then
+            sed 's/^/  /' /tmp/vigil-firewall-enable.$$
+        else
+            echo "vigil: the firewall collector was left switched off on this host:"
+            sed 's/^/  /' /tmp/vigil-firewall-enable.$$
+            echo "vigil: switch it on when that is fixed:  vigild collector firewall enable"
+        fi
+        rm -f /tmp/vigil-firewall-enable.$$
+    else
+        echo
+        echo "vigil: this is an upgrade, so /etc/vigil/vigil.yaml was not touched. To switch"
+        echo "vigil: the firewall collector on:  vigild collector firewall enable"
+        echo
     fi
     ;;
 esac

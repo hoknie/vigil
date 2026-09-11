@@ -1,0 +1,81 @@
+{
+  "source": "firewall",
+  "taken_at": "2026-09-09T09:00:00.000Z",
+  "items": {
+    "fw-chain|inet filter|forward": {
+      "family": "inet",
+      "hook": "forward",
+      "name": "forward",
+      "policy": "drop",
+      "priority": 0,
+      "rules": 0,
+      "table": "filter",
+      "type": "filter"
+    },
+    "fw-chain|inet filter|input": {
+      "family": "inet",
+      "hook": "input",
+      "name": "input",
+      "policy": "drop",
+      "priority": 0,
+      "rules": 3,
+      "table": "filter",
+      "type": "filter"
+    },
+    "fw-chain|inet filter|output": {
+      "family": "inet",
+      "hook": "output",
+      "name": "output",
+      "policy": "accept",
+      "priority": 0,
+      "rules": 0,
+      "table": "filter",
+      "type": "filter"
+    },
+    "fw-chain|ip nat|POSTROUTING": {
+      "family": "ip",
+      "hook": "postrouting",
+      "name": "POSTROUTING",
+      "policy": "accept",
+      "priority": 100,
+      "rules": 1,
+      "table": "nat",
+      "type": "nat"
+    },
+    "fw-chain|ip nat|PREROUTING": {
+      "family": "ip",
+      "hook": "prerouting",
+      "name": "PREROUTING",
+      "policy": "accept",
+      "priority": -100,
+      "rules": 1,
+      "table": "nat",
+      "type": "nat"
+    },
+    "fw-summary|nftables": {
+      "base_chains": 5,
+      "chains": 7,
+      "families": [
+        "inet",
+        "ip"
+      ],
+      "hooked_on_input": 1,
+      "legacy_backend": false,
+      "rules": 7,
+      "tables": 2,
+      "version": "1.0.6"
+    },
+    "fw-table|inet filter": {
+      "chains": 4,
+      "family": "inet",
+      "name": "filter",
+      "rules": 4
+    },
+    "fw-table|ip nat": {
+      "chains": 3,
+      "family": "ip",
+      "name": "nat",
+      "rules": 3
+    }
+  }
+}

@@ -12,7 +12,7 @@ mod types;
 pub use ports::Collector;
 pub use types::{
     COLLECTORS, CollectError, Health, KnownCollector, Presence, collector_names,
-    every_seconds_of_collector, is_known_collector, subject_of_collector,
+    every_seconds_of_collector, is_known_collector, subject_of_collector, unit_of_collector,
 };
 
 pub use spool::{
@@ -22,5 +22,6 @@ pub use spool::{
 
 #[cfg(target_os = "linux")]
 pub use collectors::{
-    LaunchesCollector, PersistenceCollector, PortsCollector, ProcessesCollector, UsersCollector,
+    FirewallCollector, LaunchesCollector, PersistenceCollector, PortsCollector, ProcessesCollector,
+    UsersCollector,
 };

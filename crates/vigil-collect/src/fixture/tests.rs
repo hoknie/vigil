@@ -2,10 +2,17 @@ use vigil_model::{Golden, Shape, Snapshot, class_of};
 
 use crate::COLLECTORS;
 
-use super::{accounts, launches, persistence, ports, processes};
+use super::{accounts, firewall, launches, persistence, ports, processes};
 
 fn readings() -> Vec<Snapshot> {
-    vec![ports(), accounts(), processes(), persistence(), launches()]
+    vec![
+        ports(),
+        accounts(),
+        processes(),
+        persistence(),
+        firewall(),
+        launches(),
+    ]
 }
 
 fn document(reading: &Snapshot) -> String {

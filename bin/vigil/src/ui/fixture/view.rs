@@ -3,6 +3,7 @@ use vigil_model::Severity;
 use super::accounts::accounts;
 use super::agent::{agent, collector};
 use super::findings::finding;
+use super::firewall::firewall;
 use super::host::host;
 use super::launches::launches;
 use super::programs::processes;
@@ -27,12 +28,21 @@ pub fn view() -> View {
     view.readings.put("processes", Reading::Taken(processes()));
     view.readings
         .put("persistence", Reading::Taken(persistence()));
+    view.readings.put("firewall", Reading::Taken(firewall()));
     view.found.findings = vec![
         finding("A new listening port on 0.0.0.0:4444", Severity::Critical),
         finding("A user logged in from a new address", Severity::Low),
         finding("A listening port closed", Severity::Low),
     ];
     view.found.capacity = 500;
+    view
+}
+
+pub fn view_with_trouble() -> View {
+    let mut view = view();
+    if let Some(status) = view.status.as_mut() {
+        status.agent = super::answers::watching();
+    }
     view
 }
 

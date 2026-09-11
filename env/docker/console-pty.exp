@@ -183,7 +183,7 @@ check_loose "the main screen is the one that opens" $page "▸ What this agent w
 check_loose "it names what the agent reads" $page "WHAT IT READS"
 check_loose "and what it makes of it" $page "WHAT IT CONCLUDES"
 check "the cursor is on a row" $page " > "
-check_loose "the footer names the range that opens something" $page "1 - 6"
+check_loose "the footer names the range that opens something" $page "1 - 7"
 check_absent_loose "and the row of screen names along the top is gone" $page "▸ 1 summary"
 
 note "a section's row carries its number, how many objects and when it last read"
@@ -191,8 +191,9 @@ check_loose "ports is the first section" $page "1 ports"
 check_loose "accounts is the second" $page "2 accounts"
 check_loose "programs is the third" $page "3 programs"
 check_loose "startup is the fourth" $page "4 startup"
-check_loose "summary is the fifth" $page "5 summary"
-check_loose "findings is the sixth" $page "6 findings"
+check_loose "firewall is the fifth" $page "5 firewall"
+check_loose "summary is the sixth" $page "6 summary"
+check_loose "findings is the seventh" $page "7 findings"
 check_loose "and the table says what each row holds" $page "WHATITHOLDS"
 
 note "/ on the main screen says where the search lives and does not move the reader"
@@ -272,7 +273,7 @@ note "Esc from the top rung of a section: the main screen, cursor where it was l
 send $Esc
 set page [drawn 3]
 check_loose "the main screen is back" $page "▸ What this agent watches"
-check_loose "with the cursor on the section just left" $page "> 2 accounts"
+check_loose "with the cursor on the section just left" $page "> ! 2 accounts"
 
 note "↓ ↓, Enter, →: down to startup, into it, along its lists"
 send $Down
@@ -298,8 +299,14 @@ set page [drawn 3]
 check_loose "the main screen is back" $page "▸ What this agent watches"
 check_loose "and every section row carries a state" $page "STATE"
 
-note "6: the findings, narrowed to the port opened for this run"
-send "6"
+note "5: the firewall, which this workbench has a live nft to read"
+send "5"
+set page [drawn 3]
+check_loose "the firewall section opened" $page "▸ What the host lets in"
+check_loose "and it says what a policy means on it" $page "POLICY"
+
+note "7: the findings, narrowed to the port opened for this run"
+send "7"
 set page [drawn 3]
 check_loose "the findings section opened" $page "▸ What the agent has found"
 send "/"
@@ -342,8 +349,8 @@ send $Esc
 set page [drawn 2]
 check_loose "the main screen" $page "▸ What this agent watches"
 
-note "6, →: a finding and its detail, side by side on a terminal wide enough for both"
-send "6"
+note "7, →: a finding and its detail, side by side on a terminal wide enough for both"
+send "7"
 after 400
 send $Right
 set page [drawn 2]
@@ -413,12 +420,14 @@ set after [drawn 3]
 check_loose "the main screen did not move under Tab" $after "▸ What this agent watches"
 check_absent_loose "and Tab did not open a section" $after "▸ What is listening"
 
-note "5: the summary, and what is kept on disk"
-send "5"
+note "6: the summary, and what is kept on disk"
+send "6"
 set page [drawn 3]
 check_loose "the summary opened" $page "▸ This host and its agent"
 check_loose "the collectors table says how often each one reads" $page "EVERY"
-check_loose "and there is a place for what is kept on disk" $page "WHATISKEPTONDISK"
+for {set scrolled 0} {$scrolled < 8} {incr scrolled} { send "j" }
+set page [drawn 3]
+check_loose "and a screenful down there is a place for what is kept on disk" $page "WHATISKEPTONDISK"
 
 note "j: to the foot of the summary, where the agent says what it cannot do yet"
 for {set scrolled 0} {$scrolled < 30} {incr scrolled} { send "j" }
@@ -516,10 +525,15 @@ check_loose "the view switched back" $page "\[t list\] t tree"
 check "the reader is still on the same unit, with no indent now" $page " > redis.service"
 check_loose "and the rows are in the order of the alphabet again" $page "nginx.service Web server │ │ > redis.service"
 
-note "5: the summary of an agent whose configuration names one collector out of five"
-send "5"
-set page [waiting_for "collectors:" 20]
-check_loose "a collector the configuration leaves out names the key that turns it on" $page "collectors:"
+note "6: the summary of an agent whose configuration names one collector out of five"
+send "6"
+set page [waiting_for "COLLECTORS" 20]
+check_loose "a collector that is off is marked as having something to say" $page "! launches"
+check_loose "and the screen offers the key that reads it" $page "press d to read it"
+check_absent_loose "and says nothing under the row until it is asked" $page "notfailing"
+send "d"
+set page [drawn 3]
+check_loose "d unfolds what the row has to say" $page "collectors:"
 check_loose "and says that being off is a decision and not a failure" $page "notfailing"
 
 send "q"

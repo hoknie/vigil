@@ -43,7 +43,7 @@ pub fn one(look: Look, name: &str, value: &str, name_width: usize, width: usize)
         ),
         Span::raw(format!(
             " {}",
-            column::fit(value, width.saturating_sub(indent + 1))
+            column::fit(value, width.saturating_sub(indent))
         )),
     ])
 }

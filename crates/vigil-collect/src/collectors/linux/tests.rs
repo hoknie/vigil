@@ -8,6 +8,7 @@ fn every_collector_this_build_has_is_in_the_product_vocabulary_and_the_other_way
         super::UsersCollector::new(now).name(),
         super::PersistenceCollector::new(now).name(),
         super::ProcessesCollector::new(now).name(),
+        super::FirewallCollector::new(now).name(),
         super::LaunchesCollector::new(now, false).name(),
     ];
 

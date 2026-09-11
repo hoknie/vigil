@@ -67,6 +67,10 @@ stage() {
 
     install -D -m 0644 "$ROOT/packaging/systemd/vigild.service" \
         "$tree/usr/lib/systemd/system/vigild.service"
+    install -D -m 0644 "$ROOT/packaging/systemd/vigil-firewall.service" \
+        "$tree/usr/lib/systemd/system/vigil-firewall.service"
+    install -D -m 0644 "$ROOT/packaging/systemd/vigil-firewall.timer" \
+        "$tree/usr/lib/systemd/system/vigil-firewall.timer"
     install -D -m 0644 "$ROOT/packaging/systemd/vigil-tmpfiles.conf" \
         "$tree/usr/lib/tmpfiles.d/vigil.conf"
     install -D -m 0644 "$ROOT/packaging/logrotate/vigil" "$tree/etc/logrotate.d/vigil"
@@ -79,6 +83,7 @@ stage() {
     install -m 0640 "$ROOT/packaging/audit/vigil.conf" "$tree/etc/audit/plugins.d/vigil.conf"
 
     install -d -m 0700 "$tree/var/lib/vigil"
+    install -d -m 0700 "$tree/var/lib/vigil/firewall"
     install -d -m 0700 "$tree/var/log/vigil"
 
     install -d -m 0755 "$tree/usr/share/doc/vigil"

@@ -6,6 +6,8 @@ use crate::ui::helpers::layout::field;
 use crate::ui::helpers::layout::section;
 use crate::ui::{Look, Report, View};
 
+const SAYS_THE_MOST: &str = "reads";
+
 pub(super) fn identity(report: &mut Report, view: &View, look: Look, width: usize) {
     let Some(status) = &view.status else {
         return;
@@ -56,7 +58,7 @@ pub(super) fn identity(report: &mut Report, view: &View, look: Look, width: usiz
         report.blank();
         report.push(section::rule(look, "AGENT", width));
         for (name, value) in &about_the_agent {
-            report.push(field::one(look, name, value, 12, width));
+            report.push(field::one(look, name, value, 12, room(name, width)));
         }
         report.blank();
         return;
@@ -77,11 +79,18 @@ pub(super) fn identity(report: &mut Report, view: &View, look: Look, width: usiz
             None => spans.push(Span::raw(column::fit("", half))),
         }
         if let Some((name, value)) = about_the_agent.get(index) {
-            spans.extend(field::one(look, name, value, 12, width - half).spans);
+            spans.extend(field::one(look, name, value, 12, room(name, width - half)).spans);
         }
         report.push(Line::from(spans));
     }
     report.blank();
+}
+
+fn room(name: &str, width: usize) -> usize {
+    match name {
+        SAYS_THE_MOST => width.saturating_sub(1),
+        _ => width,
+    }
 }
 
 fn history(agent: &vigil_model::AgentStatus) -> String {

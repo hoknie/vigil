@@ -12,6 +12,7 @@ impl App {
             Screen::Accounts => "users",
             Screen::Programs => self.nav.lists.programs.showing().collector(),
             Screen::Startup => crate::ui::screens::startup::COLLECTOR,
+            Screen::Firewall => crate::ui::screens::firewall::COLLECTOR,
             Screen::Home | Screen::Summary | Screen::Findings => return None,
         };
         match self.view.switched_off(collector) {
@@ -26,6 +27,7 @@ impl App {
             Screen::Accounts => "users",
             Screen::Programs => Program::holding(&anchor.key).collector(),
             Screen::Startup => crate::ui::screens::startup::COLLECTOR,
+            Screen::Firewall => crate::ui::screens::firewall::COLLECTOR,
             Screen::Home | Screen::Summary | Screen::Findings => return None,
         };
         match self.view.reading(collector) {

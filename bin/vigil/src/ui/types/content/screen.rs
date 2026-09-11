@@ -8,6 +8,7 @@ pub enum Screen {
     Accounts,
     Programs,
     Startup,
+    Firewall,
     Summary,
     Findings,
 }
@@ -22,6 +23,7 @@ impl Screen {
         Screen::Accounts,
         Screen::Programs,
         Screen::Startup,
+        Screen::Firewall,
         Screen::Summary,
         Screen::Findings,
     ];
@@ -33,6 +35,7 @@ impl Screen {
             Screen::Accounts => "accounts",
             Screen::Programs => "programs",
             Screen::Startup => "startup",
+            Screen::Firewall => "firewall",
             Screen::Summary => "summary",
             Screen::Findings => "findings",
         }
@@ -45,6 +48,7 @@ impl Screen {
             Screen::Accounts => "Who can log in",
             Screen::Programs => "What has run here",
             Screen::Startup => "What starts by itself",
+            Screen::Firewall => "What the host lets in",
             Screen::Summary => "This host and its agent",
             Screen::Findings => "What the agent has found",
         }
@@ -57,6 +61,7 @@ impl Screen {
             Screen::Accounts => "who can log in",
             Screen::Programs => "what has run here",
             Screen::Startup => "what starts by itself",
+            Screen::Firewall => "what the host lets in",
             Screen::Summary => "this host and its agent",
             Screen::Findings => "what it has found",
         }
@@ -64,7 +69,11 @@ impl Screen {
 
     pub fn group(self) -> Group {
         match self {
-            Screen::Ports | Screen::Accounts | Screen::Programs | Screen::Startup => Group::Reads,
+            Screen::Ports
+            | Screen::Accounts
+            | Screen::Programs
+            | Screen::Startup
+            | Screen::Firewall => Group::Reads,
             Screen::Home | Screen::Summary | Screen::Findings => Group::Concludes,
         }
     }
@@ -75,6 +84,7 @@ impl Screen {
             Screen::Accounts => &["users"],
             Screen::Programs => &["processes", "launches"],
             Screen::Startup => &["persistence"],
+            Screen::Firewall => &["firewall"],
             Screen::Home | Screen::Summary | Screen::Findings => &[],
         }
     }
@@ -140,11 +150,33 @@ mod tests {
                 (Some(2), "accounts"),
                 (Some(3), "programs"),
                 (Some(4), "startup"),
-                (Some(5), "summary"),
-                (Some(6), "findings"),
+                (Some(5), "firewall"),
+                (Some(6), "summary"),
+                (Some(7), "findings"),
             ],
             "a new section moved the numbers of the sections below it: rewrite this table by \
              hand, and the help and the pty run with it"
+        );
+    }
+
+    #[test]
+    fn what_the_agent_reads_is_numbered_before_what_it_makes_of_the_reading() {
+        let reads: Vec<u8> = Screen::ALL
+            .iter()
+            .filter(|screen| screen.group() == Group::Reads)
+            .filter_map(|screen| screen.digit())
+            .collect();
+        let concludes: Vec<u8> = Screen::ALL
+            .iter()
+            .filter(|screen| screen.group() == Group::Concludes)
+            .filter_map(|screen| screen.digit())
+            .collect();
+
+        assert!(
+            reads.iter().max() < concludes.iter().min(),
+            "the numbers are positions in ALL and the main screen draws the two groups in \
+             order: a reading numbered after a conclusion puts the row of one group between \
+             the rows of the other. Reads {reads:?}, concludes {concludes:?}"
         );
     }
 

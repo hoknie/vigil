@@ -12,6 +12,10 @@ use super::agent::{
 };
 use super::store::store;
 
+const SEES_LESS: &str = "the owner of one socket could not be resolved: some rows name no program";
+
+const READING_NOBODY_REFRESHED: &str = "the reading this collector reads was written longer ago than it allows: what it says here may no longer be what the host does";
+
 macro_rules! value {
     ($answer:expr) => {
         serde_json::to_value($answer).expect("an answer is plain data")
@@ -22,9 +26,10 @@ pub fn watching() -> AgentStatus {
     let mut watching = agent();
     watching.collectors = vec![
         collector("ports", 30, 2, 0),
-        collector_degraded("users"),
+        collector_degraded("users", 300, SEES_LESS),
         collector_unavailable("processes"),
         collector_failing("persistence"),
+        collector_degraded("firewall", 60, READING_NOBODY_REFRESHED),
         collector_off(),
     ];
     watching.reporters = vec![reporter("ndjson"), reporter_failing("webhook")];
@@ -67,7 +72,7 @@ pub fn statuses() -> BTreeMap<String, Value> {
     }
     items.insert(
         "collector-degraded|persistence-before-a-reading".to_string(),
-        value!(&collector_degraded("persistence")),
+        value!(&collector_degraded("persistence", 300, SEES_LESS)),
     );
     for status in &watching.reporters {
         items.insert(format!("reporter|{}", status.name), value!(status));

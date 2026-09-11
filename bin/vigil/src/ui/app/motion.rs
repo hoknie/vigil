@@ -26,7 +26,7 @@ impl App {
                     self.nav.sections.step(motion, &keys, rows);
                 }
                 Screen::Summary => {
-                    let total = summary::height(&self.view, self.look, width);
+                    let total = summary::height(&self.view, self.look, width, self.saying());
                     self.nav.summary.step(motion, total, page);
                 }
                 Screen::Accounts => {
@@ -63,6 +63,11 @@ impl App {
                         .startup
                         .cursor_mut()
                         .step(motion, &keys, rows);
+                    self.nav.difference = Offset::default();
+                }
+                Screen::Firewall => {
+                    let keys = self.firewall_keys();
+                    self.nav.firewall.step(motion, &keys, rows);
                     self.nav.difference = Offset::default();
                 }
                 Screen::Findings => {
@@ -121,15 +126,18 @@ impl App {
         self.nav.lists.ports.cursor_mut().settle(&listening);
         let findings = findings::keys(&self.filter.passing(&self.view.found.findings));
         self.nav.findings.settle(&findings);
-        self.nav
-            .summary
-            .settle(summary::height(&self.view, self.look, width), page);
+        self.nav.summary.settle(
+            summary::height(&self.view, self.look, width, self.saying()),
+            page,
+        );
         let accounts = self.accounts_keys();
         self.nav.lists.accounts.cursor_mut().settle(&accounts);
         let running = self.programs_keys();
         self.nav.lists.programs.cursor_mut().settle(&running);
         let starting = self.startup_keys();
         self.nav.lists.startup.cursor_mut().settle(&starting);
+        let filtering = self.firewall_keys();
+        self.nav.firewall.settle(&filtering);
         if let Some(area) = self.detail_area() {
             let total = self.detail_height(area);
             self.nav.difference.settle(total, area.height as usize);

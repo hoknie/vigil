@@ -26,7 +26,7 @@ check: fmt-check clippy test
 [group('quality')]
 cost:
     {{ CARGO }} run --release --example cost -p vigil-rules
-    for name in ports users persistence processes launches; do \
+    for name in ports users persistence processes firewall launches; do \
         {{ CARGO }} run --release --example cost -p vigil-collect -- "$name"; \
     done
 

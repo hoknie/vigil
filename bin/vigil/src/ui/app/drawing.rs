@@ -8,12 +8,12 @@ use super::App;
 use crate::ui::chrome::frame;
 use crate::ui::chrome::frame::hints::Back;
 use crate::ui::chrome::help;
-use crate::ui::details::{account, program, socket, startup};
+use crate::ui::details::{account, firewall as firewall_detail, program, section, socket, startup};
 use crate::ui::helpers::finding::diff;
 use crate::ui::helpers::layout::split;
 use crate::ui::helpers::words::unreachable;
 use crate::ui::screens::startup as starting;
-use crate::ui::screens::{accounts, findings, home, ports, programs, summary};
+use crate::ui::screens::{accounts, findings, firewall, home, ports, programs, summary};
 use crate::ui::theme::caption;
 use crate::ui::{Arrows, Level, Screen};
 
@@ -28,7 +28,7 @@ impl App {
                 level: self.level,
                 message: self.message.as_deref(),
                 back: self.back(),
-                panel: self.detail_showing(self.body.get()),
+                panel: self.detail_showing(self.body.get()) || self.showing_why(),
             },
             area,
             buffer,
@@ -56,21 +56,113 @@ impl App {
 
     pub(super) fn draw_screen(&self, body: Rect, buffer: &mut Buffer) {
         match self.nav.at() {
-            Screen::Home => home::render(
+            Screen::Home => self.draw_home(body, buffer),
+            Screen::Summary => summary::render(
                 &self.view,
                 self.look,
-                &home::Showing {
-                    cursor: self.nav.sections.at(),
-                    arrows: Arrows::at(self.level),
-                },
+                self.nav.summary.top(),
+                self.saying(),
                 body,
                 buffer,
             ),
-            Screen::Summary => {
-                summary::render(&self.view, self.look, self.nav.summary.top(), body, buffer)
-            }
             _ => self.draw_listed(body, buffer),
         }
+    }
+
+    pub(super) fn draw_home(&self, body: Rect, buffer: &mut Buffer) {
+        let showing = home::Showing {
+            cursor: self.nav.sections.at(),
+            arrows: Arrows::at(self.level),
+        };
+
+        if !self.look.interactive() {
+            self.print_every_section(body, buffer);
+            return;
+        }
+
+        if !self.detail_showing(body) {
+            home::render(&self.view, self.look, &showing, body, buffer);
+            return;
+        }
+
+        let Some(split) = split::beside(body) else {
+            let table = home::printed_height(&self.view, body.width).min(body.height);
+            let (list, rest) = (
+                Rect {
+                    height: table,
+                    ..body
+                },
+                Rect {
+                    y: body.y + table,
+                    height: body.height.saturating_sub(table),
+                    ..body
+                },
+            );
+            home::render(&self.view, self.look, &showing, list, buffer);
+            self.draw_section_panel(rest, buffer);
+            return;
+        };
+
+        Paragraph::new(caption::render(
+            self.look,
+            "SECTIONS",
+            "",
+            caption::Keys::Here,
+            split.list.width as usize,
+        ))
+        .render(
+            Rect {
+                height: 1,
+                ..split.list
+            },
+            buffer,
+        );
+        home::render(
+            &self.view,
+            self.look,
+            &showing,
+            Rect {
+                y: split.list.y + 1,
+                height: split.list.height.saturating_sub(1),
+                ..split.list
+            },
+            buffer,
+        );
+        Paragraph::new(vec![Line::raw(" │ "); split.rule.height as usize])
+            .style(self.look.palette.border())
+            .render(split.rule, buffer);
+        self.draw_section_panel(split.panel, buffer);
+    }
+
+    fn draw_section_panel(&self, area: Rect, buffer: &mut Buffer) {
+        if area.height < 2 {
+            return;
+        }
+        let rows = home::rows(&self.view);
+        let row = rows.get(self.nav.sections.at());
+        Paragraph::new(caption::render(
+            self.look,
+            "THE SELECTED SECTION",
+            &caption::scrolled(
+                0,
+                area.height as usize - 1,
+                section::height(row, self.look, self.look.text_width(area.width)),
+            ),
+            caption::Keys::Sole,
+            area.width as usize,
+        ))
+        .render(Rect { height: 1, ..area }, buffer);
+        section::render(
+            row,
+            self.look,
+            0,
+            Rect {
+                y: area.y + 1,
+                height: area.height - 1,
+                ..area
+            },
+            buffer,
+        );
     }
 
     pub(super) fn draw_listed(&self, body: Rect, buffer: &mut Buffer) {
@@ -134,6 +226,9 @@ impl App {
                 true => starting::render(&self.view, self.look, &self.starting(), area, buffer),
                 false => self.print_every_list(area, buffer),
             },
+            Screen::Firewall => {
+                firewall::render(&self.view, self.look, &self.filtering(), area, buffer)
+            }
             _ => findings::render(
                 &self.view,
                 &self.filter,
@@ -190,6 +285,16 @@ impl App {
                     buffer,
                 )
             }
+            Screen::Firewall => {
+                let rows = self.firewall_rows();
+                firewall_detail::render(
+                    rows.get(self.nav.firewall.at()),
+                    self.look,
+                    self.nav.difference.top(),
+                    area,
+                    buffer,
+                )
+            }
             _ => diff::render(
                 self.selected_finding(),
                 self.look,
@@ -207,6 +312,7 @@ impl App {
             Screen::Accounts => self.nav.lists.accounts.showing().caption(),
             Screen::Programs => self.nav.lists.programs.showing().caption(),
             Screen::Startup => self.nav.lists.startup.showing().caption(),
+            Screen::Firewall => "THE RULESET",
             _ => "FINDINGS",
         }
     }
@@ -217,6 +323,7 @@ impl App {
             Screen::Accounts => self.nav.lists.accounts.showing().detail(),
             Screen::Programs => self.nav.lists.programs.showing().detail(),
             Screen::Startup => self.nav.lists.startup.showing().detail(),
+            Screen::Firewall => "THE SELECTED ROW",
             _ => "THE SELECTED FINDING",
         }
     }

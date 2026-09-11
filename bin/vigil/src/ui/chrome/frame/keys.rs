@@ -7,10 +7,12 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
     }
 
     let long = match (hints.level, screen) {
-        (_, Screen::Home) => {
-            " j/k ↑↓ a section · → or Enter open it · 1-9 open one by number · ? keys · q quit"
-                .to_string()
-        }
+        (_, Screen::Home) => match hints.panel {
+            true => " j/k ↑↓ a section · → or Enter open it · d close · 1-9 by number · ? keys"
+                .to_string(),
+            false => " j/k ↑↓ a section · → or Enter open it · d details · 1-9 by number · ? keys"
+                .to_string(),
+        },
         (Level::Menu, _) => format!(
             " ←→ which list · ↓ into it · ↑ or Esc {} · ? keys · q quit",
             hints.back.named()
@@ -21,15 +23,19 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
         (Level::Detail, _) => {
             " j/k ↑↓ PgUp/PgDn scroll · ← or Esc back to the list · o object · ? keys".to_string()
         }
+        (Level::List, Screen::Summary) => format!(
+            " j/k ↑↓ scroll · d {} · ← or Esc {} · r ask · ? keys",
+            match hints.panel {
+                true => "hide",
+                false => "why",
+            },
+            hints.back.named()
+        ),
         (Level::List, _) if hints.panel => {
             " j/k ↑↓ move · → detail · / search · ← or Esc close the panel · ? keys".to_string()
         }
         (Level::List, Screen::Findings) => format!(
             " j/k ↑↓ move · → detail · o object · / search · s severity · ← {} · ? keys",
-            hints.back.named()
-        ),
-        (Level::List, Screen::Summary) => format!(
-            " j/k ↑↓ scroll · ← or Esc {} · r refresh · ? keys · q quit",
             hints.back.named()
         ),
         (Level::List, Screen::Startup) => format!(
@@ -81,6 +87,30 @@ mod tests {
 
         assert!(home.contains("1-9"), "{home}");
         assert!(!home.contains("Tab"), "{home}");
+    }
+
+    #[test]
+    fn the_key_that_shows_what_a_section_says_about_itself_is_on_the_line_and_fits_eighty() {
+        let closed = keys(&hints(Level::List, Back::Nowhere), Screen::Home, 80);
+        let open = keys(
+            &Hints {
+                panel: true,
+                ..hints(Level::List, Back::Nowhere)
+            },
+            Screen::Home,
+            80,
+        );
+
+        assert!(closed.contains("d details"), "{closed}");
+        assert!(open.contains("d close"), "{open}");
+        for line in [&closed, &open] {
+            assert!(
+                line.chars().count() <= 80,
+                "{} columns, so the whole hint is dropped for the two keys that matter: {line}",
+                line.chars().count()
+            );
+            assert!(line.contains("1-9"), "{line}");
+        }
     }
 
     #[test]

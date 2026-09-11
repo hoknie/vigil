@@ -3,6 +3,7 @@ pub struct KnownCollector {
     pub name: &'static str,
     pub subject: &'static str,
     pub every_seconds: u32,
+    pub unit: Option<&'static str>,
 }
 
 pub const COLLECTORS: &[KnownCollector] = &[
@@ -10,26 +11,37 @@ pub const COLLECTORS: &[KnownCollector] = &[
         name: "ports",
         subject: "the sockets this host listens on, and the process holding each one",
         every_seconds: 30,
+        unit: None,
     },
     KnownCollector {
         name: "users",
         subject: "who may log in to this host, as whom, and with what",
         every_seconds: 300,
+        unit: None,
     },
     KnownCollector {
         name: "persistence",
         subject: "what the host starts by itself: units, timers, cron, shell profiles",
         every_seconds: 300,
+        unit: None,
     },
     KnownCollector {
         name: "processes",
         subject: "the programs running on this host",
         every_seconds: 30,
+        unit: None,
+    },
+    KnownCollector {
+        name: "firewall",
+        subject: "the rules by which this host lets network in and drops it",
+        every_seconds: 60,
+        unit: Some("vigil-firewall.timer"),
     },
     KnownCollector {
         name: "launches",
         subject: "what people run, from the kernel's audit records",
         every_seconds: 15,
+        unit: None,
     },
 ];
 
@@ -49,6 +61,13 @@ pub fn every_seconds_of(name: &str) -> Option<u32> {
         .iter()
         .find(|collector| collector.name == name)
         .map(|collector| collector.every_seconds)
+}
+
+pub fn unit_of(name: &str) -> Option<&'static str> {
+    COLLECTORS
+        .iter()
+        .find(|collector| collector.name == name)
+        .and_then(|collector| collector.unit)
 }
 
 pub fn names() -> Vec<&'static str> {
@@ -106,6 +125,29 @@ mod tests {
     }
 
     #[test]
+    fn a_collector_that_needs_something_running_on_the_host_names_it_rather_than_a_command_guessing()
+     {
+        assert_eq!(unit_of("firewall"), Some("vigil-firewall.timer"));
+        assert_eq!(
+            unit_of("ports"),
+            None,
+            "a collector that reads /proc needs nothing started for it, and a command that \
+             asked a list of its own would have to be edited every time one of these appears"
+        );
+        assert_eq!(unit_of("nothing-of-ours"), None);
+
+        for collector in COLLECTORS {
+            if let Some(unit) = collector.unit {
+                assert!(
+                    unit.ends_with(".timer") || unit.ends_with(".service"),
+                    "{} names {unit}, which systemd would not know",
+                    collector.name
+                );
+            }
+        }
+    }
+
+    #[test]
     fn a_name_nobody_has_is_not_known() {
         assert!(is_known("ports"));
         assert!(!is_known("proccesses"));
@@ -130,6 +172,7 @@ mod tests {
 
         assert_eq!(every_seconds_of("launches"), Some(15));
         assert_eq!(every_seconds_of("ports"), Some(30));
+        assert_eq!(every_seconds_of("firewall"), Some(60));
         assert_eq!(every_seconds_of("processes"), Some(30));
         assert_eq!(every_seconds_of("users"), Some(300));
         assert_eq!(every_seconds_of("persistence"), Some(300));

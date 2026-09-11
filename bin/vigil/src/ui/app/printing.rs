@@ -3,11 +3,47 @@ use ratatui::layout::Rect;
 
 use super::App;
 
+use crate::ui::details::section;
 use crate::ui::screens::startup as starting;
-use crate::ui::screens::{accounts, programs};
+use crate::ui::screens::{accounts, home, programs};
 use crate::ui::{Arrows, Program, Screen, Search, Startup, Subject};
 
 impl App {
+    pub(super) fn print_every_section(&self, area: Rect, buffer: &mut Buffer) {
+        let table = home::printed_height(&self.view, area.width).min(area.height);
+        home::render(
+            &self.view,
+            self.look,
+            &home::Showing {
+                cursor: 0,
+                arrows: Arrows::Away,
+            },
+            Rect {
+                height: table,
+                ..area
+            },
+            buffer,
+        );
+
+        let mut top = area.y + table;
+        let bottom = area.y + area.height;
+        let width = self.look.text_width(area.width);
+
+        for row in home::rows(&self.view) {
+            if top >= bottom || row.standing.note.is_none() {
+                continue;
+            }
+            let wanted = section::height(Some(&row), self.look, width) as u16 + 1;
+            let room = Rect {
+                y: top,
+                height: wanted.min(bottom - top),
+                ..area
+            };
+            section::render(Some(&row), self.look, 0, room, buffer);
+            top += room.height;
+        }
+    }
+
     pub(super) fn print_every_list(&self, area: Rect, buffer: &mut Buffer) {
         let mut top = area.y;
         let bottom = area.y + area.height;

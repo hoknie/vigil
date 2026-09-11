@@ -13,6 +13,16 @@
         "from": "the number of findings the daemon holds for the console to ask for"
       }
     },
+    "collector-degraded|firewall": {
+      "every_seconds": {
+        "value": 60,
+        "from": "the period the collectors of this build declare for firewall"
+      },
+      "name": {
+        "value": "firewall",
+        "from": "the name this build gives the collector"
+      }
+    },
     "collector-degraded|persistence": {
       "every_seconds": {
         "value": 300,

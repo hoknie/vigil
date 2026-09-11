@@ -94,6 +94,10 @@ kinds! {
     PersistencePreloadChanged => "persistence.preload_changed",
     PersistenceKernelModuleLoaded => "persistence.kernel_module.loaded",
     PersistenceShellProfileChanged => "persistence.shell_profile_changed",
+    FirewallDisabled => "firewall.disabled",
+    FirewallEnabled => "firewall.enabled",
+    FirewallRulesetFlushed => "firewall.ruleset_flushed",
+    FirewallPolicyWeakened => "firewall.policy_weakened",
     ContainerPrivileged => "container.privileged",
     ContainerHostMount => "container.host_mount",
     ContainerDockerSocketExposed => "container.docker_socket_exposed",
@@ -119,6 +123,7 @@ impl KnownKind {
             KnownKind::UserAccountRemoved => Some(KnownKind::UserAccountNew),
             KnownKind::UserSshkeyRemoved => Some(KnownKind::UserSshkeyAdded),
             KnownKind::AgentBudgetRecovered => Some(KnownKind::AgentBudgetExceeded),
+            KnownKind::FirewallEnabled => Some(KnownKind::FirewallDisabled),
             _ => None,
         }
     }
@@ -157,6 +162,21 @@ mod tests {
             "coming back under the ceiling is an event of its own, not the absence of one"
         );
         assert_eq!(KnownKind::AgentBudgetExceeded.resolves(), None);
+    }
+
+    #[test]
+    fn a_firewall_that_came_back_closes_the_finding_that_it_was_gone() {
+        assert_eq!(
+            KnownKind::FirewallEnabled.resolves(),
+            Some(KnownKind::FirewallDisabled),
+            "a host that filters again is an event of its own, not the absence of one"
+        );
+        assert_eq!(KnownKind::FirewallDisabled.resolves(), None);
+        assert_eq!(
+            KnownKind::FirewallRulesetFlushed.resolves(),
+            None,
+            "rules that came back are not the rules that were there: nothing closes a flush"
+        );
     }
 
     #[test]

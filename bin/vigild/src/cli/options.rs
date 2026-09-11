@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
 use super::style;
+use crate::collector;
 use crate::wizard::{DEFAULT_PATH, Options};
 
 #[derive(Debug, Parser)]
@@ -12,17 +13,11 @@ use crate::wizard::{DEFAULT_PATH, Options};
     about = "Watch this host, and report what changes about it.",
     long_about = "\
 Watch this host: what is listening, who can log in, what runs at boot, what is running now.
-Each reading is compared with the last one, and the difference becomes findings. No network and
-no control plane are needed. Where findings go is a line in the configuration file.",
+Each reading is compared with the last one, and the difference becomes findings.",
     disable_help_subcommand = true,
     args_conflicts_with_subcommands = true,
+    arg_required_else_help = true,
     after_help = "\
-Examples:
-  vigild configure --dry-run          see what this host can be watched with
-  vigild configure                    write it to /etc/vigil/vigil.yaml
-  vigild /etc/vigil/vigil.yaml        watch this host with that file
-  systemctl enable --now vigild       the same, run by the shipped unit
-
 The console over the findings is `vigil ui`.",
 )]
 pub struct Cli {
@@ -57,15 +52,68 @@ pub enum Command {
         long_about = "\
 Ask every collector what it can read on THIS host: the kernel it has, the files it may open,
 the privileges it was started with. The configuration names what it found and what it could not.
-A collector that cannot read here is written out switched off, with the reason beside it.",
-        after_help = "\
-Examples:
-  vigild configure --dry-run          print it to stdout and write nothing
-  vigild configure                    write /etc/vigil/vigil.yaml, keeping any file there
-  vigild configure --force            replace it; the one that was there is kept as .previous
-  vigild configure /tmp/try.yaml      write somewhere else"
+A collector that cannot read here is written out switched off, with the reason beside it."
     )]
     Configure(Configure),
+
+    #[command(
+        about = "Switch one collector on or off in the configuration, and on this host"
+    )]
+    Collector(Collector),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Parser)]
+#[command(styles = style::HELP)]
+pub struct Collector {
+    #[arg(value_name = "NAME", help = "Which collector")]
+    pub name: String,
+
+    #[command(subcommand)]
+    pub doing: Switch,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Subcommand)]
+pub enum Switch {
+    #[command(about = "Watch it from now on")]
+    Enable(Switching),
+
+    #[command(about = "Stop watching it")]
+    Disable(Switching),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Parser)]
+#[command(styles = style::HELP)]
+pub struct Switching {
+    #[arg(
+        long,
+        value_name = "PATH",
+        default_value = DEFAULT_PATH,
+        help = "The configuration file to edit"
+    )]
+    pub config: String,
+
+    #[arg(
+        short = 'd',
+        long,
+        help = "Print what would be done, and do none of it"
+    )]
+    pub dry_run: bool,
+}
+
+impl Collector {
+    pub fn switching(&self) -> &Switching {
+        match &self.doing {
+            Switch::Enable(switching) | Switch::Disable(switching) => switching,
+        }
+    }
+
+    pub fn options(&self) -> collector::Options {
+        collector::Options {
+            name: self.name.clone(),
+            path: self.switching().config.clone(),
+            dry_run: self.switching().dry_run,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Parser)]
@@ -108,18 +156,55 @@ impl From<Configure> for Options {
     }
 }
 
-pub const NEEDS_A_CONFIGURATION: &str = "\
-vigild: name the configuration file to watch this host with.
-
-    vigild /etc/vigil/vigil.yaml        watch it with that
-    vigild configure --dry-run          see what this host can be watched with
-    vigild --help                       everything else
-
-The shipped systemd unit names it on an installed host.";
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn collector(line: &[&str]) -> Collector {
+        match parse(line).expect("parses").command {
+            Some(Command::Collector(asked)) => asked,
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn the_name_of_the_collector_is_an_argument_and_not_half_the_name_of_the_command() {
+        let asked = collector(&["collector", "firewall", "enable"]);
+
+        assert_eq!(asked.name, "firewall");
+        assert!(matches!(asked.doing, Switch::Enable(_)));
+        assert_eq!(asked.switching().config, DEFAULT_PATH);
+        assert!(!asked.switching().dry_run);
+    }
+
+    #[test]
+    fn both_ways_round_are_spelled_the_same_and_take_the_same_flags() {
+        for (line, dry) in [
+            (vec!["collector", "users", "enable", "-d"], true),
+            (vec!["collector", "users", "disable", "--dry-run"], true),
+            (vec!["collector", "users", "disable"], false),
+        ] {
+            let asked = collector(&line);
+            assert_eq!(asked.name, "users");
+            assert_eq!(asked.switching().dry_run, dry, "{line:?}");
+        }
+    }
+
+    #[test]
+    fn the_file_it_edits_can_be_named_so_a_check_need_not_write_the_real_one() {
+        let asked = collector(&["collector", "ports", "enable", "--config", "/tmp/v.yaml"]);
+
+        assert_eq!(asked.switching().config, "/tmp/v.yaml");
+        assert_eq!(asked.options().path, "/tmp/v.yaml");
+        assert_eq!(asked.options().name, "ports");
+    }
+
+    #[test]
+    fn a_word_that_is_neither_of_the_two_is_refused_rather_than_read_as_a_name() {
+        assert!(parse(&["collector", "firewall", "enabel"]).is_err());
+        assert!(parse(&["collector", "firewall"]).is_err());
+        assert!(parse(&["collector"]).is_err());
+    }
 
     fn parse(line: &[&str]) -> Result<Cli, clap::Error> {
         Cli::try_parse_from(std::iter::once("vigild").chain(line.iter().copied()))
@@ -205,12 +290,17 @@ mod tests {
     }
 
     #[test]
-    fn no_arguments_at_all_is_not_a_daemon_watching_a_default_file() {
-        let parsed = parse(&[]).expect("parses to nothing in particular");
+    fn nothing_on_the_command_line_is_the_help_and_never_a_daemon_watching_a_default_file() {
+        let error = parse(&[]).expect_err("nothing to run, so nothing is parsed");
 
-        assert!(parsed.config.is_none());
-        assert!(parsed.command.is_none());
-        assert!(NEEDS_A_CONFIGURATION.contains("name the configuration file"));
+        assert_eq!(
+            error.kind(),
+            clap::error::ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand
+        );
+
+        let shown = error.to_string();
+        assert!(shown.contains("vigild configure"), "{shown}");
+        assert!(shown.contains("CONFIG"), "{shown}");
     }
 
     #[test]

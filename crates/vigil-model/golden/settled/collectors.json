@@ -1,6 +1,12 @@
 {
   "source": "collectors",
   "values": {
+    "firewall": {
+      "every_seconds": {
+        "value": 60,
+        "from": "the period firewall is declared with among the collectors this build ships"
+      }
+    },
     "launches": {
       "every_seconds": {
         "value": 15,

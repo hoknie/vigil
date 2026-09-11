@@ -12,7 +12,8 @@ pub struct Family {
 #[cfg(target_os = "linux")]
 pub fn families(config: &Config) -> Result<Vec<Family>, String> {
     use vigil_rules::{
-        account_rules, launch_rules, listening_port_rules, persistence_rules, process_rules,
+        account_rules, firewall_rules, launch_rules, listening_port_rules, persistence_rules,
+        process_rules,
     };
 
     use crate::helpers::rfc3339;
@@ -35,6 +36,10 @@ pub fn families(config: &Config) -> Result<Vec<Family>, String> {
             rules: process_rules(),
         },
         Family {
+            collector: Box::new(vigil_collect::FirewallCollector::new(rfc3339::now)),
+            rules: firewall_rules(),
+        },
+        Family {
             collector: Box::new(vigil_collect::LaunchesCollector::new(
                 rfc3339::now,
                 config.record_launch_arguments,
@@ -47,7 +52,8 @@ pub fn families(config: &Config) -> Result<Vec<Family>, String> {
 #[cfg(not(target_os = "linux"))]
 pub fn families(config: &Config) -> Result<Vec<Family>, String> {
     use vigil_rules::{
-        account_rules, launch_rules, listening_port_rules, persistence_rules, process_rules,
+        account_rules, firewall_rules, launch_rules, listening_port_rules, persistence_rules,
+        process_rules,
     };
 
     let _ = (
@@ -56,6 +62,7 @@ pub fn families(config: &Config) -> Result<Vec<Family>, String> {
         account_rules(),
         persistence_rules(),
         process_rules(),
+        firewall_rules(),
         launch_rules(),
     );
     Err(format!(

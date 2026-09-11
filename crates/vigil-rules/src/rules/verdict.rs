@@ -1,6 +1,9 @@
 use vigil_model::Change;
 
-use super::{account_rules, launch_rules, listening_port_rules, persistence_rules, process_rules};
+use super::{
+    account_rules, firewall_rules, launch_rules, listening_port_rules, persistence_rules,
+    process_rules,
+};
 use crate::{RuleContext, RuleSet};
 
 fn findings_for(rules: RuleSet, changes: &[Change]) -> Vec<(String, String)> {
@@ -43,4 +46,12 @@ pub(super) fn processes(change: &Change) -> Vec<(String, String)> {
 
 pub(super) fn launches(change: &Change) -> Vec<(String, String)> {
     findings_for(launch_rules(), std::slice::from_ref(change))
+}
+
+pub(super) fn firewall(change: &Change) -> Vec<(String, String)> {
+    findings_for(firewall_rules(), std::slice::from_ref(change))
+}
+
+pub(super) fn firewall_tick(changes: &[Change]) -> Vec<(String, String)> {
+    findings_for(firewall_rules(), changes)
 }

@@ -3,19 +3,22 @@ use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Widget};
 
-use super::columns::{MARKER, NUMBER, ROOM_FOR_THE_COLLECTOR, widths};
+use super::columns::{HEALTH, MARKER, NUMBER, ROOM_FOR_THE_COLLECTOR, widths};
 use super::row::Row;
 use super::rows::rows;
 use super::tally::tally;
 use crate::ui::helpers::layout::column;
 use crate::ui::helpers::layout::scroll;
-use crate::ui::helpers::layout::wrap;
 use crate::ui::{Arrows, Group, Look, View};
 
 pub struct Showing {
     pub cursor: usize,
     pub arrows: Arrows,
 }
+
+const UNWELL: &str = "! ";
+
+const WELL: &str = "  ";
 
 pub fn render(view: &View, look: Look, showing: &Showing, area: Rect, buffer: &mut Buffer) {
     if area.height < 2 {
@@ -54,7 +57,7 @@ pub fn render(view: &View, look: Look, showing: &Showing, area: Rect, buffer: &m
             lines.push(Line::styled(
                 format!(
                     "{}{}",
-                    " ".repeat(MARKER + NUMBER),
+                    " ".repeat(MARKER + HEALTH + NUMBER),
                     column::columns(&widths(wide))
                 ),
                 look.palette.quiet(),
@@ -65,9 +68,6 @@ pub fn render(view: &View, look: Look, showing: &Showing, area: Rect, buffer: &m
                 selected = lines.len();
             }
             lines.push(drawn(row, look, showing, at == showing.cursor, wide));
-            for note in note(row, look, area.width as usize) {
-                lines.push(note);
-            }
             at += 1;
         }
     }
@@ -91,12 +91,26 @@ pub fn render(view: &View, look: Look, showing: &Showing, area: Rect, buffer: &m
     .render(footer, buffer);
 }
 
+pub fn printed_height(view: &View, width: u16) -> u16 {
+    let rows = rows(view);
+    let groups = Group::ALL
+        .iter()
+        .filter(|group| rows.iter().any(|row| row.group() == **group))
+        .count() as u16;
+    let _ = width;
+
+    rows.len() as u16 + groups * 2 + 1 + 1
+}
+
 fn drawn(row: &Row, look: Look, showing: &Showing, here: bool, wide: bool) -> Line<'static> {
-    let marker = match (here, showing.arrows == Arrows::List, row.standing.unwell) {
-        (true, true, _) => " > ",
-        (true, false, _) => " · ",
-        (false, _, true) => " ! ",
-        (false, _, false) => "   ",
+    let marker = match (here, showing.arrows == Arrows::List) {
+        (true, true) => " > ",
+        (true, false) => " · ",
+        (false, _) => "   ",
+    };
+    let health = match row.standing.unwell {
+        true => UNWELL,
+        false => WELL,
     };
     let number = match row.number {
         Some(number) => format!("{number} "),
@@ -116,12 +130,26 @@ fn drawn(row: &Row, look: Look, showing: &Showing, here: bool, wide: bool) -> Li
         (read.as_str(), 8),
     ];
     if wide {
-        cells.push((row.collector.as_str(), 12));
+        cells.push((row.collector.as_str(), 22));
     }
 
     Line::from(vec![
         Span::styled(
-            format!("{marker}{number}"),
+            marker.to_string(),
+            match here {
+                true => look.palette.selected(),
+                false => look.palette.heading(),
+            },
+        ),
+        Span::styled(
+            health.to_string(),
+            match row.standing.unwell {
+                true => look.palette.alarm(),
+                false => look.palette.heading(),
+            },
+        ),
+        Span::styled(
+            number,
             match here {
                 true => look.palette.selected(),
                 false => look.palette.heading(),
@@ -135,22 +163,4 @@ fn drawn(row: &Row, look: Look, showing: &Showing, here: bool, wide: bool) -> Li
             false => Span::raw(column::columns(&cells).trim_end().to_string()),
         },
     ])
-}
-
-fn note(row: &Row, look: Look, width: usize) -> Vec<Line<'static>> {
-    let Some(note) = &row.standing.note else {
-        return Vec::new();
-    };
-    wrap::wrap(note, width.saturating_sub(8))
-        .into_iter()
-        .map(|part| {
-            Line::styled(
-                format!("       {part}"),
-                match row.standing.unwell {
-                    true => look.palette.alarm(),
-                    false => look.palette.quiet(),
-                },
-            )
-        })
-        .collect()
 }

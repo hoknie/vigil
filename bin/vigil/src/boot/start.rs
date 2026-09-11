@@ -7,7 +7,8 @@ use ratatui::widgets::Widget;
 use clap::Parser;
 
 use crate::cli::{
-    CAPTURE_MOVED, CONFIGURE_LIVES_IN_THE_DAEMON, Cli, Command, Console, the_old_shape,
+    CAPTURE_MOVED, COLLECTOR_LIVES_IN_THE_DAEMON, CONFIGURE_LIVES_IN_THE_DAEMON, Cli, Command,
+    Console, the_old_shape,
 };
 use crate::ui::{App, Audience, Palette, Screen, to_text};
 
@@ -45,6 +46,10 @@ pub fn start(arguments: impl IntoIterator<Item = String>) -> ExitCode {
         Command::Capture(console) => capture(&console),
         Command::Configure => {
             eprintln!("{CONFIGURE_LIVES_IN_THE_DAEMON}");
+            ExitCode::from(2)
+        }
+        Command::Collector { .. } => {
+            eprintln!("{COLLECTOR_LIVES_IN_THE_DAEMON}");
             ExitCode::from(2)
         }
     }

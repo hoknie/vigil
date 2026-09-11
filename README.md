@@ -1,8 +1,8 @@
 # vigil
 
 **Host protection agent.** It watches the host it runs on — listening sockets, accounts and
-logins, processes, what people run, file integrity, persistence, containers, resources —
-compares each reading with the previous one, and reports what changed.
+logins, processes, what people run, the firewall, file integrity, persistence, containers,
+resources — compares each reading with the previous one, and reports what changed.
 
 Components:
 
@@ -13,6 +13,10 @@ Components:
 - **`vigil-audit-plugin`** — `auditd` starts it and feeds it events
   on stdin, and it appends the ones about program launches to a file the daemon reads. It holds
   none of the daemon's capabilities and can do nothing to the host.
+- **`vigil-firewall.timer`** — a systemd timer that runs `/usr/sbin/nft --json list ruleset`
+  and writes the output where the daemon reads it. The daemon starts no program of its own, so
+  the privilege that reading the ruleset needs lives in a unit you can read and
+  `systemctl mask`.
 
 ## Install
 
@@ -30,7 +34,7 @@ systemctl enable --now vigild        # enable and start vigil
 ```bash
 just package          # all binaries into ./dist
 just package-verify   # install them on clean debian and almalinux hosts and check
-just package-unit     # systemd-analyze verify over the installed unit
+just package-unit     # systemd-analyze verify over the installed units
 just package-systemd  # the unit under a real systemd; measures what its hardening allows
 ```
 

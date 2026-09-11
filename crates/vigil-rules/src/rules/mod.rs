@@ -6,6 +6,7 @@ mod tests;
 mod verdict;
 
 mod accounts;
+mod firewall;
 mod keys;
 mod launches;
 mod persistence;
@@ -15,6 +16,10 @@ mod sockets;
 pub use accounts::{
     AccountUnlocked, NewAccount, PasswordChanged, PrivilegedGroupMemberAdded, RemovedAccount,
     SecondRootAccount, SudoGrantAdded, account_rules,
+};
+pub use firewall::{
+    FirewallDisabled, FirewallEnabled, FirewallPolicyWeakened, FirewallRulesetFlushed,
+    firewall_rules,
 };
 pub use keys::{SshKeyAdded, SshKeyRemoved};
 pub use launches::{

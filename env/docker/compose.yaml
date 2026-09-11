@@ -17,6 +17,9 @@ services:
 
     working_dir: /work
 
+    cap_add:
+      - NET_ADMIN
+
     tty: true
     stdin_open: true
     init: true
@@ -45,6 +48,8 @@ services:
     working_dir: /work
     user: root
     init: true
+    cap_add:
+      - NET_ADMIN
     environment:
       CARGO_TERM_COLOR: always
       RUST_BACKTRACE: 1
@@ -54,6 +59,29 @@ services:
       - cargo build --bin vigild && exec /build/target/debug/vigild env/docker/vigil.container.yaml
     stop_signal: SIGTERM
     stop_grace_period: 10s
+
+  audit:
+    build:
+      context: ../..
+      dockerfile: env/docker/Dockerfile
+    image: vigil-workbench:1.98.1-alpine3.22
+    volumes:
+      - ../..:/work
+      - build:/build
+      - cargo-registry:/usr/local/cargo/registry
+      - audit-state:/var/lib/vigil
+    working_dir: /work
+    user: root
+    init: true
+    pid: host
+    cap_add:
+      - AUDIT_CONTROL
+      - AUDIT_READ
+      - SYS_NICE
+    environment:
+      CARGO_TERM_COLOR: always
+      RUST_BACKTRACE: 1
+    command: ["./env/scripts/audit-check.sh"]
 
   shell:
     build:
@@ -74,6 +102,8 @@ services:
     working_dir: /work
     user: root
     init: true
+    cap_add:
+      - NET_ADMIN
     tty: true
     stdin_open: true
     environment:
@@ -83,6 +113,7 @@ services:
     command: ["bash", "-l"]
 
 volumes:
+  audit-state:
   build:
   cargo-registry:
   findings:

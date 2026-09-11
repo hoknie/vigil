@@ -16,6 +16,7 @@ fn fixtures() -> Vec<(&'static str, Snapshot)> {
         ("the users fixture", super::accounts::accounts()),
         ("the processes fixture", super::programs::processes()),
         ("the persistence fixture", super::startup::persistence()),
+        ("the firewall fixture", super::firewall::firewall()),
         ("the launches fixture", super::launches::launches()),
     ]
 }

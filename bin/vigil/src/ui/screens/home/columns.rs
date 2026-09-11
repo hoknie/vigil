@@ -4,6 +4,8 @@ pub const MARKER: usize = 3;
 
 pub const NUMBER: usize = 2;
 
+pub const HEALTH: usize = 2;
+
 pub fn widths(wide: bool) -> Vec<(&'static str, usize)> {
     let mut names = vec![
         ("SECTION", 9),
@@ -13,7 +15,7 @@ pub fn widths(wide: bool) -> Vec<(&'static str, usize)> {
         ("READ", 8),
     ];
     if wide {
-        names.push(("COLLECTOR", 12));
+        names.push(("COLLECTOR", 22));
     }
     names
 }
@@ -29,9 +31,9 @@ mod tests {
         let header = column::columns(&widths(false));
 
         assert!(
-            MARKER + NUMBER + header.chars().count() <= 78,
+            MARKER + HEALTH + NUMBER + header.chars().count() <= 78,
             "{} columns inside a panel eighty wide",
-            MARKER + NUMBER + header.chars().count()
+            MARKER + HEALTH + NUMBER + header.chars().count()
         );
     }
 }

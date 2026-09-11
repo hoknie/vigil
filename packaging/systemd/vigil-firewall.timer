@@ -1,0 +1,20 @@
+[Unit]
+# How often the ruleset is written. The agent's firewall collector reads the file every 60
+# seconds and calls the reading stale once it is older than two of those periods, so a longer
+# interval here turns into a health line saying how old the reading is, never into silence.
+#
+#     systemctl mask vigil-firewall.timer    stop the reading, keep the package
+#
+# vigild.service pulls this timer in with Wants=, so enabling the agent enables the reading
+# and masking the timer switches it off without touching the agent.
+Description=vigil: read this host's nftables ruleset once a minute
+Documentation=file:/usr/share/doc/vigil/README.md
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=60s
+AccuracySec=5s
+Unit=vigil-firewall.service
+
+[Install]
+WantedBy=timers.target

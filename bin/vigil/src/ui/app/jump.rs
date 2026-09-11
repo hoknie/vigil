@@ -1,7 +1,7 @@
 use super::App;
 
 use crate::ui::screens::ports;
-use crate::ui::{Anchor, Level, Origin, Program, Screen, Startup, Subject};
+use crate::ui::{Anchor, Gone, Level, Origin, Program, Screen, Startup, Subject};
 
 impl App {
     pub(super) fn jump_to_object(&mut self) {
@@ -20,26 +20,32 @@ impl App {
             return;
         };
 
+        let last_seen = Gone::of(finding, anchor.key.clone());
+
         if let Some(collector) = self.reading_needed(&anchor) {
             self.fetch_reading(collector);
         }
 
-        let found = self.point_at(&anchor);
-        match found {
-            true => {
-                self.nav.jump(anchor.screen, from);
-                self.detail_open = false;
-                self.level = Level::List;
-                self.refresh_wanted = true;
-            }
-            false => {
-                self.message = Some(format!(
-                    "{} is not in the reading on the {} screen: gone since.",
-                    anchor.key,
-                    anchor.screen.name()
-                ))
-            }
-        }
+        let gone = match self.point_at(&anchor) {
+            true => None,
+            false => match anchor.screen {
+                Screen::Firewall => Some(last_seen),
+                _ => {
+                    self.message = Some(format!(
+                        "{} is not in the reading on the {} screen: gone since.",
+                        anchor.key,
+                        anchor.screen.name()
+                    ));
+                    return;
+                }
+            },
+        };
+
+        self.firewall_gone = gone;
+        self.nav.jump(anchor.screen, from);
+        self.detail_open = false;
+        self.level = Level::List;
+        self.refresh_wanted = true;
     }
 
     fn point_at(&mut self, anchor: &Anchor) -> bool {
@@ -87,6 +93,10 @@ impl App {
                     .startup
                     .cursor_mut()
                     .point_at(&anchor.key, &keys)
+            }
+            Screen::Firewall => {
+                let keys = self.firewall_keys();
+                self.nav.firewall.point_at(&anchor.key, &keys)
             }
             _ => false,
         }

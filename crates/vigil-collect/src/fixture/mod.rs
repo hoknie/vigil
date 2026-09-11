@@ -1,4 +1,5 @@
 mod accounts;
+mod firewall;
 mod launches;
 mod programs;
 mod sockets;
@@ -8,6 +9,7 @@ mod startup;
 mod tests;
 
 pub use accounts::accounts;
+pub use firewall::firewall;
 pub use launches::launches;
 pub use programs::processes;
 pub use sockets::ports;

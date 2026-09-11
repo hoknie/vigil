@@ -42,13 +42,11 @@ pub fn collector(name: &str, every_seconds: u32, items: usize, skipped: u64) -> 
     }
 }
 
-pub fn collector_degraded(name: &str) -> CollectorStatus {
+pub fn collector_degraded(name: &str, every_seconds: u32, reason: &str) -> CollectorStatus {
     CollectorStatus {
         name: name.into(),
         state: CollectorState::Degraded,
-        reason: Some(
-            "the owner of one socket could not be resolved: some rows name no program".into(),
-        ),
+        reason: Some(reason.into()),
         last_run_at: None,
         duration_ms: None,
         items: 0,
@@ -56,7 +54,7 @@ pub fn collector_degraded(name: &str) -> CollectorStatus {
         failures: 0,
         last_error: None,
         baseline: false,
-        every_seconds: Some(300),
+        every_seconds: Some(every_seconds),
         next_run_at: None,
         skipped: 0,
     }
@@ -122,6 +120,7 @@ pub fn agent() -> AgentStatus {
             collector("users", 300, 11, 2),
             collector("processes", 30, 4, 0),
             collector("persistence", 300, 7, 0),
+            collector("firewall", 60, 8, 0),
             collector_off(),
         ],
         reporters: vec![reporter("ndjson")],

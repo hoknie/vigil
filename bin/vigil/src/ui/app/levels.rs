@@ -28,6 +28,7 @@ impl App {
     pub(super) fn arrive(&mut self) {
         self.level = Level::top(self.rungs());
         self.detail_open = false;
+        self.firewall_gone = None;
     }
 
     pub(super) fn remember_section(&mut self, screen: Screen) {

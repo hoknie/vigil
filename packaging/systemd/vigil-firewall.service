@@ -1,0 +1,72 @@
+[Unit]
+# This unit writes this host's nftables ruleset to a file, and vigild reads that file. The
+# agent never starts a program of its own: reading the ruleset needs a privilege the daemon
+# does not have and is not given, so the privileged half is declared here, where you can read
+# it and switch it off the way you switch anything off:
+#
+#     systemctl mask vigil-firewall.timer    stop the reading, keep the package
+#     systemctl status vigil-firewall        what the last run said
+#
+# With this masked, vigild says so on its own health line: "what this host filters is
+# unknown". That is not the same answer as "this host filters nothing", and the agent never
+# turns one into the other.
+Description=vigil: write this host's nftables ruleset where the agent reads it
+Documentation=file:/usr/share/doc/vigil/README.md
+ConditionPathExists=/usr/sbin/nft
+After=nftables.service
+
+[Service]
+Type=oneshot
+
+# The absolute path of the distribution's own binary, with two fixed arguments and nothing
+# from the host in them. systemd runs it in its own SELinux domain, which already has the
+# policy for the netfilter netlink socket; the agent's domain does not, and this is why the
+# reading is taken here rather than inside vigild.
+ExecStart=/usr/sbin/nft --json list ruleset
+
+# truncate: needs systemd 248 or newer. The file is rewritten whole on every run, so a reader
+# never sees half of one ruleset and half of another.
+StandardOutput=truncate:/var/lib/vigil/firewall/ruleset.json
+StandardError=journal
+SyslogIdentifier=vigil-firewall
+
+# A run that hangs leaves the previous reading in place and the agent reports its age.
+TimeoutStartSec=10s
+
+StateDirectory=vigil/firewall
+StateDirectoryMode=0700
+UMask=0077
+
+User=root
+CapabilityBoundingSet=CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN
+NoNewPrivileges=yes
+
+ProtectHome=yes
+ProtectSystem=strict
+ProtectKernelTunables=yes
+ProtectKernelModules=no
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+
+PrivateTmp=yes
+PrivateDevices=yes
+PrivateNetwork=no
+PrivateUsers=no
+
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+
+# AF_NETLINK is here and nowhere else in this product: it is how nft talks to netfilter, and
+# vigild's own unit keeps refusing it.
+RestrictAddressFamilies=AF_UNIX AF_NETLINK
+
+MemoryMax=64M
+TasksMax=8

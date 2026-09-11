@@ -3,7 +3,7 @@ use vigil_model::Finding;
 use super::App;
 
 use crate::ui::Arrows;
-use crate::ui::screens::{accounts, ports, programs, startup};
+use crate::ui::screens::{accounts, firewall, ports, programs, startup};
 
 impl App {
     pub(super) fn showing(&self) -> accounts::Showing<'_> {
@@ -45,6 +45,23 @@ impl App {
             elsewhere: self.nav.lists.startup.narrowed_elsewhere(),
             arrows: Arrows::at(self.level),
         }
+    }
+
+    pub(super) fn filtering(&self) -> firewall::Showing<'_> {
+        firewall::Showing {
+            search: &self.firewall_search,
+            cursor: self.nav.firewall.at(),
+            arrows: Arrows::at(self.level),
+            gone: self.firewall_gone.as_ref(),
+        }
+    }
+
+    pub(super) fn firewall_rows(&self) -> Vec<firewall::Row<'_>> {
+        firewall::rows(&self.view, &self.filtering())
+    }
+
+    pub(super) fn firewall_keys(&self) -> Vec<String> {
+        firewall::keys(&self.view, &self.filtering())
     }
 
     pub(super) fn ports_rows(&self) -> Vec<ports::Row<'_>> {

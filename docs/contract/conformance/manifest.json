@@ -28,6 +28,11 @@
       "why": "the agent reporting on its own cost: the subject is the agent itself, the finding_key names the part of the budget that went over, and the evidence carries the measured share of each collector together with the schedule block an operator copies into the configuration. Its pair, agent.budget.recovered, closes it under the same finding_key"
     },
     {
+      "file": "accept/firewall-ruleset-flushed.json",
+      "expect": "accept",
+      "why": "one command on the host and two findings out of it: the table that lost its rules and the host that stopped filtering. The finding_key of the second is the whole ruleset (firewall|summary|nftables) and firewall.enabled closes it under that key; the first has no closing pair, because rules that came back are not the rules that were there. The subject of a firewall finding names the table and the chain, never a single rule"
+    },
+    {
       "file": "accept/from-a-newer-producer.json",
       "expect": "accept"
     },
