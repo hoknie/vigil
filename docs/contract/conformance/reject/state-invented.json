@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.1",
+  "batch_id": "0192f3c1-8a44-7c1e-9b31-2f5c0a3d77e1",
+  "sent_at": "2026-09-08T12:04:02.311Z",
+  "producer": {
+    "name": "vigil",
+    "version": "0.1.0"
+  },
+  "host": {
+    "host_id": "b7f1c0a93e5d4821bb2f6c1d9e0a7f34",
+    "install_id": "0192e7aa-1c02-7f10-8d44-9a1b6c2e5f03",
+    "boot_id": "6f2c1d84-9b3a-4c77-8e21-0f5a2b6c9d18",
+    "hostname": "web-03",
+    "os": {
+      "family": "linux",
+      "distro": "debian",
+      "version": "12",
+      "kernel": "6.1.0-18-amd64",
+      "arch": "x86_64"
+    },
+    "addresses": [
+      "10.0.0.13"
+    ],
+    "tags": {
+      "host_id_source": "/etc/machine-id"
+    }
+  },
+  "findings": [
+    {
+      "event_id": "0192f3c2-0d17-7a55-b0c9-6e2b8f41a920",
+      "finding_key": "port.listen|tcp|0.0.0.0:4444",
+      "kind": "port.listen.new",
+      "severity": "high",
+      "state": "probably",
+      "observed_at": "2026-09-08T12:04:02.104Z",
+      "first_seen_at": "2026-09-08T12:04:02.104Z",
+      "occurrences": 1,
+      "title": "New listening socket on 0.0.0.0:4444 held by /tmp/.x/nc as www-data",
+      "subject": {
+        "type": "socket",
+        "key": {
+          "protocol": "tcp",
+          "address": "0.0.0.0",
+          "port": 4444
+        }
+      }
+    }
+  ]
+}

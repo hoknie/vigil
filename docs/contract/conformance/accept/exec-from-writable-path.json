@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.2",
+  "batch_id": "0192f3c1-9b02-7d41-a0e5-31c7f4b2a610",
+  "sent_at": "2026-09-09T11:20:33.402Z",
+  "producer": {
+    "name": "vigil",
+    "version": "0.1.0"
+  },
+  "host": {
+    "host_id": "b7f1c0a93e5d4821bb2f6c1d9e0a7f34",
+    "install_id": "0192e7aa-1c02-7f10-8d44-9a1b6c2e5f03",
+    "boot_id": "6f2c1d84-9b3a-4c77-8e21-0f5a2b6c9d18",
+    "hostname": "web-03",
+    "os": {
+      "family": "linux",
+      "distro": "debian",
+      "version": "12",
+      "kernel": "6.1.0-18-amd64",
+      "arch": "x86_64"
+    },
+    "addresses": [
+      "10.0.0.13"
+    ],
+    "tags": {
+      "host_id_source": "/etc/machine-id"
+    }
+  },
+  "findings": [
+    {
+      "event_id": "0192f3c2-4e08-7b90-9d16-8a0c5e3f7b42",
+      "finding_key": "run|alice|/tmp/.x/dropper",
+      "kind": "exec.from_writable_path",
+      "severity": "high",
+      "state": "open",
+      "observed_at": "2026-09-09T11:20:33.118Z",
+      "first_seen_at": "2026-09-09T11:20:33.118Z",
+      "occurrences": 1,
+      "title": "alice ran /tmp/.x/dropper from a directory anybody can write to, and the file is already gone",
+      "subject": {
+        "type": "launch",
+        "key": {
+          "user": "alice",
+          "executable": "/tmp/.x/dropper"
+        }
+      },
+      "after": {
+        "user": "alice",
+        "auid": 1000,
+        "exe": "/tmp/.x/dropper",
+        "exe_lossy": false,
+        "exe_present": false,
+        "writable_path": true,
+        "first_seen": "2026-09-09T11:20:33.118Z",
+        "audit_id": "1757419203.412:3421",
+        "arguments": "dropper --token [redacted]",
+        "arguments_redacted": true
+      },
+      "evidence": [
+        {
+          "kind": "path",
+          "value": "/tmp/.x/dropper (not on disk when this was read)"
+        },
+        {
+          "kind": "note",
+          "value": "started in the login session of alice (login uid 1000)"
+        },
+        {
+          "kind": "cmdline",
+          "value": "dropper --token [redacted]"
+        },
+        {
+          "kind": "note",
+          "value": "recorded by auditd as 1757419203.412:3421 — `ausearch -a 3421` shows the record"
+        }
+      ],
+      "redacted": [
+        "/after/arguments"
+      ],
+      "rule": "launch_from_writable_path"
+    }
+  ]
+}

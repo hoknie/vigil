@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.1",
+  "batch_id": "0192f3c1-8a44-7c1e-9b31-2f5c0a3d77e1",
+  "sent_at": "2026-09-08T12:04:02.311Z",
+  "producer": {
+    "name": "vigil",
+    "version": "0.1.0"
+  },
+  "findings": [
+    {
+      "event_id": "0192f3c2-0d17-7a55-b0c9-6e2b8f41a920",
+      "finding_key": "port.listen|tcp|0.0.0.0:4444",
+      "kind": "port.listen.new",
+      "severity": "high",
+      "state": "open",
+      "observed_at": "2026-09-08T12:04:02.104Z",
+      "first_seen_at": "2026-09-08T12:04:02.104Z",
+      "occurrences": 1,
+      "title": "New listening socket on 0.0.0.0:4444 held by /tmp/.x/nc as www-data",
+      "subject": {
+        "type": "socket",
+        "key": {
+          "protocol": "tcp",
+          "address": "0.0.0.0",
+          "port": 4444
+        }
+      }
+    }
+  ]
+}
