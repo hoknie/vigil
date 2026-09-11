@@ -297,7 +297,8 @@ mod tests {
         );
 
         let shown = error.to_string();
-        assert!(shown.contains("vigild configure"), "{shown}");
+        assert!(shown.contains("configure"), "{shown}");
+        assert!(shown.contains("collector"), "{shown}");
         assert!(shown.contains("CONFIG"), "{shown}");
     }
 

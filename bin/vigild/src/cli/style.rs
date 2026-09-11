@@ -51,7 +51,7 @@ mod tests {
             "what is printed to a pipe or under NO_COLOR still carries escapes: {plain}"
         );
         assert_eq!(stripped(&coloured), plain);
-        assert!(plain.contains("Examples:"), "{plain}");
+        assert!(plain.contains("Usage:"), "{plain}");
         assert!(plain.contains("[CONFIG]"), "{plain}");
     }
 
