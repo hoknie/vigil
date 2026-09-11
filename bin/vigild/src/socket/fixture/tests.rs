@@ -4,7 +4,7 @@ use serde_json::Value;
 use vigil_model::{Golden, Shape};
 
 use super::answers::every_state;
-use super::{refusals, snapshot, statuses, stores};
+use super::{refusals, settled, snapshot, statuses, stores};
 use crate::socket::switched_off_reason;
 
 #[test]
@@ -32,6 +32,40 @@ fn an_answer_the_console_was_never_shown_is_an_answer_it_never_drew() {
     publishes("status", &statuses());
     publishes("refusal", &refusals());
     publishes("store", &stores());
+}
+
+#[test]
+fn the_sample_publishes_the_values_that_have_one_right_answer() {
+    if let Err(complaint) = Golden::settled("status").write_or_check(&settled().written()) {
+        panic!("{complaint}");
+    }
+}
+
+#[test]
+fn the_period_the_daemon_answers_with_is_the_one_the_collector_declares() {
+    let missed = settled().missed(&statuses());
+
+    assert!(
+        missed.is_empty(),
+        "the daemon answers with a period of its own where the collector declares one:\n{}",
+        missed.join("\n")
+    );
+}
+
+#[test]
+fn a_collector_this_build_ships_and_no_answer_names_is_one_no_screen_has_seen() {
+    let pinned = settled();
+
+    for name in vigil_collect::collector_names() {
+        assert!(
+            pinned
+                .values
+                .keys()
+                .any(|key| key.ends_with(&format!("|{name}"))),
+            "{name} is a collector this build ships and no sample answer is about it: the console \
+             rehearses on nothing for it and its period is nobody's to check"
+        );
+    }
 }
 
 #[test]

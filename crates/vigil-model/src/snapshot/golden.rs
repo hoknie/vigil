@@ -26,6 +26,28 @@ impl Golden {
         }
     }
 
+    pub fn reading(name: impl Into<String>) -> Golden {
+        Golden {
+            family: "readings",
+            name: name.into(),
+        }
+    }
+
+    pub fn settled(name: impl Into<String>) -> Golden {
+        Golden {
+            family: "settled",
+            name: name.into(),
+        }
+    }
+
+    fn what(&self) -> &'static str {
+        match self.family {
+            "readings" => "the reading of",
+            "settled" => "the settled values of",
+            _ => "the shape of",
+        }
+    }
+
     pub fn path(&self) -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("golden")
@@ -55,9 +77,9 @@ impl Golden {
 
         let written = self.spill(document);
         Err(format!(
-            "the shape of {} has moved and {} has not. Run `{RECIPE}` to write the sample again \
-             and read the diff: that diff is what changed on the wire. What this side builds now \
-             is in {}.",
+            "{} {} moved and {} did not. Run `{RECIPE}` to write the sample again and read the \
+             diff: that diff is what changed on the wire. What this side builds now is in {}.",
+            self.what(),
             self.name,
             path.display(),
             written
@@ -72,9 +94,10 @@ impl Golden {
             Some(_) => {
                 let written = self.spill(document);
                 Err(format!(
-                    "{who} is not the shape of {}. The sample is {}, the agent writes it and this \
+                    "{who} does not match {} {}. The sample is {}, the agent writes it and this \
                      side rehearses on it; what this side carries is in {}. Run `{RECIPE}` only \
                      after changing a collector — otherwise the side to change is this one.",
+                    self.what(),
                     self.name,
                     path.display(),
                     written
@@ -123,6 +146,27 @@ mod tests {
             .expect_err("there is no sample");
 
         assert!(complaint.contains("the console fixture"), "{complaint}");
+    }
+
+    #[test]
+    fn a_complaint_says_which_kind_of_sample_moved() {
+        let shape = Golden::snapshot("no-such-collector")
+            .write_or_check("{}\n")
+            .expect_err("there is no sample");
+        let reading = Golden::reading("no-such-collector")
+            .write_or_check("{}\n")
+            .expect_err("there is no sample");
+        let settled = Golden::settled("no-such-answer")
+            .write_or_check("{}\n")
+            .expect_err("there is no sample");
+
+        assert!(shape.contains("the shape of"), "{shape}");
+        assert!(
+            reading.contains("the reading of"),
+            "a whole reading and its shape are two samples, and a complaint that names neither \
+             sends a reader to the wrong file: {reading}"
+        );
+        assert!(settled.contains("the settled values of"), "{settled}");
     }
 
     #[test]

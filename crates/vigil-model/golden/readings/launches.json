@@ -1,0 +1,75 @@
+{
+  "source": "launches",
+  "taken_at": "2026-09-09T09:00:00.000Z",
+  "items": {
+    "launches|capped": {
+      "named": false,
+      "reason": "the limit of 20000 pairs of person and program is reached: launches are no longer being recorded"
+    },
+    "launches|dropping": {
+      "named": false,
+      "reason": "the audit plugin dropped the oldest events to stay under its spool size; launches from that window were never read"
+    },
+    "launches|source": {
+      "from": "audit plugin",
+      "named": false,
+      "reason": "launches arrive through the plugin auditd starts"
+    },
+    "launches|unnamed": {
+      "named": false,
+      "reason": "some launches carried no path this build could resolve: those programs are not in this reading"
+    },
+    "run|4242|/usr/bin/mysql": {
+      "arguments": "mysql -p[redacted]",
+      "arguments_redacted": true,
+      "audit_id": "1757419205.100:3423",
+      "auid": 4242,
+      "exe": "/usr/bin/mysql",
+      "exe_lossy": false,
+      "exe_present": null,
+      "exe_shown": false,
+      "first_seen": "2026-09-09T09:00:00.000Z",
+      "user": null,
+      "writable_path": false
+    },
+    "run|alice|/usr/bin/nc.openbsd": {
+      "arguments": "nc -l -p 4444",
+      "arguments_redacted": false,
+      "audit_id": "1757419203.412:3421",
+      "auid": 1000,
+      "exe": "/usr/bin/nc.openbsd",
+      "exe_lossy": false,
+      "exe_present": true,
+      "exe_shown": true,
+      "first_seen": "2026-09-09T09:00:00.000Z",
+      "user": "alice",
+      "writable_path": false
+    },
+    "run|root|/dev/shm/payload": {
+      "arguments": "payload",
+      "arguments_redacted": false,
+      "audit_id": "1757419204.900:3422",
+      "auid": 0,
+      "exe": "/dev/shm/payload",
+      "exe_lossy": false,
+      "exe_present": false,
+      "exe_shown": true,
+      "first_seen": "2026-09-09T09:00:00.000Z",
+      "user": "root",
+      "writable_path": true
+    },
+    "run|root|/usr/bin/id": {
+      "arguments": null,
+      "arguments_redacted": false,
+      "audit_id": "1757419206.700:3424",
+      "auid": 0,
+      "exe": "/usr/bin/id",
+      "exe_lossy": false,
+      "exe_present": true,
+      "exe_shown": true,
+      "first_seen": "2026-09-09T09:00:00.000Z",
+      "user": "root",
+      "writable_path": false
+    }
+  }
+}

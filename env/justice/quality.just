@@ -30,7 +30,7 @@ cost:
         {{ CARGO }} run --release --example cost -p vigil-collect -- "$name"; \
     done
 
-# Write the shape samples again from what the parsers build, then show what the console owes
+# Write the samples again from what the code declares and the parsers build, then show what the console owes
 [group('quality')]
 golden:
     VIGIL_GOLDEN=write {{ CARGO }} test -p vigil-collect -p vigild

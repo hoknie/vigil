@@ -59,6 +59,34 @@ pub fn names() -> Vec<&'static str> {
 mod tests {
     use super::*;
 
+    use vigil_model::{Golden, Settled};
+
+    fn declared() -> Settled {
+        let mut pinned = Settled::new("collectors");
+
+        for collector in COLLECTORS {
+            pinned = pinned.pinning(
+                collector.name,
+                "every_seconds",
+                collector.every_seconds,
+                format!(
+                    "the period {} is declared with among the collectors this build ships",
+                    collector.name
+                ),
+            );
+        }
+
+        pinned
+    }
+
+    #[test]
+    fn the_period_a_collector_declares_is_published_for_the_screens_that_show_it() {
+        if let Err(complaint) = Golden::settled("collectors").write_or_check(&declared().written())
+        {
+            panic!("{complaint}");
+        }
+    }
+
     #[test]
     fn a_name_is_in_the_list_once_and_says_what_it_watches() {
         let mut seen = names();

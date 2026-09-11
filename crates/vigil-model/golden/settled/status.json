@@ -1,0 +1,63 @@
+{
+  "source": "status",
+  "values": {
+    "agent|starting": {
+      "findings/capacity": {
+        "value": 500,
+        "from": "the number of findings the daemon holds for the console to ask for"
+      }
+    },
+    "agent|watching": {
+      "findings/capacity": {
+        "value": 500,
+        "from": "the number of findings the daemon holds for the console to ask for"
+      }
+    },
+    "collector-degraded|persistence": {
+      "every_seconds": {
+        "value": 300,
+        "from": "the period the collectors of this build declare for persistence"
+      },
+      "name": {
+        "value": "persistence",
+        "from": "the name this build gives the collector"
+      }
+    },
+    "collector-degraded|users": {
+      "every_seconds": {
+        "value": 300,
+        "from": "the period the collectors of this build declare for users"
+      },
+      "name": {
+        "value": "users",
+        "from": "the name this build gives the collector"
+      }
+    },
+    "collector-off|launches": {
+      "name": {
+        "value": "launches",
+        "from": "the name this build gives the collector"
+      }
+    },
+    "collector-ok|ports": {
+      "every_seconds": {
+        "value": 30,
+        "from": "the period the collectors of this build declare for ports"
+      },
+      "name": {
+        "value": "ports",
+        "from": "the name this build gives the collector"
+      }
+    },
+    "collector-unavailable|processes": {
+      "every_seconds": {
+        "value": 30,
+        "from": "the period the collectors of this build declare for processes"
+      },
+      "name": {
+        "value": "processes",
+        "from": "the name this build gives the collector"
+      }
+    }
+  }
+}

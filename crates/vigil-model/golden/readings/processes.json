@@ -1,0 +1,81 @@
+{
+  "source": "processes",
+  "taken_at": "2026-09-09T09:00:00.000Z",
+  "items": {
+    "exec|/lib/systemd/systemd|root": {
+      "cmdline": "/sbin/init",
+      "cmdline_redacted": false,
+      "cmdline_varies": false,
+      "exe": "/lib/systemd/systemd",
+      "exe_deleted": false,
+      "exe_resolved": true,
+      "parents": [],
+      "parents_truncated": false,
+      "uid": 0,
+      "user": "root",
+      "writable_path": false
+    },
+    "exec|/opt/app/server|4242": {
+      "cmdline": null,
+      "cmdline_redacted": false,
+      "cmdline_varies": false,
+      "exe": "/opt/app/server",
+      "exe_deleted": false,
+      "exe_resolved": true,
+      "parents": [
+        "/lib/systemd/systemd"
+      ],
+      "parents_truncated": false,
+      "uid": 4242,
+      "user": null,
+      "writable_path": false
+    },
+    "exec|/tmp/.x/nc|www-data": {
+      "cmdline": "nc -l -p 4444 -e [redacted]",
+      "cmdline_redacted": true,
+      "cmdline_varies": false,
+      "exe": "/tmp/.x/nc",
+      "exe_deleted": true,
+      "exe_resolved": true,
+      "parents": [
+        "/usr/sbin/nginx"
+      ],
+      "parents_truncated": false,
+      "uid": 33,
+      "user": "www-data",
+      "writable_path": true
+    },
+    "exec|/usr/sbin/nginx|root": {
+      "cmdline": "nginx: master process",
+      "cmdline_redacted": false,
+      "cmdline_varies": false,
+      "exe": "/usr/sbin/nginx",
+      "exe_deleted": false,
+      "exe_resolved": true,
+      "parents": [
+        "/lib/systemd/systemd"
+      ],
+      "parents_truncated": false,
+      "uid": 0,
+      "user": "root",
+      "writable_path": false
+    },
+    "exec|/usr/sbin/nginx|www-data": {
+      "cmdline": null,
+      "cmdline_redacted": false,
+      "cmdline_varies": true,
+      "exe": "/usr/sbin/nginx",
+      "exe_deleted": false,
+      "exe_resolved": true,
+      "parents": [],
+      "parents_truncated": false,
+      "uid": 33,
+      "user": "www-data",
+      "writable_path": false
+    },
+    "processes|unresolved": {
+      "exe_resolved": false,
+      "reason": "some executables could not be read: those programs are not in this reading (needs CAP_SYS_PTRACE, or root without a restricted capability set)"
+    }
+  }
+}

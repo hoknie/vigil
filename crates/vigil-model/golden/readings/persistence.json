@@ -1,0 +1,181 @@
+{
+  "source": "persistence",
+  "taken_at": "2026-09-09T09:00:00.000Z",
+  "items": {
+    "cron|/etc/cron.daily|root|/etc/cron.daily/logrotate": {
+      "command": "/etc/cron.daily/logrotate",
+      "command_redacted": false,
+      "schedule": "@daily",
+      "source": "/etc/cron.daily",
+      "user": "root"
+    },
+    "cron|/etc/crontab|root|/usr/local/bin/backup --to /srv": {
+      "command": "/usr/local/bin/backup --to /srv",
+      "command_redacted": false,
+      "schedule": "@daily",
+      "source": "/etc/crontab",
+      "user": "root"
+    },
+    "cron|/etc/crontab|root|cd / && run-parts --report /etc/cron.hourly": {
+      "command": "cd / && run-parts --report /etc/cron.hourly",
+      "command_redacted": false,
+      "schedule": "17 * * * *",
+      "source": "/etc/crontab",
+      "user": "root"
+    },
+    "cron|/var/spool/cron/crontabs/www-data|www-data|/tmp/.x/implant": {
+      "command": "/tmp/.x/implant",
+      "command_redacted": false,
+      "schedule": "*/5 * * * *",
+      "source": "/var/spool/cron/crontabs/www-data",
+      "user": "www-data"
+    },
+    "modules|unreadable": {
+      "readable": false,
+      "reason": "/proc/modules could not be read: loaded kernel modules are not being watched"
+    },
+    "module|nf_nat": {
+      "dependencies": [
+        "xt_MASQUERADE",
+        "nft_chain_nat"
+      ],
+      "name": "nf_nat",
+      "size": 49152,
+      "state": "-"
+    },
+    "module|overlay": {
+      "dependencies": [],
+      "name": "overlay",
+      "size": 155648,
+      "state": "Live"
+    },
+    "preload|/etc/ld.so.preload": {
+      "entries": [
+        "/usr/local/lib/libjackit.so"
+      ],
+      "path": "/etc/ld.so.preload",
+      "present": true,
+      "readable": true,
+      "sha256": "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b"
+    },
+    "script|/etc/profile": {
+      "family": "profile",
+      "gid": 0,
+      "mode": "0644",
+      "path": "/etc/profile",
+      "present": true,
+      "readable": true,
+      "sha256": "9f2c1b3d4e5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c",
+      "shown": true,
+      "size": 581,
+      "uid": 0
+    },
+    "script|/etc/rc.local": {
+      "family": "boot",
+      "gid": 0,
+      "mode": "",
+      "path": "/etc/rc.local",
+      "present": false,
+      "readable": true,
+      "sha256": null,
+      "shown": true,
+      "size": 0,
+      "uid": 0
+    },
+    "script|/tmp/.hidden/.bashrc": {
+      "family": "profile",
+      "gid": 0,
+      "mode": "",
+      "path": "/tmp/.hidden/.bashrc",
+      "present": null,
+      "readable": null,
+      "sha256": null,
+      "shown": false,
+      "size": 0,
+      "uid": 0
+    },
+    "timer|logrotate.timer": {
+      "activates": "logrotate.service",
+      "description": "Daily rotation of log files",
+      "name": "logrotate.timer",
+      "on_boot": null,
+      "on_calendar": [
+        "daily",
+        "Mon *-*-* 03:15:00"
+      ],
+      "path": "/lib/systemd/system/logrotate.timer",
+      "readable": true,
+      "type": "timer"
+    },
+    "timer|watchdog.timer": {
+      "activates": "watchdog.service",
+      "description": null,
+      "name": "watchdog.timer",
+      "on_boot": "15min",
+      "on_calendar": [],
+      "path": "/etc/systemd/system/watchdog.timer",
+      "readable": true,
+      "type": "timer"
+    },
+    "unit|locked.service": {
+      "commands": [],
+      "commands_redacted": false,
+      "description": null,
+      "name": "locked.service",
+      "path": "/etc/systemd/system/locked.service",
+      "readable": false,
+      "run_as": "root",
+      "type": "service"
+    },
+    "unit|multi-user.target": {
+      "commands": [],
+      "commands_redacted": false,
+      "description": "Multi-User System",
+      "name": "multi-user.target",
+      "path": "/lib/systemd/system/multi-user.target",
+      "readable": true,
+      "run_as": "root",
+      "type": "target"
+    },
+    "unit|nginx.service": {
+      "commands": [
+        "/usr/sbin/nginx -t",
+        "/usr/sbin/nginx -g 'daemon off;' --password [redacted]"
+      ],
+      "commands_redacted": true,
+      "description": "A high performance web server",
+      "name": "nginx.service",
+      "part_of": [
+        "web.target"
+      ],
+      "path": "/lib/systemd/system/nginx.service",
+      "readable": true,
+      "required_by": [
+        "web.target"
+      ],
+      "requires": [
+        "network.target"
+      ],
+      "run_as": "www-data",
+      "type": "service",
+      "wanted_by": [
+        "multi-user.target"
+      ],
+      "wants": [
+        "nss-lookup.target"
+      ]
+    },
+    "unit|rescue-shell.service": {
+      "commands": [
+        "/bin/sh"
+      ],
+      "commands_redacted": false,
+      "description": null,
+      "name": "rescue-shell.service",
+      "path": "/etc/systemd/system/rescue-shell.service",
+      "readable": true,
+      "run_as": "root",
+      "type": "service"
+    }
+  }
+}

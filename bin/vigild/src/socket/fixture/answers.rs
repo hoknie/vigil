@@ -7,6 +7,7 @@ use vigil_model::{Counted, Severity, StoreDropped, StoreStatus};
 use crate::socket::State;
 use crate::types::Startup;
 
+use super::agent::period;
 use super::{finding, finding_of, host, reading, reading_of, snapshot};
 
 const DEGRADED: &str = "the owner of one socket could not be resolved: some rows name no program";
@@ -41,14 +42,10 @@ pub fn every_state() -> State {
             host: host(),
             started_at: "2026-09-09T08:00:00.000Z".into(),
             interval_seconds: 30,
-            periods: [
-                ("ports".to_string(), 30u32),
-                ("users".to_string(), 300),
-                ("persistence".to_string(), 300),
-                ("processes".to_string(), 30),
-            ]
-            .into_iter()
-            .collect(),
+            periods: ["ports", "users", "persistence", "processes"]
+                .into_iter()
+                .map(|name| (name.to_string(), period(name)))
+                .collect(),
         },
         &[
             ("ports", Health::Ok),

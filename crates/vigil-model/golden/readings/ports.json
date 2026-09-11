@@ -1,0 +1,142 @@
+{
+  "source": "ports",
+  "taken_at": "2026-09-09T09:00:00.000Z",
+  "items": {
+    "tcp6|:::443": {
+      "address": "::",
+      "owner_resolved": true,
+      "port": 443,
+      "process": {
+        "cmdline": "nginx: master process /usr/sbin/nginx",
+        "cmdline_redacted": false,
+        "exe": "/usr/sbin/nginx",
+        "exe_deleted": false
+      },
+      "protocol": "tcp6",
+      "uid": 0,
+      "user": "root"
+    },
+    "tcp6|:::8080": {
+      "address": "::",
+      "owner_resolved": false,
+      "port": 8080,
+      "process": null,
+      "protocol": "tcp6",
+      "uid": 106,
+      "user": null
+    },
+    "tcp|0.0.0.0:22": {
+      "address": "0.0.0.0",
+      "owner_resolved": true,
+      "port": 22,
+      "process": {
+        "cmdline": "sshd: /usr/sbin/sshd -D [listener]",
+        "cmdline_redacted": false,
+        "exe": "/usr/sbin/sshd",
+        "exe_deleted": false
+      },
+      "protocol": "tcp",
+      "uid": 0,
+      "user": "root"
+    },
+    "tcp|0.0.0.0:4444": {
+      "address": "0.0.0.0",
+      "owner_resolved": true,
+      "port": 4444,
+      "process": {
+        "cmdline": null,
+        "cmdline_redacted": false,
+        "exe": null,
+        "exe_deleted": false
+      },
+      "protocol": "tcp",
+      "uid": 33,
+      "user": "www-data"
+    },
+    "tcp|127.0.0.1:5432": {
+      "address": "127.0.0.1",
+      "owner_resolved": false,
+      "port": 5432,
+      "process": null,
+      "protocol": "tcp",
+      "uid": 106,
+      "user": null
+    },
+    "udp6|:::5353": {
+      "address": "::",
+      "owner_resolved": false,
+      "port": 5353,
+      "process": null,
+      "protocol": "udp6",
+      "uid": 106,
+      "user": null
+    },
+    "udp6|:::546": {
+      "address": "::",
+      "owner_resolved": true,
+      "port": 546,
+      "process": {
+        "cmdline": "dhclient -6 --password [redacted]",
+        "cmdline_redacted": true,
+        "exe": "/usr/sbin/dhclient",
+        "exe_deleted": false
+      },
+      "protocol": "udp6",
+      "uid": 0,
+      "user": "root"
+    },
+    "udp|0.0.0.0:53": {
+      "address": "0.0.0.0",
+      "owner_resolved": true,
+      "port": 53,
+      "process": {
+        "cmdline": "/lib/systemd/systemd-resolved",
+        "cmdline_redacted": false,
+        "exe": "/lib/systemd/systemd-resolved",
+        "exe_deleted": false
+      },
+      "protocol": "udp",
+      "uid": 101,
+      "user": "systemd-resolve"
+    },
+    "udp|0.0.0.0:68": {
+      "address": "0.0.0.0",
+      "owner_resolved": false,
+      "port": 68,
+      "process": null,
+      "protocol": "udp",
+      "uid": 106,
+      "user": null
+    },
+    "unix|/run/docker.sock": {
+      "abstract": false,
+      "owner_resolved": true,
+      "path": "/run/docker.sock",
+      "process": {
+        "cmdline": "dockerd --host unix:///run/docker.sock",
+        "cmdline_redacted": false,
+        "exe": "/usr/bin/dockerd",
+        "exe_deleted": false
+      },
+      "protocol": "unix",
+      "type": "stream",
+      "uid": 0,
+      "user": "root"
+    },
+    "unix|@/tmp/.X11-unix/X0": {
+      "abstract": true,
+      "owner_resolved": false,
+      "path": "@/tmp/.X11-unix/X0",
+      "process": null,
+      "protocol": "unix",
+      "type": "stream",
+      "uid": null,
+      "user": null
+    },
+    "unix|unnamed": {
+      "count": 1,
+      "owner_resolved": false,
+      "protocol": "unix"
+    }
+  }
+}

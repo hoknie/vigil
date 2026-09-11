@@ -1,0 +1,222 @@
+{
+  "source": "users",
+  "taken_at": "2026-09-09T09:00:00.000Z",
+  "items": {
+    "account|contractor": {
+      "account_expires_day": 20000,
+      "gid": 1001,
+      "home": "/home/contractor",
+      "interactive": true,
+      "name": "contractor",
+      "password": "set",
+      "password_last_change_day": 19500,
+      "password_max_age_days": 90,
+      "password_permits_login": true,
+      "shadow_readable": true,
+      "shell": "/bin/bash",
+      "uid": 1001
+    },
+    "account|deploy": {
+      "account_expires_day": null,
+      "gid": 1000,
+      "home": "/home/deploy",
+      "interactive": true,
+      "name": "deploy",
+      "password": "set",
+      "password_last_change_day": 19100,
+      "password_max_age_days": 99999,
+      "password_permits_login": true,
+      "shadow_readable": true,
+      "shell": "/bin/bash",
+      "uid": 1000
+    },
+    "account|root": {
+      "account_expires_day": null,
+      "gid": 0,
+      "home": "/root",
+      "interactive": true,
+      "name": "root",
+      "password": "disabled",
+      "password_last_change_day": 19000,
+      "password_max_age_days": 99999,
+      "password_permits_login": false,
+      "shadow_readable": true,
+      "shell": "/bin/bash",
+      "uid": 0
+    },
+    "account|svc-runner": {
+      "account_expires_day": null,
+      "gid": 998,
+      "home": "/var/lib/runner",
+      "interactive": true,
+      "name": "svc-runner",
+      "password": null,
+      "password_last_change_day": null,
+      "password_max_age_days": null,
+      "password_permits_login": null,
+      "shadow_readable": false,
+      "shell": "/bin/sh",
+      "uid": 998
+    },
+    "account|www-data": {
+      "account_expires_day": null,
+      "gid": 33,
+      "home": "/var/www",
+      "interactive": false,
+      "name": "www-data",
+      "password": "locked",
+      "password_last_change_day": 19000,
+      "password_max_age_days": 99999,
+      "password_permits_login": false,
+      "shadow_readable": true,
+      "shell": "/usr/sbin/nologin",
+      "uid": 33
+    },
+    "group|deploy": {
+      "gid": 1000,
+      "members": [
+        "deploy"
+      ],
+      "name": "deploy",
+      "privilege": null,
+      "privileged": false
+    },
+    "group|root": {
+      "gid": 0,
+      "members": [
+        "root"
+      ],
+      "name": "root",
+      "privilege": "the superuser's own group",
+      "privileged": true
+    },
+    "group|users": {
+      "gid": 100,
+      "members": [],
+      "name": "users",
+      "privilege": null,
+      "privileged": false
+    },
+    "group|wheel": {
+      "gid": 10,
+      "members": [
+        "deploy"
+      ],
+      "name": "wheel",
+      "privilege": "may run commands as any user",
+      "privileged": true
+    },
+    "session-source|logind": {
+      "answers": true,
+      "path": "/run/systemd/sessions",
+      "present": true,
+      "read": true,
+      "reason": null,
+      "sessions": 2,
+      "source": "logind"
+    },
+    "session-source|utmp": {
+      "answers": false,
+      "path": "/run/utmp",
+      "present": false,
+      "read": false,
+      "reason": "neither /run/utmp nor /var/run/utmp is on this host: nothing writes a utmp login record here",
+      "sessions": 0,
+      "source": "utmp"
+    },
+    "session|deploy|pts/0": {
+      "attended": true,
+      "class": "user",
+      "from": "10.0.0.5",
+      "line": "pts/0",
+      "pid": 4242,
+      "remote": true,
+      "seen_by": [
+        "logind",
+        "utmp"
+      ],
+      "service": "sshd",
+      "session_id": "83",
+      "state": "active",
+      "type": "tty",
+      "uid": 1000,
+      "user": "deploy"
+    },
+    "session|root|logind:84": {
+      "attended": false,
+      "class": "background",
+      "from": "",
+      "line": "",
+      "pid": 900,
+      "remote": false,
+      "seen_by": [
+        "logind"
+      ],
+      "service": "systemd-user",
+      "session_id": "84",
+      "state": "closing",
+      "type": "unspecified",
+      "uid": 0,
+      "user": "root"
+    },
+    "session|unknown|pts/3": {
+      "attended": true,
+      "class": "user",
+      "from": "203.0.113.9",
+      "line": "pts/3",
+      "pid": 5150,
+      "remote": true,
+      "seen_by": [
+        "utmp"
+      ],
+      "service": "sshd",
+      "session_id": "85",
+      "state": "opening",
+      "type": "tty",
+      "uid": null,
+      "user": "unknown"
+    },
+    "sshkey|backup|unreadable": {
+      "readable": false,
+      "source": "/home/backup/.ssh/authorized_keys",
+      "uid": 1001,
+      "user": "backup"
+    },
+    "sshkey|contractor|SHA256:ie96zLdp9BkGxjqBG3AldJ2imVMNe8sXmmyorODpGCM": {
+      "algorithm": "ssh-ed25519",
+      "comment": null,
+      "fingerprint": "SHA256:ie96zLdp9BkGxjqBG3AldJ2imVMNe8sXmmyorODpGCM",
+      "options": "from=\"10.0.0.0/8\",no-pty",
+      "readable": true,
+      "source": "/home/contractor/.ssh/authorized_keys",
+      "uid": 1001,
+      "user": "contractor"
+    },
+    "sshkey|deploy|SHA256:ie96zLdp9BkGxjqBG3AldJ2imVMNe8sXmmyorODpGCM": {
+      "algorithm": "ssh-ed25519",
+      "comment": "person@laptop",
+      "fingerprint": "SHA256:ie96zLdp9BkGxjqBG3AldJ2imVMNe8sXmmyorODpGCM",
+      "options": null,
+      "readable": true,
+      "source": "/home/deploy/.ssh/authorized_keys",
+      "uid": 1000,
+      "user": "deploy"
+    },
+    "sudoer|%wheel": {
+      "all_commands": true,
+      "group": true,
+      "nopasswd": false,
+      "rules": [
+        {
+          "all_commands": true,
+          "nopasswd": false,
+          "source": "/etc/sudoers",
+          "spec": "ALL=(ALL) ALL",
+          "spec_redacted": false
+        }
+      ],
+      "spec_redacted": false,
+      "who": "%wheel"
+    }
+  }
+}
