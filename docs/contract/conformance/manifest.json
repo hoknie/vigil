@@ -1,0 +1,89 @@
+{
+  "format": "host-findings/v1",
+  "cases": [
+    {
+      "file": "accept/port-listen-new.json",
+      "expect": "accept"
+    },
+    {
+      "file": "accept/unix-socket.json",
+      "expect": "accept"
+    },
+    {
+      "file": "accept/account-uid0.json",
+      "expect": "accept"
+    },
+    {
+      "file": "accept/agent-store-damaged.json",
+      "expect": "accept"
+    },
+    {
+      "file": "accept/exec-from-writable-path.json",
+      "expect": "accept",
+      "why": "shape of a finding about what a named person started, added in 1.2: the subject is a person-and-program pair, finding_key is the snapshot key with no prefix, and the command arguments are present because the producing host had argument capture enabled"
+    },
+    {
+      "file": "accept/agent-budget-exceeded.json",
+      "expect": "accept",
+      "why": "the agent reporting on its own cost: the subject is the agent itself, the finding_key names the part of the budget that went over, and the evidence carries the measured share of each collector together with the schedule block an operator copies into the configuration. Its pair, agent.budget.recovered, closes it under the same finding_key"
+    },
+    {
+      "file": "accept/from-a-newer-producer.json",
+      "expect": "accept"
+    },
+    {
+      "file": "accept/previous-minor.json",
+      "expect": "accept"
+    },
+    {
+      "file": "accept/nothing-happened.json",
+      "expect": "accept"
+    },
+    {
+      "file": "reject/missing-event-id.json",
+      "expect": "reject",
+      "rejected_by": "parser",
+      "why": "event_id is required: without it an at-least-once delivery cannot be deduplicated"
+    },
+    {
+      "file": "reject/occurrences-as-text.json",
+      "expect": "reject",
+      "rejected_by": "parser",
+      "why": "occurrences is an integer; the string \"1\" sorts as text, placing 10 before 2"
+    },
+    {
+      "file": "reject/no-host.json",
+      "expect": "reject",
+      "rejected_by": "parser",
+      "why": "host is required: a batch that does not name its host cannot be correlated"
+    },
+    {
+      "file": "reject/state-invented.json",
+      "expect": "reject",
+      "rejected_by": "parser",
+      "why": "state is a closed vocabulary of two values"
+    },
+    {
+      "file": "reject/a-major-too-far-ahead.json",
+      "expect": "reject",
+      "rejected_by": "version",
+      "why": "MAJOR 3 against a 1.x receiver. The rule is N and N-1: a 1.x receiver takes 0.x and refuses two MAJORs ahead, where a required field may have been removed or retyped"
+    },
+    {
+      "file": "reject/timestamp-without-milliseconds.json",
+      "expect": "reject",
+      "rejected_by": "schema",
+      "why": "the fixed-width UTC shape allows sorting and windowing by text; a parser that takes any RFC 3339 string does not catch this"
+    },
+    {
+      "file": "accept/the-previous-major.json",
+      "expect": "accept",
+      "why": "the other half of the N and N-1 rule: the whole previous MAJOR is accepted"
+    }
+  ],
+  "rejected_by": {
+    "parser": "refused during deserialisation: a required field is missing, has the wrong type, or carries a value outside a closed vocabulary",
+    "version": "the document parses; the version acceptance rule refuses it (own MAJOR at any MINOR, plus the whole previous MAJOR)",
+    "schema": "the document parses and the version is acceptable; only validation against the JSON Schema catches it. Listed so a receiver that does not validate knows what it is not checking"
+  }
+}
