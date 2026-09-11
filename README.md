@@ -17,8 +17,9 @@ Components:
 ## Install
 
 ```bash
-dpkg -i vigil_0.1.0_amd64.deb        # Debian, Ubuntu
-rpm -i vigil-0.1.0-1.x86_64.rpm      # RHEL, Rocky, AlmaLinux, Fedora
+dpkg -i vigil_0.1.0.debian.amd64.deb    # Debian, Ubuntu
+rpm -i vigil_0.1.0.el.x86_64.rpm        # RHEL, Rocky, AlmaLinux, Fedora
+tar -xzf vigil_0.1.0.linux.x86_64.tar.gz  # anywhere else: the binaries and the unit
 
 vigild configure --dry-run           # what this host can watch
 systemctl enable --now vigild        # enable and start vigil
