@@ -56,9 +56,7 @@ A collector that cannot read here is written out switched off, with the reason b
     )]
     Configure(Configure),
 
-    #[command(
-        about = "Switch one collector on or off in the configuration, and on this host"
-    )]
+    #[command(about = "Switch one collector on or off in the configuration, and on this host")]
     Collector(Collector),
 }
 
