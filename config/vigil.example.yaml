@@ -1,0 +1,23 @@
+state_dir: /var/lib/vigil
+socket_path: /run/vigil/vigil.sock
+retention_days: 90
+
+collectors:
+  - ports
+  - users
+  - persistence
+  - processes
+  - launches
+
+schedule:
+  ports: 30
+  users: 300
+  persistence: 300
+  processes: 30
+  launches: 15
+
+suppressions: []
+
+record_launch_arguments: false
+
+reporters: []
