@@ -1631,7 +1631,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "vigil"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "clap",
  "ratatui",
@@ -1641,14 +1641,14 @@ dependencies = [
 
 [[package]]
 name = "vigil-audit-plugin"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "vigil-collect",
 ]
 
 [[package]]
 name = "vigil-collect"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "serde_json",
  "sha2",
@@ -1657,7 +1657,7 @@ dependencies = [
 
 [[package]]
 name = "vigil-model"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "serde",
  "serde_json",
@@ -1665,7 +1665,7 @@ dependencies = [
 
 [[package]]
 name = "vigil-report"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "serde_json",
  "vigil-model",
@@ -1673,7 +1673,7 @@ dependencies = [
 
 [[package]]
 name = "vigil-rules"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "serde_json",
  "vigil-model",
@@ -1681,7 +1681,7 @@ dependencies = [
 
 [[package]]
 name = "vigil-store"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "serde_json",
  "vigil-model",
@@ -1689,7 +1689,7 @@ dependencies = [
 
 [[package]]
 name = "vigild"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "clap",
  "serde",
