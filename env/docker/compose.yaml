@@ -1,0 +1,90 @@
+name: vigil
+
+services:
+  vigil:
+    build:
+      context: ../..
+      dockerfile: env/docker/Dockerfile
+    image: vigil-workbench:1.98.1-alpine3.22
+
+    volumes:
+      - ../..:/work
+      - build:/build
+      - cargo-registry:/usr/local/cargo/registry
+      - state:/var/lib/vigil
+      - findings:/var/log/vigil
+      - run:/run/vigil
+
+    working_dir: /work
+
+    tty: true
+    stdin_open: true
+    init: true
+
+    environment:
+      CARGO_TERM_COLOR: always
+      RUST_BACKTRACE: 1
+      TERM: xterm-256color
+
+    user: root
+
+    command: ["./env/docker/smoke.sh"]
+
+  vigild:
+    build:
+      context: ../..
+      dockerfile: env/docker/Dockerfile
+    image: vigil-workbench:1.98.1-alpine3.22
+    volumes:
+      - ../..:/work
+      - build:/build
+      - cargo-registry:/usr/local/cargo/registry
+      - state:/var/lib/vigil
+      - findings:/var/log/vigil
+      - run:/run/vigil
+    working_dir: /work
+    user: root
+    init: true
+    environment:
+      CARGO_TERM_COLOR: always
+      RUST_BACKTRACE: 1
+    command:
+      - bash
+      - -c
+      - cargo build --bin vigild && exec /build/target/debug/vigild env/docker/vigil.container.yaml
+    stop_signal: SIGTERM
+    stop_grace_period: 10s
+
+  shell:
+    build:
+      context: ../..
+      dockerfile: env/docker/Dockerfile
+    image: vigil-workbench:1.98.1-alpine3.22
+    depends_on:
+      - vigild
+    pid: "service:vigild"
+    network_mode: "service:vigild"
+    volumes:
+      - ../..:/work
+      - build:/build
+      - cargo-registry:/usr/local/cargo/registry
+      - state:/var/lib/vigil
+      - findings:/var/log/vigil
+      - run:/run/vigil
+    working_dir: /work
+    user: root
+    init: true
+    tty: true
+    stdin_open: true
+    environment:
+      CARGO_TERM_COLOR: always
+      RUST_BACKTRACE: 1
+      TERM: xterm-256color
+    command: ["bash", "-l"]
+
+volumes:
+  build:
+  cargo-registry:
+  findings:
+  run:
+  state:

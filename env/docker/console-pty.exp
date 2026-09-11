@@ -1,0 +1,398 @@
+#!/usr/bin/expect -f
+
+set console [lindex $argv 0]
+if {$console eq ""} { set console "/build/target/debug/vigil" }
+
+set timeout 15
+set failures 0
+
+set env(COLUMNS) 140
+set env(LINES) 30
+set env(TERM) xterm-256color
+stty rows 30 columns 140
+
+proc note {what} { puts "  ·  $what" }
+
+proc repaint {} {
+    global spawn_out
+    catch { exec stty rows 29 columns 140 < $spawn_out(slave,name) }
+    after 250
+    catch { exec stty rows 30 columns 140 < $spawn_out(slave,name) }
+    after 250
+}
+
+proc drawn {{seconds 2}} {
+    global spawn_id
+    repaint
+    set text ""
+    set deadline [expr {[clock seconds] + $seconds}]
+    while {[clock seconds] < $deadline} {
+        set timeout 1
+        expect {
+            -re {.+} { append text $expect_out(buffer) }
+            timeout {}
+            eof { break }
+        }
+    }
+    regsub -all {\x1b\[[0-9;?]*[a-zA-Z]} $text "" text
+    regsub -all {\x1b\][^\x07]*\x07} $text "" text
+    regsub -all {\x1b[()][A-Za-z0-9]} $text "" text
+    regsub -all {\x1b[=>]} $text "" text
+    return $text
+}
+
+proc settle {} { drawn 2 }
+
+proc steady {{seconds 3}} {
+    drawn 1
+    return [drawn $seconds]
+}
+
+proc squash {text} {
+    regsub -all {[ \t]+} $text "" text
+    return $text
+}
+
+proc check_loose {what haystack needle} {
+    check $what [squash $haystack] [squash $needle]
+}
+
+proc check_absent_loose {what haystack needle} {
+    check_absent $what [squash $haystack] [squash $needle]
+}
+
+proc check {what haystack needle} {
+    global failures
+    if {[string first $needle $haystack] >= 0} {
+        puts "  ok   $what"
+    } else {
+        incr failures
+        puts "  FAIL $what · did not find: $needle"
+        puts "-------- what the console drew --------"
+        puts $haystack
+        puts "---------------------------------------"
+    }
+}
+
+proc check_absent {what haystack needle} {
+    global failures
+    if {[string first $needle $haystack] < 0} {
+        puts "  ok   $what"
+    } else {
+        incr failures
+        puts "  FAIL $what · found what must be absent: $needle"
+        puts "-------- what the console drew --------"
+        puts $haystack
+        puts "---------------------------------------"
+    }
+}
+
+set Down   "\033\[B"
+set Up     "\033\[A"
+set Right  "\033\[C"
+set Left   "\033\[D"
+set Enter  "\r"
+set Esc    "\033"
+
+proc printed {command} {
+    set text ""
+    spawn -noecho {*}$command
+    expect {
+        -re {.+} { append text $expect_out(buffer); exp_continue }
+        eof {}
+        timeout {}
+    }
+    catch wait
+    return $text
+}
+
+proc alive {process} {
+    return [file exists "/proc/$process"]
+}
+
+proc opened_port {} {
+    for {set tries 0} {$tries < 6} {incr tries} {
+        set port [expr {20000 + ([clock milliseconds] + [pid] + $tries * 1013) % 30000}]
+        if {[catch { exec nc -l -p $port < /dev/null > /dev/null 2> /dev/null & } listener]} {
+            continue
+        }
+        after 800
+        if {[alive $listener]} { return [list $port $listener] }
+    }
+    return [list 0 0]
+}
+
+proc waiting_for {needle {seconds 120}} {
+    set wanted [squash $needle]
+    set deadline [expr {[clock seconds] + $seconds}]
+    set page [drawn 3]
+    while {[string first $wanted [squash $page]] < 0 && [clock seconds] < $deadline} {
+        set page [drawn 3]
+    }
+    return $page
+}
+
+note "the help is coloured under a terminal, and plain under NO_COLOR"
+foreach program [list $console [file join [file dirname $console] vigild]] {
+    if {![file executable $program]} { continue }
+    set name [file tail $program]
+
+    set coloured [printed [list $program --help]]
+    check "$name --help prints its examples" $coloured "Examples:"
+    if {[string first "\x1b\[" $coloured] >= 0} {
+        puts "  ok   $name --help is coloured under a terminal"
+    } else {
+        incr failures
+        puts "  FAIL $name --help has no colour in it under a terminal"
+    }
+
+    set env(NO_COLOR) 1
+    set plain [printed [list $program --help]]
+    unset env(NO_COLOR)
+    if {[string first "\x1b\[" $plain] < 0} {
+        puts "  ok   $name --help adds nothing at all under NO_COLOR"
+    } else {
+        incr failures
+        puts "  FAIL $name --help still writes escapes under NO_COLOR"
+    }
+
+    set stripped $coloured
+    regsub -all {\x1b\[[0-9;?]*[a-zA-Z]} $stripped "" stripped
+    check "$name --help reads the same with the colour stripped" [squash $stripped] [squash $plain]
+}
+
+note "a listening port is opened before the console starts, for the agent to find"
+set opened [opened_port]
+set port [lindex $opened 0]
+set listener [lindex $opened 1]
+if {$port == 0} {
+    incr failures
+    puts "  FAIL no port could be opened here, so the trail from a finding cannot be walked"
+} else {
+    puts "  ok   :$port is listening, held by nc $listener"
+}
+
+puts "spawning $console under a pseudo-terminal"
+spawn $console ui
+match_max 400000
+settle
+
+note "the console opens on the main screen, with the cursor on a section"
+set page [drawn]
+check_loose "the main screen is the one that opens" $page "▸ What this agent watches"
+check_loose "it names what the agent reads" $page "WHAT IT READS"
+check_loose "and what it makes of it" $page "WHAT IT CONCLUDES"
+check "the cursor is on a row" $page " > "
+check_loose "the footer names the range that opens something" $page "1 - 6"
+check_absent_loose "and the row of screen names along the top is gone" $page "▸ 1 summary"
+
+note "a section's row carries its number, how many objects and when it last read"
+check_loose "ports is the first section" $page "1 ports"
+check_loose "accounts is the second" $page "2 accounts"
+check_loose "programs is the third" $page "3 programs"
+check_loose "startup is the fourth" $page "4 startup"
+check_loose "summary is the fifth" $page "5 summary"
+check_loose "findings is the sixth" $page "6 findings"
+check_loose "and the table says what each row holds" $page "WHATITHOLDS"
+
+note "/ on the main screen says where the search lives and does not move the reader"
+send "/"
+set page [drawn]
+check_loose "it says where search belongs" $page "open one and press /"
+check_loose "and the main screen is still the one open" $page "▸ What this agent watches"
+
+note "3: programs, opened by the number drawn on its row"
+send "3"
+set page [drawn 3]
+check_loose "the section opened" $page "▸ What has run here"
+check_loose "and the caret is on its row of lists" $page "▸ \[running\] · launches"
+
+note "→: the second list, which nothing on this host fills"
+send $Right
+set page [steady 3]
+check_loose "the second list is open" $page "running · \[launches\]"
+check_loose "and the empty list says what state it is in" $page "The agent has not taken this reading yet."
+check_loose "rather than leaving the reader to guess" $page "The first one is due within the period on the summary screen."
+check_absent_loose "so there is no empty table under it" $page "WHO PROGRAM FIRST SEEN"
+check_loose "and the screen says a collector here is not reading everything" $page "not reading everything"
+
+note "←, ↓, →: back to the list the collector fills, into it, into the detail of a row"
+send $Left
+set page [drawn 3]
+check_loose "the first list is open again" $page "▸ \[running\] · launches"
+check_loose "and it says what it is" $page "one row per program found running, and as whom"
+send $Down
+set page [drawn 3]
+check "the cursor is on a row" $page " > "
+send $Right
+set page [drawn 3]
+check_loose "the detail of a program opened" $page "▸ THE SELECTED PROGRAM"
+send "G"
+set page [drawn 3]
+check_loose "and G reaches the suppression at the end of it" $page "suppressions:"
+
+note "2 from the detail: a number works from every rung"
+send "2"
+set page [steady 3]
+check_loose "the accounts section opened" $page "▸ Who can log in"
+check_loose "on its top rung, the row of lists" $page "▸ \[users\]"
+check_absent_loose "and not in a detail" $page "THE SELECTED PROGRAM"
+
+note "Esc from the top rung of a section: the main screen, cursor where it was left"
+send $Esc
+set page [drawn 3]
+check_loose "the main screen is back" $page "▸ What this agent watches"
+check_loose "with the cursor on the section just left" $page "> 2 accounts"
+
+note "↓ ↓, Enter, →: down to startup, into it, along its lists"
+send $Down
+after 200
+send $Down
+set page [drawn 3]
+check_loose "the cursor moved down the sections" $page "> 4 startup"
+send $Enter
+set page [drawn 3]
+check_loose "the section opened" $page "▸ What starts by itself"
+check_loose "and its five lists are on the screen" $page "\[units\] · timers · cron · modules · files"
+send $Right
+set page [drawn 3]
+check_loose "the second list is open" $page "\[timers\]"
+check_loose "and it says what it is" $page "every systemd timer"
+
+note "Esc twice: out of the list and out of the section"
+send $Esc
+after 300
+send $Esc
+after 300
+set page [drawn 3]
+check_loose "the main screen is back" $page "▸ What this agent watches"
+check_loose "and every section row carries a state" $page "STATE"
+
+note "6: the findings, narrowed to the port opened for this run"
+send "6"
+set page [drawn 3]
+check_loose "the findings section opened" $page "▸ What the agent has found"
+send "/"
+foreach digit [split $port ""] {
+    send $digit
+    after 80
+}
+send $Enter
+set page [waiting_for "port.listen|tcp|0.0.0.0:$port"]
+check_loose "the agent noticed the port that was opened while it watched" $page "port.listen.new"
+check_loose "and the object it names is that socket" $page "port.listen|tcp|0.0.0.0:$port"
+check_loose "the search holds the rest of them back" $page "matching \"$port\""
+check "and the cursor is on the one row left" $page " > "
+
+note "o: onto the socket the finding is about"
+send "o"
+set page [drawn 3]
+check_loose "the section that holds the object opened" $page "▸ What is listening"
+check_loose "the sockets themselves are what it holds" $page "PROTO ADDRESS USER PROGRAM"
+check_loose "and the cursor is on the socket the finding named" $page "> tcp 0.0.0.0:$port"
+check_loose "and the hint names where Esc goes now" $page "back to the finding"
+
+note "Esc from there: back to the finding it was pressed on"
+send $Esc
+set page [steady 3]
+check_loose "the findings are back" $page "▸ What the agent has found"
+check_loose "on the finding o was pressed on" $page "port.listen|tcp|0.0.0.0:$port"
+check "and the cursor is on a row" $page " > "
+check_absent_loose "and the hint no longer promises a finding" $page "back to the finding"
+
+note "Esc again: the trail is spent, so this one puts the search down"
+send $Esc
+set page [steady 3]
+check_loose "the findings are still the screen open" $page "▸ What the agent has found"
+check_absent_loose "with nothing held back any more" $page "matching \"$port\""
+check_loose "and what the search hid is back" $page "agent.collector.degraded"
+
+note "Esc once more: nothing left to undo, so this one is the ladder"
+send $Esc
+set page [drawn 3]
+check_loose "the main screen" $page "▸ What this agent watches"
+
+note "the port opened for this run is closed behind it"
+catch { exec kill $listener }
+
+note "1, /: the search belongs to the list the reader is in"
+send "1"
+after 400
+send "/"
+set page [drawn 3]
+check_loose "the box opened on the ports, where the reader was" $page "every value the agent read"
+check_loose "and did not move them to the findings" $page "▸ What is listening"
+send "nginxq"
+after 300
+send "\177"
+set page [drawn 3]
+check "the list narrowed to the rows that match" $page "nginx"
+check_loose "and the console did not quit on that q" $page "sockets"
+send $Esc
+after 300
+set page [drawn 3]
+check "the rows are back" $page "PROTO"
+
+note "→: the detail of a socket, with the whole path the table cut"
+send $Right
+set page [drawn 3]
+check_loose "the socket detail opened" $page "▸ THE SELECTED SOCKET"
+check "with the suppression to copy" $page "suppressions:"
+
+note "Tab does nothing at all: the row it walked no longer exists"
+send $Esc
+after 300
+send $Esc
+after 300
+send $Esc
+after 300
+set before [drawn 3]
+check_loose "three rungs out of the socket detail is the main screen" $before "▸ What this agent watches"
+send "\t"
+set after [drawn 3]
+check_loose "the main screen did not move under Tab" $after "▸ What this agent watches"
+check_absent_loose "and Tab did not open a section" $after "▸ What is listening"
+
+note "5: the summary, and what is kept on disk"
+send "5"
+set page [drawn 3]
+check_loose "the summary opened" $page "▸ This host and its agent"
+check_loose "the collectors table says how often each one reads" $page "EVERY"
+check_loose "and there is a place for what is kept on disk" $page "WHATISKEPTONDISK"
+
+note "q: the console leaves and gives the terminal back"
+send "q"
+set parting ""
+expect {
+    -re {.+} { append parting $expect_out(buffer); exp_continue }
+    eof {}
+    timeout {
+        incr failures
+        puts "  FAIL the console did not exit on q"
+    }
+}
+if {[string first "\x1b\[?1049l" $parting] >= 0} {
+    puts "  ok   it left the alternate screen behind it"
+} else {
+    incr failures
+    puts "  FAIL it did not restore the terminal on the way out"
+}
+
+catch wait result
+set code [lindex $result 3]
+if {$code == 0} {
+    puts "  ok   it exited 0"
+} else {
+    incr failures
+    puts "  FAIL it exited $code"
+}
+
+catch { exec kill $listener }
+
+puts ""
+if {$failures == 0} {
+    puts "console-pty: ok, driven under a real terminal"
+    exit 0
+}
+puts "console-pty: $failures check(s) failed"
+exit 1

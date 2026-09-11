@@ -1,0 +1,16 @@
+state_dir: /var/lib/vigil
+socket_path: /run/vigil/vigil.sock
+
+interval_seconds: 10
+
+retention_days: 90
+
+reporters:
+  - kind: ndjson
+    path: /var/log/vigil/findings.ndjson
+
+suppressions:
+  - finding_key_prefix: "port.listen|tcp|127.0.0.11:"
+    reason: docker's embedded dns resolver, ephemeral ports by design
+  - finding_key_prefix: "port.listen|udp|127.0.0.11:"
+    reason: docker's embedded dns resolver, ephemeral ports by design
