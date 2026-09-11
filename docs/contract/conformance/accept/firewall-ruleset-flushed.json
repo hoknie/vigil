@@ -1,0 +1,114 @@
+{
+  "schema_version": "1.2",
+  "batch_id": "0192f4a7-5d10-7b22-9c04-6e1d2a8b4f51",
+  "sent_at": "2026-09-11T14:31:05.220Z",
+  "producer": {
+    "name": "vigil",
+    "version": "1.0.1"
+  },
+  "host": {
+    "host_id": "b7f1c0a93e5d4821bb2f6c1d9e0a7f34",
+    "install_id": "0192e7aa-1c02-7f10-8d44-9a1b6c2e5f03",
+    "boot_id": "6f2c1d84-9b3a-4c77-8e21-0f5a2b6c9d18",
+    "hostname": "web-03",
+    "os": {
+      "family": "linux",
+      "distro": "debian",
+      "version": "12",
+      "kernel": "6.1.0-18-amd64",
+      "arch": "x86_64"
+    },
+    "addresses": [
+      "10.0.0.13"
+    ],
+    "tags": {
+      "host_id_source": "/etc/machine-id"
+    }
+  },
+  "findings": [
+    {
+      "event_id": "0192f4a7-6b31-7c08-8a17-3d5b9c0e2f44",
+      "finding_key": "firewall|table|inet filter",
+      "kind": "firewall.ruleset_flushed",
+      "severity": "high",
+      "state": "open",
+      "observed_at": "2026-09-11T14:31:02.104Z",
+      "first_seen_at": "2026-09-11T14:31:02.104Z",
+      "occurrences": 1,
+      "title": "The inet table filter was deleted with 14 rule(s) in it",
+      "subject": {
+        "type": "firewall_table",
+        "key": {
+          "family": "inet",
+          "table": "filter"
+        }
+      },
+      "before": {
+        "family": "inet",
+        "name": "filter",
+        "chains": 4,
+        "rules": 14
+      },
+      "evidence": [
+        {
+          "kind": "note",
+          "value": "nft flush ruleset and nft delete table both leave the table absent; a reload by firewalld or a container runtime looks the same from here"
+        }
+      ],
+      "rule": "firewall_ruleset_flushed"
+    },
+    {
+      "event_id": "0192f4a7-6b31-7c08-8a17-3d5b9c0e2f45",
+      "finding_key": "firewall|summary|nftables",
+      "kind": "firewall.disabled",
+      "severity": "high",
+      "state": "open",
+      "observed_at": "2026-09-11T14:31:02.104Z",
+      "first_seen_at": "2026-09-11T14:31:02.104Z",
+      "occurrences": 1,
+      "title": "This host no longer filters incoming packets: 0 chain(s) on the input hook, was 1",
+      "subject": {
+        "type": "firewall",
+        "key": {
+          "backend": "nftables"
+        }
+      },
+      "before": {
+        "version": "1.0.6",
+        "families": [
+          "inet",
+          "ip"
+        ],
+        "tables": 2,
+        "chains": 7,
+        "base_chains": 5,
+        "rules": 20,
+        "hooked_on_input": 1,
+        "legacy_backend": false
+      },
+      "after": {
+        "version": "1.0.6",
+        "families": [
+          "ip"
+        ],
+        "tables": 1,
+        "chains": 3,
+        "base_chains": 2,
+        "rules": 6,
+        "hooked_on_input": 0,
+        "legacy_backend": false
+      },
+      "evidence": [
+        {
+          "kind": "note",
+          "value": "1 table(s), 3 chain(s) in all, 6 rule(s), 0 chain(s) on the input hook; families ip"
+        },
+        {
+          "kind": "note",
+          "value": "every listening socket on this host is now reachable by anything that can route to it"
+        }
+      ],
+      "rule": "firewall_disabled"
+    }
+  ]
+}
