@@ -5,6 +5,11 @@ Format:
 - [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - [SemVer](https://semver.org/spec/v2.0.0.html)
 
+## [1.0.1] - 09/11/2026
+
+### Fixed
+- a release run over a tag that already has a release updates it instead of failing
+
 ## [1.0.0] - 09/11/2026
 
 ### Added

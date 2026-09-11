@@ -126,9 +126,17 @@ jobs:
           *-*|*~*) marking=(--prerelease) ;;
           *) marking=(--latest) ;;
           esac
-          gh release create "$TAG" \
-            --title "vigil $TAG" \
-            --notes-file "$RUNNER_TEMP/release-notes.md" \
-            --verify-tag \
-            "${marking[@]}" \
-            dist/release/*
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" \
+              --title "vigil $TAG" \
+              --notes-file "$RUNNER_TEMP/release-notes.md" \
+              "${marking[@]}"
+            gh release upload "$TAG" --clobber dist/release/*
+          else
+            gh release create "$TAG" \
+              --title "vigil $TAG" \
+              --notes-file "$RUNNER_TEMP/release-notes.md" \
+              --verify-tag \
+              "${marking[@]}" \
+              dist/release/*
+          fi
