@@ -1,0 +1,9 @@
+[package]
+name = "vigil-rules"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+vigil-model = { path = "../vigil-model" }
+serde_json.workspace = true

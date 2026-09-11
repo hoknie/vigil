@@ -1,0 +1,49 @@
+use std::collections::BTreeMap;
+
+use vigil_model::Snapshot;
+
+use super::refusal::Refusal;
+
+pub enum Reading {
+    Unknown,
+    NotTakenYet,
+    Refused(Refusal),
+    Taken(Snapshot),
+}
+
+#[derive(Default)]
+pub struct Readings {
+    taken: BTreeMap<String, Reading>,
+}
+
+static NOT_ASKED: Reading = Reading::Unknown;
+
+impl Readings {
+    pub fn of(&self, collector: &str) -> &Reading {
+        self.taken.get(collector).unwrap_or(&NOT_ASKED)
+    }
+
+    pub fn put(&mut self, collector: impl Into<String>, reading: Reading) {
+        self.taken.insert(collector.into(), reading);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_collector_nobody_has_asked_about_is_not_a_collector_that_read_nothing() {
+        let mut readings = Readings::default();
+        readings.put(
+            "ports",
+            Reading::Taken(Snapshot::new("ports", "2026-09-09T09:00:00.000Z")),
+        );
+
+        assert!(matches!(readings.of("users"), Reading::Unknown));
+        assert!(
+            matches!(readings.of("ports"), Reading::Taken(_)),
+            "and one that was asked and answered empty is an empty host, not a silence"
+        );
+    }
+}

@@ -1,0 +1,12 @@
+[package]
+name = "vigil-audit-plugin"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "vigil-audit-plugin"
+path = "src/main.rs"
+
+[dependencies]
+vigil-collect = { path = "../../crates/vigil-collect" }
