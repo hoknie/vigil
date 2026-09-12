@@ -10,6 +10,9 @@ fn every_collector_this_build_has_is_in_the_product_vocabulary_and_the_other_way
         super::ProcessesCollector::new(now).name(),
         super::FirewallCollector::new(now).name(),
         super::LaunchesCollector::new(now, false).name(),
+        super::ResourcesCollector::new(now).name(),
+        super::ContainersCollector::new(now).name(),
+        super::FilesCollector::new(now, &[], 0).name(),
     ];
 
     for name in &built {

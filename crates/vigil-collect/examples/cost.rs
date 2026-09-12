@@ -25,6 +25,17 @@ fn main() {
         "persistence" => Box::new(vigil_collect::PersistenceCollector::new(now)),
         "processes" => Box::new(vigil_collect::ProcessesCollector::new(now)),
         "firewall" => Box::new(vigil_collect::FirewallCollector::new(now)),
+        "resources" => Box::new(vigil_collect::ResourcesCollector::new(now)),
+        "containers" => Box::new(vigil_collect::ContainersCollector::new(now)),
+        "files" => Box::new(vigil_collect::FilesCollector::new(
+            now,
+            &[
+                "/etc/ssh/sshd_config".to_string(),
+                "/etc/hosts".to_string(),
+                "/etc/nsswitch.conf".to_string(),
+            ],
+            1024 * 1024,
+        )),
         "launches" => Box::new(vigil_collect::LaunchesCollector::new(now, false)),
         other => {
             eprintln!("no collector named {other}");

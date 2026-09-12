@@ -38,6 +38,24 @@ pub const COLLECTORS: &[KnownCollector] = &[
         unit: Some("vigil-firewall.timer"),
     },
     KnownCollector {
+        name: "resources",
+        subject: "the boot this host is running, the moment it started and the size of it",
+        every_seconds: 60,
+        unit: None,
+    },
+    KnownCollector {
+        name: "containers",
+        subject: "the containers running on this host, what they may do and what of this host they hold",
+        every_seconds: 60,
+        unit: None,
+    },
+    KnownCollector {
+        name: "files",
+        subject: "the files this host is configured by, and whether any of them changed",
+        every_seconds: 300,
+        unit: None,
+    },
+    KnownCollector {
         name: "launches",
         subject: "what people run, from the kernel's audit records",
         every_seconds: 15,
@@ -176,6 +194,9 @@ mod tests {
         assert_eq!(every_seconds_of("processes"), Some(30));
         assert_eq!(every_seconds_of("users"), Some(300));
         assert_eq!(every_seconds_of("persistence"), Some(300));
+        assert_eq!(every_seconds_of("resources"), Some(60));
+        assert_eq!(every_seconds_of("containers"), Some(60));
+        assert_eq!(every_seconds_of("files"), Some(300));
     }
 
     #[test]

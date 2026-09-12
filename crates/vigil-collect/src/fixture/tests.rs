@@ -2,7 +2,9 @@ use vigil_model::{Golden, Shape, Snapshot, class_of};
 
 use crate::COLLECTORS;
 
-use super::{accounts, firewall, launches, persistence, ports, processes};
+use super::{
+    accounts, containers, files, firewall, launches, persistence, ports, processes, resources,
+};
 
 fn readings() -> Vec<Snapshot> {
     vec![
@@ -12,6 +14,9 @@ fn readings() -> Vec<Snapshot> {
         persistence(),
         firewall(),
         launches(),
+        resources(),
+        containers(),
+        files(),
     ]
 }
 
