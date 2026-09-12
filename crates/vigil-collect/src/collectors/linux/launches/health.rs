@@ -6,7 +6,7 @@ use super::LaunchesCollector;
 use super::advice::nothing_carries_our_tag;
 use super::chunk::tail;
 use crate::Health;
-use crate::parsers::{AUDIT_KEY, any_launch_was_read};
+use crate::parsers::{AUDIT_KEY, any_launch_carries_our_tag, any_launch_was_read};
 use crate::spool::{CEILING_BYTES, dropped_note};
 
 const HEALTH_TAIL: u64 = 256 * 1024;
@@ -105,7 +105,7 @@ impl LaunchesCollector {
 
     fn carries_our_records(&self, path: &Path, length: u64) -> bool {
         match tail(path, length, HEALTH_TAIL) {
-            Ok(tail) => String::from_utf8_lossy(&tail).contains(AUDIT_KEY),
+            Ok(tail) => any_launch_carries_our_tag(&tail),
             Err(_) => false,
         }
     }

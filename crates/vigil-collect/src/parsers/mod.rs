@@ -25,8 +25,8 @@ pub use firewall::{
     parse_ip_tables_names, parse_nft_ruleset,
 };
 pub use launches::{
-    AUDIT_KEY, LaunchReading, any_launch_was_read, launches_snapshot, parse_audit_log,
-    record_is_read,
+    AUDIT_KEY, LaunchReading, any_launch_carries_our_tag, any_launch_was_read, launches_snapshot,
+    parse_audit_log, record_is_read,
 };
 pub use network::{
     ProcessOwner, Protocol, SocketRow, SocketsReading, UnixSocketRow, listening_snapshot,

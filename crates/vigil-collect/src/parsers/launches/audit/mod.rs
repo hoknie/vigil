@@ -11,4 +11,4 @@ mod text;
 mod tests;
 
 pub use execution::Execution;
-pub use log::{AUDIT_KEY, parse_audit_log, record_is_read};
+pub use log::{AUDIT_KEY, any_launch_carries_our_tag, parse_audit_log, record_is_read};

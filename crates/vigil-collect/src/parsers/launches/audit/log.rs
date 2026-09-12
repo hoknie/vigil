@@ -21,6 +21,13 @@ pub fn record_is_read(line: &[u8]) -> bool {
         .is_some_and(|kind| READ_RECORD_TYPES.contains(&unquote(kind)))
 }
 
+pub fn any_launch_carries_our_tag(chunk: &[u8]) -> bool {
+    String::from_utf8_lossy(chunk)
+        .lines()
+        .filter_map(Record::parse)
+        .any(|record| record.kind != RULE_CHANGE && carries_our_tag(&record))
+}
+
 pub fn parse_audit_log(chunk: &[u8], with_arguments: bool) -> AuditReading {
     let mut events: Vec<Event> = Vec::new();
     let mut rule_loaded = false;
@@ -81,6 +88,10 @@ pub fn parse_audit_log(chunk: &[u8], with_arguments: bool) -> AuditReading {
         consumed,
         rule_loaded,
     }
+}
+
+fn carries_our_tag(record: &Record) -> bool {
+    value(&record.fields, "key").is_some_and(|key| unquote(key).contains(AUDIT_KEY))
 }
 
 fn rule_was_loaded(record: &Record) -> bool {

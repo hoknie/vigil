@@ -15,6 +15,7 @@ Format:
 - health is now taken right after a reading that found something
 - a collector whose reading fails raises a finding, once, and a reading that goes through closes it
 - a complaint a previous run left open is closed by the first reading that goes through, not by the greeting
+- the record that loads the audit rule is no longer counted as somebody having run something
 
 
 ## [1.0.4] - 09/12/2026
