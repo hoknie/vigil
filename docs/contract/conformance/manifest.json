@@ -33,6 +33,16 @@
       "why": "one command on the host and two findings out of it: the table that lost its rules and the host that stopped filtering. The finding_key of the second is the whole ruleset (firewall|summary|nftables) and firewall.enabled closes it under that key; the first has no closing pair, because rules that came back are not the rules that were there. The subject of a firewall finding names the table and the chain, never a single rule"
     },
     {
+      "file": "accept/agent-collector-recovered.json",
+      "expect": "accept",
+      "why": "the pair that closes agent.collector.degraded: same finding_key (agent.collector|<name>), the kind agent.collector.recovered, and the state the collector was in carried as evidence. Without this document a receiver has no reason to expect the closing kind, and shows a dead collector for the life of the host"
+    },
+    {
+      "file": "accept/agent-buffer-dropping.json",
+      "expect": "accept",
+      "why": "what a receiver that has been unreachable long enough eventually gets told: the outgoing buffer reached its ceiling and is discarding the oldest findings first. The subject is the buffer of one named reporter, the finding_key is agent.buffer|<reporter>, and agent.buffer.drained closes it under that key when the buffer has been emptied"
+    },
+    {
       "file": "accept/from-a-newer-producer.json",
       "expect": "accept"
     },

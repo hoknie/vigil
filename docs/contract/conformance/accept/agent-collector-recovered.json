@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.2",
+  "batch_id": "0192f3c1-8a44-7c1e-9b31-2f5c0a3d77e6",
+  "sent_at": "2026-09-11T09:20:11.044Z",
+  "producer": {
+    "name": "vigil",
+    "version": "0.1.0"
+  },
+  "host": {
+    "host_id": "b7f1c0a93e5d4821bb2f6c1d9e0a7f34",
+    "install_id": "0192e7aa-1c02-7f10-8d44-9a1b6c2e5f03",
+    "boot_id": "6f2c1d84-9b3a-4c77-8e21-0f5a2b6c9d18",
+    "hostname": "web-03",
+    "os": {
+      "family": "linux",
+      "distro": "debian",
+      "version": "12",
+      "kernel": "6.1.0-18-amd64",
+      "arch": "x86_64"
+    },
+    "addresses": [
+      "10.0.0.13"
+    ],
+    "tags": {
+      "host_id_source": "/etc/machine-id"
+    }
+  },
+  "findings": [
+    {
+      "event_id": "0192f3c2-3c66-7d24-9b30-7e9f4c0d5a41",
+      "finding_key": "agent.collector|launches",
+      "kind": "agent.collector.recovered",
+      "severity": "info",
+      "state": "open",
+      "observed_at": "2026-09-11T09:20:10.902Z",
+      "first_seen_at": "2026-09-11T09:20:10.902Z",
+      "occurrences": 1,
+      "title": "Collector launches: reading again",
+      "subject": {
+        "type": "collector",
+        "key": {
+          "name": "launches"
+        }
+      },
+      "evidence": [
+        {
+          "kind": "note",
+          "value": "launches is reading everything it watches again. Whatever happened while it could not is missing from the history of this host; the readings from here on are complete"
+        },
+        {
+          "kind": "was",
+          "value": "degraded — auditd is registered and has brought nothing since 2026-09-11T07:02:44.310Z"
+        }
+      ],
+      "rule": "collector_health"
+    }
+  ]
+}
