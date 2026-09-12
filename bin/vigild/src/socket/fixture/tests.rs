@@ -4,7 +4,7 @@ use serde_json::Value;
 use vigil_model::{Golden, Shape};
 
 use super::answers::every_state;
-use super::{refusals, settled, snapshot, statuses, stores};
+use super::{buffers, refusals, settled, snapshot, statuses, stores};
 use crate::socket::switched_off_reason;
 
 #[test]
@@ -32,6 +32,7 @@ fn an_answer_the_console_was_never_shown_is_an_answer_it_never_drew() {
     publishes("status", &statuses());
     publishes("refusal", &refusals());
     publishes("store", &stores());
+    publishes("buffer", &buffers());
 }
 
 #[test]
@@ -82,6 +83,26 @@ fn a_collector_that_is_switched_off_names_no_next_run_and_no_period() {
     assert!(
         off["reason"].is_string(),
         "off without a word is indistinguishable from broken: {off}"
+    );
+}
+
+#[test]
+fn a_second_receiver_of_one_kind_is_a_second_row_and_not_a_second_number_in_one() {
+    let samples = buffers();
+
+    let names: Vec<&str> = samples
+        .values()
+        .map(|buffer| buffer["receiver"].as_str().expect("a name"))
+        .collect();
+    assert!(
+        names.contains(&"ndjson") && names.contains(&"ndjson-2"),
+        "two receivers of one kind hold two files and are two rows: {names:?}"
+    );
+    assert!(
+        samples
+            .values()
+            .any(|buffer| buffer["dropped_total"].as_u64().unwrap_or(0) > 0),
+        "no sample buffer has lost anything: the screen for it is tested against nothing"
     );
 }
 

@@ -1,6 +1,7 @@
 use vigil_collect::Health;
 use vigil_model::{
-    AgentBudget, CollectorState, CollectorStatus, Finding, Rfc3339, Silence, StoreStatus,
+    AgentBudget, BufferStatus, CollectorState, CollectorStatus, Finding, Kind, Rfc3339, Silence,
+    StoreStatus,
 };
 
 use super::State;
@@ -31,6 +32,10 @@ impl State {
 
     pub fn record_store(&mut self, store: StoreStatus) {
         self.footprint.store = Some(store);
+    }
+
+    pub fn record_buffers(&mut self, buffers: Vec<BufferStatus>) {
+        self.footprint.buffers = Some(buffers);
     }
 
     pub fn record_health(&mut self, collector: &str, health: &Health) {
@@ -66,6 +71,11 @@ impl State {
 
     pub fn record_findings(&mut self, findings: &[Finding]) {
         for finding in findings {
+            if let Kind::Known(kind) = &finding.kind
+                && let Some(ended) = kind.resolves()
+            {
+                self.findings.resolve(&finding.finding_key, ended.as_str());
+            }
             self.findings.push(finding.clone());
         }
     }

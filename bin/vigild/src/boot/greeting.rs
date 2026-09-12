@@ -55,7 +55,11 @@ impl Greeting<'_> {
             }
         }
         if self.damaged > 0 {
-            findings.push(agent_finding::store_damaged(self.damaged));
+            findings.push(agent_finding::store_damaged(
+                "findings",
+                "the local findings history",
+                self.damaged,
+            ));
         }
 
         findings

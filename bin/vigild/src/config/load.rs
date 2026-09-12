@@ -49,6 +49,16 @@ pub fn load(path: &str) -> Result<Config, ConfigError> {
         cause,
     })?;
 
+    config.resources.check().map_err(|cause| ConfigError {
+        path: path.to_string(),
+        cause,
+    })?;
+
+    config.files.check().map_err(|cause| ConfigError {
+        path: path.to_string(),
+        cause,
+    })?;
+
     for (index, receiver) in config.reporters.iter().enumerate() {
         if let Receiver::Syslog { facility } = receiver {
             SyslogFacility::parse(facility).map_err(|cause| ConfigError {

@@ -42,6 +42,20 @@ impl Ring {
         }
     }
 
+    pub fn resolve(&mut self, finding_key: &str, kind: &str) -> bool {
+        let mut closed = false;
+
+        for finding in self.items.iter_mut() {
+            let same = finding.finding_key == finding_key && finding.kind.as_str() == kind;
+            if same && finding.state == vigil_model::State::Open {
+                finding.state = vigil_model::State::Resolved;
+                closed = true;
+            }
+        }
+
+        closed
+    }
+
     pub fn latest(&self, limit: Option<usize>) -> Vec<Finding> {
         let wanted = limit.unwrap_or(self.items.len()).min(self.items.len());
         self.items.iter().rev().take(wanted).cloned().collect()
@@ -126,6 +140,26 @@ mod tests {
         it.observed_at = observed_at.to_string();
         it.first_seen_at = observed_at.to_string();
         it
+    }
+
+    #[test]
+    fn a_finding_that_something_closed_stops_reading_as_one_still_standing() {
+        let mut ring = Ring::new(10);
+        ring.push(finding("the-port"));
+
+        let closed = ring.resolve("port.listen|the-port", "port.listen.new");
+
+        assert!(closed);
+        assert_eq!(ring.latest(None)[0].state, State::Resolved);
+        assert_eq!(
+            ring.latest(None)[0].observed_at,
+            "2026-09-09T09:00:00.000Z",
+            "the moment it was found is when it was found; closing it does not move it up the list"
+        );
+        assert!(
+            !ring.resolve("port.listen|the-port", "port.listen.new"),
+            "a finding closed twice would raise a second closing finding on every reading"
+        );
     }
 
     #[test]

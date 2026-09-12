@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use serde_json::Value;
 use vigil_collect::Health;
-use vigil_model::{Counted, Severity, StoreDropped, StoreStatus};
+use vigil_model::{BufferStatus, Counted, Severity, StoreDropped, StoreStatus};
 
 use crate::socket::State;
 use crate::types::Startup;
@@ -38,16 +38,56 @@ pub fn store() -> StoreStatus {
     }
 }
 
+pub fn behind() -> BufferStatus {
+    BufferStatus {
+        receiver: "webhook".into(),
+        pending: 12,
+        pending_ceiling: 500,
+        bytes: 8_792,
+        bytes_ceiling: 4 * 1024 * 1024,
+        dropped_total: 0,
+        oldest_at: Some("2026-09-09T08:41:02.000Z".into()),
+    }
+}
+
+pub fn caught_up() -> BufferStatus {
+    BufferStatus {
+        receiver: "ndjson".into(),
+        pending_ceiling: 500,
+        bytes_ceiling: 4 * 1024 * 1024,
+        ..BufferStatus::default()
+    }
+}
+
+pub fn losing() -> BufferStatus {
+    BufferStatus {
+        receiver: "ndjson-2".into(),
+        pending: 500,
+        pending_ceiling: 500,
+        bytes: 369_664,
+        bytes_ceiling: 4 * 1024 * 1024,
+        dropped_total: 41,
+        oldest_at: Some("2026-09-08T22:14:09.000Z".into()),
+    }
+}
+
 pub fn every_state() -> State {
     let mut state = State::new(
         Startup {
             host: host(),
             started_at: "2026-09-09T08:00:00.000Z".into(),
             interval_seconds: 30,
-            periods: ["ports", "users", "persistence", "processes", "firewall"]
-                .into_iter()
-                .map(|name| (name.to_string(), period(name)))
-                .collect(),
+            periods: [
+                "ports",
+                "users",
+                "persistence",
+                "processes",
+                "firewall",
+                "resources",
+            ]
+            .into_iter()
+            .map(|name| (name.to_string(), period(name)))
+            .collect(),
         },
         &[
             ("ports", Health::Ok),
@@ -55,6 +95,9 @@ pub fn every_state() -> State {
             ("processes", Health::Unavailable(UNAVAILABLE.to_string())),
             ("persistence", Health::Ok),
             ("firewall", Health::Degraded(NO_RULESET_YET.to_string())),
+            ("resources", Health::Ok),
+            ("containers", Health::Ok),
+            ("files", Health::Ok),
         ],
         &["ndjson".to_string(), "webhook".to_string()],
         &["launches".to_string()],
@@ -62,9 +105,13 @@ pub fn every_state() -> State {
 
     state.record_reading(reading(snapshot()));
     state.record_reading(reading_of("persistence", snapshot()));
+    state.record_reading(reading_of("resources", snapshot()));
+    state.record_reading(reading_of("containers", snapshot()));
+    state.record_reading(reading_of("files", snapshot()));
     state.record_failure("persistence", "2026-09-09T09:00:30.000Z".into(), FAILED);
     state.record_budget(Some(0.02), Some(12_288));
     state.record_store(store());
+    state.record_buffers(vec![caught_up(), behind()]);
     state.record_findings(&[
         finding("a new listening port"),
         finding_of(Severity::Low, "a listening port closed"),
@@ -131,6 +178,14 @@ pub fn refusals() -> BTreeMap<String, Value> {
     }
 
     items
+}
+
+pub fn buffers() -> BTreeMap<String, Value> {
+    BTreeMap::from([
+        ("buffer|behind".to_string(), value(&behind())),
+        ("buffer|caught-up".to_string(), value(&caught_up())),
+        ("buffer|losing".to_string(), value(&losing())),
+    ])
 }
 
 pub fn stores() -> BTreeMap<String, Value> {

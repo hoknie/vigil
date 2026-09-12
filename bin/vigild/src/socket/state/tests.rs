@@ -203,6 +203,15 @@ fn the_limitations_are_published_rather_than_left_to_be_discovered() {
         "resolution and suppressions both landed: {:?}",
         agent.limitations
     );
+    assert!(
+        !agent
+            .limitations
+            .iter()
+            .any(|line| line.contains("Nothing is buffered")),
+        "the outgoing buffer landed: a screen that still tells an operator a failed delivery is \
+         lost teaches them to distrust something that now works: {:?}",
+        agent.limitations
+    );
 }
 
 #[test]
@@ -235,6 +244,79 @@ fn an_agent_that_reports_its_store_stops_saying_that_it_does_not() {
         agent.limitations
     );
     assert_eq!(agent.store.expect("a store").records.held, 4);
+}
+
+#[test]
+fn an_agent_that_reports_its_buffers_stops_saying_that_it_does_not() {
+    let mut state = fixture::state();
+    assert!(
+        state
+            .agent()
+            .limitations
+            .iter()
+            .any(|line| line.contains("waiting for a receiver")),
+        "until the numbers are on the wire, the screen has to say so"
+    );
+
+    state.record_buffers(vec![vigil_model::BufferStatus {
+        receiver: "ndjson".into(),
+        pending: 12,
+        pending_ceiling: 500,
+        ..vigil_model::BufferStatus::default()
+    }]);
+
+    let agent = state.agent();
+    assert!(
+        !agent
+            .limitations
+            .iter()
+            .any(|line| line.contains("waiting for a receiver")),
+        "{:?}",
+        agent.limitations
+    );
+    assert_eq!(agent.buffers.expect("the buffers").len(), 1);
+}
+
+#[test]
+fn an_agent_with_two_receivers_of_one_kind_answers_with_two_rows() {
+    let mut state = fixture::state();
+
+    state.record_buffers(vec![
+        vigil_model::BufferStatus {
+            receiver: "ndjson".into(),
+            pending: 0,
+            ..vigil_model::BufferStatus::default()
+        },
+        vigil_model::BufferStatus {
+            receiver: "ndjson-2".into(),
+            pending: 41,
+            ..vigil_model::BufferStatus::default()
+        },
+    ]);
+
+    let buffers = state.agent().buffers.expect("the buffers");
+
+    assert_eq!(buffers.len(), 2);
+    assert_ne!(
+        buffers[0].receiver, buffers[1].receiver,
+        "two receivers hold two files, and one row for both hides whichever is behind"
+    );
+    assert_eq!(buffers[1].pending, 41);
+}
+
+#[test]
+fn an_agent_with_no_receivers_at_all_says_so_instead_of_saying_nothing() {
+    let mut state = fixture::state();
+
+    state.record_buffers(Vec::new());
+
+    let agent = state.agent();
+    assert_eq!(
+        agent.buffers.as_deref(),
+        Some(&[][..]),
+        "a daemon configured with no receiver is a normal daemon, and a console reading that \
+         as `nothing said` would show it as an older build"
+    );
 }
 
 #[test]

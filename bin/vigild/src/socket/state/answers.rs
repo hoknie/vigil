@@ -29,7 +29,11 @@ impl State {
             silence: self.silence.clone(),
             budget: self.footprint.budget.clone(),
             store: self.footprint.store.clone(),
-            limitations: limitations(self.footprint.store.as_ref()),
+            buffers: self.footprint.buffers.clone(),
+            limitations: limitations(
+                self.footprint.store.as_ref(),
+                self.footprint.buffers.as_deref(),
+            ),
         }
     }
 

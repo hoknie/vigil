@@ -73,7 +73,7 @@ impl Round {
         });
     }
 
-    fn report(&self, collector: &str, tick: &Tick, fresh: &[Finding]) {
+    fn report(&mut self, collector: &str, tick: &Tick, fresh: &[Finding]) {
         if tick.baseline {
             eprintln!(
                 "{} baseline: {} item(s) in {collector}",
@@ -99,6 +99,6 @@ impl Round {
             );
         }
 
-        self.delivery.send(fresh);
+        self.hand_over(fresh);
     }
 }
