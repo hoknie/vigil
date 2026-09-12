@@ -6,9 +6,6 @@ use crate::ui::{Notice, Reading, View};
 const NOT_THE_SAME: &str = "What is running in containers here is unknown, which is not the same as a host running \
      none.";
 
-const WHAT_SYS_ADMIN_IS: &str = "SYS_ADMIN is the capability that mounts filesystems and loads what the kernel will take: \
-     a container holding it can leave the container.";
-
 pub(super) fn missing(view: &View) -> Option<Notice> {
     if view.switched_off(COLLECTOR) {
         return Some(
@@ -55,10 +52,8 @@ pub(super) fn empty(showing: &Showing<'_>) -> Notice {
         );
     }
 
-    Notice::plain("Nothing is running in a container on this host.")
-        .saying(
-            "The reading was taken and holds no container and no runtime socket: this is a \
-             host with none, not a reading that failed.",
-        )
-        .saying(WHAT_SYS_ADMIN_IS)
+    Notice::plain("Nothing is running in a container on this host.").saying(
+        "The reading was taken and holds no container and no runtime socket: this is a host \
+         with none, not a reading that failed.",
+    )
 }
