@@ -9,5 +9,5 @@ default = ["files"]
 files = []
 
 [dependencies]
-vigil-model = { path = "../vigil-model" }
+vigil-model = { path = "../../core/vigil-model" }
 serde_json.workspace = true

@@ -18,7 +18,7 @@ mod tests {
 
     #[test]
     fn the_rule_this_text_hands_an_operator_is_the_rule_this_product_ships() {
-        let shipped = include_str!("../../../../../../packaging/audit/vigil-exec.rules");
+        let shipped = include_str!("../../../../../../../packaging/audit/vigil-exec.rules");
 
         assert!(
             shipped.lines().any(|line| line.trim() == SHIPPED_RULE),
@@ -30,7 +30,7 @@ mod tests {
 
     #[test]
     fn the_threshold_that_lost_root_is_in_neither_the_rule_nor_the_text() {
-        let shipped = include_str!("../../../../../../packaging/audit/vigil-exec.rules");
+        let shipped = include_str!("../../../../../../../packaging/audit/vigil-exec.rules");
 
         for line in shipped.lines().filter(|line| !line.starts_with('#')) {
             assert!(
