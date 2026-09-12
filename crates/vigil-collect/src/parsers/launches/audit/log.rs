@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use super::event::Event;
+use super::fields::value;
 use super::reading::AuditReading;
 use super::record::Record;
 use super::text::unquote;
@@ -9,7 +10,9 @@ pub const AUDIT_KEY: &str = "vigil_exec";
 
 pub(super) const TRAILING_LINES: usize = 64;
 
-const READ_RECORD_TYPES: [&str; 4] = ["SYSCALL", "EXECVE", "CWD", "PATH"];
+const READ_RECORD_TYPES: [&str; 5] = ["SYSCALL", "EXECVE", "CWD", "PATH", "CONFIG_CHANGE"];
+
+const RULE_CHANGE: &str = "CONFIG_CHANGE";
 
 pub fn record_is_read(line: &[u8]) -> bool {
     let text = String::from_utf8_lossy(line);
@@ -20,6 +23,7 @@ pub fn record_is_read(line: &[u8]) -> bool {
 
 pub fn parse_audit_log(chunk: &[u8], with_arguments: bool) -> AuditReading {
     let mut events: Vec<Event> = Vec::new();
+    let mut rule_loaded = false;
     let mut index: BTreeMap<String, usize> = BTreeMap::new();
     let mut offset = 0usize;
     let mut line_number = 0usize;
@@ -37,6 +41,11 @@ pub fn parse_audit_log(chunk: &[u8], with_arguments: bool) -> AuditReading {
         let Some(record) = Record::parse(text.trim_end()) else {
             continue;
         };
+
+        if record.kind == RULE_CHANGE {
+            rule_loaded = rule_loaded || rule_was_loaded(&record);
+            continue;
+        }
 
         let slot = *index.entry(record.event.clone()).or_insert_with(|| {
             events.push(Event::new(record.event.clone(), started_at));
@@ -70,5 +79,17 @@ pub fn parse_audit_log(chunk: &[u8], with_arguments: bool) -> AuditReading {
         executions,
         unnamed,
         consumed,
+        rule_loaded,
     }
+}
+
+fn rule_was_loaded(record: &Record) -> bool {
+    let said = |name: &str| {
+        value(&record.fields, name)
+            .map(unquote)
+            .map(str::to_string)
+            .unwrap_or_default()
+    };
+
+    said("op") == "add_rule" && said("key").contains(AUDIT_KEY) && said("res") == "1"
 }

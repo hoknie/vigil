@@ -5,4 +5,4 @@ mod snapshot;
 mod tests;
 
 pub use reading::LaunchReading;
-pub use snapshot::launches_snapshot;
+pub use snapshot::{any_launch_was_read, launches_snapshot};

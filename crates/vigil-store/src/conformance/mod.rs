@@ -7,7 +7,8 @@ pub use suite::{
     a_repeat_raises_the_counter_and_keeps_the_first_sighting,
     a_store_says_how_much_of_its_history_is_still_open,
     a_store_says_what_it_is_holding_and_what_it_threw_away, baselines_are_kept_per_collector,
-    finding, open_findings_come_back_newest_first_and_within_the_limit,
+    finding, finding_of, one_open_finding_is_found_by_its_object_and_its_kind,
+    open_findings_come_back_newest_first_and_within_the_limit,
     pruning_drops_the_old_and_keeps_the_rest, run_all, snapshot, the_baseline_is_the_last_reading,
     what_a_ceiling_threw_away_is_named_by_the_ceiling_that_threw_it,
 };

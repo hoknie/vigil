@@ -27,6 +27,12 @@ pub fn finding(key: &str, observed_at: &str) -> Finding {
     }
 }
 
+pub fn finding_of(key: &str, kind: KnownKind, observed_at: &str) -> Finding {
+    let mut record = finding(key, observed_at);
+    record.kind = Kind::Known(kind);
+    record
+}
+
 pub fn snapshot(source: &str, taken_at: &str, port: u64) -> Snapshot {
     Snapshot::new(source, taken_at.to_string()).with(
         format!("tcp|0.0.0.0:{port}"),
@@ -201,6 +207,50 @@ pub fn a_resolved_finding_stops_being_open(store: &dyn Store) {
     );
 }
 
+pub fn one_open_finding_is_found_by_its_object_and_its_kind(store: &dyn Store) {
+    let key = "agent.collector|launches";
+    store
+        .record(&finding_of(
+            key,
+            KnownKind::AgentCollectorDegraded,
+            "2026-09-09T10:00:00.000Z",
+        ))
+        .expect("recorded");
+
+    let open = store
+        .open_finding(key, "agent.collector.degraded")
+        .expect("readable")
+        .expect("the finding that was recorded");
+
+    assert_eq!(open.first_seen_at, "2026-09-09T10:00:00.000Z");
+    assert!(
+        store
+            .open_finding(key, "port.listen.new")
+            .expect("readable")
+            .is_none(),
+        "one object can carry a finding of one kind and none of another"
+    );
+    assert!(
+        store
+            .open_finding("agent.collector|ports", "agent.collector.degraded")
+            .expect("readable")
+            .is_none(),
+        "and asking about an object with no history is not an error"
+    );
+
+    store
+        .resolve(key, "agent.collector.degraded", "2026-09-09T11:00:00.000Z")
+        .expect("resolves");
+    assert!(
+        store
+            .open_finding(key, "agent.collector.degraded")
+            .expect("readable")
+            .is_none(),
+        "a finding that was closed is not one still standing, and a restart that reopens it \
+         tells an operator about trouble that ended"
+    );
+}
+
 pub fn resolving_something_that_was_never_recorded_is_not_an_error(store: &dyn Store) {
     assert!(
         !store
@@ -336,6 +386,7 @@ pub fn run_all(new_store: &dyn Fn() -> Box<dyn Store>) {
     a_repeat_raises_the_counter_and_keeps_the_first_sighting(new_store().as_ref());
     a_different_kind_about_the_same_object_is_not_a_repeat(new_store().as_ref());
     a_resolved_finding_stops_being_open(new_store().as_ref());
+    one_open_finding_is_found_by_its_object_and_its_kind(new_store().as_ref());
     resolving_something_that_was_never_recorded_is_not_an_error(new_store().as_ref());
     open_findings_come_back_newest_first_and_within_the_limit(new_store().as_ref());
     pruning_drops_the_old_and_keeps_the_rest(new_store().as_ref());

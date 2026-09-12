@@ -3,10 +3,10 @@ use std::io::{ErrorKind, Read};
 use std::path::Path;
 
 use super::LaunchesCollector;
-use super::advice::rule_not_loaded;
+use super::advice::nothing_carries_our_tag;
 use super::chunk::tail;
 use crate::Health;
-use crate::parsers::AUDIT_KEY;
+use crate::parsers::{AUDIT_KEY, any_launch_was_read};
 use crate::spool::{CEILING_BYTES, dropped_note};
 
 const HEALTH_TAIL: u64 = 256 * 1024;
@@ -21,8 +21,8 @@ impl LaunchesCollector {
                     self.spool_path.display()
                 ));
             }
-            if !self.carries_our_records(&self.spool_path, spool) {
-                return Health::Degraded(rule_not_loaded(&self.spool_path));
+            if !self.the_rule_is_standing(&self.spool_path, spool) {
+                return Health::Degraded(nothing_carries_our_tag(&self.spool_path));
             }
             return Health::Ok;
         }
@@ -44,8 +44,8 @@ impl LaunchesCollector {
             }
         };
 
-        if !self.carries_our_records(&self.log_path, length) {
-            return Health::Degraded(rule_not_loaded(&self.log_path));
+        if !self.the_rule_is_standing(&self.log_path, length) {
+            return Health::Degraded(nothing_carries_our_tag(&self.log_path));
         }
         if self.plugin_is_registered() {
             return match self.spool_path.exists() {
@@ -88,6 +88,19 @@ impl LaunchesCollector {
             };
             name.trim().eq_ignore_ascii_case("active") && value.trim().eq_ignore_ascii_case("yes")
         })
+    }
+
+    fn the_rule_is_standing(&self, path: &Path, length: u64) -> bool {
+        self.what_this_agent_has_read() || self.carries_our_records(path, length)
+    }
+
+    fn what_this_agent_has_read(&self) -> bool {
+        let seen = self
+            .seen
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+
+        seen.rule_loaded || any_launch_was_read(&seen.items)
     }
 
     fn carries_our_records(&self, path: &Path, length: u64) -> bool {

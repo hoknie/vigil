@@ -6,10 +6,11 @@ cd "$(dirname "$0")/../.."
 
 KEY=vigil_exec
 ACTION=always,exit
-RULE=(-F arch=b64 -S execve -F "auid>=1000" -F "auid!=unset" -k "$KEY")
+RULE=(-F arch=b64 -S execve -F "auid!=unset" -k "$KEY")
 SPOOL=/var/lib/vigil/audit-spool
 PLUGIN_CONFIG=/etc/audit/plugins.d/vigil.conf
 PROBE=/usr/local/bin/vigil-audit-probe
+SERVICE_PROBE=/usr/local/bin/vigil-audit-service-probe
 CONFIG=/tmp/vigil-audit.yaml
 FINDINGS=/tmp/vigil-audit-findings.ndjson
 BUILT="${CARGO_TARGET_DIR:-$PWD/target}/debug"
@@ -32,6 +33,9 @@ NOTE
 enabled_now() { auditctl -s 2>/dev/null | awk '/^enabled/ {print $2}'; }
 registered_pid() { auditctl -s 2>/dev/null | awk '/^pid/ {print $2}'; }
 alive() { [ -n "${1:-}" ] && [ "$1" != "0" ] && [ -d "/proc/$1" ]; }
+ask() { printf '%s\n' "$1" | nc -U -q 2 /tmp/vigil-audit.sock 2>/dev/null; }
+launches_row() { ask '{"query":"status"}' | grep -o '{"name":"launches"[^}]*}'; }
+launches_state() { launches_row | grep -o '"state":"[a-z]*"'; }
 
 say "the machine, and whether this is a machine we may touch"
 uname -sr
@@ -78,7 +82,7 @@ put_it_back() {
         done
     fi
     auditctl -e "$WAS_ENABLED" >/dev/null 2>&1
-    rm -f "$PLUGIN_CONFIG" "$SPOOL" "$SPOOL.cursor" "$SPOOL.writing" "$PROBE"
+    rm -f "$PLUGIN_CONFIG" "$SPOOL" "$SPOOL.cursor" "$SPOOL.writing" "$PROBE" "$SERVICE_PROBE"
 }
 trap put_it_back EXIT INT TERM
 
@@ -102,7 +106,7 @@ sed 's/^/  /' "$PLUGIN_CONFIG"
 rm -f "$SPOOL" "$SPOOL.cursor" "$SPOOL.writing" "$FINDINGS"
 install -d -m 0700 /var/lib/vigil
 
-say "a real auditd, started here, with our rule in the kernel"
+say "a real auditd, started here — and no rule of ours in the kernel yet"
 auditd
 for _ in 1 2 3 4 5 6 7 8 9 10; do
     started="$(registered_pid)"
@@ -121,18 +125,17 @@ auditor="$started"
 ok "the daemon this recipe started is at pid $auditor, and the kernel confirms it: that pid, and no other, is the one it may stop"
 
 auditctl -e 1 >/dev/null
-auditctl -a "$ACTION" "${RULE[@]}" >/dev/null || bad "the kernel would not take the rule this product ships"
-auditctl -l | sed 's/^/  /'
-auditctl -l | grep -q "$KEY" && ok "the rule is loaded and tagged $KEY" || bad "the rule is not in the kernel"
-
 mine="$(registered_pid)"
 [ "$mine" = "$auditor" ] \
     && ok "the kernel still hands audit to that pid and to no other" \
     || bad "the registered pid is $mine and the daemon we started is $auditor"
+auditctl -l | grep -q "$KEY" \
+    && bad "a rule of ours is in the kernel before this recipe put one there" \
+    || ok "no rule of ours is loaded, which is the state the next step is about"
 
-say "a person runs a program: loginuid 1000, so the shipped rule is about them"
 id tester >/dev/null 2>&1 || adduser -D -u 1000 tester >/dev/null 2>&1
 install -m 0755 "$BUILT/vigil-audit-plugin" "$PROBE"
+install -m 0755 "$BUILT/vigil-audit-plugin" "$SERVICE_PROBE"
 
 say "the agent, reading what the plugin leaves in the spool"
 cat > "$CONFIG" <<YAML
@@ -154,9 +157,45 @@ daemon=$!
 sleep 6
 kill -0 "$daemon" 2>/dev/null || { bad "the daemon stopped on its own"; cat /tmp/vigil-audit-daemon.log; exit 1; }
 
-sh -c "echo 1000 > /proc/self/loginuid && exec $PROBE --version" >/dev/null
+say "with no rule loaded the agent says it cannot tell which of two hosts this is"
+before_state="$(launches_state)"
+case "$before_state" in
+*degraded*) ok "the collector is degraded before the rule is loaded: $before_state" ;;
+*)          bad "the collector says ${before_state:-nothing} with no rule in the kernel" ;;
+esac
+before_reason="$(launches_row)"
+case "$before_reason" in
+*"auditctl -l"*)
+    ok "and the reason names the command that tells the two hosts apart" ;;
+*)
+    bad "the reason does not send the reader to auditctl -l: $before_reason" ;;
+esac
+case "$before_reason" in
+*"never loaded"*)
+    ok "and it names both hosts that look like this rather than blaming one" ;;
+*)
+    bad "the reason names one of the two states as fact: $before_reason" ;;
+esac
+for _ in $(seq 1 10); do
+    grep -q "agent.collector.degraded" "$FINDINGS" 2>/dev/null && break
+    sleep 1
+done
+if grep -q '"finding_key":"agent.collector|launches"' "$FINDINGS" 2>/dev/null; then
+    ok "and the daemon raised it: $(grep -o '"kind":"agent.collector.degraded"' "$FINDINGS" | tail -1) on agent.collector|launches"
+else
+    bad "no finding about the degraded collector reached the reporter"
+    grep -o '"kind":"[^"]*"' "$FINDINGS" 2>/dev/null | sort -u | sed 's/^/  /'
+fi
+
+say "the rule this product ships goes into the kernel"
+auditctl -a "$ACTION" "${RULE[@]}" >/dev/null || bad "the kernel would not take the rule this product ships"
+auditctl -l | sed 's/^/  /'
+auditctl -l | grep -q "$KEY" && ok "the rule is loaded and tagged $KEY" || bad "the rule is not in the kernel"
+
+say "a person runs a program in a root session: loginuid 0, which the old rule dropped"
+sh -c "echo 0 > /proc/self/loginuid && exec $PROBE --version" >/dev/null
 ran=$?
-[ "$ran" -eq 0 ] && ok "$PROBE ran with loginuid 1000" || bad "the probe would not run ($ran)"
+[ "$ran" -eq 0 ] && ok "$PROBE ran with loginuid 0" || bad "the probe would not run ($ran)"
 
 say "the kernel wrote it, auditd handed it over, the plugin spooled it"
 for _ in $(seq 1 15); do
@@ -201,14 +240,53 @@ case "$source_row" in
     bad "the collector did not read the plugin's spool: ${source_row:-nothing came back}" ;;
 esac
 
-standing="$(printf '%s\n' '{"query":"status"}' | nc -U -q 2 /tmp/vigil-audit.sock 2>/dev/null \
-    | grep -o '"name":"launches","state":"[a-z]*"')"
+say "the collector is well again, and the complaint about it is closed"
+cat <<'WHY'
+  A complaint about a collector closes when the agent has proof it is watching again: a
+  reading that went through. This step reads that twice — inside the running agent, where
+  the reading that carried the launch closes it, and across a restart, where a complaint the
+  previous run left open is closed by the first reading that goes through. Both are
+  assertions: a recipe that only noted them would let either come back unseen.
+WHY
+
+grep -q "agent.collector.recovered" "$FINDINGS" 2>/dev/null \
+    && ok "the reading that carried the launch closed the complaint, without waiting for a health pass" \
+    || bad "agent.collector.degraded is still open inside the running agent: the mark on the programs section waits for the health pass"
+kill "$daemon" 2>/dev/null
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+    alive "$daemon" || break
+    sleep 1
+done
+"$BUILT/vigild" "$CONFIG" > /tmp/vigil-audit-daemon-again.log 2>&1 &
+daemon=$!
+sleep 6
+kill -0 "$daemon" 2>/dev/null || { bad "the daemon would not start again"; cat /tmp/vigil-audit-daemon-again.log; exit 1; }
+
+standing="$(launches_state)"
 case "$standing" in
-*'"state":"unavailable"'*|"")
-    bad "the collector says it has no source at all after a real launch went through it: ${standing:-nothing came back}" ;;
+*'"state":"ok"'*)
+    ok "the collector answers ok now that a launch has gone through it: $standing" ;;
 *)
-    ok "and the collector has a source it is reading: $standing" ;;
+    bad "the collector still answers ${standing:-nothing} after a real launch went through it, so nothing would ever take the mark off the programs section"
+    launches_row | sed 's/^/  /' ;;
 esac
+grep -q "agent.collector.degraded" /tmp/vigil-audit-daemon-again.log 2>/dev/null \
+    && bad "the agent complained about this collector again at its second start" \
+    || ok "and it says nothing about this collector at start any more"
+
+grep -q "agent.collector.recovered" "$FINDINGS" 2>/dev/null \
+    && ok "and the complaint stays closed across the restart, named out of the journal" \
+    || bad "nothing closed agent.collector.degraded: a complaint left open by a previous run stands for the life of the host"
+
+say "what a service runs carries no loginuid, and is not this collector's subject"
+"$SERVICE_PROBE" --version >/dev/null
+sleep 6
+service_row="$(ask '{"query":"snapshot","collector":"launches"}' | grep -o "\"run|[^\"]*$(basename "$SERVICE_PROBE")\"")"
+if [ -z "$service_row" ]; then
+    ok "nothing this host started without a login session became a launch row"
+else
+    bad "a program with no loginuid behind it became a row: $service_row"
+fi
 
 say "putting the kernel back the way it was found"
 put_it_back

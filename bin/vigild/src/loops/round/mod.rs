@@ -4,18 +4,18 @@ mod kept;
 mod memory;
 mod outgoing;
 mod reading;
+#[cfg(test)]
+mod tests;
 
-use std::collections::{BTreeMap, BTreeSet};
 use std::time::{Duration, Instant};
 
-use vigil_collect::Health;
 use vigil_model::Finding;
 use vigil_store::FileStore;
 
 use crate::budget::Meter;
 use crate::helpers::health as health_words;
 use crate::socket::Shared;
-use crate::types::{Delivery, Due, Policy, Schedule};
+use crate::types::{Delivery, Due, Policy, Said, Schedule};
 
 use super::Watch;
 
@@ -32,22 +32,20 @@ pub struct Round {
     pub schedule: Schedule,
     pub meter: Meter,
     pub opening: Vec<Finding>,
+    pub standing: Vec<(&'static str, String)>,
 }
 
 impl Round {
     pub fn run(mut self) -> ! {
-        let mut failing: BTreeMap<&'static str, String> = BTreeMap::new();
-        let mut announced: BTreeMap<&'static str, String> = self
-            .watches
-            .iter()
-            .map(|watch| (watch.name(), health_words::describe(&watch.health())))
-            .collect();
-        let mut spoken_about: BTreeSet<&'static str> = self
-            .watches
-            .iter()
-            .filter(|watch| !matches!(watch.health(), Health::Ok))
-            .map(|watch| watch.name())
-            .collect();
+        let mut said = Said::about(
+            self.watches
+                .iter()
+                .map(|watch| (watch.name(), health_words::describe(&watch.health())))
+                .collect::<Vec<_>>(),
+        );
+        for (name, why) in std::mem::take(&mut self.standing) {
+            said.opened(name, why);
+        }
         let mut health = Due::new(HEALTH, HEALTH_EVERY_SECONDS, Instant::now());
         let mut announce = false;
 
@@ -57,14 +55,14 @@ impl Round {
         self.hand_over(&fresh);
 
         for index in 0..self.watches.len() {
-            self.read(index, &mut failing);
+            self.read(index, &mut said);
         }
         self.take_store();
 
         loop {
             let now = Instant::now();
             if health.is_due(now) {
-                self.take_health(announce, &mut announced, &mut spoken_about);
+                self.take_health(announce, &mut said);
                 self.take_budget();
                 self.take_store();
                 self.take_buffers();
@@ -75,7 +73,7 @@ impl Round {
             match self.schedule.due_now(Instant::now()) {
                 Some(index) => {
                     self.schedule.advance(index, Instant::now());
-                    self.read(index, &mut failing);
+                    self.read(index, &mut said);
                 }
                 None => self.rest(&health),
             }
