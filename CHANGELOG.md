@@ -5,7 +5,17 @@ Format:
 - [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - [SemVer](https://semver.org/spec/v2.0.0.html)
 
-## [1.0.4] - 09/--/2026
+## [1.0.5] - 09/--/2026
+
+### Fixed
+- a finding closed by its pair is marked resolved on the console as it is in the store, instead of standing open until the daemon is restarted
+- updated audit rule `auid>=1000`
+- collector no longer calls itself degraded on a quiet host
+- updated collector state after restart
+- health is now taken right after a reading that found something
+
+
+## [1.0.4] - 09/12/2026
 
 ### Added
 - an outgoing buffer
