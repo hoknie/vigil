@@ -4,6 +4,8 @@ members = [
     "crates/core/vigil-model",
     "crates/core/vigil-rules",
     "crates/core/vigil-collect",
+    "crates/core/vigil-view",
+    "crates/core/vigil-module",
     "crates/consumers/vigil-store",
     "crates/consumers/vigil-report",
     "bin/vigild",

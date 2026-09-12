@@ -1,0 +1,72 @@
+use vigil_collect::{CollectError, Collector, Health};
+use vigil_model::Snapshot;
+use vigil_rules::RuleSet;
+
+use super::*;
+use crate::types::Settings;
+
+struct Nothing;
+
+impl Collector for Nothing {
+    fn name(&self) -> &'static str {
+        "ports"
+    }
+    fn available(&self) -> Health {
+        Health::Ok
+    }
+    fn collect(&self) -> Result<Snapshot, CollectError> {
+        Err(CollectError::Absent("a module under test".into()))
+    }
+}
+
+struct Ports;
+
+impl Module for Ports {
+    fn name(&self) -> &'static str {
+        "ports"
+    }
+    fn subject(&self) -> &'static str {
+        "the sockets this host listens on"
+    }
+    fn every_seconds(&self) -> u32 {
+        30
+    }
+    fn collector(&self, _settings: &Settings) -> Result<Box<dyn Collector>, String> {
+        Ok(Box::new(Nothing))
+    }
+    fn rules(&self, _settings: &Settings) -> RuleSet {
+        RuleSet::of(Vec::new())
+    }
+    fn families(&self) -> &[&'static str] {
+        &["port.listen"]
+    }
+}
+
+#[test]
+fn a_finding_of_this_module_walks_to_the_row_of_its_own_reading() {
+    assert_eq!(
+        Ports.row_of("port.listen|tcp|0.0.0.0:4444"),
+        Some("tcp|0.0.0.0:4444".to_string()),
+        "the key after the family is the collector's own, so the row on the screen is found \
+         by it without a table in the console"
+    );
+}
+
+#[test]
+fn a_finding_raised_by_somebody_else_is_not_claimed_and_not_walked_to() {
+    assert!(!Ports.raised("user|account|backdoor"));
+    assert_eq!(Ports.row_of("user|account|backdoor"), None);
+    assert_eq!(Ports.row_of("nothing-shaped-like-a-key"), None);
+}
+
+#[test]
+fn a_module_that_shows_nothing_is_a_module_and_not_a_half_written_one() {
+    assert!(
+        Ports.section().is_none(),
+        "a module reads a host; a screen for it is something it may also have, and a daemon \
+         that refuses to run one without a screen would refuse to run a reading that has no \
+         table in it"
+    );
+    assert_eq!(Ports.unit(), None);
+    assert_eq!(Ports.settings_key(), None);
+}

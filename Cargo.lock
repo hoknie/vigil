@@ -1665,6 +1665,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "vigil-module"
+version = "1.0.5"
+dependencies = [
+ "serde",
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
 name = "vigil-report"
 version = "1.0.5"
 dependencies = [
@@ -1682,6 +1694,14 @@ dependencies = [
 
 [[package]]
 name = "vigil-store"
+version = "1.0.5"
+dependencies = [
+ "serde_json",
+ "vigil-model",
+]
+
+[[package]]
+name = "vigil-view"
 version = "1.0.5"
 dependencies = [
  "serde_json",
