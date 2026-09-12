@@ -7,8 +7,8 @@ use vigil_model::{
 };
 
 use super::agent::{
-    agent, collector, collector_degraded, collector_failing, collector_off, collector_unavailable,
-    reporter, reporter_failing,
+    agent, behind, caught_up, collector, collector_degraded, collector_failing, collector_off,
+    collector_unavailable, losing, reporter, reporter_failing,
 };
 use super::store::store;
 
@@ -30,9 +30,13 @@ pub fn watching() -> AgentStatus {
         collector_unavailable("processes"),
         collector_failing("persistence"),
         collector_degraded("firewall", 60, READING_NOBODY_REFRESHED),
+        collector("resources", 60, 5, 0),
+        collector("containers", 60, 3, 0),
+        collector("files", 300, 8, 0),
         collector_off(),
     ];
     watching.reporters = vec![reporter("ndjson"), reporter_failing("webhook")];
+    watching.buffers = Some(vec![caught_up("ndjson"), behind("webhook")]);
     watching.store = Some(store());
     watching
 }
@@ -54,7 +58,8 @@ pub fn starting() -> AgentStatus {
         },
         silence: Silence::default(),
         store: None,
-        limitations: agent().limitations,
+        buffers: None,
+        limitations: Vec::new(),
     }
 }
 
@@ -97,6 +102,14 @@ pub fn refusals() -> BTreeMap<String, Value> {
                 "auditd is not running on this host, so nothing is delivering launches",
             )),
         ),
+    ])
+}
+
+pub fn buffers() -> BTreeMap<String, Value> {
+    BTreeMap::from([
+        ("buffer|caught-up".to_string(), value!(&caught_up("ndjson"))),
+        ("buffer|behind".to_string(), value!(&behind("webhook"))),
+        ("buffer|losing".to_string(), value!(&losing("webhook"))),
     ])
 }
 

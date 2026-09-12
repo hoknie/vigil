@@ -2,7 +2,7 @@ use ratatui::layout::Rect;
 
 use super::App;
 
-use crate::ui::details::{account, firewall, program, socket, startup};
+use crate::ui::details::{account, firewall, program, reading, socket, startup};
 use crate::ui::helpers::finding::diff;
 use crate::ui::helpers::layout::split;
 use crate::ui::{Level, Screen};
@@ -16,6 +16,8 @@ impl App {
             Screen::Programs => !self.programs_keys().is_empty(),
             Screen::Startup => !self.startup_keys().is_empty(),
             Screen::Firewall => !self.firewall_keys().is_empty(),
+            Screen::System => !self.system_keys().is_empty(),
+            Screen::Containers => !self.containers_keys().is_empty(),
             Screen::Home | Screen::Summary => false,
         }
     }
@@ -62,7 +64,10 @@ impl App {
             }
             Screen::Firewall => {
                 let rows = self.firewall_rows();
-                firewall::height(rows.get(self.nav.firewall.at()), self.look, width)
+                firewall::height(rows.get(self.nav.lists.firewall.at()), self.look, width)
+            }
+            Screen::System | Screen::Containers => {
+                reading::height(self.reading_subject(), self.look, width)
             }
             _ => diff::height(self.selected_finding(), self.look, width),
         }

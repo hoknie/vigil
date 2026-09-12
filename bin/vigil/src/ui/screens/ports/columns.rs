@@ -22,7 +22,7 @@ pub(super) fn widths(arrangement: Arrangement, wide: bool) -> Vec<Constraint> {
             Constraint::Length(5),
             Constraint::Min(24),
             Constraint::Length(10),
-            Constraint::Fill(3),
+            Constraint::Fill(1),
             Constraint::Fill(2),
         ],
         (Arrangement::Flat, false) => vec![

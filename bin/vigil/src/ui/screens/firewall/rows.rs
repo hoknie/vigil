@@ -32,11 +32,8 @@ pub fn rows<'a>(view: &'a View, showing: &Showing<'_>) -> Vec<Row<'a>> {
         .collect();
 
     rows.sort_by_key(sort_key);
+    super::sorting::sort(&mut rows, showing.sorting);
     rows
-}
-
-pub fn keys(view: &View, showing: &Showing<'_>) -> Vec<String> {
-    rows(view, showing).into_iter().map(|row| row.key).collect()
 }
 
 pub fn summary(view: &View) -> Option<&Value> {

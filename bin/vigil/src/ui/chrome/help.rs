@@ -57,7 +57,7 @@ fn rows() -> Vec<(&'static str, &'static str)> {
         ("→ or Enter", "the detail of the row (not on the summary)"),
         ("/", "search: every value the agent read about a row"),
         ("o", "the object a finding is about; Esc comes back to it"),
-        ("s / S", "raise / lower the severity floor (findings)"),
+        ("s / f", "sort this list / narrow the findings"),
         (
             "t T u U x, a",
             "show / hide kinds of socket, or all (ports)",
@@ -74,9 +74,12 @@ fn rows() -> Vec<(&'static str, &'static str)> {
         ),
         ("", "  programs: running · launches"),
         ("", "  startup: units · timers · cron · modules · files"),
+        ("", "  system: the host · watched files"),
         ("", "EVERYWHERE"),
-        ("← or Esc", "a search, the detail, the panel, then a rung"),
-        ("", "  from the top of a section, back to the main screen"),
+        (
+            "← or Esc",
+            "a search, the detail, the panel, a rung, the main screen",
+        ),
         ("r / ? / q", "ask now / this list / leave"),
     ]
 }
@@ -102,7 +105,7 @@ mod tests {
             "Enter",
             "o",
             "/",
-            "s / S",
+            "s / f",
             "Esc",
             "r",
             "as a tree",
@@ -131,10 +134,10 @@ mod tests {
         let page = text::to_text(&buffer);
         assert!(page.contains("← or Esc"), "{page}");
         assert!(
-            page.contains("a search, the detail, the panel, then a rung"),
+            page.contains("a search, the detail, the panel, a rung"),
             "the order of what one press undoes is the thing to look up: {page}"
         );
-        assert!(page.contains("back to the main screen"), "{page}");
+        assert!(page.contains("the main screen"), "{page}");
         assert!(
             !page.contains("closes the panel"),
             "the two keys were told apart and are not any more: {page}"

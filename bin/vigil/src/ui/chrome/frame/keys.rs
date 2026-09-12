@@ -1,9 +1,12 @@
-use super::hints::Hints;
+use super::hints::{Back, Hints};
 use crate::ui::{Level, Screen};
 
 pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
     if hints.typing {
         return " type to search · Enter keep it · Esc put it back".to_string();
+    }
+    if hints.choosing {
+        return " ← → choose · Enter apply · Esc leave it as it was".to_string();
     }
 
     let long = match (hints.level, screen) {
@@ -35,28 +38,55 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
             " j/k ↑↓ move · → detail · / search · ← or Esc close the panel · ? keys".to_string()
         }
         (Level::List, Screen::Findings) => format!(
-            " j/k ↑↓ move · → detail · o object · / search · s severity · ← {} · ? keys",
+            " j/k ↑↓ move · → detail · / search · s sort · f filter · ← {} · ? keys",
             hints.back.named()
         ),
         (Level::List, Screen::Startup) => format!(
             " j/k ↑↓ move · → detail · t view · / search · ← or Esc {} · ? keys",
             hints.back.named()
         ),
+        (Level::List, Screen::Ports | Screen::Firewall | Screen::System | Screen::Containers) => {
+            format!(
+                " j/k ↑↓ move · → detail · s sort · / search · ← or Esc {} · ? keys",
+                hints.back.named()
+            )
+        }
         (Level::List, _) => format!(
             " j/k ↑↓ move · → detail · / search · ← or Esc {} · ? keys",
             hints.back.named()
         ),
     };
 
-    match long.chars().count() <= width as usize {
-        true => long,
-        false => " ? keys · q quit".to_string(),
+    if long.chars().count() <= width as usize {
+        return long;
+    }
+    let short = short(hints.level, screen, hints.back);
+    match short.chars().count() <= width as usize {
+        true => short,
+        false => LAST_TWO.to_string(),
+    }
+}
+
+const LAST_TWO: &str = " ? keys · q quit";
+
+fn short(level: Level, screen: Screen, back: Back) -> String {
+    match (level, screen) {
+        (Level::List, Screen::Findings) => format!(
+            " j/k ↑↓ move · → detail · s sort · f filter · ← {} · ? keys",
+            back.named()
+        ),
+        (Level::List, Screen::Ports | Screen::Firewall | Screen::System | Screen::Containers) => {
+            format!(
+                " j/k ↑↓ move · → detail · s sort · / search · ← {} · ? keys",
+                back.named()
+            )
+        }
+        _ => LAST_TWO.to_string(),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::super::hints::Back;
     use super::*;
 
     fn hints(level: Level, back: Back) -> Hints<'static> {
@@ -66,6 +96,7 @@ mod tests {
             message: None,
             back,
             panel: false,
+            choosing: false,
         }
     }
 
@@ -159,5 +190,60 @@ mod tests {
         let cramped = keys(&hints(Level::List, Back::MainScreen), Screen::Findings, 20);
 
         assert_eq!(cramped, " ? keys · q quit");
+    }
+
+    #[test]
+    fn the_two_keys_that_order_and_narrow_a_list_are_on_the_line_and_it_fits_eighty() {
+        let findings = keys(&hints(Level::List, Back::MainScreen), Screen::Findings, 80);
+        let ports = keys(&hints(Level::List, Back::MainScreen), Screen::Ports, 80);
+
+        assert!(findings.contains("s sort"), "{findings}");
+        assert!(findings.contains("f filter"), "{findings}");
+        assert!(ports.contains("s sort"), "{ports}");
+        for line in [&findings, &ports] {
+            assert!(
+                line.chars().count() <= 80,
+                "{} columns and the whole hint is dropped for the two keys that matter: {line}",
+                line.chars().count()
+            );
+        }
+        assert!(
+            !findings.contains("s severity"),
+            "the severity floor moved into f, and a hint still offering it on s sends a \
+             reader to a key that does something else now: {findings}"
+        );
+    }
+
+    #[test]
+    fn the_way_back_is_named_even_on_the_line_that_had_to_be_cut_down_to_fit() {
+        for screen in [
+            Screen::Findings,
+            Screen::Ports,
+            Screen::Firewall,
+            Screen::System,
+            Screen::Containers,
+        ] {
+            let line = keys(&hints(Level::List, Back::Finding), screen, 80);
+
+            assert!(
+                line.contains("back to the finding"),
+                "a reader who arrived from a finding is told nothing about the way home: {line}"
+            );
+            assert!(line.chars().count() <= 80, "{line}");
+        }
+    }
+
+    #[test]
+    fn while_a_choice_is_open_the_line_says_only_the_keys_that_walk_it() {
+        let choosing = Hints {
+            choosing: true,
+            ..hints(Level::List, Back::MainScreen)
+        };
+
+        let line = keys(&choosing, Screen::Findings, 80);
+
+        assert!(line.contains("Enter apply"), "{line}");
+        assert!(line.contains("Esc leave it as it was"), "{line}");
+        assert!(!line.contains("q quit"), "q types nothing here: {line}");
     }
 }

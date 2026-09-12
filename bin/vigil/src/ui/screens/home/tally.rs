@@ -16,6 +16,9 @@ pub(super) fn tally(rows: &[Row], width: u16) -> String {
         1 => "1 opens the first from anywhere".to_string(),
         last => format!("1 - {last} open one from anywhere"),
     });
+    if let Some(named) = without_a_number() {
+        parts.push(format!("{named} opens with Enter on its row"));
+    }
     if rows.len() > sections {
         parts.push(format!(
             "{} reading(s) this console has no section for",
@@ -42,4 +45,16 @@ pub(super) fn tally(rows: &[Row], width: u16) -> String {
         line = next;
     }
     format!(" {line}")
+}
+
+fn without_a_number() -> Option<String> {
+    let named: Vec<&str> = Screen::unnumbered()
+        .iter()
+        .map(|screen| screen.name())
+        .collect();
+
+    match named.is_empty() {
+        true => None,
+        false => Some(named.join(" and ")),
+    }
 }

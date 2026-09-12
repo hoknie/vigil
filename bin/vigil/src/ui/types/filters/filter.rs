@@ -1,11 +1,12 @@
 use vigil_model::{Finding, Severity};
 
-use crate::ui::Search;
+use crate::ui::{Column, Search};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Filter {
     floor: Severity,
     search: Search,
+    column: Column,
 }
 
 impl Default for Filter {
@@ -13,6 +14,7 @@ impl Default for Filter {
         Filter {
             floor: Severity::Info,
             search: Search::default(),
+            column: Column::default(),
         }
     }
 }
@@ -30,11 +32,27 @@ impl Filter {
         rank(&self.floor) > 0 || self.search.holding_back()
     }
 
+    pub fn column(&self) -> Column {
+        self.column
+    }
+
+    pub fn look_in(&mut self, column: Column) {
+        self.column = column;
+    }
+
+    pub fn floor(&self) -> &Severity {
+        &self.floor
+    }
+
+    pub fn set_floor(&mut self, floor: Severity) {
+        self.floor = floor;
+    }
+
     pub fn passing<'a>(&self, findings: &'a [Finding]) -> Vec<&'a Finding> {
         findings
             .iter()
             .filter(|finding| {
-                self.above_the_floor(finding) && self.search.matches(&haystack(finding))
+                self.above_the_floor(finding) && self.search.matches(&self.column.haystack(finding))
             })
             .collect()
     }
@@ -46,41 +64,22 @@ impl Filter {
         }
     }
 
-    pub fn move_floor(&mut self, by: isize) {
-        let count = Severity::KNOWN.len() as isize;
-        let at = Severity::KNOWN
-            .iter()
-            .position(|severity| severity == &self.floor)
-            .unwrap_or(0) as isize;
-        self.floor = Severity::KNOWN[(at + by).rem_euclid(count) as usize].clone();
-    }
-
     pub fn clear(&mut self) {
         *self = Filter::default();
     }
 
     pub fn describe(&self) -> String {
+        let matching = match self.column {
+            Column::Any => format!("matching {:?}", self.search.query()),
+            column => format!("{} matching {:?}", column.name(), self.search.query()),
+        };
         match (rank(&self.floor), self.search.holding_back()) {
             (0, false) => "everything the agent still holds".to_string(),
-            (0, true) => format!("matching {:?}", self.search.query()),
+            (0, true) => matching,
             (_, false) => format!("{} and above", self.floor.as_str()),
-            (_, true) => format!(
-                "{} and above, matching {:?}",
-                self.floor.as_str(),
-                self.search.query()
-            ),
+            (_, true) => format!("{} and above, {matching}", self.floor.as_str()),
         }
     }
-}
-
-fn haystack(finding: &Finding) -> String {
-    format!(
-        "{} {} {} {}",
-        finding.title,
-        finding.kind.as_str(),
-        finding.finding_key,
-        finding.severity.as_str()
-    )
 }
 
 fn rank(severity: &Severity) -> u8 {
@@ -131,10 +130,7 @@ mod tests {
     #[test]
     fn the_floor_hides_the_quiet_ones_and_names_itself() {
         let mut filter = Filter::default();
-        filter.move_floor(1);
-        filter.move_floor(1);
-        filter.move_floor(1);
-        filter.move_floor(1);
+        filter.set_floor(Severity::Critical);
 
         let all = findings();
         let passing = filter.passing(&all);
@@ -149,15 +145,14 @@ mod tests {
     }
 
     #[test]
-    fn the_floor_comes_back_round_to_showing_everything() {
+    fn the_floor_a_reader_put_back_to_the_bottom_holds_nothing_back_again() {
         let mut filter = Filter::default();
-        for _ in 0..Severity::KNOWN.len() {
-            filter.move_floor(1);
-        }
-        assert_eq!(filter.floor, Severity::Info);
+        filter.set_floor(Severity::Critical);
 
-        filter.move_floor(-1);
-        assert_eq!(filter.floor, Severity::Critical, "and downwards too");
+        filter.set_floor(Severity::Info);
+
+        assert!(!filter.holding_back());
+        assert_eq!(filter.passing(&findings()).len(), 2);
     }
 
     #[test]
@@ -165,7 +160,7 @@ mod tests {
         let mut strange = fixture::finding("something from a newer agent", Severity::Info);
         strange.severity = Severity::Unknown("catastrophic".into());
         let mut filter = Filter::default();
-        filter.move_floor(4);
+        filter.set_floor(Severity::Critical);
 
         let all = [strange];
         let passing = filter.passing(&all);
@@ -193,5 +188,38 @@ mod tests {
             );
             assert!(passing[0].title.contains("listening port"), "{wanted}");
         }
+    }
+
+    #[test]
+    fn a_search_narrowed_to_one_column_is_not_answered_by_another() {
+        let all = findings();
+        let mut in_the_title = searching_for("port.listen");
+        in_the_title.look_in(Column::Title);
+
+        assert!(
+            in_the_title.passing(&all).is_empty(),
+            "the object key carries those words and the title does not, so a search of the \
+             title has nothing to find"
+        );
+        assert!(
+            in_the_title.describe().contains("TITLE"),
+            "{}",
+            in_the_title.describe()
+        );
+
+        let mut in_the_object = searching_for("port.listen");
+        in_the_object.look_in(Column::Object);
+        assert_eq!(in_the_object.passing(&all).len(), 1);
+    }
+
+    #[test]
+    fn the_floor_is_set_by_name_as_well_as_stepped_and_reads_back_the_same() {
+        let mut filter = Filter::default();
+
+        filter.set_floor(Severity::High);
+
+        assert_eq!(filter.floor(), &Severity::High);
+        assert_eq!(filter.passing(&findings()).len(), 1);
+        assert!(filter.holding_back());
     }
 }

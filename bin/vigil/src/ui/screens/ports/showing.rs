@@ -1,5 +1,5 @@
 use super::arrangement::Arrangement;
-use crate::ui::{Arrows, Protocols, Search};
+use crate::ui::{Arrows, Protocols, Search, Sorting};
 
 pub struct Showing<'a> {
     pub arrangement: Arrangement,
@@ -7,4 +7,5 @@ pub struct Showing<'a> {
     pub search: &'a Search,
     pub cursor: usize,
     pub arrows: Arrows,
+    pub sorting: Sorting,
 }

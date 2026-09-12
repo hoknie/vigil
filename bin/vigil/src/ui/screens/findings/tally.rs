@@ -1,9 +1,9 @@
 use ratatui::layout::Rect;
 use vigil_model::StoreStatus;
 
-use crate::ui::{Filter, View};
+use crate::ui::{Filter, Sorting, View};
 
-pub(super) fn tally(view: &View, filter: &Filter, footer: Rect) -> String {
+pub(super) fn tally(view: &View, filter: &Filter, sorting: Sorting, footer: Rect) -> String {
     let shown = filter.passing(&view.found.findings).len();
     let mut parts = vec![format!(
         "{shown} shown of {} held{} · cap {}",
@@ -14,6 +14,10 @@ pub(super) fn tally(view: &View, filter: &Filter, footer: Rect) -> String {
         },
         view.found.capacity,
     )];
+
+    if !sorting.as_read() {
+        parts.push(format!("sorted by {}", sorting.describe(super::SORTED_BY)));
+    }
 
     if view.found.dropped > 0 {
         parts.push(format!(

@@ -45,6 +45,12 @@ pub(super) fn tally(
     if arrangement == Arrangement::ByProgram {
         parts.push("grouped by program".to_string());
     }
+    if !showing.sorting.as_read() {
+        parts.push(format!(
+            "sorted by {}",
+            showing.sorting.describe(super::SORTED_BY)
+        ));
+    }
 
     let room = (width as usize).saturating_sub(1);
     let mut line = String::new();

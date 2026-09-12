@@ -21,19 +21,19 @@ pub fn rows<'a>(view: &'a View, showing: &Showing<'_>) -> Vec<Row<'a>> {
         .collect();
 
     match showing.arrangement {
-        Arrangement::Flat => passing
-            .into_iter()
-            .map(|(key, item)| Row {
-                key: key.clone(),
-                what: What::Socket(item),
-            })
-            .collect(),
+        Arrangement::Flat => {
+            let mut rows: Vec<Row<'a>> = passing
+                .into_iter()
+                .map(|(key, item)| Row {
+                    key: key.clone(),
+                    what: What::Socket(item),
+                })
+                .collect();
+            super::sorting::sort(&mut rows, showing.sorting);
+            rows
+        }
         Arrangement::ByProgram => grouped(passing),
     }
-}
-
-pub fn keys(view: &View, showing: &Showing<'_>) -> Vec<String> {
-    rows(view, showing).into_iter().map(|row| row.key).collect()
 }
 
 fn grouped<'a>(passing: Vec<(&'a String, &'a Value)>) -> Vec<Row<'a>> {

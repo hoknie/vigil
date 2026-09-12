@@ -3,7 +3,9 @@ use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Widget};
 
-use super::columns::{HEALTH, MARKER, NUMBER, ROOM_FOR_THE_COLLECTOR, widths};
+use super::columns::{
+    HEALTH, HOLDS, MARKER, NUMBER, OBJECTS, READ, ROOM_FOR_THE_COLLECTOR, SECTION, STATE, widths,
+};
 use super::row::Row;
 use super::rows::rows;
 use super::tally::tally;
@@ -26,6 +28,7 @@ pub fn render(view: &View, look: Look, showing: &Showing, area: Rect, buffer: &m
     }
     let rows = rows(view);
     let wide = area.width >= ROOM_FOR_THE_COLLECTOR;
+    let longest = longest(&rows);
     let (page, footer) = (
         Rect {
             height: area.height - 1,
@@ -58,7 +61,7 @@ pub fn render(view: &View, look: Look, showing: &Showing, area: Rect, buffer: &m
                 format!(
                     "{}{}",
                     " ".repeat(MARKER + HEALTH + NUMBER),
-                    column::columns(&widths(wide))
+                    column::columns(&widths(wide, longest))
                 ),
                 look.palette.quiet(),
             ));
@@ -67,7 +70,14 @@ pub fn render(view: &View, look: Look, showing: &Showing, area: Rect, buffer: &m
             if at == showing.cursor {
                 selected = lines.len();
             }
-            lines.push(drawn(row, look, showing, at == showing.cursor, wide));
+            lines.push(drawn(
+                row,
+                look,
+                showing,
+                at == showing.cursor,
+                wide,
+                longest,
+            ));
             at += 1;
         }
     }
@@ -102,7 +112,21 @@ pub fn printed_height(view: &View, width: u16) -> u16 {
     rows.len() as u16 + groups * 2 + 1 + 1
 }
 
-fn drawn(row: &Row, look: Look, showing: &Showing, here: bool, wide: bool) -> Line<'static> {
+fn longest(rows: &[Row]) -> usize {
+    rows.iter()
+        .map(|row| row.name.chars().count())
+        .max()
+        .unwrap_or_default()
+}
+
+fn drawn(
+    row: &Row,
+    look: Look,
+    showing: &Showing,
+    here: bool,
+    wide: bool,
+    longest: usize,
+) -> Line<'static> {
     let marker = match (here, showing.arrows == Arrows::List) {
         (true, true) => " > ",
         (true, false) => " · ",
@@ -122,16 +146,22 @@ fn drawn(row: &Row, look: Look, showing: &Showing, here: bool, wide: bool) -> Li
     };
     let read = row.standing.read.clone().unwrap_or_else(|| "—".to_string());
 
-    let mut cells = vec![
-        (row.name.as_str(), 9),
-        (row.holds.as_str(), 26),
-        (row.standing.state.as_str(), 11),
-        (objects.as_str(), 7),
-        (read.as_str(), 8),
-    ];
-    if wide {
-        cells.push((row.collector.as_str(), 22));
-    }
+    let cells: Vec<(&str, usize)> = widths(wide, longest)
+        .into_iter()
+        .map(|(heading, width)| {
+            (
+                match heading {
+                    SECTION => row.name.as_str(),
+                    HOLDS => row.holds.as_str(),
+                    STATE => row.standing.state.as_str(),
+                    OBJECTS => objects.as_str(),
+                    READ => read.as_str(),
+                    _ => row.collector.as_str(),
+                },
+                width,
+            )
+        })
+        .collect();
 
     Line::from(vec![
         Span::styled(

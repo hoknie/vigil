@@ -1,5 +1,6 @@
 use vigil_model::{
-    AgentBudget, AgentStatus, CollectorState, CollectorStatus, FindingsSummary, ReporterStatus,
+    AgentBudget, AgentStatus, BufferStatus, CollectorState, CollectorStatus, FindingsSummary,
+    ReporterStatus,
 };
 
 pub fn collector_off() -> CollectorStatus {
@@ -121,6 +122,9 @@ pub fn agent() -> AgentStatus {
             collector("processes", 30, 4, 0),
             collector("persistence", 300, 7, 0),
             collector("firewall", 60, 8, 0),
+            collector("resources", 60, 5, 0),
+            collector("containers", 60, 3, 0),
+            collector("files", 300, 6, 0),
             collector_off(),
         ],
         reporters: vec![reporter("ndjson")],
@@ -138,10 +142,41 @@ pub fn agent() -> AgentStatus {
             suppressions: vec!["port.listen|tcp|10.0.0.5:* — the staging api, expected".into()],
         },
         store: None,
+        buffers: Some(vec![caught_up("ndjson")]),
         limitations: vec![
             "A thing this build cannot do yet is written here in a sentence about that long, so \
              the screen is drawn against a line of the size the daemon really sends."
                 .into(),
         ],
+    }
+}
+
+pub fn caught_up(receiver: &str) -> BufferStatus {
+    BufferStatus {
+        receiver: receiver.into(),
+        pending: 0,
+        pending_ceiling: 500,
+        bytes: 0,
+        bytes_ceiling: 4 * 1024 * 1024,
+        dropped_total: 0,
+        oldest_at: None,
+    }
+}
+
+pub fn behind(receiver: &str) -> BufferStatus {
+    BufferStatus {
+        pending: 12,
+        bytes: 8_664,
+        oldest_at: Some("2026-09-09T08:59:30.000Z".into()),
+        ..caught_up(receiver)
+    }
+}
+
+pub fn losing(receiver: &str) -> BufferStatus {
+    BufferStatus {
+        pending: 500,
+        bytes: 4 * 1024 * 1024,
+        dropped_total: 7,
+        ..behind(receiver)
     }
 }

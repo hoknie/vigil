@@ -24,6 +24,7 @@ fn drawn_keyed(view: &crate::ui::View, key: &str, width: u16) -> String {
             search: &search,
             cursor: 0,
             arrows: crate::ui::Arrows::Away,
+            sorting: crate::ui::Sorting::default(),
         },
     );
     let at = listed
@@ -50,6 +51,7 @@ fn drawn_grouped(
             search: &search,
             cursor: 0,
             arrows: crate::ui::Arrows::Away,
+            sorting: crate::ui::Sorting::default(),
         },
     );
     let mut buffer = Buffer::empty(Rect::new(0, 0, width, 40));

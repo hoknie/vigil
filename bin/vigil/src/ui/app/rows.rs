@@ -3,7 +3,11 @@ use vigil_model::Finding;
 use super::App;
 
 use crate::ui::Arrows;
-use crate::ui::screens::{accounts, firewall, ports, programs, startup};
+use crate::ui::details::reading::Subject;
+use crate::ui::screens::{
+    accounts, containers, findings, firewall, ports, programs, startup, system,
+};
+use crate::ui::{One, Screen, System};
 
 impl App {
     pub(super) fn showing(&self) -> accounts::Showing<'_> {
@@ -23,6 +27,7 @@ impl App {
             search: self.nav.lists.ports.search(),
             cursor: self.nav.lists.ports.at(),
             arrows: Arrows::at(self.level),
+            sorting: self.sorted(),
         }
     }
 
@@ -47,12 +52,29 @@ impl App {
         }
     }
 
+    pub(super) fn one(&self, screen: Screen) -> Option<&One> {
+        match screen {
+            Screen::Firewall => Some(&self.nav.lists.firewall),
+            Screen::Containers => Some(&self.nav.lists.containers),
+            _ => None,
+        }
+    }
+
+    pub(super) fn one_mut(&mut self, screen: Screen) -> Option<&mut One> {
+        match screen {
+            Screen::Firewall => Some(&mut self.nav.lists.firewall),
+            Screen::Containers => Some(&mut self.nav.lists.containers),
+            _ => None,
+        }
+    }
+
     pub(super) fn filtering(&self) -> firewall::Showing<'_> {
         firewall::Showing {
-            search: &self.firewall_search,
-            cursor: self.nav.firewall.at(),
+            search: self.nav.lists.firewall.search(),
+            cursor: self.nav.lists.firewall.at(),
             arrows: Arrows::at(self.level),
-            gone: self.firewall_gone.as_ref(),
+            gone: self.gone.as_ref(),
+            sorting: self.sorted(),
         }
     }
 
@@ -61,7 +83,100 @@ impl App {
     }
 
     pub(super) fn firewall_keys(&self) -> Vec<String> {
-        firewall::keys(&self.view, &self.filtering())
+        self.firewall_rows()
+            .into_iter()
+            .map(|row| row.key)
+            .collect()
+    }
+
+    pub(super) fn made_of(&self) -> system::Showing<'_> {
+        system::Showing {
+            showing: self.nav.lists.system.showing(),
+            search: self.nav.lists.system.search(),
+            cursor: self.nav.lists.system.at(),
+            elsewhere: self.nav.lists.system.narrowed_elsewhere(),
+            arrows: Arrows::at(self.level),
+            gone: self.gone.as_ref(),
+            sorting: self.sorted(),
+        }
+    }
+
+    pub(super) fn system_keys(&self) -> Vec<String> {
+        let showing = self.made_of();
+        match showing.showing {
+            System::Host => system::host::rows(&self.view, &showing)
+                .into_iter()
+                .map(|row| row.key)
+                .collect(),
+            System::Files => system::files::rows(&self.view, &showing)
+                .into_iter()
+                .map(|row| row.key)
+                .collect(),
+        }
+    }
+
+    pub(super) fn contained(&self) -> containers::Showing<'_> {
+        containers::Showing {
+            search: self.nav.lists.containers.search(),
+            cursor: self.nav.lists.containers.at(),
+            arrows: Arrows::at(self.level),
+            gone: self.gone.as_ref(),
+            sorting: self.sorted(),
+        }
+    }
+
+    pub(super) fn containers_rows(&self) -> Vec<containers::Row<'_>> {
+        containers::rows(&self.view, &self.contained())
+    }
+
+    pub(super) fn containers_keys(&self) -> Vec<String> {
+        self.containers_rows()
+            .into_iter()
+            .map(|row| row.key)
+            .collect()
+    }
+
+    pub(super) fn reading_subject(&self) -> Option<Subject<'_>> {
+        match self.nav.at() {
+            Screen::System => match self.nav.lists.system.showing() {
+                System::Host => {
+                    let showing = self.made_of();
+                    let rows = system::host::rows(&self.view, &showing);
+                    let row = rows.get(showing.cursor)?;
+                    Some(Subject {
+                        key: row.key.clone(),
+                        kind: row.kind.name(),
+                        named: system::host::fields::what(row),
+                        means: system::host::fields::means(row),
+                        item: row.item,
+                    })
+                }
+                System::Files => {
+                    let showing = self.made_of();
+                    let rows = system::files::rows(&self.view, &showing);
+                    let row = rows.get(showing.cursor)?;
+                    Some(Subject {
+                        key: row.key.clone(),
+                        kind: row.kind.name(),
+                        named: system::files::fields::what(row),
+                        means: system::files::fields::means(row),
+                        item: row.item,
+                    })
+                }
+            },
+            Screen::Containers => {
+                let rows = self.containers_rows();
+                let row = rows.get(self.nav.lists.containers.at())?;
+                Some(Subject {
+                    key: row.key.clone(),
+                    kind: row.kind.name(),
+                    named: containers::fields::what(row),
+                    means: containers::fields::means(row),
+                    item: row.item,
+                })
+            }
+            _ => None,
+        }
     }
 
     pub(super) fn ports_rows(&self) -> Vec<ports::Row<'_>> {
@@ -69,7 +184,7 @@ impl App {
     }
 
     pub(super) fn ports_keys(&self) -> Vec<String> {
-        ports::keys(&self.view, &self.listening())
+        self.ports_rows().into_iter().map(|row| row.key).collect()
     }
 
     pub(super) fn accounts_rows(&self) -> Vec<accounts::Row<'_>> {
@@ -112,10 +227,22 @@ impl App {
         startup::keys(&self.view, &self.starting())
     }
 
+    pub(super) fn found(&self) -> findings::Showing<'_> {
+        findings::Showing {
+            filter: &self.filter,
+            cursor: self.nav.findings.at(),
+            focused: self.level == crate::ui::Level::List,
+            sorting: self.sorted(),
+        }
+    }
+
+    pub(super) fn passing(&self) -> Vec<&Finding> {
+        let mut passing = self.filter.passing(&self.view.found.findings);
+        findings::sort(&mut passing, self.sorted());
+        passing
+    }
+
     pub(super) fn selected_finding(&self) -> Option<&Finding> {
-        self.filter
-            .passing(&self.view.found.findings)
-            .get(self.nav.findings.at())
-            .copied()
+        self.passing().get(self.nav.findings.at()).copied()
     }
 }

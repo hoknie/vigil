@@ -8,24 +8,24 @@ use super::notices::{notice, searching};
 use super::regions::{split_bottom, split_top};
 use super::rows::row;
 use super::shape::Shape;
+use super::showing::Showing;
 use super::tally::tally;
 use crate::ui::helpers::layout::listing;
-use crate::ui::{Filter, Look, View};
+use crate::ui::{Look, View};
 
-pub fn render(
-    view: &View,
-    filter: &Filter,
-    look: Look,
-    cursor: usize,
-    focused: bool,
-    area: Rect,
-    buffer: &mut Buffer,
-) {
+pub fn render(view: &View, look: Look, showing: &Showing<'_>, area: Rect, buffer: &mut Buffer) {
     if !view.has_reading() {
         return;
     }
 
-    let passing = filter.passing(&view.found.findings);
+    let Showing {
+        filter,
+        cursor,
+        focused,
+        sorting,
+    } = *showing;
+    let mut passing = filter.passing(&view.found.findings);
+    super::sorting::sort(&mut passing, sorting);
     let (search, rest) = split_top(area, filter);
     let (table, footer) = split_bottom(rest, look, passing.len());
 
@@ -57,7 +57,7 @@ pub fn render(
     }
 
     Paragraph::new(Line::styled(
-        tally(view, filter, footer),
+        tally(view, filter, sorting, footer),
         look.palette.quiet(),
     ))
     .render(footer, buffer);

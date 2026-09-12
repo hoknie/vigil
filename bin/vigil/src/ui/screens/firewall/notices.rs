@@ -1,7 +1,7 @@
 use super::fields::{hooked_on_input, legacy_backend};
 use super::rows::{COLLECTOR, summary};
 use super::showing::Showing;
-use crate::ui::helpers::words::{moment, refusal};
+use crate::ui::helpers::words::{self, moment, refusal};
 use crate::ui::{Gone, Notice, Reading, View};
 
 const WRITTEN_BY: &str = "The reading is written by the vigil-firewall.timer unit and read from a file; the agent starts no program of its own.";
@@ -73,18 +73,7 @@ pub(super) fn empty(view: &View, showing: &Showing<'_>) -> Notice {
 }
 
 pub(super) fn gone(gone: &Gone) -> Notice {
-    Notice::loud(format!("{} is not in this reading any more.", gone.key))
-        .saying(format!(
-            "The finding said: {} ({}), and the agent last had that row in front of it at {}.",
-            gone.title,
-            gone.kind,
-            moment::time_of_day(&gone.last_seen)
-        ))
-        .saying(
-            "A finding about a flushed table or a host that stopped filtering is a finding about \
-         a row that is gone by the time it is opened: that is the event itself, not a failure \
-         to find it. What the reading holds now is under this.",
-        )
+    words::gone::out_of_the_reading(gone)
 }
 
 pub(super) fn about(view: &View) -> Vec<String> {

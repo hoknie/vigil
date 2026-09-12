@@ -17,6 +17,9 @@ fn fixtures() -> Vec<(&'static str, Snapshot)> {
         ("the processes fixture", super::programs::processes()),
         ("the persistence fixture", super::startup::persistence()),
         ("the firewall fixture", super::firewall::firewall()),
+        ("the resources fixture", super::resources::resources()),
+        ("the containers fixture", super::containers::containers()),
+        ("the files fixture", super::files::files()),
         ("the launches fixture", super::launches::launches()),
     ]
 }
@@ -148,4 +151,5 @@ fn an_answer_the_console_was_never_shown_is_an_answer_it_never_drew() {
     answers("status", &super::answers::statuses());
     answers("refusal", &super::answers::refusals());
     answers("store", &super::answers::stores());
+    answers("buffer", &super::answers::buffers());
 }

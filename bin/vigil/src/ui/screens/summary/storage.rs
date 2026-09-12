@@ -33,13 +33,6 @@ pub(super) fn storage(report: &mut Report, agent: &AgentStatus, look: Look, widt
         Some(store) => numbers(report, store, look, width),
     }
 
-    named(
-        report,
-        look,
-        "waiting to send",
-        "nothing is buffered: this agent sends as it finds",
-        width,
-    );
     report.blank();
 }
 

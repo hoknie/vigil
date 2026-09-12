@@ -7,7 +7,7 @@ pub(super) fn notice(view: &View, filter: &Filter) -> Notice {
     match (&view.found.refused, filter.holding_back()) {
         (Some(reason), _) => Notice::loud("The findings were refused.").saying(reason.clone()),
         (None, true) => Notice::plain(format!("Nothing here is {}.", filter.describe())).saying(
-            "Filtered here, not by the agent: press s to lower the floor, / to change the \
+            "Filtered here, not by the agent: press f to lower the floor, / to change the \
              search.",
         ),
         (None, false) => nothing_open(view),

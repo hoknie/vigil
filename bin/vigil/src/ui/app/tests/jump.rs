@@ -2,7 +2,7 @@ use ratatui::crossterm::event::KeyCode;
 
 use crate::ui::{Anchor, Level, Program, Reading, Screen, Startup, Subject, View};
 
-use super::harness::{app, drawn, into, number, press};
+use super::harness::{app, drawn, drawn_at, into, number, press};
 
 #[test]
 fn o_on_a_finding_about_a_socket_opens_the_ports_section_on_that_socket() {
@@ -156,6 +156,79 @@ fn the_finding_about_a_dropping_spool_walks_to_the_row_that_says_so() {
     assert_eq!(
         app.programs_keys()[app.nav.lists.programs.at()],
         "launches|dropping"
+    );
+}
+
+#[test]
+fn the_finding_about_what_is_waiting_for_a_receiver_walks_to_the_screen_that_names_it() {
+    let mut app = app();
+    app.view.found.findings[0].finding_key = "agent.buffer|ndjson".into();
+    into(&mut app, Screen::Findings, 80, 30);
+
+    press(&mut app, KeyCode::Char('o'));
+
+    assert_eq!(
+        app.nav.at(),
+        Screen::Summary,
+        "a buffer is the agent's own, and the screen about this agent is where it is read"
+    );
+    let page = drawn_at(&app, 80, 60);
+    assert!(page.contains("WHERE FINDINGS GO"), "{page}");
+    assert!(
+        page.lines()
+            .any(|line| line.contains("ndjson") && line.contains("of 500")),
+        "the row about that receiver says what is waiting for it and out of what: {page}"
+    );
+    assert!(
+        !page.contains("draws no row"),
+        "the screen carries that receiver, so there is nothing to apologise for: {page}"
+    );
+}
+
+#[test]
+fn a_receiver_this_agent_says_nothing_about_opens_a_screen_that_says_so_in_words() {
+    let mut app = app();
+    app.view.found.findings[0].finding_key = "agent.buffer|webhook".into();
+    into(&mut app, Screen::Findings, 80, 30);
+
+    press(&mut app, KeyCode::Char('o'));
+
+    assert_eq!(app.nav.at(), Screen::Summary);
+    let page = drawn(&app);
+    assert!(
+        page.contains("draws no row for what is waiting to send"),
+        "{page}"
+    );
+    assert!(
+        page.contains("waiting for the webhook receiver"),
+        "and which receiver it was about: {page}"
+    );
+    assert!(
+        page.contains("09:00:00"),
+        "and when the agent last had it in front of it: {page}"
+    );
+}
+
+#[test]
+fn the_two_buffers_a_finding_can_be_about_do_not_walk_to_the_same_place() {
+    let mut spool = app();
+    spool.view = crate::ui::fixture::view_with_launches();
+    spool.view.found.findings[0].finding_key = "agent.buffer|launches".into();
+    into(&mut spool, Screen::Findings, 80, 30);
+    press(&mut spool, KeyCode::Char('o'));
+
+    let mut sending = app();
+    sending.view.found.findings[0].finding_key = "agent.buffer|ndjson".into();
+    into(&mut sending, Screen::Findings, 80, 30);
+    press(&mut sending, KeyCode::Char('o'));
+
+    assert_eq!(spool.nav.at(), Screen::Programs);
+    assert_eq!(sending.nav.at(), Screen::Summary);
+    assert_ne!(
+        spool.nav.at(),
+        sending.nav.at(),
+        "one key names the spool a plugin writes and the other what is waiting for a \
+         receiver, and a reader sent to the wrong one reads about the wrong thing"
     );
 }
 

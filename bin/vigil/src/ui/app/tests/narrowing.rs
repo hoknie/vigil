@@ -198,18 +198,33 @@ fn the_main_screen_has_no_search_and_says_where_the_search_lives() {
 }
 
 #[test]
-fn the_severity_floor_says_where_it_lives_rather_than_moving_the_reader_to_it() {
+fn a_screen_with_nothing_to_filter_says_so_rather_than_opening_an_empty_choice() {
     let mut app = app();
     into(&mut app, Screen::Ports, 120, 24);
 
-    press(&mut app, KeyCode::Char('s'));
+    press(&mut app, KeyCode::Char('f'));
 
     assert_eq!(app.nav.at(), Screen::Ports);
+    let page = drawn_at(&app, 120, 24);
+    assert!(page.contains("Nothing to filter here"), "{page}");
+    assert!(page.contains("findings"), "and where it does live: {page}");
+    assert!(page.contains("Press / to search"), "{page}");
     assert!(
-        drawn_at(&app, 120, 24).contains("findings section"),
-        "{}",
-        drawn_at(&app, 120, 24)
+        !page.contains("show only"),
+        "no empty choice was opened: {page}"
     );
+}
+
+#[test]
+fn a_screen_that_is_one_page_and_not_a_list_says_there_is_nothing_to_put_in_an_order() {
+    let mut app = app();
+    into(&mut app, Screen::Summary, 120, 24);
+
+    press(&mut app, KeyCode::Char('s'));
+
+    assert_eq!(app.nav.at(), Screen::Summary);
+    let page = drawn_at(&app, 120, 24);
+    assert!(page.contains("Nothing on this screen sorts"), "{page}");
 }
 
 #[test]
@@ -246,18 +261,40 @@ fn the_ports_and_the_accounts_have_a_search_of_their_own() {
 }
 
 #[test]
-fn the_severity_floor_moves_in_both_directions_and_says_where_it_is() {
+fn the_severity_floor_is_one_of_the_filters_now_and_is_reached_through_f() {
     let mut app = app();
     press(&mut app, super::harness::number(Screen::Findings));
 
-    press(&mut app, KeyCode::Char('s'));
-    assert!(drawn(&app).contains("low and above"), "{}", drawn(&app));
+    press(&mut app, KeyCode::Char('f'));
+    let choosing = drawn(&app);
+    assert!(choosing.contains("show only"), "{choosing}");
+    assert!(choosing.contains("critical and above"), "{choosing}");
 
-    press(&mut app, KeyCode::Char('S'));
+    for _ in 0..4 {
+        press(&mut app, KeyCode::Right);
+    }
+    press(&mut app, KeyCode::Enter);
+
+    assert!(app.filter.holding_back(), "the floor is set");
     assert!(
-        !app.filter.holding_back(),
-        "and comes back to showing everything"
+        drawn(&app).contains("critical and above"),
+        "and the list says what it is holding back: {}",
+        drawn(&app)
     );
+}
+
+#[test]
+fn a_choice_a_reader_left_alone_changes_nothing_at_all() {
+    let mut app = app();
+    press(&mut app, super::harness::number(Screen::Findings));
+    let before = drawn(&app);
+
+    press(&mut app, KeyCode::Char('f'));
+    press(&mut app, KeyCode::Right);
+    press(&mut app, KeyCode::Esc);
+
+    assert!(!app.filter.holding_back());
+    assert_eq!(drawn(&app), before, "Esc puts it back the way it was");
 }
 
 #[test]

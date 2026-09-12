@@ -7,8 +7,9 @@ pub(super) fn unknown(report: &mut Report, row: &Row<'_>, look: Look, width: usi
     say(
         report,
         look.palette.quiet(),
-        "This console has no screen for this kind of object: the agent is newer. Both ship in \
-         one package and belong installed together. The key below is what a suppression matches.",
+        "This console has no screen for this kind of object. Both halves ship in one package, \
+         so this is a screen nobody has written yet, not an agent that ran ahead. The key below \
+         is what a suppression matches.",
         width,
     );
     report.blank();

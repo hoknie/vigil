@@ -16,13 +16,24 @@ pub const SPOOL: &str = "agent.buffer";
 
 pub const FIREWALL: &str = "firewall";
 
+pub const RESOURCE: &str = "resource";
+
+pub const CONTAINER: &str = "container";
+
+pub const FILE: &str = "file";
+
+pub const DIRECTORY: &str = "directory";
+
 const DROPPING: &str = "launches|dropping";
+
+const AUDIT_SPOOL: &str = "launches";
 
 enum Reach {
     Rest,
     Whole,
-    Row(&'static str),
     Prefixed(&'static str),
+    OfTheHost,
+    Named,
 }
 
 const TABLE: &[(&str, Screen, Reach)] = &[
@@ -31,9 +42,16 @@ const TABLE: &[(&str, Screen, Reach)] = &[
     (PROCESSES, Screen::Programs, Reach::Rest),
     (PERSISTENCE, Screen::Startup, Reach::Rest),
     (LAUNCHES, Screen::Programs, Reach::Whole),
-    (SPOOL, Screen::Programs, Reach::Row(DROPPING)),
     (FIREWALL, Screen::Firewall, Reach::Prefixed(FIREWALL_ROW)),
+    (RESOURCE, Screen::System, Reach::OfTheHost),
+    (CONTAINER, Screen::Containers, Reach::Named),
+    (FILE, Screen::System, Reach::Whole),
+    (DIRECTORY, Screen::System, Reach::Whole),
 ];
+
+const BOOT_ROW: &str = "boot|current";
+
+const FILESYSTEM_ROW: &str = "fs";
 
 const FIREWALL_ROW: &str = "fw-";
 
@@ -46,6 +64,18 @@ pub struct Anchor {
 impl Anchor {
     pub fn of(finding: &Finding) -> Option<Anchor> {
         let (family, rest) = finding.finding_key.split_once('|')?;
+        if family == SPOOL {
+            return Some(match rest {
+                AUDIT_SPOOL => Anchor {
+                    screen: Screen::Programs,
+                    key: DROPPING.to_string(),
+                },
+                receiver => Anchor {
+                    screen: Screen::Summary,
+                    key: receiver.to_string(),
+                },
+            });
+        }
         let (_, screen, reach) = TABLE.iter().find(|(named, _, _)| *named == family)?;
 
         Some(Anchor {
@@ -53,8 +83,15 @@ impl Anchor {
             key: match reach {
                 Reach::Rest => rest.to_string(),
                 Reach::Whole => finding.finding_key.clone(),
-                Reach::Row(row) => (*row).to_string(),
                 Reach::Prefixed(prefix) => format!("{prefix}{rest}"),
+                Reach::OfTheHost => match rest.split_once('|') {
+                    Some((_, mount)) => format!("{FILESYSTEM_ROW}|{mount}"),
+                    None => BOOT_ROW.to_string(),
+                },
+                Reach::Named => rest
+                    .split_once('|')
+                    .map(|(_, named)| named.to_string())
+                    .unwrap_or_else(|| rest.to_string()),
             },
         })
     }

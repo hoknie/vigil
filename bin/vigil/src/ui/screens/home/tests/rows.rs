@@ -79,7 +79,7 @@ fn a_collector_this_console_has_no_section_for_is_still_a_row() {
     let mut view = fixture::view();
     if let Some(status) = view.status.as_mut() {
         status.agent.collectors.push(CollectorStatus {
-            name: "resources".into(),
+            name: "network".into(),
             state: CollectorState::Ok,
             reason: None,
             items: 9,
@@ -89,19 +89,24 @@ fn a_collector_this_console_has_no_section_for_is_still_a_row() {
 
     let page = drawn(&view, 80, 30);
 
-    assert!(page.contains("resources"), "{page}");
+    assert!(page.contains("network"), "{page}");
     assert!(
-        !page.contains("has no section for it"),
+        !page.contains("No screen in this console draws"),
         "the sentence moved to the panel: {page}"
     );
     assert!(
-        note(&view, "resources").is_some_and(|note| note.contains("has no section for it")),
+        note(&view, "network").is_some_and(|note| note.contains("No screen in this console draws")),
         "and the row still carries it, for the panel to draw"
+    );
+    assert!(
+        note(&view, "network").is_some_and(|note| !note.contains("newer")),
+        "the console and the agent ship in one package, so a reading nobody drew a screen for \
+         is not an agent that ran ahead"
     );
     assert!(
         rows(&view)
             .iter()
-            .any(|row| row.name == "resources" && row.opens.is_none()),
+            .any(|row| row.name == "network" && row.opens.is_none()),
         "a reading with nowhere to open is a row and not a silence"
     );
 }
@@ -118,7 +123,7 @@ fn a_collector_this_agent_does_not_watch_reads_differently_from_one_this_console
     assert!(row.contains("not watched"), "{row}");
     assert_ne!(
         note(&view, "startup"),
-        note(&without_a_section(), "resources"),
+        note(&without_a_section(), "network"),
         "an agent that never reads it and a console that cannot show it are two hosts \
          to go and look at, and the two sentences are what tells them apart"
     );
@@ -132,7 +137,7 @@ fn without_a_section() -> View {
     let mut view = fixture::view();
     if let Some(status) = view.status.as_mut() {
         status.agent.collectors.push(CollectorStatus {
-            name: "resources".into(),
+            name: "network".into(),
             state: CollectorState::Ok,
             reason: None,
             items: 9,
@@ -208,8 +213,86 @@ fn a_collector_this_console_has_a_section_for_is_never_a_row_with_nothing_behind
     assert_ne!(
         firewall.standing.note.as_deref(),
         Some(super::super::notices::NO_SECTION),
-        "the sentence about a console older than its agent belongs to a reading nobody drew, \
-         and both ship in one package"
+        "the sentence about a reading nobody drew a screen for belongs to a stranger, not to \
+         a section that has one"
     );
     assert_eq!(firewall.collector, "firewall");
+}
+
+#[test]
+fn a_buffer_that_is_dropping_findings_marks_the_main_screen_and_being_behind_does_not() {
+    let mut behind = fixture::view();
+    if let Some(status) = behind.status.as_mut() {
+        status.agent.buffers = Some(vec![fixture::behind("ndjson")]);
+    }
+    let mut losing = fixture::view();
+    if let Some(status) = losing.status.as_mut() {
+        status.agent.buffers = Some(vec![fixture::losing("ndjson")]);
+    }
+
+    let standing = |view: &View| {
+        rows(view)
+            .into_iter()
+            .find(|row| row.name == "summary")
+            .expect("a row for the summary")
+            .standing
+    };
+
+    assert!(
+        !standing(&behind).unwell,
+        "a receiver that is behind will be caught up, and a mark that cries at that is a mark \
+         nobody reads by the third day"
+    );
+    assert!(
+        standing(&losing).unwell,
+        "findings the agent threw away are the one thing on this screen that has to be seen \
+         without opening anything"
+    );
+    assert!(
+        note(&losing, "summary").is_some_and(|note| note.contains("dropped at the ceiling")),
+        "and the panel says how many and out of what"
+    );
+    assert!(
+        drawn(&losing, 80, 30)
+            .lines()
+            .any(|line| line.contains("summary") && line.contains('!')),
+        "{}",
+        drawn(&losing, 80, 30)
+    );
+}
+
+#[test]
+fn a_collector_whose_name_is_longer_than_a_sections_is_drawn_whole_at_eighty_columns() {
+    for name in [
+        "network",
+        "containers",
+        "file-integrity",
+        "everything-on-this-host",
+    ] {
+        let mut view = fixture::view();
+        if let Some(status) = view.status.as_mut() {
+            status.agent.collectors.push(CollectorStatus {
+                name: name.into(),
+                state: CollectorState::Ok,
+                reason: None,
+                items: 9,
+                ..fixture::collector_off()
+            });
+        }
+
+        let page = drawn(&view, 80, 40);
+
+        assert!(
+            page.lines().any(|line| line.contains(name)),
+            "{name} is not on the main screen whole: {page}"
+        );
+        for line in page.lines() {
+            assert!(line.chars().count() <= 80, "{name}: {line}");
+            assert!(
+                !line.contains('\u{2026}'),
+                "the column is sized by the rows it draws, and this one was sized by the \
+                 sections alone: {name}: {line}"
+            );
+        }
+    }
 }

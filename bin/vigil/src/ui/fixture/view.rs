@@ -2,11 +2,14 @@ use vigil_model::Severity;
 
 use super::accounts::accounts;
 use super::agent::{agent, collector};
+use super::containers::containers;
+use super::files::files;
 use super::findings::finding;
 use super::firewall::firewall;
 use super::host::host;
 use super::launches::launches;
 use super::programs::processes;
+use super::resources::resources;
 use super::sockets::snapshot;
 use super::startup::persistence;
 use super::{Reading, Status, View};
@@ -29,6 +32,10 @@ pub fn view() -> View {
     view.readings
         .put("persistence", Reading::Taken(persistence()));
     view.readings.put("firewall", Reading::Taken(firewall()));
+    view.readings.put("resources", Reading::Taken(resources()));
+    view.readings
+        .put("containers", Reading::Taken(containers()));
+    view.readings.put("files", Reading::Taken(files()));
     view.found.findings = vec![
         finding("A new listening port on 0.0.0.0:4444", Severity::Critical),
         finding("A user logged in from a new address", Severity::Low),
