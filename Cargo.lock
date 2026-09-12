@@ -1650,6 +1650,7 @@ dependencies = [
 name = "vigil-collect"
 version = "1.0.4"
 dependencies = [
+ "rustix",
  "serde_json",
  "sha2",
  "vigil-model",
