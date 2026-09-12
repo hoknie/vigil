@@ -3,7 +3,7 @@ use std::time::Instant;
 use vigil_model::Finding;
 use vigil_store::Store;
 
-use crate::helpers::rfc3339;
+use crate::helpers::{agent_finding, rfc3339};
 use crate::types::{Reading, Said};
 
 use super::Round;
@@ -33,7 +33,7 @@ impl Round {
                 if had_failed {
                     eprintln!("{} collector reading again: {name}", rfc3339::now());
                 }
-                if had_failed || tick.changes > 0 {
+                if had_failed || tick.changes > 0 || said.standing(name) {
                     self.take_health_of(index, said);
                 }
             }
@@ -42,9 +42,29 @@ impl Round {
                     .with(|state| state.record_failure(name, rfc3339::now(), &error));
                 if said.failing(name, &error) {
                     eprintln!("{} collector failed: {error}", rfc3339::now());
+                    self.say_it_could_not_read(name, said);
                 }
             }
         }
+    }
+
+    fn say_it_could_not_read(&mut self, name: &'static str, said: &mut Said) {
+        let Some(status) = self.shared.with(|state| state.collector(name)) else {
+            return;
+        };
+
+        said.opened(
+            name,
+            format!(
+                "the reading failed — {}",
+                status
+                    .last_error
+                    .clone()
+                    .unwrap_or_else(|| "and named no cause".to_string())
+            ),
+        );
+        let raised = vec![agent_finding::collector_failing(name, &status)];
+        self.raise(raised);
     }
 
     fn taken(&self, index: usize, duration_ms: u64, tick: &Tick) -> Reading {

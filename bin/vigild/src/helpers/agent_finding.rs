@@ -1,5 +1,5 @@
 use serde_json::json;
-use vigil_model::{Evidence, Finding, Kind, KnownKind, Severity, State, Subject};
+use vigil_model::{CollectorStatus, Evidence, Finding, Kind, KnownKind, Severity, State, Subject};
 use vigil_store::Held;
 
 use crate::budget::{CEILING_PERCENT, CPU, Meter};
@@ -109,6 +109,63 @@ pub fn collector_recovered(collector: &str, was: &str) -> Finding {
                 value: was.to_string(),
             },
         ],
+        redacted: Vec::new(),
+        rule: Some("collector_health".into()),
+        labels: Default::default(),
+    }
+}
+
+pub fn collector_failing(collector: &str, status: &CollectorStatus) -> Finding {
+    let now = rfc3339::now();
+    let mut evidence = vec![Evidence {
+        kind: "note".into(),
+        value: match status.readings {
+            0 => format!(
+                "{collector} says it can run on this host and has not completed a reading on it yet, so the failure is in the reading itself rather than in a source that is not here"
+            ),
+            readings => format!(
+                "{collector} read this host {readings} time(s) and the reading it has just tried failed: something here changed a moment ago, and what it watches is unwatched until it reads again"
+            ),
+        },
+    }];
+    evidence.push(Evidence {
+        kind: "error".into(),
+        value: status
+            .last_error
+            .clone()
+            .unwrap_or_else(|| "the reading failed and named no cause".to_string()),
+    });
+    evidence.push(Evidence {
+        kind: "cost".into(),
+        value: format!(
+            "{} failed reading(s), {} that went through, {} slot(s) missed{}",
+            status.failures,
+            status.readings,
+            status.skipped,
+            match &status.last_run_at {
+                Some(at) => format!(", last tried at {at}"),
+                None => String::new(),
+            }
+        ),
+    });
+
+    Finding {
+        event_id: uuid7::mint(),
+        finding_key: format!("agent.collector|{collector}"),
+        kind: Kind::Known(KnownKind::AgentCollectorDegraded),
+        severity: Severity::High,
+        state: State::Open,
+        observed_at: now.clone(),
+        first_seen_at: now,
+        occurrences: 1,
+        title: format!("Collector {collector}: the reading failed"),
+        subject: Subject {
+            object: "collector".into(),
+            key: json!({ "name": collector }),
+        },
+        before: None,
+        after: None,
+        evidence,
         redacted: Vec::new(),
         rule: Some("collector_health".into()),
         labels: Default::default(),
@@ -311,6 +368,90 @@ mod tests {
         assert_eq!(
             KnownKind::AgentBudgetRecovered.resolves(),
             Some(KnownKind::AgentBudgetExceeded)
+        );
+    }
+
+    fn tried(readings: u64, failures: u64, last_error: &str) -> CollectorStatus {
+        CollectorStatus {
+            name: "launches".into(),
+            state: vigil_model::CollectorState::Degraded,
+            reason: None,
+            last_run_at: Some("2026-09-12T09:00:00.000Z".into()),
+            duration_ms: None,
+            items: 0,
+            readings,
+            every_seconds: Some(30),
+            next_run_at: None,
+            skipped: 2,
+            failures,
+            last_error: Some(last_error.to_string()),
+            baseline: false,
+        }
+    }
+
+    #[test]
+    fn a_host_where_a_collector_cannot_run_and_one_where_it_just_broke_are_told_apart_in_the_proof()
+    {
+        let never = collector_degraded("launches", "auditd is not running on this host", true);
+        let broke = collector_failing(
+            "launches",
+            &tried(
+                41,
+                3,
+                "launches: /var/lib/vigil/audit-spool: permission denied",
+            ),
+        );
+
+        assert_eq!(
+            never.kind, broke.kind,
+            "both say the same thing about the same object — the agent is not watching part of \
+             this host — and a second kind for the second cause would be two findings about one \
+             blind collector"
+        );
+        assert_eq!(never.finding_key, broke.finding_key);
+        assert_ne!(
+            never.title, broke.title,
+            "but the two are different hosts to a person: one has nothing to fix, the other \
+             broke a moment ago"
+        );
+        assert!(
+            broke
+                .evidence
+                .iter()
+                .any(|evidence| evidence.value.contains("read this host 41 time(s)")),
+            "and the proof says it used to work: {:?}",
+            broke.evidence
+        );
+        assert!(
+            broke
+                .evidence
+                .iter()
+                .any(|evidence| evidence.kind == "error"
+                    && evidence.value.contains("permission denied")),
+            "quoting the error a person reads on the screen: {:?}",
+            broke.evidence
+        );
+    }
+
+    #[test]
+    fn a_collector_that_has_never_read_here_does_not_claim_that_something_just_broke() {
+        let first_time = collector_failing("launches", &tried(0, 1, "launches: no such file"));
+
+        assert!(
+            first_time
+                .evidence
+                .iter()
+                .any(|evidence| evidence.value.contains("has not completed a reading")),
+            "{:?}",
+            first_time.evidence
+        );
+        assert!(
+            !first_time
+                .evidence
+                .iter()
+                .any(|evidence| evidence.value.contains("something here changed")),
+            "a reading that never once worked is not a host that changed a moment ago: {:?}",
+            first_time.evidence
         );
     }
 

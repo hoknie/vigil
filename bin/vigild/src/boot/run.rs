@@ -56,7 +56,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     history::recall(&store, &shared, &policy);
 
     let mut opening = at_start;
-    opening.extend(health::recovered(&store, &watches));
+    let standing = health::standing(&store, &watches);
     for (reporter, lines) in delivery.damaged() {
         opening.push(agent_finding::store_damaged(
             &format!("outgoing/{reporter}"),
@@ -80,6 +80,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         schedule,
         meter: Meter::default(),
         opening,
+        standing,
     }
     .run()
 }

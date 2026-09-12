@@ -32,6 +32,7 @@ pub struct Round {
     pub schedule: Schedule,
     pub meter: Meter,
     pub opening: Vec<Finding>,
+    pub standing: Vec<(&'static str, String)>,
 }
 
 impl Round {
@@ -42,6 +43,9 @@ impl Round {
                 .map(|watch| (watch.name(), health_words::describe(&watch.health())))
                 .collect::<Vec<_>>(),
         );
+        for (name, why) in std::mem::take(&mut self.standing) {
+            said.opened(name, why);
+        }
         let mut health = Due::new(HEALTH, HEALTH_EVERY_SECONDS, Instant::now());
         let mut announce = false;
 

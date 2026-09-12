@@ -1,5 +1,6 @@
 use vigil_model::{
-    AgentStatus, CollectorRefusal, CollectorState, Finding, FindingsSummary, Host, Snapshot,
+    AgentStatus, CollectorRefusal, CollectorState, CollectorStatus, Finding, FindingsSummary, Host,
+    Snapshot,
 };
 
 use super::State;
@@ -43,6 +44,13 @@ impl State {
             .filter(|collector| collector.state != CollectorState::Off)
             .map(|collector| collector.name.clone())
             .collect()
+    }
+
+    pub fn collector(&self, name: &str) -> Option<CollectorStatus> {
+        self.collectors
+            .iter()
+            .find(|collector| collector.name == name)
+            .cloned()
     }
 
     pub fn knows_collector(&self, name: &str) -> bool {

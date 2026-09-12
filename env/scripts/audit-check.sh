@@ -240,14 +240,18 @@ case "$source_row" in
     bad "the collector did not read the plugin's spool: ${source_row:-nothing came back}" ;;
 esac
 
-say "the collector is well again — its own answer, read after the agent is started afresh"
+say "the collector is well again, and the complaint about it is closed"
 cat <<'WHY'
-  The daemon re-reads what its collectors say about themselves on a pass of its own, and
-  that pass is five minutes apart: inside one run of this recipe the answer it holds is the
-  one it took at start, before the rule was loaded. Starting the agent again takes the
-  answer at once, which is what this step reads. Whether the mark comes off inside a running
-  agent is a question about that pass, not about the collector, and it is named at the end.
+  A complaint about a collector closes when the agent has proof it is watching again: a
+  reading that went through. This step reads that twice — inside the running agent, where
+  the reading that carried the launch closes it, and across a restart, where a complaint the
+  previous run left open is closed by the first reading that goes through. Both are
+  assertions: a recipe that only noted them would let either come back unseen.
 WHY
+
+grep -q "agent.collector.recovered" "$FINDINGS" 2>/dev/null \
+    && ok "the reading that carried the launch closed the complaint, without waiting for a health pass" \
+    || bad "agent.collector.degraded is still open inside the running agent: the mark on the programs section waits for the health pass"
 kill "$daemon" 2>/dev/null
 for _ in 1 2 3 4 5 6 7 8 9 10; do
     alive "$daemon" || break
@@ -270,15 +274,9 @@ grep -q "agent.collector.degraded" /tmp/vigil-audit-daemon-again.log 2>/dev/null
     && bad "the agent complained about this collector again at its second start" \
     || ok "and it says nothing about this collector at start any more"
 
-if grep -q "agent.collector.recovered" "$FINDINGS" 2>/dev/null; then
-    ok "and the earlier finding was closed with agent.collector.recovered"
-else
-    printf '  note  nothing has closed agent.collector.degraded yet. Inside one run that\n'
-    printf '        waits for the health pass in bin/vigild/src/loops/round/mod.rs\n'
-    printf '        (HEALTH_EVERY_SECONDS = 300); across a restart nothing closes it at all,\n'
-    printf '        because boot/greeting.rs raises the open half and never the closing one.\n'
-    printf '        Both are outside the area this change was allowed to touch.\n'
-fi
+grep -q "agent.collector.recovered" "$FINDINGS" 2>/dev/null \
+    && ok "and the complaint stays closed across the restart, named out of the journal" \
+    || bad "nothing closed agent.collector.degraded: a complaint left open by a previous run stands for the life of the host"
 
 say "what a service runs carries no loginuid, and is not this collector's subject"
 "$SERVICE_PROBE" --version >/dev/null
