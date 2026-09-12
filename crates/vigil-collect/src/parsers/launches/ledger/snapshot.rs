@@ -16,6 +16,8 @@ pub const SOURCE_ROW: &str = "launches|source";
 
 pub const DROPPING: &str = "launches|dropping";
 
+const RUN: &str = "run|";
+
 pub const LIMIT: usize = 20_000;
 
 pub(super) const AUID_UNSET: u32 = u32::MAX;
@@ -131,6 +133,10 @@ pub fn launches_snapshot(
     }
 
     snapshot
+}
+
+pub fn any_launch_was_read(items: &BTreeMap<String, Value>) -> bool {
+    items.keys().any(|key| key.starts_with(RUN))
 }
 
 fn is_writable_path(executable: &str) -> bool {

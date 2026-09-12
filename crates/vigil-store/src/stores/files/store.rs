@@ -193,6 +193,17 @@ impl Store for FileStore {
         Ok(open)
     }
 
+    fn open_finding(&self, finding_key: &str, kind: &str) -> Result<Option<Finding>, StoreError> {
+        let state = self.state.lock().map_err(poisoned)?;
+
+        let identity = (finding_key.to_string(), kind.to_string());
+        Ok(state
+            .findings
+            .get(&identity)
+            .filter(|finding| finding.state == vigil_model::State::Open)
+            .cloned())
+    }
+
     fn resolve(&self, finding_key: &str, kind: &str, at: &str) -> Result<bool, StoreError> {
         let mut state = self.state.lock().map_err(poisoned)?;
 

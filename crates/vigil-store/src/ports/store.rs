@@ -13,6 +13,8 @@ pub trait Store: Send + Sync {
 
     fn open_findings(&self, limit: usize) -> Result<Vec<Finding>, StoreError>;
 
+    fn open_finding(&self, finding_key: &str, kind: &str) -> Result<Option<Finding>, StoreError>;
+
     fn resolve(&self, finding_key: &str, kind: &str, at: &str) -> Result<bool, StoreError>;
 
     fn prune(&self, older_than: &str) -> Result<u64, StoreError>;

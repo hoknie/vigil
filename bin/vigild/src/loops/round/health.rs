@@ -1,19 +1,13 @@
-use std::collections::{BTreeMap, BTreeSet};
-
 use vigil_collect::Health;
 use vigil_model::Finding;
 
 use crate::helpers::{agent_finding, health, rfc3339};
+use crate::types::Said;
 
 use super::Round;
 
 impl Round {
-    pub(super) fn take_health(
-        &mut self,
-        announce: bool,
-        announced: &mut BTreeMap<&'static str, String>,
-        spoken_about: &mut BTreeSet<&'static str>,
-    ) {
+    pub(super) fn take_health(&mut self, announce: bool, said: &mut Said) {
         let mut raised: Vec<Finding> = Vec::new();
 
         for index in 0..self.watches.len() {
@@ -21,28 +15,39 @@ impl Round {
             let name = self.watches[index].name();
             self.shared
                 .with(|state| state.record_health(name, &state_of_it));
-            if !announce {
-                continue;
-            }
 
-            let now = health::describe(&state_of_it);
-            let before = announced.insert(name, now.clone());
-            if before.as_deref() == Some(now.as_str()) {
+            let moved = said.health_moved(name, health::describe(&state_of_it));
+            let Some(before) = moved.filter(|_| announce) else {
                 continue;
-            }
+            };
 
             self.announce(name, &state_of_it);
-            raised.extend(of_health(
-                name,
-                &state_of_it,
-                before.as_deref(),
-                spoken_about,
-            ));
+            raised.extend(of_health(name, &state_of_it, &before, said));
         }
 
+        self.raise(raised);
+    }
+
+    pub(super) fn take_health_of(&mut self, index: usize, said: &mut Said) {
+        let state_of_it = self.watches[index].health();
+        let name = self.watches[index].name();
+        self.shared
+            .with(|state| state.record_health(name, &state_of_it));
+
+        let Some(before) = said.health_moved(name, health::describe(&state_of_it)) else {
+            return;
+        };
+
+        self.announce(name, &state_of_it);
+        let raised = of_health(name, &state_of_it, &before, said);
+        self.raise(raised);
+    }
+
+    fn raise(&mut self, raised: Vec<Finding>) {
         if raised.is_empty() {
             return;
         }
+
         let fresh = self.remember(&raised);
         self.shared.with(|state| state.record_findings(&fresh));
         self.hand_over(&fresh);
@@ -64,23 +69,23 @@ impl Round {
 fn of_health(
     name: &'static str,
     state_of_it: &Health,
-    before: Option<&str>,
-    spoken_about: &mut BTreeSet<&'static str>,
+    before: &str,
+    said: &mut Said,
 ) -> Vec<Finding> {
     match state_of_it {
-        Health::Ok => match spoken_about.remove(name) {
+        Health::Ok => match said.closed(name) {
             true => vec![agent_finding::collector_recovered(
                 name,
-                &health::in_words(before.unwrap_or_default()),
+                &health::in_words(before),
             )],
             false => Vec::new(),
         },
         Health::Degraded(why) => {
-            spoken_about.insert(name);
+            said.opened(name);
             vec![agent_finding::collector_degraded(name, why, false)]
         }
         Health::Unavailable(why) => {
-            spoken_about.insert(name);
+            said.opened(name);
             vec![agent_finding::collector_degraded(name, why, true)]
         }
     }
@@ -89,10 +94,6 @@ fn of_health(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn spoken() -> BTreeSet<&'static str> {
-        BTreeSet::new()
-    }
 
     fn kinds(findings: &[Finding]) -> Vec<String> {
         findings
@@ -103,19 +104,19 @@ mod tests {
 
     #[test]
     fn a_collector_that_reads_again_closes_the_finding_raised_when_it_stopped() {
-        let mut spoken_about = spoken();
+        let mut said = Said::default();
         let went = of_health(
             "launches",
             &Health::Degraded("auditd has brought nothing".into()),
-            Some("ok"),
-            &mut spoken_about,
+            "ok",
+            &mut said,
         );
 
         let came_back = of_health(
             "launches",
             &Health::Ok,
-            Some("degraded:auditd has brought nothing"),
-            &mut spoken_about,
+            "degraded:auditd has brought nothing",
+            &mut said,
         );
 
         assert_eq!(kinds(&went), vec!["agent.collector.degraded".to_string()]);
@@ -139,9 +140,9 @@ mod tests {
 
     #[test]
     fn a_collector_nobody_complained_about_raises_nothing_by_being_well() {
-        let mut spoken_about = spoken();
+        let mut said = Said::default();
 
-        let fine = of_health("ports", &Health::Ok, Some("ok"), &mut spoken_about);
+        let fine = of_health("ports", &Health::Ok, "ok", &mut said);
 
         assert!(
             fine.is_empty(),
@@ -151,26 +152,38 @@ mod tests {
 
     #[test]
     fn a_collector_that_came_back_twice_is_reported_once() {
-        let mut spoken_about = spoken();
+        let mut said = Said::default();
         of_health(
             "launches",
             &Health::Unavailable("auditd is not running".into()),
-            Some("ok"),
-            &mut spoken_about,
+            "ok",
+            &mut said,
         );
 
-        let first = of_health(
-            "launches",
-            &Health::Ok,
-            Some("unavailable:x"),
-            &mut spoken_about,
-        );
-        let second = of_health("launches", &Health::Ok, Some("ok"), &mut spoken_about);
+        let first = of_health("launches", &Health::Ok, "unavailable:x", &mut said);
+        let second = of_health("launches", &Health::Ok, "ok", &mut said);
 
         assert_eq!(first.len(), 1);
         assert!(
             second.is_empty(),
             "the pair closes a finding that is open, and after the first one there is none"
+        );
+    }
+
+    #[test]
+    fn a_collector_the_last_run_complained_about_is_still_spoken_about_after_a_restart() {
+        let mut said = Said::about([(
+            "launches",
+            "degraded:auditd has brought nothing".to_string(),
+        )]);
+
+        let came_back = of_health("launches", &Health::Ok, "degraded:x", &mut said);
+
+        assert_eq!(
+            kinds(&came_back),
+            vec!["agent.collector.recovered".to_string()],
+            "the finding the greeting raised about a collector that was unwell at startup has \
+             to be closable without waiting for it to break a second time"
         );
     }
 }

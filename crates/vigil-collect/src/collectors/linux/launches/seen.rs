@@ -9,4 +9,5 @@ pub(super) struct Seen {
     pub(super) inode: u64,
     pub(super) from: Option<PathBuf>,
     pub(super) items: BTreeMap<String, Value>,
+    pub(super) rule_loaded: bool,
 }

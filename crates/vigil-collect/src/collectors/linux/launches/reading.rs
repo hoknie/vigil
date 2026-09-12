@@ -108,6 +108,7 @@ impl LaunchesCollector {
             }
         }
 
+        seen.rule_loaded = seen.rule_loaded || reading.rule_loaded;
         seen.items = snapshot.items.clone();
         Ok(snapshot)
     }

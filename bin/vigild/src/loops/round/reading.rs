@@ -1,17 +1,16 @@
-use std::collections::BTreeMap;
 use std::time::Instant;
 
 use vigil_model::Finding;
 use vigil_store::Store;
 
 use crate::helpers::rfc3339;
-use crate::types::Reading;
+use crate::types::{Reading, Said};
 
 use super::Round;
 use crate::loops::Tick;
 
 impl Round {
-    pub(super) fn read(&mut self, index: usize, failing: &mut BTreeMap<&'static str, String>) {
+    pub(super) fn read(&mut self, index: usize, said: &mut Said) {
         let name = self.watches[index].name();
         debug_assert_eq!(
             self.schedule.name(index),
@@ -30,14 +29,18 @@ impl Round {
                 self.publish(self.taken(index, duration_ms, &tick), &fresh);
                 self.report(name, &tick, &fresh);
 
-                if failing.remove(name).is_some() {
+                let had_failed = said.reading_again(name);
+                if had_failed {
                     eprintln!("{} collector reading again: {name}", rfc3339::now());
+                }
+                if had_failed || tick.changes > 0 {
+                    self.take_health_of(index, said);
                 }
             }
             Err(error) => {
                 self.shared
                     .with(|state| state.record_failure(name, rfc3339::now(), &error));
-                if failing.insert(name, error.clone()).as_ref() != Some(&error) {
+                if said.failing(name, &error) {
                     eprintln!("{} collector failed: {error}", rfc3339::now());
                 }
             }

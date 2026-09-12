@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use super::{
-    baselines, console, greeting, history, outgoing, policy, reporters, schedule, watches,
+    baselines, console, greeting, health, history, outgoing, policy, reporters, schedule, watches,
 };
 use crate::budget::Meter;
 use crate::helpers::{agent_finding, rfc3339};
@@ -56,6 +56,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     history::recall(&store, &shared, &policy);
 
     let mut opening = at_start;
+    opening.extend(health::recovered(&store, &watches));
     for (reporter, lines) in delivery.damaged() {
         opening.push(agent_finding::store_damaged(
             &format!("outgoing/{reporter}"),
