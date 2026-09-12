@@ -310,3 +310,98 @@ pub fn firewall_legacy_backend(tables: &[&str]) -> Value {
         "readable": false,
     })
 }
+
+pub fn boot(boot_id: &str, booted_at: i64) -> Value {
+    json!({
+        "boot_id": boot_id,
+        "booted_at": booted_at,
+        "readable": true,
+    })
+}
+
+pub fn boot_unreadable() -> Value {
+    json!({
+        "boot_id": Value::Null,
+        "booted_at": Value::Null,
+        "readable": false,
+    })
+}
+
+pub fn memory(total_bytes: u64, swap_total_bytes: Option<u64>) -> Value {
+    json!({
+        "total_bytes": total_bytes,
+        "swap_total_bytes": swap_total_bytes,
+        "readable": true,
+    })
+}
+
+pub fn filesystem(mount: &str, free_percent_step: Option<u64>, free_inodes: Option<u64>) -> Value {
+    json!({
+        "mount": mount,
+        "device": "/dev/sda2",
+        "type": "ext4",
+        "read_only": false,
+        "total_bytes": 20_938_809_344u64,
+        "free_percent_step": free_percent_step,
+        "free_inodes_percent_step": free_inodes,
+    })
+}
+
+pub fn container(executable: &str, capabilities: &str, host_paths: &[&str]) -> Value {
+    json!({
+        "id": "3ab1c0f2d4e5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5",
+        "runtime": "docker",
+        "exe": executable,
+        "capabilities_effective": capabilities,
+        "host_paths": host_paths,
+        "host_paths_truncated": false,
+        "mounts_readable": true,
+    })
+}
+
+pub fn runtime_socket(path: &str, mode: &str) -> Value {
+    json!({
+        "path": path,
+        "mode": mode,
+        "uid": 0,
+        "gid": 999,
+    })
+}
+
+pub fn watched_file(path: &str, mode: &str, digest: &str) -> Value {
+    json!({
+        "path": path,
+        "present": true,
+        "readable": true,
+        "sha256": digest.repeat(32),
+        "size": 3_281,
+        "mode": mode,
+        "uid": 0,
+        "gid": 0,
+        "over_the_ceiling": false,
+    })
+}
+
+pub fn watched_file_absent(path: &str) -> Value {
+    json!({
+        "path": path,
+        "present": false,
+        "readable": false,
+        "sha256": Value::Null,
+        "size": 0,
+        "mode": Value::Null,
+        "uid": Value::Null,
+        "gid": Value::Null,
+        "over_the_ceiling": false,
+    })
+}
+
+pub fn watched_directory(path: &str, mode: &str) -> Value {
+    json!({
+        "path": path,
+        "present": true,
+        "mode": mode,
+        "uid": 0,
+        "gid": 0,
+    })
+}
