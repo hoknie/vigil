@@ -13,7 +13,7 @@ docker:
 [group('docker')]
 console-pty:
     {{ COMPOSE }} up --detach vigild
-    {{ COMPOSE }} exec -T vigild bash -c 'cargo build --quiet --bin vigil --bin vigild && timeout -s KILL 420 expect -f env/docker/console-pty.exp /build/target/debug/vigil'
+    {{ COMPOSE }} exec -T vigild bash -c 'cargo build --quiet --bin vigil --bin vigild && for _ in $(seq 1 300); do [ -S /run/vigil/vigil.sock ] && break; sleep 1; done && timeout -s KILL 420 expect -f env/docker/console-pty.exp /build/target/debug/vigil'
 
 # What the daemon service is seeing, as it sees it
 [group('docker')]

@@ -29,7 +29,7 @@ impl App {
         let gone = match self.point_at(&anchor) {
             true => None,
             false => match anchor.screen {
-                Screen::Firewall => Some(last_seen),
+                Screen::Firewall | Screen::Summary => Some(last_seen),
                 _ => {
                     self.message = Some(format!(
                         "{} is not in the reading on the {} screen: gone since.",
@@ -41,7 +41,7 @@ impl App {
             },
         };
 
-        self.firewall_gone = gone;
+        self.gone = gone;
         self.nav.jump(anchor.screen, from);
         self.detail_open = false;
         self.level = Level::List;
@@ -94,10 +94,35 @@ impl App {
                     .cursor_mut()
                     .point_at(&anchor.key, &keys)
             }
-            Screen::Firewall => {
-                let keys = self.firewall_keys();
-                self.nav.firewall.point_at(&anchor.key, &keys)
+            Screen::System => {
+                self.nav
+                    .lists
+                    .system
+                    .show(crate::ui::System::holding(&anchor.key));
+                let keys = self.system_keys();
+                self.nav
+                    .lists
+                    .system
+                    .cursor_mut()
+                    .point_at(&anchor.key, &keys)
             }
+            Screen::Firewall | Screen::Containers => {
+                let screen = anchor.screen;
+                let keys = match screen {
+                    Screen::Containers => {
+                        crate::ui::screens::containers::identities(&self.view, &self.contained())
+                    }
+                    other => self.rows_of(other),
+                };
+                let key = anchor.key.clone();
+                self.one_mut(screen)
+                    .is_some_and(|one| one.cursor_mut().point_at(&key, &keys))
+            }
+            Screen::Summary => self.view.status.as_ref().is_some_and(|status| {
+                status.agent.buffers.as_ref().is_some_and(|buffers| {
+                    buffers.iter().any(|buffer| buffer.receiver == anchor.key)
+                })
+            }),
             _ => false,
         }
     }

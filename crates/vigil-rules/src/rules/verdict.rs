@@ -1,8 +1,8 @@
 use vigil_model::Change;
 
 use super::{
-    account_rules, firewall_rules, launch_rules, listening_port_rules, persistence_rules,
-    process_rules,
+    ResourceLimits, account_rules, container_rules, file_rules, firewall_rules, launch_rules,
+    listening_port_rules, persistence_rules, process_rules, resource_rules,
 };
 use crate::{RuleContext, RuleSet};
 
@@ -54,4 +54,23 @@ pub(super) fn firewall(change: &Change) -> Vec<(String, String)> {
 
 pub(super) fn firewall_tick(changes: &[Change]) -> Vec<(String, String)> {
     findings_for(firewall_rules(), changes)
+}
+
+pub(super) fn containers(change: &Change) -> Vec<(String, String)> {
+    findings_for(container_rules(), std::slice::from_ref(change))
+}
+
+pub(super) fn files(change: &Change) -> Vec<(String, String)> {
+    findings_for(file_rules(), std::slice::from_ref(change))
+}
+
+pub(super) fn resources(change: &Change) -> Vec<(String, String)> {
+    findings_for(
+        resource_rules(ResourceLimits::default()),
+        std::slice::from_ref(change),
+    )
+}
+
+pub(super) fn resources_tick(changes: &[Change]) -> Vec<(String, String)> {
+    findings_for(resource_rules(ResourceLimits::default()), changes)
 }

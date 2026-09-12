@@ -1,6 +1,6 @@
 use super::group::Group;
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Screen {
     #[default]
     Home,
@@ -9,6 +9,8 @@ pub enum Screen {
     Programs,
     Startup,
     Firewall,
+    System,
+    Containers,
     Summary,
     Findings,
 }
@@ -24,6 +26,8 @@ impl Screen {
         Screen::Programs,
         Screen::Startup,
         Screen::Firewall,
+        Screen::System,
+        Screen::Containers,
         Screen::Summary,
         Screen::Findings,
     ];
@@ -36,6 +40,8 @@ impl Screen {
             Screen::Programs => "programs",
             Screen::Startup => "startup",
             Screen::Firewall => "firewall",
+            Screen::System => "system",
+            Screen::Containers => "containers",
             Screen::Summary => "summary",
             Screen::Findings => "findings",
         }
@@ -49,6 +55,8 @@ impl Screen {
             Screen::Programs => "What has run here",
             Screen::Startup => "What starts by itself",
             Screen::Firewall => "What the host lets in",
+            Screen::System => "The host and the files watched on it",
+            Screen::Containers => "What is running in containers",
             Screen::Summary => "This host and its agent",
             Screen::Findings => "What the agent has found",
         }
@@ -62,6 +70,8 @@ impl Screen {
             Screen::Programs => "what has run here",
             Screen::Startup => "what starts by itself",
             Screen::Firewall => "what the host lets in",
+            Screen::System => "the host and its files",
+            Screen::Containers => "what runs in containers",
             Screen::Summary => "this host and its agent",
             Screen::Findings => "what it has found",
         }
@@ -73,7 +83,9 @@ impl Screen {
             | Screen::Accounts
             | Screen::Programs
             | Screen::Startup
-            | Screen::Firewall => Group::Reads,
+            | Screen::Firewall
+            | Screen::System
+            | Screen::Containers => Group::Reads,
             Screen::Home | Screen::Summary | Screen::Findings => Group::Concludes,
         }
     }
@@ -85,6 +97,8 @@ impl Screen {
             Screen::Programs => &["processes", "launches"],
             Screen::Startup => &["persistence"],
             Screen::Firewall => &["firewall"],
+            Screen::System => &["resources", "files"],
+            Screen::Containers => &["containers"],
             Screen::Home | Screen::Summary | Screen::Findings => &[],
         }
     }
@@ -107,15 +121,34 @@ impl Screen {
     }
 
     pub fn digit(self) -> Option<u8> {
-        let at = Screen::ALL.iter().position(|screen| *screen == self)?;
-        match at < NUMBERED {
-            true => Some(at as u8 + 1),
-            false => None,
+        match self {
+            Screen::Ports => Some(1),
+            Screen::Accounts => Some(2),
+            Screen::Programs => Some(3),
+            Screen::Startup => Some(4),
+            Screen::Firewall => Some(5),
+            Screen::System => Some(6),
+            Screen::Containers => Some(7),
+            Screen::Summary => Some(8),
+            Screen::Findings => Some(9),
+            Screen::Home => None,
         }
     }
 
     pub fn numbered() -> usize {
-        Screen::ALL.len().min(NUMBERED)
+        Screen::ALL
+            .iter()
+            .filter(|screen| screen.digit().is_some())
+            .count()
+            .min(NUMBERED)
+    }
+
+    pub fn unnumbered() -> Vec<Screen> {
+        Screen::ALL
+            .iter()
+            .copied()
+            .filter(|screen| screen.digit().is_none())
+            .collect()
     }
 }
 
@@ -151,8 +184,10 @@ mod tests {
                 (Some(3), "programs"),
                 (Some(4), "startup"),
                 (Some(5), "firewall"),
-                (Some(6), "summary"),
-                (Some(7), "findings"),
+                (Some(6), "system"),
+                (Some(7), "containers"),
+                (Some(8), "summary"),
+                (Some(9), "findings"),
             ],
             "a new section moved the numbers of the sections below it: rewrite this table by \
              hand, and the help and the pty run with it"
@@ -225,6 +260,11 @@ mod tests {
                 );
             }
         }
-        assert_eq!(Screen::holding("resources"), None);
+        assert_eq!(
+            Screen::holding("resources"),
+            Some(Screen::System),
+            "one section holds two readings, and both of them belong to it"
+        );
+        assert_eq!(Screen::holding("nothing-of-the-sort"), None);
     }
 }

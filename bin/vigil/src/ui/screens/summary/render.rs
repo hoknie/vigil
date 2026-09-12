@@ -11,15 +11,24 @@ use super::limitations::limitations;
 use super::reporters::reporters;
 use super::silence::silence;
 use super::storage::storage;
-use crate::ui::{Look, Report, View};
+use crate::ui::helpers::words::gone as words;
+use crate::ui::{Gone, Look, Report, View};
 
-pub fn render(view: &View, look: Look, top: usize, saying: bool, area: Rect, buffer: &mut Buffer) {
+pub fn render(
+    view: &View,
+    look: Look,
+    top: usize,
+    saying: bool,
+    gone: Option<&Gone>,
+    area: Rect,
+    buffer: &mut Buffer,
+) {
     if view.status.is_none() {
         return;
     }
 
     let gutter = area.width - look.text_width(area.width) as u16;
-    let report = report(view, look, look.text_width(area.width), saying);
+    let report = report(view, look, look.text_width(area.width), saying, gone);
     let page = area.height as usize;
     let top = top.min(report.len().saturating_sub(page));
 
@@ -54,19 +63,25 @@ pub fn render(view: &View, look: Look, top: usize, saying: bool, area: Rect, buf
     }
 }
 
-pub fn height(view: &View, look: Look, width: usize, saying: bool) -> usize {
+pub fn height(view: &View, look: Look, width: usize, saying: bool, gone: Option<&Gone>) -> usize {
     match view.status.is_some() {
-        true => report(view, look, width, saying).len(),
+        true => report(view, look, width, saying, gone).len(),
         false => 0,
     }
 }
 
-fn report(view: &View, look: Look, width: usize, saying: bool) -> Report {
+fn report(view: &View, look: Look, width: usize, saying: bool, gone: Option<&Gone>) -> Report {
     let mut report = Report::default();
     let Some(status) = &view.status else {
         return report;
     };
 
+    if let Some(gone) = gone {
+        for line in words::not_a_row_here_yet(gone, &receiver(&gone.key)).lines(look, width) {
+            report.push(line);
+        }
+        report.blank();
+    }
     identity(&mut report, view, look, width);
     collectors(&mut report, &status.agent, look, width, saying);
     reporters(&mut report, &status.agent, look, width);
@@ -75,4 +90,8 @@ fn report(view: &View, look: Look, width: usize, saying: bool) -> Report {
     limitations(&mut report, &status.agent, look, width);
 
     report
+}
+
+fn receiver(named: &str) -> String {
+    format!("the {named} receiver")
 }

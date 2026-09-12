@@ -1,3 +1,4 @@
+pub mod gone;
 pub mod haystack;
 pub mod moment;
 pub mod refusal;

@@ -95,13 +95,19 @@ pub fn launches_snapshot(
         }),
     );
 
-    if reading.dropped {
-        snapshot.items.entry(DROPPING.to_string()).or_insert_with(|| {
-            json!({
-                "named": false,
-                "reason": "the audit plugin dropped the oldest events to stay under its spool size; launches from that window were never read",
-            })
-        });
+    match reading.dropped {
+        true => {
+            snapshot.items.insert(
+                DROPPING.to_string(),
+                json!({
+                    "named": false,
+                    "reason": "the audit plugin dropped the oldest events to stay under its spool size; launches from that window were never read",
+                }),
+            );
+        }
+        false => {
+            snapshot.items.remove(DROPPING);
+        }
     }
 
     if reading.any_unnamed {

@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.2",
+  "batch_id": "0192f3c1-8a44-7c1e-9b31-2f5c0a3d77e7",
+  "sent_at": "2026-09-11T09:19:02.771Z",
+  "producer": {
+    "name": "vigil",
+    "version": "0.1.0"
+  },
+  "host": {
+    "host_id": "b7f1c0a93e5d4821bb2f6c1d9e0a7f34",
+    "install_id": "0192e7aa-1c02-7f10-8d44-9a1b6c2e5f03",
+    "boot_id": "6f2c1d84-9b3a-4c77-8e21-0f5a2b6c9d18",
+    "hostname": "web-03",
+    "os": {
+      "family": "linux",
+      "distro": "debian",
+      "version": "12",
+      "kernel": "6.1.0-18-amd64",
+      "arch": "x86_64"
+    },
+    "addresses": [
+      "10.0.0.13"
+    ],
+    "tags": {
+      "host_id_source": "/etc/machine-id"
+    }
+  },
+  "findings": [
+    {
+      "event_id": "0192f3c2-3c66-7d24-9b30-7e9f4c0d5a40",
+      "finding_key": "agent.buffer|host-findings",
+      "kind": "agent.buffer.dropping",
+      "severity": "high",
+      "state": "open",
+      "observed_at": "2026-09-11T09:19:02.108Z",
+      "first_seen_at": "2026-09-11T09:19:02.108Z",
+      "occurrences": 1,
+      "title": "The buffer for host-findings is full: 41 finding(s) dropped, oldest first",
+      "subject": {
+        "type": "buffer",
+        "key": {
+          "reporter": "host-findings"
+        }
+      },
+      "evidence": [
+        {
+          "kind": "note",
+          "value": "500 finding(s) and 361 kB are held for host-findings, which is the ceiling (500 finding(s), 4096 kB). What arrives now displaces the oldest still waiting, and the oldest is what this receiver has never seen"
+        },
+        {
+          "kind": "note",
+          "value": "the oldest finding still waiting was seen at 2026-09-11T06:41:44.110Z"
+        }
+      ],
+      "rule": "outgoing_buffer"
+    }
+  ]
+}

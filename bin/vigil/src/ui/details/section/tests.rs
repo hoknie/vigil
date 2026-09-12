@@ -60,14 +60,14 @@ fn a_reading_this_console_has_no_section_for_says_so_where_the_reader_is_looking
     let mut view = fixture::view();
     if let Some(status) = view.status.as_mut() {
         status.agent.collectors.push(vigil_model::CollectorStatus {
-            name: "resources".into(),
+            name: "network".into(),
             state: vigil_model::CollectorState::Ok,
             items: 9,
             ..fixture::collector_off()
         });
     }
 
-    let page = drawn(Some(&row(&view, "resources")), fixture::look(), 60);
+    let page = drawn(Some(&row(&view, "network")), fixture::look(), 60);
 
     assert!(
         squashed(&page).contains(&squashed("has no section for it")),

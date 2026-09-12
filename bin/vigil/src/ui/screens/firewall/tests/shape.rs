@@ -120,6 +120,7 @@ fn a_files_page_puts_the_tally_under_the_table_rather_than_at_the_foot_of_a_tall
             cursor: 0,
             arrows: crate::ui::Arrows::Away,
             gone: None,
+            sorting: crate::ui::Sorting::default(),
         },
         buffer.area,
         &mut buffer,

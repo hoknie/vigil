@@ -1,7 +1,7 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
-use super::harness::{Given, busy, drawn, drawn_with, showing};
+use super::harness::{Given, busy, drawn, drawn_with, running, showing};
 use crate::ui::helpers::words::text;
 use crate::ui::screens::ports::{Arrangement, Showing, render};
 use crate::ui::{Arrows, Audience, Look, Protocols, fixture};
@@ -61,5 +61,36 @@ fn nothing_runs_off_the_side_at_any_of_the_widths_this_is_read_at() {
                 );
             }
         }
+    }
+}
+
+#[test]
+fn the_room_a_command_line_needs_is_not_spent_on_a_program_name_that_is_one_word() {
+    let command = "/usr/bin/python3 -m gunicorn --bind 0.0.0.0:8000 app:server";
+    let view = running(command);
+
+    for width in [120u16, 160, 200] {
+        let page = drawn(&view, 0, width);
+        let heading = page
+            .lines()
+            .find(|line| line.contains("PROGRAM"))
+            .expect("a heading");
+        let program = heading.find("PROGRAM").expect("the program column");
+        let at = heading.find("COMMAND").expect("the command column");
+
+        assert!(
+            at - program <= width as usize - at,
+            "{width} columns: PROGRAM holds a basename and COMMAND a whole command line, and \
+             the wider of the two is the one that is only ever one word: {page}"
+        );
+    }
+
+    for width in [160u16, 200] {
+        let page = drawn(&view, 0, width);
+        assert!(
+            page.contains(command),
+            "{width} columns: the command line is cut while the program name beside it is \
+             five letters in a field of thirty: {page}"
+        );
     }
 }

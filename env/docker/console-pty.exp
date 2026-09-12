@@ -74,6 +74,20 @@ proc check {what haystack needle} {
     }
 }
 
+proc check_either_loose {what haystack first second} {
+    global failures
+    set page [squash $haystack]
+    if {[string first [squash $first] $page] >= 0 || [string first [squash $second] $page] >= 0} {
+        puts "  ok   $what"
+    } else {
+        incr failures
+        puts "  FAIL $what · found neither: $first · nor: $second"
+        puts "-------- what the console drew --------"
+        puts $haystack
+        puts "---------------------------------------"
+    }
+}
+
 proc check_absent {what haystack needle} {
     global failures
     if {[string first $needle $haystack] < 0} {
@@ -138,7 +152,7 @@ foreach program [list $console [file join [file dirname $console] vigild]] {
     set name [file tail $program]
 
     set coloured [printed [list $program --help]]
-    check "$name --help prints its examples" $coloured "Examples:"
+    check "$name --help prints how it is used" $coloured "Usage:"
     if {[string first "\x1b\[" $coloured] >= 0} {
         puts "  ok   $name --help is coloured under a terminal"
     } else {
@@ -183,7 +197,7 @@ check_loose "the main screen is the one that opens" $page "▸ What this agent w
 check_loose "it names what the agent reads" $page "WHAT IT READS"
 check_loose "and what it makes of it" $page "WHAT IT CONCLUDES"
 check "the cursor is on a row" $page " > "
-check_loose "the footer names the range that opens something" $page "1 - 7"
+check_loose "the footer names the range that opens something" $page "1 - 9"
 check_absent_loose "and the row of screen names along the top is gone" $page "▸ 1 summary"
 
 note "a section's row carries its number, how many objects and when it last read"
@@ -192,8 +206,10 @@ check_loose "accounts is the second" $page "2 accounts"
 check_loose "programs is the third" $page "3 programs"
 check_loose "startup is the fourth" $page "4 startup"
 check_loose "firewall is the fifth" $page "5 firewall"
-check_loose "summary is the sixth" $page "6 summary"
-check_loose "findings is the seventh" $page "7 findings"
+check_loose "the system is the sixth" $page "6 system"
+check_loose "containers is the seventh" $page "7 containers"
+check_loose "summary is the eighth" $page "8 summary"
+check_loose "findings is the ninth" $page "9 findings"
 check_loose "and the table says what each row holds" $page "WHATITHOLDS"
 
 note "/ on the main screen says where the search lives and does not move the reader"
@@ -305,8 +321,8 @@ set page [drawn 3]
 check_loose "the firewall section opened" $page "▸ What the host lets in"
 check_loose "and it says what a policy means on it" $page "POLICY"
 
-note "7: the findings, narrowed to the port opened for this run"
-send "7"
+note "9: the findings, narrowed to the port opened for this run"
+send "9"
 set page [drawn 3]
 check_loose "the findings section opened" $page "▸ What the agent has found"
 send "/"
@@ -349,8 +365,8 @@ send $Esc
 set page [drawn 2]
 check_loose "the main screen" $page "▸ What this agent watches"
 
-note "7, →: a finding and its detail, side by side on a terminal wide enough for both"
-send "7"
+note "9, →: a finding and its detail, side by side on a terminal wide enough for both"
+send "9"
 after 400
 send $Right
 set page [drawn 2]
@@ -420,19 +436,59 @@ set after [drawn 3]
 check_loose "the main screen did not move under Tab" $after "▸ What this agent watches"
 check_absent_loose "and Tab did not open a section" $after "▸ What is listening"
 
-note "6: the summary, and what is kept on disk"
+note "6: the section that holds two readings of this host"
 send "6"
+set page [drawn 3]
+check_loose "the section opened" $page "▸ The host and the files watched on it"
+check_loose "and both of its readings are named on it" $page "\[the host\] · watched files"
+send $Down
+set page [drawn 3]
+check_loose "the host is read as boot, memory and the filesystems under it" $page "KIND"
+check_loose "and how full a filesystem is is drawn in the steps the agent reads it in" $page "FREE"
+send $Esc
+after 300
+send $Right
+set page [drawn 3]
+check_loose "→ along the row of names opens the other reading" $page "\[watched files\]"
+check_loose "and the watched paths carry their mode and their owner" $page "MODE"
+
+note "7: what is running in containers, whether or not this host sees itself as one"
+send "7"
+set page [drawn 3]
+check_loose "the section opened" $page "▸ What is running in containers"
+check_either_loose "and drew one of the two answers a host can give" $page \
+    "CONTAINER  PROGRAM" "Nothing is running in a container on this host"
+check_either_loose "the runtime socket is named under the table, or said not to be there" \
+    $page "socket /" "no runtime socket on this host"
+check_absent_loose "and no column is there for the socket rows this table no longer draws" \
+    $page "MODE OWNER"
+if {[string first "0container(s)" [squash $page]] < 0} {
+    note "this workbench can see itself as a container, so the table is drawn"
+    check_loose "the columns are the ones a container has" $page "CONTAINER  PROGRAM"
+    check_loose "and SYS_ADMIN is one of them" $page "SYS_ADMIN"
+} else {
+    note "this workbench cannot see itself as a container: the named screen is the answer"
+}
+
+note "↑ from the first row of a section with no row of lists: the main screen"
+send $Up
+set page [drawn 3]
+check_loose "the arrows are the way out as much as the way down" $page "▸ What this agent watches"
+
+note "8: the summary, and what is kept on disk"
+send "8"
 set page [drawn 3]
 check_loose "the summary opened" $page "▸ This host and its agent"
 check_loose "the collectors table says how often each one reads" $page "EVERY"
 for {set scrolled 0} {$scrolled < 8} {incr scrolled} { send "j" }
 set page [drawn 3]
 check_loose "and a screenful down there is a place for what is kept on disk" $page "WHATISKEPTONDISK"
+check_loose "and the receivers say what is waiting for each of them" $page "WAITING"
 
-note "j: to the foot of the summary, where the agent says what it cannot do yet"
+note "j: to the foot of the summary, where the agent says what it holds back"
 for {set scrolled 0} {$scrolled < 30} {incr scrolled} { send "j" }
 set page [drawn 3]
-check_loose "the agent names a limitation of this build, in its own words" $page "Nothingisbuffered"
+check_loose "the foot of the summary is what the agent is not saying" $page "WHATISNOTBEINGSAID"
 
 note "q: the console leaves and gives the terminal back"
 send "q"
@@ -525,11 +581,10 @@ check_loose "the view switched back" $page "\[t list\] t tree"
 check "the reader is still on the same unit, with no indent now" $page " > redis.service"
 check_loose "and the rows are in the order of the alphabet again" $page "nginx.service Web server │ │ > redis.service"
 
-note "6: the summary of an agent whose configuration names one collector out of five"
-send "6"
+note "8: the summary of an agent whose configuration names one collector out of five"
+send "8"
 set page [waiting_for "COLLECTORS" 20]
 check_loose "a collector that is off is marked as having something to say" $page "! launches"
-check_loose "and the screen offers the key that reads it" $page "press d to read it"
 check_absent_loose "and says nothing under the row until it is asked" $page "notfailing"
 send "d"
 set page [drawn 3]

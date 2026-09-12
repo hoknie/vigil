@@ -11,7 +11,7 @@ use super::App;
 use crate::link::Link;
 
 use crate::ui::{
-    Audience, Filter, Level, Look, Nav, Nesting, Palette, Protocols, Screen, Search, View,
+    Audience, Chooser, Filter, Level, Look, Nav, Nesting, Palette, Protocols, Screen, View,
 };
 
 const REFRESH: Duration = Duration::from_secs(2);
@@ -30,8 +30,9 @@ impl App {
             level: Level::default(),
             ports_protocols: Protocols::default(),
             startup_nesting: Nesting::default(),
-            firewall_search: Search::default(),
-            firewall_gone: None,
+            gone: None,
+            chooser: Chooser::default(),
+            sorting: Default::default(),
             helping: false,
             message: None,
             body: Cell::new(Rect::ZERO),

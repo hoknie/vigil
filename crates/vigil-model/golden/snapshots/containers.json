@@ -1,0 +1,81 @@
+{
+  "source": "containers",
+  "classes": {
+    "container": {
+      "capabilities_effective": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "exe": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "host_paths": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "host_paths/[]": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "host_paths_truncated": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "id": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "mounts_readable": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "runtime": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "container-socket": {
+      "gid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "mode": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "path": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "uid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      }
+    }
+  }
+}

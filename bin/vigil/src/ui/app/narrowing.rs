@@ -1,7 +1,7 @@
 use super::App;
 
 use crate::ui::types::content::nesting;
-use crate::ui::{Cursor, Level, Offset, Screen, Search, Startup};
+use crate::ui::{Cursor, Level, Offset, One, Screen, Search, Startup};
 
 pub const DETAILS: char = 'd';
 
@@ -17,7 +17,8 @@ impl App {
             Screen::Accounts => Some(self.nav.lists.accounts.search()),
             Screen::Programs => Some(self.nav.lists.programs.search()),
             Screen::Startup => Some(self.nav.lists.startup.search()),
-            Screen::Firewall => Some(&self.firewall_search),
+            Screen::System => Some(self.nav.lists.system.search()),
+            Screen::Firewall | Screen::Containers => self.one(self.nav.at()).map(One::search),
             Screen::Home | Screen::Summary => None,
         }
     }
@@ -29,7 +30,11 @@ impl App {
             Screen::Accounts => Some(self.nav.lists.accounts.search_mut()),
             Screen::Programs => Some(self.nav.lists.programs.search_mut()),
             Screen::Startup => Some(self.nav.lists.startup.search_mut()),
-            Screen::Firewall => Some(&mut self.firewall_search),
+            Screen::System => Some(self.nav.lists.system.search_mut()),
+            Screen::Firewall | Screen::Containers => {
+                let screen = self.nav.at();
+                self.one_mut(screen).map(One::search_mut)
+            }
             Screen::Home | Screen::Summary => None,
         }
     }
@@ -86,7 +91,10 @@ impl App {
             Screen::Accounts => self.nav.lists.accounts.search().holding_back(),
             Screen::Programs => self.nav.lists.programs.search().holding_back(),
             Screen::Startup => self.nav.lists.startup.search().holding_back(),
-            Screen::Firewall => self.firewall_search.holding_back(),
+            Screen::System => self.nav.lists.system.search().holding_back(),
+            Screen::Firewall | Screen::Containers => self
+                .one(self.nav.at())
+                .is_some_and(|one| one.search().holding_back()),
             Screen::Home | Screen::Summary => false,
         }
     }
@@ -106,9 +114,12 @@ impl App {
             Screen::Accounts => self.nav.lists.accounts.widen(),
             Screen::Programs => self.nav.lists.programs.widen(),
             Screen::Startup => self.nav.lists.startup.widen(),
-            Screen::Firewall => {
-                self.firewall_search.clear();
-                self.nav.firewall = Cursor::default();
+            Screen::System => self.nav.lists.system.widen(),
+            Screen::Firewall | Screen::Containers => {
+                let screen = self.nav.at();
+                if let Some(one) = self.one_mut(screen) {
+                    one.widen();
+                }
             }
             Screen::Home | Screen::Summary => {}
         }

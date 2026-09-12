@@ -5,13 +5,14 @@ use vigil_model::Snapshot;
 
 use crate::ui::helpers::words::text;
 use crate::ui::screens::ports::{Arrangement, Showing, render};
-use crate::ui::{Arrows, Protocols, Reading, Search, View, fixture};
+use crate::ui::{Arrows, Protocols, Reading, Search, Sorting, View, fixture};
 
 #[derive(Default)]
 pub(super) struct Given {
     pub(super) protocols: Protocols,
     search: Search,
     arrangement: Arrangement,
+    pub(super) sorting: Sorting,
 }
 
 impl Given {
@@ -22,6 +23,7 @@ impl Given {
             search: &self.search,
             cursor,
             arrows: Arrows::List,
+            sorting: self.sorting,
         }
     }
 }
@@ -47,6 +49,7 @@ pub(super) fn showing(protocols: Protocols, arrangement: Arrangement) -> Given {
         protocols,
         arrangement,
         search: Search::default(),
+        sorting: Sorting::default(),
     }
 }
 
@@ -104,6 +107,24 @@ pub(super) fn busy() -> View {
                     }),
                 ),
         ),
+    );
+    view
+}
+
+pub(super) fn running(command: &str) -> View {
+    let mut view = fixture::view();
+    view.readings.put(
+        "ports",
+        Reading::Taken(Snapshot::new("ports", "2026-09-09T09:00:00.000Z").with(
+            "tcp|0.0.0.0:8000",
+            json!({
+                "protocol": "tcp", "address": "0.0.0.0", "port": 8000, "uid": 0,
+                "user": "root",
+                "process": {"exe": "/usr/bin/python3", "exe_deleted": false,
+                            "cmdline": command, "cmdline_redacted": false},
+                "owner_resolved": true,
+            }),
+        )),
     );
     view
 }

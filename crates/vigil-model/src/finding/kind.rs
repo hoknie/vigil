@@ -108,7 +108,9 @@ kinds! {
     ResourceClockSkew => "resource.clock_skew",
     AgentBaselineReady => "agent.baseline.ready",
     AgentCollectorDegraded => "agent.collector.degraded",
+    AgentCollectorRecovered => "agent.collector.recovered",
     AgentBufferDropping => "agent.buffer.dropping",
+    AgentBufferDrained => "agent.buffer.drained",
     AgentBudgetExceeded => "agent.budget.exceeded",
     AgentBudgetRecovered => "agent.budget.recovered",
     AgentCloneSuspected => "agent.clone_suspected",
@@ -123,6 +125,8 @@ impl KnownKind {
             KnownKind::UserAccountRemoved => Some(KnownKind::UserAccountNew),
             KnownKind::UserSshkeyRemoved => Some(KnownKind::UserSshkeyAdded),
             KnownKind::AgentBudgetRecovered => Some(KnownKind::AgentBudgetExceeded),
+            KnownKind::AgentCollectorRecovered => Some(KnownKind::AgentCollectorDegraded),
+            KnownKind::AgentBufferDrained => Some(KnownKind::AgentBufferDropping),
             KnownKind::FirewallEnabled => Some(KnownKind::FirewallDisabled),
             _ => None,
         }
@@ -177,6 +181,46 @@ mod tests {
             None,
             "rules that came back are not the rules that were there: nothing closes a flush"
         );
+    }
+
+    #[test]
+    fn a_collector_that_reads_again_closes_the_finding_that_it_could_not() {
+        assert_eq!(
+            KnownKind::AgentCollectorRecovered.resolves(),
+            Some(KnownKind::AgentCollectorDegraded),
+            "a collector that came back is an event of its own, and without it the finding \
+             about the collector that went stands for the life of the host"
+        );
+        assert_eq!(KnownKind::AgentCollectorDegraded.resolves(), None);
+    }
+
+    #[test]
+    fn a_buffer_that_stopped_losing_findings_closes_the_finding_that_it_was_losing_them() {
+        assert_eq!(
+            KnownKind::AgentBufferDrained.resolves(),
+            Some(KnownKind::AgentBufferDropping),
+            "what is held is a number that only falls back to nothing; the fall is the event"
+        );
+        assert_eq!(KnownKind::AgentBufferDropping.resolves(), None);
+    }
+
+    #[test]
+    fn every_thing_the_agent_says_about_itself_that_can_end_has_a_kind_that_ends_it() {
+        let opened_by_the_agent_and_ended_by_the_host = [
+            KnownKind::AgentCollectorDegraded,
+            KnownKind::AgentBufferDropping,
+            KnownKind::AgentBudgetExceeded,
+        ];
+
+        for opening in opened_by_the_agent_and_ended_by_the_host {
+            assert!(
+                KnownKind::ALL
+                    .iter()
+                    .any(|kind| kind.resolves() == Some(opening)),
+                "{} opens a finding nothing can close",
+                opening.as_str()
+            );
+        }
     }
 
     #[test]

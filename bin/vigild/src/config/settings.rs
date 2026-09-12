@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use super::Suppression;
+use super::{ResourceThresholds, Suppression, WatchedFiles};
 
 const WHEN_NOTHING_SAYS_OTHERWISE: u32 = 30;
 
@@ -17,6 +17,8 @@ pub struct Config {
     pub collectors: Option<Vec<String>>,
     pub reporters: Vec<Receiver>,
     pub suppressions: Vec<Suppression>,
+    pub resources: ResourceThresholds,
+    pub files: WatchedFiles,
     pub record_launch_arguments: bool,
 }
 
@@ -31,6 +33,8 @@ impl Default for Config {
             collectors: None,
             reporters: Vec::new(),
             suppressions: Vec::new(),
+            resources: ResourceThresholds::default(),
+            files: WatchedFiles::default(),
             record_launch_arguments: false,
         }
     }

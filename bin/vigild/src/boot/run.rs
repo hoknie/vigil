@@ -1,8 +1,10 @@
 use std::path::Path;
 
-use super::{baselines, console, greeting, history, policy, reporters, schedule, watches};
+use super::{
+    baselines, console, greeting, history, outgoing, policy, reporters, schedule, watches,
+};
 use crate::budget::Meter;
-use crate::helpers::rfc3339;
+use crate::helpers::{agent_finding, rfc3339};
 use crate::loops::Round;
 use crate::socket::{Shared, State};
 use crate::types::{Delivery, Startup};
@@ -14,6 +16,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
 
     let host = identity::describe(state_dir)?;
     let reporters = reporters::build(&config.reporters)?;
+    let buffers = outgoing::open(state_dir, &reporters)?;
     let (mut watches, switched_off) = watches::open(&config)?;
     let store = history::open(state_dir)?;
     let schedule = schedule::of(&config, &watches, &host.host_id);
@@ -46,14 +49,21 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     greeting.say();
     let at_start = greeting.findings();
 
-    let delivery = Delivery::new(host, reporters, shared.clone());
+    let delivery = Delivery::new(host, reporters, buffers, shared.clone());
     let policy = policy::of(&config);
 
     history::prune(&store, config.retention_days);
     history::recall(&store, &shared, &policy);
 
-    delivery.send(&at_start);
-    shared.with(|state| state.record_findings(&at_start));
+    let mut opening = at_start;
+    for (reporter, lines) in delivery.damaged() {
+        opening.push(agent_finding::store_damaged(
+            &format!("outgoing/{reporter}"),
+            &format!("the outgoing buffer for {reporter}"),
+            lines,
+        ));
+    }
+    opening.extend(delivery.replay());
 
     baselines::forget(&store, &switched_off);
     baselines::restore(&store, &mut watches);
@@ -68,6 +78,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         shared,
         schedule,
         meter: Meter::default(),
+        opening,
     }
     .run()
 }

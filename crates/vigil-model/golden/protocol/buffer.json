@@ -1,0 +1,49 @@
+{
+  "source": "buffer",
+  "classes": {
+    "buffer": {
+      "bytes": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "bytes_ceiling": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "dropped_total": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "oldest_at": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "pending": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "pending_ceiling": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "receiver": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    }
+  }
+}

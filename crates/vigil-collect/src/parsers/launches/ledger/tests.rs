@@ -144,7 +144,7 @@ fn every_reading_says_which_of_the_two_sources_it_came_from() {
 }
 
 #[test]
-fn a_loss_becomes_one_row_that_never_moves_afterwards() {
+fn a_loss_is_one_row_while_it_lasts_and_leaves_the_reading_when_it_is_over() {
     let logins = logins();
     let reading = |known: &BTreeMap<String, Value>, dropped: bool| {
         launches_snapshot(
@@ -165,8 +165,17 @@ fn a_loss_becomes_one_row_that_never_moves_afterwards() {
     let first = reading(&BTreeMap::new(), true);
     assert!(first.items.contains_key(DROPPING));
 
-    assert_eq!(reading(&first.items, true).items, first.items);
-    assert_eq!(reading(&first.items, false).items, first.items);
+    assert_eq!(
+        reading(&first.items, true).items,
+        first.items,
+        "a spool still dropping is the same reading and not a second finding"
+    );
+    assert!(
+        !reading(&first.items, false).items.contains_key(DROPPING),
+        "everything else in this reading is cumulative, and this row cannot be: a row that \
+         never leaves is a finding that can never be closed, and the vocabulary has the \
+         closing half of this one"
+    );
 }
 
 #[test]

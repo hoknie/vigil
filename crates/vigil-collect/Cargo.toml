@@ -8,3 +8,6 @@ license.workspace = true
 vigil-model = { path = "../vigil-model" }
 serde_json.workspace = true
 sha2.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+rustix.workspace = true

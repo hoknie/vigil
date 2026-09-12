@@ -221,7 +221,7 @@ fn what_a_script_is_given_carries_every_reason_whether_a_panel_was_asked_for_or_
     let page = captured(80);
 
     assert!(
-        !page.contains("press d"),
+        !page.contains("press "),
         "a script cannot press anything: {page}"
     );
     for said in [DEGRADED, "auditd is not running on this host"] {
@@ -244,7 +244,7 @@ fn the_summary_a_script_is_given_carries_every_reason_without_a_key_being_presse
 
     assert!(squashed(&page).contains(&squashed(DEGRADED)), "{page}");
     assert!(
-        !page.contains("press d"),
+        !page.contains("press "),
         "a script cannot press anything: {page}"
     );
 }

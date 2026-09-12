@@ -1,25 +1,63 @@
+# Work directory of the agent: the baseline of every collector, the findings
+# journal and the outgoing buffer. Root owns it, mode 0700.
 state_dir: /var/lib/vigil
+
+# The unix socket the console reads this agent over. Created 0600 and published by rename.
 socket_path: /run/vigil/vigil.sock
+
+# How long a finding stays in the local journal before it is dropped.
 retention_days: 90
 
+# What this host is watched for.
 collectors:
   - ports
   - users
   - persistence
   - processes
   - firewall
+  - resources
+  - containers
+  - files
   - launches
 
+# How often each collector reads, in seconds.
 schedule:
   ports: 30
   users: 300
   persistence: 300
   processes: 30
   firewall: 60
+  resources: 60
+  containers: 60
+  files: 300
   launches: 15
 
+# What this host is expected to do, written out so the agent stays quiet about it.
 suppressions: []
 
+resources:
+  # A step of the wall clock this wide is reported as a finding.
+  clock_skew_seconds: 300
+  # A filesystem with free space under this percentage is reported as a finding.
+  disk_free_percent: 10
+  # A filesystem with free inodes under this percentage is reported as a finding.
+  inode_free_percent: 10
+
+files:
+  # The files watched for a changed content, changed permissions and a new suid bit.
+  paths:
+    - /etc/ssh/sshd_config
+    - /etc/pam.d/sshd
+    - /etc/pam.d/su
+    - /etc/nsswitch.conf
+    - /etc/login.defs
+    - /etc/hosts
+  # A file above this size is watched by its permissions alone and its content is not hashed.
+  ceiling_bytes: 1048576
+
+# Whether the arguments a program was launched with are kept.
 record_launch_arguments: false
 
+# Where findings go. An empty list keeps them on this host, in the journal under state_dir.
+# An entry names a kind: ndjson, syslog, webhook or host_findings.
 reporters: []

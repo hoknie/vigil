@@ -17,6 +17,7 @@ version = "1.0.4"
 license = "Apache-2.0"
 
 [workspace.dependencies]
+rustix = { version = "1", default-features = false, features = ["std", "fs"] }
 sha2 = { version = "0.10", default-features = false }
 clap = { version = "4", default-features = false, features = [
     "std",

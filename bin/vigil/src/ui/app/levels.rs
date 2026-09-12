@@ -2,14 +2,18 @@ use super::App;
 
 use crate::ui::helpers::layout::split;
 use crate::ui::screens::{findings, home, ports};
-use crate::ui::{Level, Offset, Origin, Program, Rungs, Screen, Startup, Subject};
+use crate::ui::{Level, Offset, Origin, Program, Rungs, Screen, Startup, Subject, System};
 
 impl App {
     pub(super) fn rungs(&self) -> Rungs {
         Rungs::new(
             matches!(
                 self.nav.at(),
-                Screen::Accounts | Screen::Ports | Screen::Programs | Screen::Startup
+                Screen::Accounts
+                    | Screen::Ports
+                    | Screen::Programs
+                    | Screen::Startup
+                    | Screen::System
             ),
             self.has_detail(),
         )
@@ -28,7 +32,7 @@ impl App {
     pub(super) fn arrive(&mut self) {
         self.level = Level::top(self.rungs());
         self.detail_open = false;
-        self.firewall_gone = None;
+        self.gone = None;
     }
 
     pub(super) fn remember_section(&mut self, screen: Screen) {
@@ -89,7 +93,7 @@ impl App {
     fn point_back_at(&mut self, origin: &Origin) {
         self.level = Level::List;
         self.refresh_wanted = true;
-        let passing = self.filter.passing(&self.view.found.findings);
+        let passing = self.passing();
         let keys = findings::keys(&passing);
         if !self.nav.findings.point_at(origin.key(), &keys) {
             self.message = Some(format!(
@@ -132,6 +136,7 @@ impl App {
         match self.nav.at() {
             Screen::Ports => self.nav.lists.ports.step_along(by, ports::Arrangement::ALL),
             Screen::Programs => self.nav.lists.programs.step_along(by, Program::ALL),
+            Screen::System => self.nav.lists.system.step_along(by, System::ALL),
             Screen::Startup => {
                 let shown = Startup::on(&self.view);
                 self.nav.lists.startup.step_along(by, &shown);

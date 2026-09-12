@@ -1,35 +1,38 @@
 use serde_json::json;
 use vigil_model::{Evidence, Finding, Kind, KnownKind, Severity, State, Subject};
+use vigil_store::Held;
 
 use crate::budget::{CEILING_PERCENT, CPU, Meter};
 
 use super::{rfc3339, uuid7};
 
+const KILOBYTE: u64 = 1_024;
+
 const HOW_THE_SHARE_IS_TAKEN: &str = "the share of one core is the average of the last 8 readings of each collector divided by that collector's period, summed over the collectors";
 
-pub fn store_damaged(lines: usize) -> Finding {
+pub fn store_damaged(part: &str, what: &str, lines: usize) -> Finding {
     let now = rfc3339::now();
 
     Finding {
         event_id: uuid7::mint(),
-        finding_key: "agent.store|findings".to_string(),
+        finding_key: format!("agent.store|{part}"),
         kind: Kind::Known(KnownKind::AgentStoreDamaged),
         severity: Severity::Medium,
         state: State::Open,
         observed_at: now.clone(),
         first_seen_at: now,
         occurrences: 1,
-        title: format!("{lines} line(s) of the local findings history could not be read"),
+        title: format!("{lines} line(s) of {what} could not be read"),
         subject: Subject {
             object: "store".into(),
-            key: json!({ "part": "findings" }),
+            key: json!({ "part": part }),
         },
         before: None,
         after: None,
         evidence: vec![Evidence {
             kind: "note".into(),
             value: format!(
-                "{lines} unreadable line(s) were skipped when the journal was opened. The usual cause is power lost mid-write. What is lost is history; the watch continues"
+                "{lines} unreadable line(s) were skipped when {what} was opened. The usual cause is power lost mid-write. What is lost is history; the watch continues"
             ),
         }],
         redacted: Vec::new(),
@@ -71,6 +74,118 @@ pub fn collector_degraded(collector: &str, detail: &str, fatal: bool) -> Finding
         }],
         redacted: Vec::new(),
         rule: Some("collector_health".into()),
+        labels: Default::default(),
+    }
+}
+
+pub fn collector_recovered(collector: &str, was: &str) -> Finding {
+    let now = rfc3339::now();
+
+    Finding {
+        event_id: uuid7::mint(),
+        finding_key: format!("agent.collector|{collector}"),
+        kind: Kind::Known(KnownKind::AgentCollectorRecovered),
+        severity: Severity::Info,
+        state: State::Open,
+        observed_at: now.clone(),
+        first_seen_at: now,
+        occurrences: 1,
+        title: format!("Collector {collector}: reading again"),
+        subject: Subject {
+            object: "collector".into(),
+            key: json!({ "name": collector }),
+        },
+        before: None,
+        after: None,
+        evidence: vec![
+            Evidence {
+                kind: "note".into(),
+                value: format!(
+                    "{collector} is reading everything it watches again. Whatever happened while it could not is missing from the history of this host; the readings from here on are complete"
+                ),
+            },
+            Evidence {
+                kind: "was".into(),
+                value: was.to_string(),
+            },
+        ],
+        redacted: Vec::new(),
+        rule: Some("collector_health".into()),
+        labels: Default::default(),
+    }
+}
+
+pub fn buffer_dropping(reporter: &str, dropped: u64, held: &Held) -> Finding {
+    let now = rfc3339::now();
+    let mut evidence = vec![Evidence {
+        kind: "note".into(),
+        value: format!(
+            "{} finding(s) and {} kB are held for {reporter}, which is the ceiling ({} finding(s), {} kB). What arrives now displaces the oldest still waiting, and the oldest is what this receiver has never seen",
+            held.records.held,
+            held.bytes.held / KILOBYTE,
+            held.records.ceiling,
+            held.bytes.ceiling / KILOBYTE,
+        ),
+    }];
+    if let Some(oldest_at) = &held.oldest_at {
+        evidence.push(Evidence {
+            kind: "note".into(),
+            value: format!("the oldest finding still waiting was seen at {oldest_at}"),
+        });
+    }
+
+    Finding {
+        event_id: uuid7::mint(),
+        finding_key: format!("agent.buffer|{reporter}"),
+        kind: Kind::Known(KnownKind::AgentBufferDropping),
+        severity: Severity::High,
+        state: State::Open,
+        observed_at: now.clone(),
+        first_seen_at: now,
+        occurrences: 1,
+        title: format!(
+            "The buffer for {reporter} is full: {dropped} finding(s) dropped, oldest first"
+        ),
+        subject: Subject {
+            object: "buffer".into(),
+            key: json!({ "reporter": reporter }),
+        },
+        before: None,
+        after: None,
+        evidence,
+        redacted: Vec::new(),
+        rule: Some("outgoing_buffer".into()),
+        labels: Default::default(),
+    }
+}
+
+pub fn buffer_drained(reporter: &str, dropped: u64) -> Finding {
+    let now = rfc3339::now();
+
+    Finding {
+        event_id: uuid7::mint(),
+        finding_key: format!("agent.buffer|{reporter}"),
+        kind: Kind::Known(KnownKind::AgentBufferDrained),
+        severity: Severity::Info,
+        state: State::Open,
+        observed_at: now.clone(),
+        first_seen_at: now,
+        occurrences: 1,
+        title: format!("The buffer for {reporter} is empty again"),
+        subject: Subject {
+            object: "buffer".into(),
+            key: json!({ "reporter": reporter }),
+        },
+        before: None,
+        after: None,
+        evidence: vec![Evidence {
+            kind: "note".into(),
+            value: format!(
+                "everything that was waiting has been accepted. The {dropped} finding(s) dropped while the buffer was full are in the local history and reached this receiver never"
+            ),
+        }],
+        redacted: Vec::new(),
+        rule: Some("outgoing_buffer".into()),
         labels: Default::default(),
     }
 }
@@ -197,6 +312,47 @@ mod tests {
             KnownKind::AgentBudgetRecovered.resolves(),
             Some(KnownKind::AgentBudgetExceeded)
         );
+    }
+
+    #[test]
+    fn the_pair_about_a_buffer_is_two_statements_about_one_receiver() {
+        let held = Held {
+            records: vigil_store::Counted::new(2_000, 2_000),
+            bytes: vigil_store::Counted::new(4 * 1024 * 1024, 4 * 1024 * 1024),
+            dropped: 41,
+            damaged: 0,
+            oldest_at: Some("2026-09-10T09:00:00.000Z".into()),
+        };
+
+        let full = buffer_dropping("host-findings", 41, &held);
+        let empty = buffer_drained("host-findings", 41);
+
+        assert_eq!(full.finding_key, empty.finding_key);
+        assert_eq!(
+            KnownKind::AgentBufferDrained.resolves(),
+            Some(KnownKind::AgentBufferDropping),
+            "a buffer that empties has to close the finding that it was full, or the screen \
+             carries it for the life of the host"
+        );
+        assert!(
+            full.evidence
+                .iter()
+                .any(|evidence| evidence.value.contains("2026-09-10T09:00:00.000Z")),
+            "and the finding says how old the oldest thing nobody has seen is: {:?}",
+            full.evidence
+        );
+    }
+
+    #[test]
+    fn the_part_of_the_store_that_could_not_be_read_is_named_rather_than_implied() {
+        let history = store_damaged("findings", "the local findings history", 2);
+        let outgoing = store_damaged("outgoing/syslog", "the outgoing buffer for syslog", 1);
+
+        assert_ne!(
+            history.finding_key, outgoing.finding_key,
+            "two damaged files under one key is one of them hidden"
+        );
+        assert!(outgoing.title.contains("the outgoing buffer for syslog"));
     }
 
     #[test]

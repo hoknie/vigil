@@ -13,6 +13,7 @@ pub(super) fn quiet() -> Hints<'static> {
         message: None,
         back: Back::MainScreen,
         panel: false,
+        choosing: false,
     }
 }
 

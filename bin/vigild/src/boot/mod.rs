@@ -2,6 +2,7 @@ mod baselines;
 mod console;
 mod greeting;
 mod history;
+mod outgoing;
 mod policy;
 mod reporters;
 mod run;

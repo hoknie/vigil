@@ -4,12 +4,13 @@ use vigil_model::{CollectorRefusal, CollectorState};
 
 use crate::ui::helpers::words::text;
 use crate::ui::screens::firewall::{Showing, render};
-use crate::ui::{Arrows, Audience, Gone, Look, Reading, Refusal, Search, View, fixture};
+use crate::ui::{Arrows, Audience, Gone, Look, Reading, Refusal, Search, Sorting, View, fixture};
 
 #[derive(Default)]
 pub(super) struct Given {
     search: Search,
     pub(super) gone: Option<Gone>,
+    pub(super) sorting: Sorting,
 }
 
 impl Given {
@@ -19,6 +20,7 @@ impl Given {
             cursor,
             arrows: Arrows::List,
             gone: self.gone.as_ref(),
+            sorting: self.sorting,
         }
     }
 }

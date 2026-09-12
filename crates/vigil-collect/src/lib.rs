@@ -22,6 +22,6 @@ pub use spool::{
 
 #[cfg(target_os = "linux")]
 pub use collectors::{
-    FirewallCollector, LaunchesCollector, PersistenceCollector, PortsCollector, ProcessesCollector,
-    UsersCollector,
+    ContainersCollector, FilesCollector, FirewallCollector, LaunchesCollector,
+    PersistenceCollector, PortsCollector, ProcessesCollector, ResourcesCollector, UsersCollector,
 };

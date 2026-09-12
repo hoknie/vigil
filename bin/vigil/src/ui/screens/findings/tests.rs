@@ -3,17 +3,24 @@ use ratatui::layout::Rect;
 use vigil_model::Severity;
 
 use crate::ui::helpers::words::text;
-use crate::ui::screens::findings::{keys, render};
-use crate::ui::{Audience, Filter, Look, View, fixture};
+use crate::ui::screens::findings::{Showing, keys, render};
+use crate::ui::{Audience, Filter, Look, Sorting, View, fixture};
+
+fn showing(filter: &Filter) -> Showing<'_> {
+    Showing {
+        filter,
+        cursor: 0,
+        focused: true,
+        sorting: Sorting::default(),
+    }
+}
 
 fn drawn(view: &View, filter: &Filter, width: u16) -> String {
     let mut buffer = Buffer::empty(Rect::new(0, 0, width, 20));
     render(
         view,
-        filter,
         fixture::look(),
-        0,
-        true,
+        &showing(filter),
         buffer.area,
         &mut buffer,
     );
@@ -22,9 +29,7 @@ fn drawn(view: &View, filter: &Filter, width: u16) -> String {
 
 fn floored(levels: usize) -> Filter {
     let mut filter = Filter::default();
-    for _ in 0..levels {
-        filter.move_floor(1);
-    }
+    filter.set_floor(Severity::KNOWN[levels].clone());
     filter
 }
 
@@ -259,10 +264,8 @@ fn a_files_page_puts_the_tally_under_the_table_rather_than_at_the_foot_of_a_tall
     let mut buffer = Buffer::empty(Rect::new(0, 0, 80, 400));
     render(
         &fixture::view(),
-        &Filter::default(),
         Look::new(fixture::monochrome(), Audience::Script),
-        0,
-        true,
+        &showing(&Filter::default()),
         buffer.area,
         &mut buffer,
     );

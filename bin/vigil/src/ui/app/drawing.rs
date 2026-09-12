@@ -5,17 +5,24 @@ use ratatui::widgets::{Paragraph, Widget};
 
 use super::App;
 
+use crate::ui::chrome::chooser;
 use crate::ui::chrome::frame;
 use crate::ui::chrome::frame::hints::Back;
 use crate::ui::chrome::help;
-use crate::ui::details::{account, firewall as firewall_detail, program, section, socket, startup};
+use crate::ui::details::{
+    account, firewall as firewall_detail, program, reading, section, socket, startup,
+};
 use crate::ui::helpers::finding::diff;
 use crate::ui::helpers::layout::split;
 use crate::ui::helpers::words::unreachable;
 use crate::ui::screens::startup as starting;
-use crate::ui::screens::{accounts, findings, firewall, home, ports, programs, summary};
+use crate::ui::screens::{
+    accounts, containers, findings, firewall, home, ports, programs, summary, system,
+};
 use crate::ui::theme::caption;
 use crate::ui::{Arrows, Level, Screen};
+
+const ROOM_FOR_THE_CURSOR: u16 = 8;
 
 impl App {
     pub fn draw(&self, area: Rect, buffer: &mut Buffer) {
@@ -29,11 +36,33 @@ impl App {
                 message: self.message.as_deref(),
                 back: self.back(),
                 panel: self.detail_showing(self.body.get()) || self.showing_why(),
+                choosing: self.choosing(),
             },
             area,
             buffer,
         );
         self.body.set(body);
+
+        let body = match chooser::height(&self.chooser, self.look, body.width) {
+            0 => body,
+            tall => {
+                let tall = tall.min(body.height);
+                chooser::render(
+                    &self.chooser,
+                    self.look,
+                    Rect {
+                        height: tall,
+                        ..body
+                    },
+                    buffer,
+                );
+                Rect {
+                    y: body.y + tall,
+                    height: body.height.saturating_sub(tall),
+                    ..body
+                }
+            }
+        };
 
         if !self.view.has_reading() {
             unreachable::render(&self.view, self.look, body, buffer);
@@ -62,6 +91,7 @@ impl App {
                 self.look,
                 self.nav.summary.top(),
                 self.saying(),
+                self.gone.as_ref(),
                 body,
                 buffer,
             ),
@@ -86,7 +116,10 @@ impl App {
         }
 
         let Some(split) = split::beside(body) else {
-            let table = home::printed_height(&self.view, body.width).min(body.height);
+            let table = home::printed_height(&self.view, body.width)
+                .min(body.height.saturating_sub(self.panel_wants(body)))
+                .max(ROOM_FOR_THE_CURSOR)
+                .min(body.height);
             let (list, rest) = (
                 Rect {
                     height: table,
@@ -132,6 +165,12 @@ impl App {
             .style(self.look.palette.border())
             .render(split.rule, buffer);
         self.draw_section_panel(split.panel, buffer);
+    }
+
+    fn panel_wants(&self, body: Rect) -> u16 {
+        let rows = home::rows(&self.view);
+        let row = rows.get(self.nav.sections.at());
+        section::height(row, self.look, self.look.text_width(body.width)) as u16 + 1
     }
 
     fn draw_section_panel(&self, area: Rect, buffer: &mut Buffer) {
@@ -229,15 +268,11 @@ impl App {
             Screen::Firewall => {
                 firewall::render(&self.view, self.look, &self.filtering(), area, buffer)
             }
-            _ => findings::render(
-                &self.view,
-                &self.filter,
-                self.look,
-                self.nav.findings.at(),
-                self.level == Level::List,
-                area,
-                buffer,
-            ),
+            Screen::System => system::render(&self.view, self.look, &self.made_of(), area, buffer),
+            Screen::Containers => {
+                containers::render(&self.view, self.look, &self.contained(), area, buffer)
+            }
+            _ => findings::render(&self.view, self.look, &self.found(), area, buffer),
         }
     }
 
@@ -285,10 +320,17 @@ impl App {
                     buffer,
                 )
             }
+            Screen::System | Screen::Containers => reading::render(
+                self.reading_subject(),
+                self.look,
+                self.nav.difference.top(),
+                area,
+                buffer,
+            ),
             Screen::Firewall => {
                 let rows = self.firewall_rows();
                 firewall_detail::render(
-                    rows.get(self.nav.firewall.at()),
+                    rows.get(self.nav.lists.firewall.at()),
                     self.look,
                     self.nav.difference.top(),
                     area,
@@ -313,6 +355,8 @@ impl App {
             Screen::Programs => self.nav.lists.programs.showing().caption(),
             Screen::Startup => self.nav.lists.startup.showing().caption(),
             Screen::Firewall => "THE RULESET",
+            Screen::System => self.nav.lists.system.showing().caption(),
+            Screen::Containers => "CONTAINERS AND SOCKETS",
             _ => "FINDINGS",
         }
     }
@@ -323,7 +367,8 @@ impl App {
             Screen::Accounts => self.nav.lists.accounts.showing().detail(),
             Screen::Programs => self.nav.lists.programs.showing().detail(),
             Screen::Startup => self.nav.lists.startup.showing().detail(),
-            Screen::Firewall => "THE SELECTED ROW",
+            Screen::System => self.nav.lists.system.showing().detail(),
+            Screen::Firewall | Screen::Containers => "THE SELECTED ROW",
             _ => "THE SELECTED FINDING",
         }
     }

@@ -46,8 +46,8 @@ pub fn action(code: KeyCode, modifiers: KeyModifiers, typing: bool) -> Action {
 
         KeyCode::Enter => Action::Open,
         KeyCode::Char('o') => Action::ToObject,
-        KeyCode::Char('s') => Action::Floor(1),
-        KeyCode::Char('S') => Action::Floor(-1),
+        KeyCode::Char('s') => Action::Sort,
+        KeyCode::Char('f') => Action::Narrow,
         KeyCode::Char('/') => Action::Search,
         KeyCode::Char(letter) => Action::Letter(letter),
 
@@ -89,11 +89,19 @@ mod tests {
     fn the_digits_name_the_sections_in_the_order_the_main_screen_lists_them() {
         assert_eq!(plain(KeyCode::Char('1')), Action::Go(Screen::Ports));
         assert_eq!(plain(KeyCode::Char('5')), Action::Go(Screen::Firewall));
-        assert_eq!(plain(KeyCode::Char('7')), Action::Go(Screen::Findings));
-        assert_eq!(
-            plain(KeyCode::Char('9')),
-            Action::Ignore,
-            "a digit with no section behind it does nothing rather than something else"
+        assert_eq!(plain(KeyCode::Char('7')), Action::Go(Screen::Containers));
+        assert_eq!(plain(KeyCode::Char('9')), Action::Go(Screen::Findings));
+        for digit in 1..=9u8 {
+            let key = char::from_digit(u32::from(digit), 10).expect("one of nine");
+            assert!(
+                matches!(plain(KeyCode::Char(key)), Action::Go(_)),
+                "{key} opens nothing, and a number drawn on the main screen that opens \
+                 nothing is a key that teaches a reader not to trust the others"
+            );
+        }
+        assert!(
+            !matches!(plain(KeyCode::Char('0')), Action::Go(_)),
+            "there is no tenth section, and zero is not a way into one"
         );
     }
 

@@ -2,7 +2,7 @@ use serde_json::json;
 use vigil_model::Snapshot;
 
 use super::harness::{Given, busy, drawn};
-use crate::ui::screens::ports::keys;
+use crate::ui::screens::ports::rows;
 use crate::ui::{Reading, fixture};
 
 #[test]
@@ -68,7 +68,10 @@ fn a_value_the_column_could_not_hold_says_that_it_was_cut() {
 #[test]
 fn the_keys_are_the_snapshots_own_so_a_jump_from_a_finding_lands_on_the_right_row() {
     assert_eq!(
-        keys(&fixture::view(), &Given::default().showing(0)),
+        rows(&fixture::view(), &Given::default().showing(0))
+            .into_iter()
+            .map(|row| row.key)
+            .collect::<Vec<String>>(),
         vec![
             "tcp6|:::443".to_string(),
             "tcp6|:::8080".to_string(),

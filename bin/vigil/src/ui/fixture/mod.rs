@@ -4,12 +4,15 @@ mod tests;
 pub mod accounts;
 pub mod agent;
 pub mod answers;
+pub mod containers;
+pub mod files;
 pub mod findings;
 pub mod firewall;
 pub mod host;
 pub mod launches;
 pub mod look;
 pub mod programs;
+pub mod resources;
 pub mod sockets;
 pub mod startup;
 pub mod store;
@@ -17,7 +20,7 @@ pub mod view;
 
 use super::{Audience, Look, Palette, Reading, Status, View};
 
-pub use agent::collector_off;
+pub use agent::{behind, collector_off, losing};
 pub use findings::finding;
 pub use look::{look, monochrome};
 pub use store::store;

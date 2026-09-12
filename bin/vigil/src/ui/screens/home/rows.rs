@@ -1,6 +1,8 @@
 use vigil_model::{CollectorState, CollectorStatus};
 
 use super::notices::{NO_SECTION, NOT_WATCHED};
+
+pub(super) const NO_SCREEN: &str = "no screen draws it yet";
 use super::row::Row;
 use super::standing::Standing;
 use crate::ui::helpers::words::moment;
@@ -42,15 +44,37 @@ fn section(view: &View, screen: Screen) -> Row {
 }
 
 fn answering(view: &View) -> Standing {
+    let losing = losing(view);
+
     Standing {
         read: view
             .as_of()
             .map(|when| moment::time_of_day(when).to_string()),
-        unwell: view.stale().is_some(),
+        unwell: view.stale().is_some() || losing.is_some(),
+        note: losing,
         ..Standing::plain(match view.stale() {
             Some(_) => "not answering",
             None => "answering",
         })
+    }
+}
+
+fn losing(view: &View) -> Option<String> {
+    let buffers = view.status.as_ref()?.agent.buffers.as_ref()?;
+    let said: Vec<String> = buffers
+        .iter()
+        .filter(|buffer| buffer.dropped_total > 0)
+        .map(|buffer| {
+            format!(
+                "{} finding(s) waiting for {} were dropped at the ceiling of {}",
+                buffer.dropped_total, buffer.receiver, buffer.pending_ceiling
+            )
+        })
+        .collect();
+
+    match said.is_empty() {
+        true => None,
+        false => Some(said.join(" · ")),
     }
 }
 
@@ -174,7 +198,7 @@ fn strangers(view: &View) -> Vec<Row> {
             opens: None,
             number: None,
             name: collector.name.clone(),
-            holds: "a reading this console cannot show".to_string(),
+            holds: NO_SCREEN.to_string(),
             collector: collector.name.clone(),
             standing: Standing {
                 objects: match collector.state == CollectorState::Off {

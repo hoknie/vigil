@@ -1,5 +1,5 @@
-pub const NO_SECTION: &str = "This console has no section for it: the agent is newer. Both ship in one package and \
-     belong installed together.";
+pub const NO_SECTION: &str = "No screen in this console draws that reading. Both halves ship in one package, so this \
+     is a screen nobody has written yet, not an agent that ran ahead.";
 
 pub const NOT_WATCHED: &str =
     "This agent does not watch it: nothing in its configuration names that collector.";

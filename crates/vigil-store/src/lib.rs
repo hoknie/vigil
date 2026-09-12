@@ -4,7 +4,7 @@ mod stores;
 mod types;
 
 pub use ports::Store;
-pub use types::{Counted, Dropped, Kept, Recorded, StoreError};
+pub use types::{Counted, Dropped, Flow, Held, Kept, Recorded, StoreError};
 
 #[cfg(feature = "files")]
-pub use stores::files::{FileStore, Limits};
+pub use stores::files::{FileStore, Limits, Outgoing};

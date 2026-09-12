@@ -1,0 +1,53 @@
+{
+  "source": "files",
+  "taken_at": "2026-09-09T09:00:00.000Z",
+  "items": {
+    "directory|/usr/bin": {
+      "gid": 0,
+      "mode": "0755",
+      "path": "/usr/bin",
+      "present": true,
+      "uid": 0
+    },
+    "directory|/usr/local/bin": {
+      "gid": 0,
+      "mode": "0755",
+      "path": "/usr/local/bin",
+      "present": true,
+      "uid": 0
+    },
+    "file|/etc/hosts": {
+      "gid": 0,
+      "mode": "0644",
+      "over_the_ceiling": false,
+      "path": "/etc/hosts",
+      "present": true,
+      "readable": true,
+      "sha256": "00e987d761e447af9e2d73ff09ccc896273948c756a71d5bfb8db3a73dc2eb54",
+      "size": 48,
+      "uid": 0
+    },
+    "file|/etc/pam.d/sshd": {
+      "gid": null,
+      "mode": null,
+      "over_the_ceiling": false,
+      "path": "/etc/pam.d/sshd",
+      "present": false,
+      "readable": false,
+      "sha256": null,
+      "size": 0,
+      "uid": null
+    },
+    "file|/etc/ssh/sshd_config": {
+      "gid": 0,
+      "mode": "0600",
+      "over_the_ceiling": false,
+      "path": "/etc/ssh/sshd_config",
+      "present": true,
+      "readable": true,
+      "sha256": "87e95e7564445110057c3e0563e80077ccdab840ac81fccc5e66aaef991bb298",
+      "size": 53,
+      "uid": 0
+    }
+  }
+}

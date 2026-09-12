@@ -2,11 +2,14 @@ mod budget;
 mod health;
 mod kept;
 mod memory;
+mod outgoing;
 mod reading;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::time::{Duration, Instant};
 
+use vigil_collect::Health;
+use vigil_model::Finding;
 use vigil_store::FileStore;
 
 use crate::budget::Meter;
@@ -28,6 +31,7 @@ pub struct Round {
     pub shared: Shared,
     pub schedule: Schedule,
     pub meter: Meter,
+    pub opening: Vec<Finding>,
 }
 
 impl Round {
@@ -38,8 +42,19 @@ impl Round {
             .iter()
             .map(|watch| (watch.name(), health_words::describe(&watch.health())))
             .collect();
+        let mut spoken_about: BTreeSet<&'static str> = self
+            .watches
+            .iter()
+            .filter(|watch| !matches!(watch.health(), Health::Ok))
+            .map(|watch| watch.name())
+            .collect();
         let mut health = Due::new(HEALTH, HEALTH_EVERY_SECONDS, Instant::now());
         let mut announce = false;
+
+        let opening = std::mem::take(&mut self.opening);
+        let fresh = self.remember(&opening);
+        self.shared.with(|state| state.record_findings(&fresh));
+        self.hand_over(&fresh);
 
         for index in 0..self.watches.len() {
             self.read(index, &mut failing);
@@ -49,9 +64,10 @@ impl Round {
         loop {
             let now = Instant::now();
             if health.is_due(now) {
-                self.take_health(announce, &mut announced);
+                self.take_health(announce, &mut announced, &mut spoken_about);
                 self.take_budget();
                 self.take_store();
+                self.take_buffers();
                 health.advance(Instant::now());
                 announce = true;
             }

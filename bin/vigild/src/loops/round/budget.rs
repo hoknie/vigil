@@ -37,7 +37,7 @@ impl Round {
             );
         }
         self.shared.with(|state| state.record_findings(&fresh));
-        self.delivery.send(&fresh);
+        self.hand_over(&fresh);
     }
 
     fn of_cpu(&self, crossing: Crossing, duty_percent: f64) -> Finding {

@@ -30,6 +30,12 @@ pub(super) fn tally(view: &View, showing: &Showing<'_>, snapshot: &Snapshot, wid
     if let Some(item) = summary(view) {
         parts.push(format!("{} on the input hook", hooked_on_input(item)));
     }
+    if !showing.sorting.as_read() {
+        parts.push(format!(
+            "sorted by {}",
+            showing.sorting.describe(super::SORTED_BY)
+        ));
+    }
     if let Some(reason) = view.collector_note(COLLECTOR) {
         parts.push(format!("incomplete: {reason}"));
     }

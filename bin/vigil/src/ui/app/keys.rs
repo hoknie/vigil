@@ -4,11 +4,18 @@ use super::App;
 
 use crate::ui::helpers::motion::keys;
 use crate::ui::screens::home;
-use crate::ui::{Action, Level, Screen};
+use crate::ui::{Action, Level, Motion, Screen};
 
 impl App {
     pub fn on_key(&mut self, code: KeyCode, modifiers: KeyModifiers) {
         let action = keys::action(code, modifiers, self.typing());
+
+        if self.choosing() {
+            self.message = None;
+            self.walk_the_choice(action);
+            self.settle();
+            return;
+        }
 
         if self.helping {
             self.helping = false;
@@ -33,13 +40,8 @@ impl App {
             Action::Move(motion) => self.move_within(motion),
             Action::Open => self.open(),
             Action::ToObject => self.jump_to_object(),
-            Action::Floor(by) => match self.nav.at() {
-                Screen::Findings => {
-                    self.level = Level::List;
-                    self.filter.move_floor(by);
-                }
-                _ => self.message = Some(elsewhere("The severity floor", Screen::Findings)),
-            },
+            Action::Sort => self.sorting(),
+            Action::Narrow => self.narrowing(),
             Action::Search => self.searching(),
             Action::Letter(key) => self.letter(key),
             Action::Type(character) => {
@@ -67,6 +69,26 @@ impl App {
         }
     }
 
+    pub(super) fn choosing(&self) -> bool {
+        self.chooser.choosing().is_some()
+    }
+
+    fn walk_the_choice(&mut self, action: Action) {
+        match action {
+            Action::Leave => self.leaving = true,
+            Action::Move(motion) => self.chooser.step(match motion {
+                Motion::Up | Motion::PageUp | Motion::First => -1,
+                _ => 1,
+            }),
+            Action::Sideways(by) => self.chooser.step(by),
+            Action::Open | Action::Accept => self.chose(),
+            Action::Back | Action::Abandon => {
+                self.chooser.close();
+            }
+            _ => {}
+        }
+    }
+
     fn searching(&mut self) {
         if self.nav.at() == Screen::Home {
             self.message = Some(home::SEARCH_LIVES_IN_A_LIST.to_string());
@@ -85,15 +107,5 @@ impl App {
                 )
             }
         }
-    }
-}
-
-fn elsewhere(what: &str, screen: Screen) -> String {
-    match screen.digit() {
-        Some(number) => format!(
-            "{what} belongs to the {} section: press {number}.",
-            screen.name()
-        ),
-        None => format!("{what} belongs to the {} section.", screen.name()),
     }
 }

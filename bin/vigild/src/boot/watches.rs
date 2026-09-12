@@ -12,8 +12,8 @@ pub struct Family {
 #[cfg(target_os = "linux")]
 pub fn families(config: &Config) -> Result<Vec<Family>, String> {
     use vigil_rules::{
-        account_rules, firewall_rules, launch_rules, listening_port_rules, persistence_rules,
-        process_rules,
+        account_rules, container_rules, file_rules, firewall_rules, launch_rules,
+        listening_port_rules, persistence_rules, process_rules, resource_rules,
     };
 
     use crate::helpers::rfc3339;
@@ -40,6 +40,22 @@ pub fn families(config: &Config) -> Result<Vec<Family>, String> {
             rules: firewall_rules(),
         },
         Family {
+            collector: Box::new(vigil_collect::ResourcesCollector::new(rfc3339::now)),
+            rules: resource_rules(config.resources.limits()),
+        },
+        Family {
+            collector: Box::new(vigil_collect::ContainersCollector::new(rfc3339::now)),
+            rules: container_rules(),
+        },
+        Family {
+            collector: Box::new(vigil_collect::FilesCollector::new(
+                rfc3339::now,
+                &config.files.paths,
+                config.files.ceiling_bytes,
+            )),
+            rules: file_rules(),
+        },
+        Family {
             collector: Box::new(vigil_collect::LaunchesCollector::new(
                 rfc3339::now,
                 config.record_launch_arguments,
@@ -52,12 +68,16 @@ pub fn families(config: &Config) -> Result<Vec<Family>, String> {
 #[cfg(not(target_os = "linux"))]
 pub fn families(config: &Config) -> Result<Vec<Family>, String> {
     use vigil_rules::{
-        account_rules, firewall_rules, launch_rules, listening_port_rules, persistence_rules,
-        process_rules,
+        account_rules, container_rules, file_rules, firewall_rules, launch_rules,
+        listening_port_rules, persistence_rules, process_rules, resource_rules,
     };
 
     let _ = (
+        container_rules(),
+        file_rules(),
+        config.files.ceiling_bytes,
         config.record_launch_arguments,
+        resource_rules(config.resources.limits()),
         listening_port_rules(),
         account_rules(),
         persistence_rules(),

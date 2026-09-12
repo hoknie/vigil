@@ -5,6 +5,28 @@ Format:
 - [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - [SemVer](https://semver.org/spec/v2.0.0.html)
 
+## [1.0.4] - 09/--/2026
+
+### Added
+- an outgoing buffer
+- config for file reading
+- the `containers` collector
+- the `resources` collector
+- `agent.collector.recovered` and `agent.buffer.drained`: the closing halves of
+  `agent.collector.degraded` and `agent.buffer.dropping`
+
+### Changed
+- compaction of an NDJSON journal no longer reads back what it has just written
+- the console is no longer told that nothing is buffered for sending
+- the contract's agent-state message now carries `buffers` as a list where it carried
+  one `buffer` object
+- the console puts a list in order with `s` and narrows the findings with `f`
+- the panel behind `d` on those sections prints every value the agent recorded about the row
+
+### Fixed
+- a finding closed by its pair is marked resolved on the console as it is in the store,
+  instead of standing open until the daemon is restarted
+
 ## [1.0.2] - 09/11/2026
 
 ### Added

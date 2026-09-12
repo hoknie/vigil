@@ -15,7 +15,15 @@ fn drawn_from(view: &View, width: u16) -> String {
 
 fn saying(view: &View, width: u16, saying: bool) -> String {
     let mut buffer = Buffer::empty(Rect::new(0, 0, width, 60));
-    render(view, fixture::look(), 0, saying, buffer.area, &mut buffer);
+    render(
+        view,
+        fixture::look(),
+        0,
+        saying,
+        None,
+        buffer.area,
+        &mut buffer,
+    );
     text::to_text(&buffer)
 }
 
@@ -176,7 +184,68 @@ fn each_of_the_four_numbers_called_dropped_says_which_ceiling_it_is_about() {
         page.contains("on the findings screen"),
         "the ring in the daemon is a fourth ceiling and has to name itself: {page}"
     );
-    assert!(page.contains("nothing is buffered"), "{page}");
+    assert!(
+        page.contains("0 of 500"),
+        "what is waiting for a receiver is a fifth ceiling and is never a number on its own: \
+         {page}"
+    );
+}
+
+#[test]
+fn what_is_waiting_for_a_receiver_is_told_apart_from_an_agent_that_does_not_say() {
+    let mut behind = with_a_store();
+    if let Some(status) = behind.status.as_mut() {
+        status.agent.buffers = Some(vec![fixture::behind("ndjson")]);
+    }
+    let mut silent = with_a_store();
+    if let Some(status) = silent.status.as_mut() {
+        status.agent.buffers = None;
+    }
+    let mut losing = with_a_store();
+    if let Some(status) = losing.status.as_mut() {
+        status.agent.buffers = Some(vec![fixture::losing("ndjson")]);
+    }
+
+    let behind = drawn_from(&behind, 200);
+    let silent = drawn_from(&silent, 200);
+    let losing = drawn_from(&losing, 200);
+
+    assert!(behind.contains("12 of 500"), "{behind}");
+    assert!(
+        behind.contains("caught up on the next delivery"),
+        "a receiver that is behind has lost nothing, and the screen has to say which of the \
+         two this is: {behind}"
+    );
+    assert!(
+        !row(&behind, "ndjson").contains('!'),
+        "being behind is not trouble: {behind}"
+    );
+
+    assert!(
+        silent.contains("not reported"),
+        "an agent that says nothing about its buffers must not be drawn as an agent with \
+         nothing in them: {silent}"
+    );
+
+    assert!(
+        losing.contains("7 finding(s) were dropped"),
+        "findings that were thrown away must not be read off a queue length: {losing}"
+    );
+    assert!(
+        row(&losing, "ndjson").contains('!'),
+        "a buffer that is dropping findings is trouble on the row, not a number in a column: \
+         {losing}"
+    );
+    assert!(
+        losing.contains("was never sent"),
+        "and what that cost is said in words: {losing}"
+    );
+}
+
+fn row<'a>(page: &'a str, named: &str) -> &'a str {
+    page.lines()
+        .find(|line| line.contains(named))
+        .unwrap_or_else(|| panic!("no row for {named}: {page}"))
 }
 
 #[test]
@@ -322,8 +391,16 @@ fn a_wide_terminal_also_says_what_each_reading_cost_and_whether_it_has_a_baselin
 #[test]
 fn nothing_runs_off_the_side_at_any_of_the_widths_this_is_read_at() {
     let off = with_a_collector_switched_off();
+    let mut losing = fixture::view();
+    if let Some(status) = losing.status.as_mut() {
+        status.agent.buffers = Some(vec![fixture::losing("ndjson")]);
+    }
     for width in [80u16, 120, 200] {
-        for page in [drawn(width), drawn_from(&off, width)] {
+        for page in [
+            drawn(width),
+            drawn_from(&off, width),
+            drawn_from(&losing, width),
+        ] {
             for line in page.lines() {
                 assert!(
                     line.chars().count() <= width as usize,
@@ -401,14 +478,9 @@ fn a_reason_is_folded_away_until_it_is_asked_for_and_the_row_says_there_is_one()
             .any(|line| line.contains("ports") && line.contains('!')),
         "the row has to say there is something to read, or folding it away hides it: {folded}"
     );
-    assert!(folded.contains("press d to read it"), "{folded}");
     assert!(
         unfolded.contains("cannot resolve socket owners"),
         "{unfolded}"
-    );
-    assert!(
-        !unfolded.contains("press d to read it"),
-        "once it is open the invitation is noise: {unfolded}"
     );
 }
 
@@ -425,7 +497,6 @@ fn a_table_where_every_collector_is_well_offers_nothing_to_unfold() {
 
     let folded = saying(&view, 80, false);
 
-    assert!(!folded.contains("press d to read it"), "{folded}");
     assert!(
         folded
             .lines()
@@ -448,6 +519,7 @@ fn the_mark_on_a_row_that_has_something_to_say_reads_the_same_with_no_colour() {
         crate::ui::Look::new(fixture::monochrome(), crate::ui::Audience::Person),
         0,
         false,
+        None,
         buffer.area,
         &mut buffer,
     );
