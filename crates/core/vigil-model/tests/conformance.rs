@@ -6,7 +6,7 @@ use serde_json::Value;
 use vigil_model::{Envelope, KnownKind, SCHEMA_VERSION, SchemaVersion, Severity};
 
 fn contract() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/contract")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/contract")
 }
 
 fn read(path: &Path) -> String {

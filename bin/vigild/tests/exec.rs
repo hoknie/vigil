@@ -99,7 +99,7 @@ fn the_place_that_starts_one_is_reached_from_the_command_line_and_from_nowhere_e
 #[test]
 fn the_collectors_themselves_start_nothing_whatever_they_have_to_read() {
     for (named, text) in sources() {
-        if !named.starts_with("crates/vigil-collect") {
+        if !named.starts_with("crates/core/vigil-collect") {
             continue;
         }
         for how in STARTS_A_PROGRAM {

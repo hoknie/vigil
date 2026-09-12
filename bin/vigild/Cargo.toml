@@ -10,11 +10,11 @@ path = "src/main.rs"
 
 [dependencies]
 clap.workspace = true
-vigil-model = { path = "../../crates/vigil-model" }
-vigil-rules = { path = "../../crates/vigil-rules" }
-vigil-collect = { path = "../../crates/vigil-collect" }
-vigil-store = { path = "../../crates/vigil-store" }
-vigil-report = { path = "../../crates/vigil-report" }
+vigil-model = { path = "../../crates/core/vigil-model" }
+vigil-rules = { path = "../../crates/core/vigil-rules" }
+vigil-collect = { path = "../../crates/core/vigil-collect" }
+vigil-store = { path = "../../crates/consumers/vigil-store" }
+vigil-report = { path = "../../crates/consumers/vigil-report" }
 serde.workspace = true
 serde_yaml.workspace = true
 serde_json.workspace = true

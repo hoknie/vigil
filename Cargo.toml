@@ -1,11 +1,11 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/vigil-model",
-    "crates/vigil-rules",
-    "crates/vigil-collect",
-    "crates/vigil-store",
-    "crates/vigil-report",
+    "crates/core/vigil-model",
+    "crates/core/vigil-rules",
+    "crates/core/vigil-collect",
+    "crates/consumers/vigil-store",
+    "crates/consumers/vigil-report",
     "bin/vigild",
     "bin/vigil",
     "bin/vigil-audit-plugin",

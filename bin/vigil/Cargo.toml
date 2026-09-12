@@ -9,7 +9,7 @@ name = "vigil"
 path = "src/main.rs"
 
 [dependencies]
-vigil-model = { path = "../../crates/vigil-model" }
+vigil-model = { path = "../../crates/core/vigil-model" }
 clap.workspace = true
 ratatui = "0.30"
 serde_json.workspace = true
