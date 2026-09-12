@@ -1,11 +1,14 @@
-## Every execve inside a human login session, tagged so that vigil reads its own records.
+## Every execve a person started, tagged so that vigil reads its own records.
 ##
-##   auid>=1000 auid!=unset   only what a person started. Without them every exec of every
-##                            service enters the stream. What daemons and service accounts run
-##                            is not seen here; vigil's process collector reads that.
+##   auid!=unset              only what a login session is behind. `auid` is the loginuid: the
+##                            account that logged in, kept across su and sudo. A process that
+##                            no session started — a systemd service, a cron job, a container,
+##                            anything auditd itself spawns — has no loginuid at all, which the
+##                            kernel writes as 4294967295 and this filter as `unset`.
+##
 ##   arch=b64 and arch=b32    both: a 32-bit process walks past a b64-only rule. b32 is second
 ##                            because a kernel without 32-bit support refuses it and augenrules
 ##                            reports the refusal. Keep the order.
 ##   -k vigil_exec            the tag vigil selects its own records by. Your rules are untouched.
--a always,exit -F arch=b64 -S execve -F auid>=1000 -F auid!=unset -k vigil_exec
--a always,exit -F arch=b32 -S execve -F auid>=1000 -F auid!=unset -k vigil_exec
+-a always,exit -F arch=b64 -S execve -F auid!=unset -k vigil_exec
+-a always,exit -F arch=b32 -S execve -F auid!=unset -k vigil_exec
