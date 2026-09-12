@@ -1,0 +1,43 @@
+{
+  "source": "resources",
+  "taken_at": "2026-09-09T09:00:00.000Z",
+  "items": {
+    "boot|current": {
+      "boot_id": "1f0ec2b4-6c8a-4f2b-9c0e-0b2d4a7f5e31",
+      "booted_at": 1757419200,
+      "readable": true
+    },
+    "fs|/": {
+      "device": "/dev/sda1",
+      "free_inodes_percent_step": 85,
+      "free_percent_step": 60,
+      "mount": "/",
+      "read_only": false,
+      "total_bytes": 52479123456,
+      "type": "ext4"
+    },
+    "fs|/run": {
+      "device": "tmpfs",
+      "free_inodes_percent_step": 95,
+      "free_percent_step": 95,
+      "mount": "/run",
+      "read_only": false,
+      "total_bytes": 821264384,
+      "type": "tmpfs"
+    },
+    "fs|/var": {
+      "device": "/dev/sda2",
+      "free_inodes_percent_step": 85,
+      "free_percent_step": 40,
+      "mount": "/var",
+      "read_only": false,
+      "total_bytes": 20938809344,
+      "type": "ext4"
+    },
+    "memory|summary": {
+      "readable": true,
+      "swap_total_bytes": 1073737728,
+      "total_bytes": 8232091648
+    }
+  }
+}

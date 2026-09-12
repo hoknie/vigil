@@ -1,0 +1,35 @@
+{
+  "source": "containers",
+  "taken_at": "2026-09-09T09:00:00.000Z",
+  "items": {
+    "container-socket|/run/docker.sock": {
+      "gid": 999,
+      "mode": "0660",
+      "path": "/run/docker.sock",
+      "uid": 0
+    },
+    "container|3ab1c0f2d4e5": {
+      "capabilities_effective": "00000000a80425fb",
+      "exe": "/usr/sbin/nginx",
+      "host_paths": [
+        "/srv/www",
+        "/var/lib/docker/containers/3ab1/resolv.conf"
+      ],
+      "host_paths_truncated": false,
+      "id": "3ab1c0f2d4e5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5",
+      "mounts_readable": true,
+      "runtime": "docker"
+    },
+    "container|9f2e8d7c6b5a": {
+      "capabilities_effective": "000001ffffffffff",
+      "exe": "/usr/local/bin/agent",
+      "host_paths": [
+        "/run/docker.sock"
+      ],
+      "host_paths_truncated": false,
+      "id": "9f2e8d7c6b5a4039281706f5e4d3c2b1a0998877665544332211ffeeddccbbaa",
+      "mounts_readable": true,
+      "runtime": "docker"
+    }
+  }
+}

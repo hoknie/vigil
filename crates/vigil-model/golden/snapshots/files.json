@@ -1,0 +1,97 @@
+{
+  "source": "files",
+  "classes": {
+    "directory": {
+      "gid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "mode": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "path": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "present": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "uid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      }
+    },
+    "file": {
+      "gid": {
+        "types": [
+          "null",
+          "number"
+        ],
+        "always": true
+      },
+      "mode": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "over_the_ceiling": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "path": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "present": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "readable": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "sha256": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "size": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "uid": {
+        "types": [
+          "null",
+          "number"
+        ],
+        "always": true
+      }
+    }
+  }
+}

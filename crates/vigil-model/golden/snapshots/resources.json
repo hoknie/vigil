@@ -1,0 +1,89 @@
+{
+  "source": "resources",
+  "classes": {
+    "boot": {
+      "boot_id": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "booted_at": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "readable": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      }
+    },
+    "fs": {
+      "device": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "free_inodes_percent_step": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "free_percent_step": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "mount": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "read_only": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "total_bytes": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "type": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "memory": {
+      "readable": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "swap_total_bytes": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "total_bytes": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      }
+    }
+  }
+}

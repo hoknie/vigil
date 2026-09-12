@@ -49,6 +49,26 @@
         "from": "the name this build gives the collector"
       }
     },
+    "collector-ok|containers": {
+      "every_seconds": {
+        "value": 60,
+        "from": "the period the collectors of this build declare for containers"
+      },
+      "name": {
+        "value": "containers",
+        "from": "the name this build gives the collector"
+      }
+    },
+    "collector-ok|files": {
+      "every_seconds": {
+        "value": 300,
+        "from": "the period the collectors of this build declare for files"
+      },
+      "name": {
+        "value": "files",
+        "from": "the name this build gives the collector"
+      }
+    },
     "collector-ok|ports": {
       "every_seconds": {
         "value": 30,
@@ -56,6 +76,16 @@
       },
       "name": {
         "value": "ports",
+        "from": "the name this build gives the collector"
+      }
+    },
+    "collector-ok|resources": {
+      "every_seconds": {
+        "value": 60,
+        "from": "the period the collectors of this build declare for resources"
+      },
+      "name": {
+        "value": "resources",
         "from": "the name this build gives the collector"
       }
     },

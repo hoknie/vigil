@@ -94,8 +94,35 @@ impl Journal {
         fs::rename(&temporary, &self.path)
             .map_err(|error| StoreError::Io(format!("{}: {error}", self.path.display())))?;
 
-        let (reopened, _) = Journal::open(self.path.clone())?;
-        *self = reopened;
+        self.file = create_owner_only(&self.path, true)?;
+        self.bytes = self
+            .file
+            .metadata()
+            .map(|meta| meta.len())
+            .map_err(|error| StoreError::Io(format!("{}: {error}", self.path.display())))?;
+        Ok(())
+    }
+
+    pub fn append_all(&mut self, records: &[Finding]) -> Result<(), StoreError> {
+        if records.is_empty() {
+            return Ok(());
+        }
+
+        let mut lines = String::new();
+        for record in records {
+            let line = serde_json::to_string(record)
+                .map_err(|error| StoreError::Corrupt(error.to_string()))?;
+            lines.push_str(&line);
+            lines.push('\n');
+        }
+
+        self.file
+            .write_all(lines.as_bytes())
+            .map_err(|error| StoreError::Io(format!("{}: {error}", self.path.display())))?;
+        self.file
+            .sync_data()
+            .map_err(|error| StoreError::Io(format!("{}: {error}", self.path.display())))?;
+        self.bytes += lines.len() as u64;
         Ok(())
     }
 
@@ -181,6 +208,60 @@ mod tests {
 
         assert_eq!(replay.records.len(), 1, "the intact record survives");
         assert_eq!(replay.damaged, 1, "and the loss is counted, not hidden");
+        let _ = fs::remove_file(&path);
+    }
+
+    #[test]
+    fn a_batch_written_in_one_call_comes_back_as_the_lines_it_was_given() {
+        let path = temporary_path("batch");
+        let (mut journal, _) = Journal::open(path.clone()).expect("opens");
+
+        journal
+            .append_all(&[
+                finding("a", "2026-09-09T10:00:00.000Z"),
+                finding("b", "2026-09-09T10:01:00.000Z"),
+            ])
+            .expect("appends");
+
+        let (_, replay) = Journal::open(path.clone()).expect("reopens");
+        assert_eq!(replay.records.len(), 2, "one line per record, not one blob");
+        assert_eq!(replay.records[1].finding_key, "b");
+        assert_eq!(
+            journal.bytes(),
+            std::fs::metadata(&path).expect("stat").len(),
+            "the counted size is the size on disk"
+        );
+        let _ = fs::remove_file(&path);
+    }
+
+    #[test]
+    fn compaction_does_not_read_back_what_it_has_just_written() {
+        let path = temporary_path("no-reread");
+        let (mut journal, _) = Journal::open(path.clone()).expect("opens");
+        for index in 0..50 {
+            journal
+                .append(&finding(
+                    &format!("key-{index}"),
+                    "2026-09-09T10:00:00.000Z",
+                ))
+                .expect("appends");
+        }
+
+        journal
+            .rewrite(&[finding("key-7", "2026-09-09T10:00:00.000Z")])
+            .expect("rewrites");
+        journal
+            .append(&finding("after", "2026-09-09T10:02:00.000Z"))
+            .expect("appends after the rewrite");
+
+        assert_eq!(
+            journal.bytes(),
+            std::fs::metadata(&path).expect("stat").len(),
+            "a compaction that guesses its own size appends over the wrong offset next time"
+        );
+        let (_, replay) = Journal::open(path.clone()).expect("reopens");
+        assert_eq!(replay.records.len(), 2);
+        assert_eq!(replay.damaged, 0, "nothing was written over");
         let _ = fs::remove_file(&path);
     }
 

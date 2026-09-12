@@ -1,6 +1,18 @@
 {
   "source": "collectors",
   "values": {
+    "containers": {
+      "every_seconds": {
+        "value": 60,
+        "from": "the period containers is declared with among the collectors this build ships"
+      }
+    },
+    "files": {
+      "every_seconds": {
+        "value": 300,
+        "from": "the period files is declared with among the collectors this build ships"
+      }
+    },
     "firewall": {
       "every_seconds": {
         "value": 60,
@@ -29,6 +41,12 @@
       "every_seconds": {
         "value": 30,
         "from": "the period processes is declared with among the collectors this build ships"
+      }
+    },
+    "resources": {
+      "every_seconds": {
+        "value": 60,
+        "from": "the period resources is declared with among the collectors this build ships"
       }
     },
     "users": {

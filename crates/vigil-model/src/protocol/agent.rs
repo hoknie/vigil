@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{AgentBudget, CollectorStatus, FindingsSummary, ReporterStatus, Rfc3339, StoreStatus};
+use crate::{
+    AgentBudget, BufferStatus, CollectorStatus, FindingsSummary, ReporterStatus, Rfc3339,
+    StoreStatus,
+};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Silence {
@@ -24,6 +27,8 @@ pub struct AgentStatus {
     pub budget: AgentBudget,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub store: Option<StoreStatus>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub buffers: Option<Vec<BufferStatus>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub limitations: Vec<String>,
 }
@@ -68,6 +73,71 @@ mod tests {
             4,
             "a field the console has never heard of must not cost it the fields it knows"
         );
+    }
+
+    fn watching() -> AgentStatus {
+        AgentStatus {
+            version: "0.1.0".into(),
+            started_at: "2026-09-09T08:00:00.000Z".into(),
+            interval_seconds: 30,
+            collectors: Vec::new(),
+            reporters: Vec::new(),
+            findings: crate::FindingsSummary::default(),
+            silence: Silence::default(),
+            budget: AgentBudget::default(),
+            store: None,
+            buffers: Some(vec![crate::BufferStatus {
+                receiver: "ndjson".into(),
+                pending: 12,
+                pending_ceiling: 500,
+                bytes: 8_792,
+                bytes_ceiling: 4 * 1024 * 1024,
+                dropped_total: 41,
+                oldest_at: Some("2026-09-09T08:41:02.000Z".into()),
+            }]),
+            limitations: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn an_agent_that_says_nothing_about_its_buffers_is_not_an_agent_with_none() {
+        let older: AgentStatus =
+            serde_json::from_str(an_agent_that_says_nothing_about_its_store()).expect("reads");
+
+        assert!(
+            older.buffers.is_none(),
+            "a daemon built before the field is not a daemon with no receivers, and a console \
+             that reads it as none would say every delivery is going out"
+        );
+
+        let none_configured = AgentStatus {
+            buffers: Some(Vec::new()),
+            ..watching()
+        };
+        let wire = serde_json::to_value(&none_configured).expect("serialises");
+        assert_eq!(
+            wire["buffers"],
+            serde_json::json!([]),
+            "and an agent with no receivers at all says so, which is a normal way to run"
+        );
+    }
+
+    #[test]
+    fn a_console_built_before_the_buffers_field_reads_an_answer_that_carries_it() {
+        #[derive(Deserialize)]
+        struct AsAnOlderConsoleSawIt {
+            version: String,
+            interval_seconds: u32,
+            findings: crate::FindingsSummary,
+        }
+
+        let line = serde_json::to_string(&watching()).expect("serialises");
+        let older: AsAnOlderConsoleSawIt =
+            serde_json::from_str(&line).expect("a field it never heard of is not a broken answer");
+
+        assert_eq!(older.version, "0.1.0");
+        assert_eq!(older.interval_seconds, 30);
+        assert_eq!(older.findings.capacity, 0);
     }
 
     #[test]

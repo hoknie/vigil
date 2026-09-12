@@ -20,6 +20,60 @@
         ],
         "always": false
       },
+      "buffers": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "buffers/[]": {
+        "types": [
+          "object"
+        ],
+        "always": false
+      },
+      "buffers/[]/bytes": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "buffers/[]/bytes_ceiling": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "buffers/[]/dropped_total": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "buffers/[]/oldest_at": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "buffers/[]/pending": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "buffers/[]/pending_ceiling": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "buffers/[]/receiver": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
       "collectors": {
         "types": [
           "array"
@@ -168,13 +222,13 @@
         "types": [
           "array"
         ],
-        "always": true
+        "always": false
       },
       "limitations/[]": {
         "types": [
           "string"
         ],
-        "always": true
+        "always": false
       },
       "reporters": {
         "types": [

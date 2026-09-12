@@ -101,6 +101,7 @@ mod tests {
                 silence: crate::Silence::default(),
                 budget: crate::AgentBudget::default(),
                 store: None,
+                buffers: None,
                 limitations: vec!["findings are kept in memory".into()],
             }),
         }
