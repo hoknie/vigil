@@ -46,3 +46,11 @@ cargo run --bin vigild -- config/vigil.example.yaml     # daemon start
 cargo run --bin vigil -- ui                             # the console
 cargo run --bin vigil -- capture                        # print info for a script or a pipe
 ```
+
+# Screenshots
+
+## Main screen
+![main screen](https://github.com/hoknie/vigil/blob/main/docs/assets/preview-1.png?raw=true)
+
+## Findings screen
+![findings screen](https://github.com/hoknie/vigil/blob/main/docs/assets/preview-2.png?raw=true)
