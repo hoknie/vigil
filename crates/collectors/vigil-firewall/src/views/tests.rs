@@ -64,3 +64,13 @@ fn what_the_detail_of_a_chain_says_is_what_a_reader_can_act_on() {
          contract uses: {said}"
     );
 }
+
+#[test]
+fn a_row_that_left_this_reading_is_still_worth_landing_on() {
+    assert!(
+        WhatTheHostLetsIn.shows_what_has_gone(),
+        "a flushed ruleset is a finding whose object is gone by the time the reader presses \
+         o, and that is the whole of what happened: the section opens and says when the row \
+         was last seen rather than refusing to move"
+    );
+}
