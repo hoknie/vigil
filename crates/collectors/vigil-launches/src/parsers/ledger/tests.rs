@@ -7,8 +7,8 @@ use super::reading::LaunchReading;
 use super::snapshot::{
     AUID_UNSET, CAPPED, DROPPING, LIMIT, SOURCE_ROW, UNNAMED, launches_snapshot,
 };
-use crate::parsers::launches::audit::Execution;
-use crate::types::Presence;
+use crate::parsers::audit::Execution;
+use vigil_collect::Presence;
 
 fn logins() -> BTreeMap<u32, String> {
     BTreeMap::from([(1000, "alice".to_string()), (0, "root".to_string())])

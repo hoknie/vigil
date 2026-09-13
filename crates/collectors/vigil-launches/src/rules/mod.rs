@@ -1,12 +1,13 @@
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod verdict;
 
 mod first_launch_for_user;
 mod launch_finding;
 mod launch_from_writable_path;
 mod launch_spool_drained;
 mod launch_spool_dropping;
-mod launch_view;
 mod launched_binary_missing;
 mod set;
 

@@ -1,7 +1,7 @@
 use serde_json::json;
 use vigil_model::{Change, Evidence, Finding, Kind, KnownKind, Severity, State, Subject};
 
-use crate::{Rule, RuleContext};
+use vigil_rules::{Rule, RuleContext};
 
 const DROPPING: &str = "launches|dropping";
 

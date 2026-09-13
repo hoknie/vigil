@@ -62,12 +62,13 @@ impl<'a> LaunchView<'a> {
 mod tests {
     use super::*;
     use crate::fixture;
+    use vigil_rules::fixture as neighbours;
 
     #[test]
     fn an_item_of_another_collector_is_not_a_launch() {
-        let program = fixture::program("/usr/sbin/nginx", "root", 0, &[]);
-        let socket = fixture::of_another_collector("tcp|0.0.0.0:443");
-        let account = fixture::of_another_collector("account|deploy");
+        let program = neighbours::of_another_collector("exec|/usr/sbin/nginx|root");
+        let socket = neighbours::of_another_collector("tcp|0.0.0.0:443");
+        let account = neighbours::of_another_collector("account|deploy");
 
         assert!(!LaunchView::new(&program).is_launch());
         assert!(!LaunchView::new(&socket).is_launch());

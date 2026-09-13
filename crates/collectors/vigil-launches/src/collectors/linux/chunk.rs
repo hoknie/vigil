@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
 
-use crate::CollectError;
+use vigil_collect::CollectError;
 
 const MAX_BYTES_PER_READING: u64 = 2 * 1024 * 1024;
 

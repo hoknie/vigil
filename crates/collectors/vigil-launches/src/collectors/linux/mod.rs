@@ -15,7 +15,7 @@ use vigil_model::{Rfc3339, Snapshot};
 
 use seen::Seen;
 
-use crate::{CollectError, Collector, Health};
+use vigil_collect::{CollectError, Collector, Health};
 
 pub struct LaunchesCollector {
     now: Box<dyn Fn() -> Rfc3339 + Send + Sync>,

@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
-use crate::parsers::launches::audit::Execution;
-use crate::types::Presence;
+use crate::parsers::audit::Execution;
+use vigil_collect::Presence;
 
 pub struct LaunchReading<'a> {
     pub executions: &'a [Execution],

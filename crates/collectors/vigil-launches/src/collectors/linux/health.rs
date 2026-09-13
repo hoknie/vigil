@@ -5,9 +5,9 @@ use std::path::Path;
 use super::LaunchesCollector;
 use super::advice::nothing_carries_our_tag;
 use super::chunk::tail;
-use crate::Health;
 use crate::parsers::{AUDIT_KEY, any_launch_carries_our_tag, any_launch_was_read};
 use crate::spool::{CEILING_BYTES, dropped_note};
+use vigil_collect::Health;
 
 const HEALTH_TAIL: u64 = 256 * 1024;
 

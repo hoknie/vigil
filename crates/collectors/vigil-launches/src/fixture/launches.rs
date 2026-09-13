@@ -4,7 +4,7 @@ use serde_json::{Value, json};
 use vigil_model::Snapshot;
 
 use crate::parsers::{LaunchReading, launches_snapshot, parse_audit_log};
-use crate::types::Presence;
+use vigil_collect::Presence;
 
 const LOG: &str = concat!(
     r#"type=SYSCALL msg=audit(1757419203.412:3421): arch=c000003e syscall=59 success=yes exit=0 ppid=2143 pid=2170 auid=1000 uid=1000 tty=pts0 ses=3 comm="nc" exe="/usr/bin/nc.openbsd" key="vigil_exec""#,

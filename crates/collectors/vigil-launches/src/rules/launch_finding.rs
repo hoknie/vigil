@@ -1,8 +1,8 @@
 use serde_json::{Value, json};
 use vigil_model::{Evidence, Finding, Kind, KnownKind, Severity, State, Subject};
 
-use super::launch_view::LaunchView;
-use crate::RuleContext;
+use crate::types::LaunchView;
+use vigil_rules::RuleContext;
 
 pub struct LaunchFinding<'a> {
     pub kind: KnownKind,

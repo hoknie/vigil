@@ -1,8 +1,8 @@
 use vigil_model::{Change, Finding, KnownKind, Severity};
 
 use super::launch_finding::{LaunchFinding, build, launch_evidence};
-use super::launch_view::LaunchView;
-use crate::{Rule, RuleContext};
+use crate::types::LaunchView;
+use vigil_rules::{Rule, RuleContext};
 
 pub struct FirstLaunchForUser;
 
@@ -46,6 +46,7 @@ impl Rule for FirstLaunchForUser {
 mod tests {
     use super::*;
     use crate::fixture;
+    use vigil_rules::fixture as neighbours;
 
     fn apply(change: &Change) -> Option<Finding> {
         let mut mint = || "event-1".to_string();
@@ -92,7 +93,7 @@ mod tests {
     fn a_launch_of_a_program_a_service_account_never_logged_in_to_run_is_not_this_family() {
         let change = Change::Added {
             key: "exec|/usr/sbin/nginx|www-data".into(),
-            after: fixture::program("/usr/sbin/nginx", "www-data", 33, &[]),
+            after: neighbours::of_another_collector("exec|/usr/sbin/nginx|www-data"),
         };
 
         assert!(apply(&change).is_none());

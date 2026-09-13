@@ -7,10 +7,12 @@ use vigil_model::Snapshot;
 
 use super::LaunchesCollector;
 use super::chunk::read_chunk;
-use crate::helpers::shown_to_the_agent;
-use crate::parsers::{LaunchReading, launches_snapshot, parse_audit_log, parse_passwd};
+use vigil_collect::parse_passwd;
+
+use crate::parsers::{LaunchReading, launches_snapshot, parse_audit_log};
 use crate::spool::{Cursor, cursor_path, dropped_note};
-use crate::{CollectError, Collector, Presence};
+use vigil_collect::shown_to_the_agent;
+use vigil_collect::{CollectError, Collector, Presence};
 
 const FIRST_READING_TAIL: u64 = 2 * 1024 * 1024;
 

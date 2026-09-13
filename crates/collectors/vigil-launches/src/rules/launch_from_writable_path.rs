@@ -1,8 +1,8 @@
 use vigil_model::{Change, Finding, KnownKind, Severity};
 
 use super::launch_finding::{LaunchFinding, build, launch_evidence};
-use super::launch_view::LaunchView;
-use crate::{Rule, RuleContext};
+use crate::types::LaunchView;
+use vigil_rules::{Rule, RuleContext};
 
 pub struct LaunchFromWritablePath;
 

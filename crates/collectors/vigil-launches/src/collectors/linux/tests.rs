@@ -4,7 +4,9 @@ use std::path::{Path, PathBuf};
 
 use super::LaunchesCollector;
 use crate::spool::{Cursor, cursor_path};
-use crate::{CollectError, Collector, Health, SpoolWriter};
+use vigil_collect::{CollectError, Collector, Health};
+
+use crate::SpoolWriter;
 
 const LAUNCH: &str = concat!(
     r#"type=SYSCALL msg=audit(1757419203.412:3421): arch=c000003e syscall=59 success=yes exit=0 items=2 ppid=2143 pid=2170 auid=0 uid=0 tty=pts0 ses=3 comm="id" exe="/usr/bin/id" key="vigil_exec""#,
@@ -349,7 +351,7 @@ fn a_host_reading_the_log_with_no_plugin_registered_is_healthy() {
 #[test]
 fn the_agent_never_says_a_file_it_was_not_shown_has_been_deleted() {
     use super::reading::look_on_disk;
-    use crate::Presence;
+    use vigil_collect::Presence;
 
     assert_eq!(
         look_on_disk("/tmp/there-is-no-such-file"),

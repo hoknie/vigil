@@ -1,8 +1,8 @@
 use serde_json::json;
 use vigil_model::Change;
 
+use super::verdict::launches;
 use crate::fixture;
-use crate::rules::verdict::launches;
 
 #[test]
 fn exactly_one_launch_rule_fires_for_each_change_a_host_can_produce() {

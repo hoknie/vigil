@@ -2,7 +2,7 @@ use super::{
     FirstLaunchForUser, LaunchFromWritablePath, LaunchSpoolDrained, LaunchSpoolDropping,
     LaunchedBinaryMissing,
 };
-use crate::RuleSet;
+use vigil_rules::RuleSet;
 
 pub fn launch_rules() -> RuleSet {
     RuleSet::of(vec![

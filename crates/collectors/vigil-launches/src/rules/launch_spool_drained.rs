@@ -1,7 +1,7 @@
 use serde_json::json;
 use vigil_model::{Change, Evidence, Finding, Kind, KnownKind, Severity, State, Subject};
 
-use crate::{Rule, RuleContext};
+use vigil_rules::{Rule, RuleContext};
 
 const DROPPING: &str = "launches|dropping";
 
@@ -52,7 +52,7 @@ impl Rule for LaunchSpoolDrained {
 mod tests {
     use super::*;
     use crate::fixture;
-    use crate::rules::launches::LaunchSpoolDropping;
+    use crate::rules::LaunchSpoolDropping;
 
     fn apply(change: &Change) -> Option<Finding> {
         let mut mint = || "event-1".to_string();
