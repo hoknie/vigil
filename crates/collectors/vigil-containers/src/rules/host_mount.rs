@@ -1,9 +1,9 @@
 use vigil_model::{Change, Evidence, Finding, KnownKind, Severity};
 
 use super::container_finding::{ContainerFinding, build, finding_key, running};
-use super::container_view::{ContainerView, Family};
 use super::docker_socket_exposed::is_a_runtime_socket;
-use crate::{Rule, RuleContext};
+use crate::types::{ContainerView, Family};
+use vigil_rules::{Rule, RuleContext};
 
 const OF_THIS_HOST: &[&str] = &[
     "/", "/boot", "/dev", "/etc", "/home", "/proc", "/root", "/srv", "/sys", "/usr", "/var",
@@ -102,7 +102,7 @@ fn severity(held: &[&str]) -> Severity {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rules::fixture;
+    use crate::fixture;
 
     const ORDINARY: &str = "00000000a80425fb";
 

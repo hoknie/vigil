@@ -6,11 +6,11 @@ use vigil_model::Snapshot;
 use super::ContainersCollector;
 use super::source::HOST_PATH_CEILING;
 use super::walk::Found;
-use crate::CollectError;
 use crate::parsers::{
     Container, ContainersReading, MountedIn, containers_snapshot, parse_effective_capabilities,
     parse_mountinfo, paths_of_this_host,
 };
+use vigil_collect::CollectError;
 
 const OWN_MOUNTS: &str = "self/mountinfo";
 

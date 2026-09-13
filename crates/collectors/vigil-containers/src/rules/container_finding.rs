@@ -1,8 +1,8 @@
 use serde_json::{Value, json};
 use vigil_model::{Evidence, Finding, Kind, KnownKind, Severity, State, Subject};
 
-use super::container_view::{ContainerView, Family};
-use crate::RuleContext;
+use crate::types::{ContainerView, Family};
+use vigil_rules::RuleContext;
 
 pub struct ContainerFinding<'a> {
     pub kind: KnownKind,
@@ -79,7 +79,7 @@ pub fn running(view: &ContainerView<'_>) -> Evidence {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rules::fixture;
+    use crate::fixture;
 
     #[test]
     fn a_finding_about_a_container_is_keyed_by_what_it_runs_and_not_by_the_identifier_of_the_day() {

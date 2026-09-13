@@ -1,5 +1,5 @@
 use super::{ContainerDockerSocketExposed, ContainerHostMount, ContainerPrivileged};
-use crate::RuleSet;
+use vigil_rules::RuleSet;
 
 pub fn container_rules() -> RuleSet {
     RuleSet::of(vec![

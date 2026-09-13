@@ -1,7 +1,7 @@
 use vigil_model::Change;
 
-use crate::rules::fixture;
-use crate::rules::verdict::containers;
+use super::verdict::containers;
+use crate::fixture;
 
 const ORDINARY: &str = "00000000a80425fb";
 

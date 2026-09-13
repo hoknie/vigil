@@ -1,8 +1,8 @@
 use vigil_model::{Change, Evidence, Finding, KnownKind, Severity};
 
 use super::container_finding::{ContainerFinding, build, finding_key, running};
-use super::container_view::{ContainerView, Family};
-use crate::{Rule, RuleContext};
+use crate::types::{ContainerView, Family};
+use vigil_rules::{Rule, RuleContext};
 
 const RUNTIME_SOCKETS: &[&str] = &[
     "/var/run/docker.sock",
@@ -141,7 +141,7 @@ fn sockets_in<'a>(view: &ContainerView<'a>) -> Vec<&'a str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rules::fixture;
+    use crate::fixture;
 
     const ORDINARY: &str = "00000000a80425fb";
 

@@ -1,7 +1,7 @@
 use std::fs;
 
 use super::ContainersCollector;
-use crate::Health;
+use vigil_collect::Health;
 
 impl ContainersCollector {
     pub(super) fn health(&self) -> Health {

@@ -12,7 +12,7 @@ use std::sync::Mutex;
 
 use vigil_model::{Rfc3339, Snapshot};
 
-use crate::{CollectError, Collector, Health};
+use vigil_collect::{CollectError, Collector, Health};
 
 use source::NAME;
 

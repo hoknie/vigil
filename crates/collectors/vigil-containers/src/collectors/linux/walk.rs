@@ -2,8 +2,8 @@ use std::fs;
 
 use super::ContainersCollector;
 use super::source::{CONTAINER_CEILING, PROCESS_CEILING};
-use crate::CollectError;
 use crate::parsers::{ContainerReference, parse_container_reference};
+use vigil_collect::CollectError;
 
 pub(super) struct Found {
     pub(super) reference: ContainerReference,

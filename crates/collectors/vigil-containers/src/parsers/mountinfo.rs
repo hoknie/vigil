@@ -1,5 +1,5 @@
-use crate::helpers::unescaped;
-use crate::parsers::holds_files_of_this_host;
+use vigil_collect::holds_files_of_this_host;
+use vigil_collect::unescaped;
 
 const SEPARATOR: &str = "-";
 

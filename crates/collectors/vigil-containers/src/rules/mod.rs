@@ -1,8 +1,9 @@
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod verdict;
 
 mod container_finding;
-mod container_view;
 mod docker_socket_exposed;
 mod host_mount;
 mod privileged;
