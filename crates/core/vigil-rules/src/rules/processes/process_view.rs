@@ -128,7 +128,7 @@ mod tests {
     fn an_item_of_another_collector_is_not_a_program() {
         let socket = fixture::of_another_collector("tcp|0.0.0.0:443");
         let account = fixture::of_another_collector("account|deploy");
-        let unit = fixture::unit("nginx.service", "/usr/sbin/nginx", "root");
+        let unit = fixture::of_another_collector("unit|nginx.service");
 
         assert!(!ProcessView::new(&socket).is_program());
         assert!(!ProcessView::new(&account).is_program());

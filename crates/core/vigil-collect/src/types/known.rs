@@ -8,12 +8,6 @@ pub struct KnownCollector {
 
 pub const COLLECTORS: &[KnownCollector] = &[
     KnownCollector {
-        name: "persistence",
-        subject: "what the host starts by itself: units, timers, cron, shell profiles",
-        every_seconds: 300,
-        unit: None,
-    },
-    KnownCollector {
         name: "processes",
         subject: "the programs running on this host",
         every_seconds: 30,
@@ -138,19 +132,7 @@ mod tests {
 
         assert_eq!(every_seconds_of("launches"), Some(15));
         assert_eq!(every_seconds_of("processes"), Some(30));
-        assert_eq!(every_seconds_of("persistence"), Some(300));
         assert_eq!(every_seconds_of("resources"), Some(60));
         assert_eq!(every_seconds_of("files"), Some(300));
-    }
-
-    #[test]
-    fn a_subject_that_outlives_a_reboot_is_read_less_often_than_one_that_does_not() {
-        let transient = every_seconds_of("processes").expect("processes");
-        let lasting = every_seconds_of("persistence").expect("persistence");
-
-        assert!(
-            transient < lasting,
-            "a process exists between two readings or it never existed; a unit waits"
-        );
     }
 }

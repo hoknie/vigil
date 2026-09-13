@@ -2,10 +2,10 @@ use vigil_model::{Golden, Shape, Snapshot, class_of};
 
 use crate::COLLECTORS;
 
-use super::{files, launches, persistence, processes, resources};
+use super::{files, launches, processes, resources};
 
 fn readings() -> Vec<Snapshot> {
-    vec![processes(), persistence(), launches(), resources(), files()]
+    vec![processes(), launches(), resources(), files()]
 }
 
 fn document(reading: &Snapshot) -> String {
@@ -85,7 +85,6 @@ fn a_reading_that_could_not_be_finished_says_so_in_a_row_of_its_own() {
         "launches|unnamed",
         "launches|dropping",
         "launches|source",
-        "modules|unreadable",
     ] {
         assert!(
             all.iter().any(|key| *key == marker),

@@ -1,14 +1,10 @@
 use vigil_model::Change;
 
-use super::verdict::{files, launches, persistence, processes, resources};
+use super::verdict::{files, launches, processes, resources};
 use crate::fixture;
 
 #[test]
 fn no_family_of_rules_reads_the_changes_of_another() {
-    let unit = Change::Added {
-        key: "unit|update.service".into(),
-        after: fixture::unit("update.service", "/tmp/.x/implant", "root"),
-    };
     let program = Change::Added {
         key: "exec|/dev/shm/payload|www-data".into(),
         after: fixture::program("/dev/shm/payload", "www-data", 33, &[]),
@@ -30,22 +26,20 @@ fn no_family_of_rules_reads_the_changes_of_another() {
 
     for (family, name) in [
         (
-            persistence as fn(&Change) -> Vec<(String, String)>,
-            "persistence",
+            processes as fn(&Change) -> Vec<(String, String)>,
+            "processes",
         ),
-        (processes, "processes"),
         (launches, "launches"),
         (resources, "resources"),
         (files, "files"),
     ] {
         let mine = match name {
-            "persistence" => &unit,
             "processes" => &program,
             "launches" => &launch,
             "files" => &watched,
             _ => &filesystem,
         };
-        for change in [&unit, &program, &launch, &filesystem, &watched] {
+        for change in [&program, &launch, &filesystem, &watched] {
             let fired = family(change);
             match std::ptr::eq(change, mine) {
                 true => assert!(!fired.is_empty(), "{name} said nothing about its own"),

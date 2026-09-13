@@ -22,7 +22,6 @@ fn main() {
 
     let now = || "2026-09-09T12:00:00.000Z".to_string();
     let collector: Box<dyn Collector> = match name.as_str() {
-        "persistence" => Box::new(vigil_collect::PersistenceCollector::new(now)),
         "processes" => Box::new(vigil_collect::ProcessesCollector::new(now)),
         "resources" => Box::new(vigil_collect::ResourcesCollector::new(now)),
         "files" => Box::new(vigil_collect::FilesCollector::new(

@@ -1,13 +1,7 @@
 use vigil_model::Change;
 
-use super::{
-    ResourceLimits, file_rules, launch_rules, persistence_rules, process_rules, resource_rules,
-};
+use super::{ResourceLimits, file_rules, launch_rules, process_rules, resource_rules};
 use crate::services::findings_for;
-
-pub(super) fn persistence(change: &Change) -> Vec<(String, String)> {
-    findings_for(persistence_rules(), std::slice::from_ref(change))
-}
 
 pub(super) fn processes(change: &Change) -> Vec<(String, String)> {
     findings_for(process_rules(), std::slice::from_ref(change))

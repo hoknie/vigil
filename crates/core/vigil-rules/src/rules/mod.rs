@@ -5,7 +5,6 @@ mod verdict;
 
 mod files;
 mod launches;
-mod persistence;
 mod processes;
 mod resources;
 
@@ -13,10 +12,6 @@ pub use files::{FileChanged, FilePermissionsChanged, FileSuidNew, PathWritableBy
 pub use launches::{
     FirstLaunchForUser, LaunchFromWritablePath, LaunchSpoolDrained, LaunchedBinaryMissing,
     launch_rules,
-};
-pub use persistence::{
-    KernelModuleLoaded, NewCronJob, NewTimer, NewUnit, PreloadChanged, ShellProfileChanged,
-    UnitCommandChanged, persistence_rules,
 };
 pub use processes::{
     NewRootProcess, ProcessBinaryDeleted, ProcessFromWritablePath, UnexpectedParent, process_rules,

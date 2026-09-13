@@ -10,6 +10,7 @@ pub struct Showing<'a> {
     pub sorting: Sorting,
     pub note: Option<&'a str>,
     pub elsewhere: usize,
+    pub arranged: Option<&'a str>,
 }
 
 impl<'a> Showing<'a> {
@@ -30,6 +31,17 @@ impl<'a> Showing<'a> {
 
     pub fn noting(self, note: Option<&'a str>) -> Showing<'a> {
         Showing { note, ..self }
+    }
+
+    pub fn arranged(self, arranged: &'a str) -> Showing<'a> {
+        Showing {
+            arranged: Some(arranged),
+            ..self
+        }
+    }
+
+    pub fn arranged_as(&self, name: &str) -> bool {
+        self.arranged == Some(name)
     }
 
     pub fn wants(&self, toggle: &str) -> bool {

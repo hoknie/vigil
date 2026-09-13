@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests;
 
+mod arrangement;
 mod cell;
 mod column;
 mod emphasis;
@@ -13,6 +14,7 @@ mod showing;
 mod sorting;
 mod toggle;
 
+pub use arrangement::Arrangement;
 pub use cell::Cell;
 pub use column::{Column, Width, fitting};
 pub use emphasis::Emphasis;

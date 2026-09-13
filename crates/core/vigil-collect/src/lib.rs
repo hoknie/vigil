@@ -26,6 +26,4 @@ pub use spool::{
 };
 
 #[cfg(target_os = "linux")]
-pub use collectors::{
-    FilesCollector, LaunchesCollector, PersistenceCollector, ProcessesCollector, ResourcesCollector,
-};
+pub use collectors::{FilesCollector, LaunchesCollector, ProcessesCollector, ResourcesCollector};

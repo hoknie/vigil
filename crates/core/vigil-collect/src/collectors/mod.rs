@@ -1,6 +1,4 @@
 mod linux;
 
 #[cfg(target_os = "linux")]
-pub use linux::{
-    FilesCollector, LaunchesCollector, PersistenceCollector, ProcessesCollector, ResourcesCollector,
-};
+pub use linux::{FilesCollector, LaunchesCollector, ProcessesCollector, ResourcesCollector};

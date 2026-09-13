@@ -1,7 +1,6 @@
 mod files;
 mod launches;
 mod logins;
-mod persistence;
 mod processes;
 mod resources;
 
@@ -11,10 +10,6 @@ pub use launches::{
     parse_audit_log, record_is_read,
 };
 pub use logins::{PasswdEntry, parse_passwd, parse_passwd_entries};
-pub use persistence::{
-    CronEntry, CronFormat, KernelModule, PersistenceReading, PreloadFile, ScriptFamily, UnitFile,
-    WatchedScript, cron_script, parse_crontab, parse_modules, parse_unit, persistence_snapshot,
-};
 pub use processes::{ProcessRow, ProcessesReading, parse_status, processes_snapshot};
 pub use resources::{
     BOOT, Filesystem, MemoryFacts, MountPoint, ResourcesReading, booted_at_of, free_percent_step,

@@ -1,6 +1,8 @@
 use vigil_model::Snapshot;
 
-use crate::types::{Cell, Column, Notice, Offers, Piece, Room, RowKey, Showing, Toggle};
+use crate::types::{
+    Arrangement, Cell, Column, Notice, Offers, Piece, Room, RowKey, Showing, Toggle,
+};
 
 const NARROW: u16 = 80;
 
@@ -51,6 +53,10 @@ pub trait Pane: Send + Sync {
     }
 
     fn toggles(&self) -> Vec<Toggle> {
+        Vec::new()
+    }
+
+    fn arrangements(&self) -> Vec<Arrangement> {
         Vec::new()
     }
 
