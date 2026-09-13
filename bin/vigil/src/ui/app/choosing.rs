@@ -2,8 +2,8 @@ use vigil_model::Severity;
 
 use super::App;
 
-use crate::ui::screens::{findings, system};
-use crate::ui::{Choosing, Column, Level, Screen, Sorting, System, holding};
+use crate::ui::screens::findings;
+use crate::ui::{Choosing, Column, Level, Screen, Sorting, holding};
 
 const NOTHING_SORTS: &str =
     "Nothing on this screen sorts: it is one page, not a list of rows to put in an order.";
@@ -17,12 +17,8 @@ const NOTHING_FILTERS: &str = "Nothing to filter here: the severity floor and th
 impl App {
     pub(super) fn sortable(&self) -> Vec<&'static str> {
         match self.nav.at() {
-            Screen::Findings => findings::SORTED_BY.to_vec(),
+            Screen::FINDINGS => findings::SORTED_BY.to_vec(),
             screen if holding(screen.name()).is_some() => self.pane_sortable(),
-            Screen::System => match self.nav.lists.system.showing() {
-                System::Host => system::host::SORTED_BY.to_vec(),
-                System::Files => system::files::SORTED_BY.to_vec(),
-            },
             _ => Vec::new(),
         }
     }
@@ -51,7 +47,7 @@ impl App {
     }
 
     pub(super) fn narrowing(&mut self) {
-        if self.nav.at() != Screen::Findings {
+        if self.nav.at() != Screen::FINDINGS {
             self.message = Some(NOTHING_FILTERS.to_string());
             return;
         }
@@ -106,7 +102,6 @@ impl App {
 
     fn list_cursor_to_the_top(&mut self) {
         self.nav.findings = crate::ui::Cursor::default();
-        self.nav.lists.system.widen();
         if let Some(panes) = self.panes_mut() {
             *panes.cursor_mut() = crate::ui::Cursor::default();
         }

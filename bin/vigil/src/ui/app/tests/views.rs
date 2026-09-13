@@ -1,26 +1,26 @@
 use ratatui::crossterm::event::KeyCode;
 
 use crate::ui::app::App;
-use crate::ui::{Screen, Startup};
 
 use super::harness::{app, drawn_at, into, press};
+use crate::ui::fixture::screen;
 
 const WIDE: u16 = 140;
 
 fn on_the_units() -> App {
     let mut app = app();
-    into(&mut app, Screen::Startup, WIDE, 30);
+    into(&mut app, screen("startup"), WIDE, 30);
     app
 }
 
 fn onto(app: &mut App, name: &str) {
-    for _ in 0..app.startup_keys().len() {
-        if app.startup_keys()[app.nav.lists.startup.at()].contains(name) {
+    for _ in 0..app.pane_keys().len() {
+        if app.pane_keys()[app.panes().expect("a section").at()].contains(name) {
             return;
         }
         press(app, KeyCode::Down);
     }
-    panic!("{name} is not a row of this list: {:?}", app.startup_keys());
+    panic!("{name} is not a row of this list: {:?}", app.pane_keys());
 }
 
 fn cursor_row(app: &App) -> String {
@@ -51,13 +51,13 @@ fn the_key_switches_the_units_to_a_tree_and_back_again() {
 fn switching_the_view_leaves_the_reader_on_the_unit_they_were_on() {
     let mut app = on_the_units();
     onto(&mut app, "rescue-shell.service");
-    let before = app.startup_keys()[app.nav.lists.startup.at()].clone();
+    let before = app.pane_keys()[app.panes().expect("a section").at()].clone();
     assert!(cursor_row(&app).contains("rescue-shell.service"));
 
     press(&mut app, KeyCode::Char('t'));
 
     assert_eq!(
-        app.startup_keys()[app.nav.lists.startup.at()],
+        app.pane_keys()[app.panes().expect("a section").at()],
         before,
         "the cursor holds the key of its row and not its number: {}",
         drawn_at(&app, WIDE, 30)
@@ -72,15 +72,15 @@ fn switching_the_view_leaves_the_reader_on_the_unit_they_were_on() {
 #[test]
 fn the_key_says_where_it_lives_on_a_list_it_does_not_switch() {
     let mut app = app();
-    press(&mut app, super::harness::number(Screen::Startup));
+    press(&mut app, super::harness::number(screen("startup")));
     press(&mut app, KeyCode::Right);
     press(&mut app, KeyCode::Down);
-    assert_eq!(app.nav.lists.startup.showing(), Startup::Timers);
+    assert_eq!(app.panes().expect("a section").showing(), 1);
 
     press(&mut app, KeyCode::Char('t'));
 
     let page = drawn_at(&app, WIDE, 30);
-    assert!(page.contains("view of the units list"), "{page}");
+    assert!(page.contains("belongs to the units list"), "{page}");
     assert!(!page.contains("[t tree]"), "{page}");
 }
 

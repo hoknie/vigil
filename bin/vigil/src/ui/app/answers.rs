@@ -3,24 +3,12 @@ use vigil_model::{Request, Response};
 use super::App;
 use crate::link::{Trouble, TroubleKind};
 
-use crate::ui::{Anchor, Program, Reading, Refusal, Screen, Status, System, View};
+use crate::ui::{Anchor, Reading, Refusal, Status, View};
 
 impl App {
     pub(super) fn wanted_reading(&self) -> Option<&'static str> {
-        if let Some(pane) = self.pane() {
-            let collector = pane.reads();
-            return match self.view.switched_off(collector) {
-                true => None,
-                false => Some(collector),
-            };
-        }
+        let collector = self.pane()?.reads();
 
-        let collector = match self.nav.at() {
-            Screen::Programs => self.nav.lists.programs.showing().collector(),
-            Screen::Startup => crate::ui::screens::startup::COLLECTOR,
-            Screen::System => self.nav.lists.system.showing().collector(),
-            _ => return None,
-        };
         match self.view.switched_off(collector) {
             true => None,
             false => Some(collector),
@@ -28,26 +16,11 @@ impl App {
     }
 
     pub(super) fn reading_needed(&self, anchor: &Anchor) -> Option<&'static str> {
-        if let Some(section) = self.section_of(anchor.screen)
-            && let Some(pane) = section.panes().first()
-        {
-            let collector = pane.reads();
-            return match self.view.reading(collector) {
-                Reading::Unknown => Some(collector),
-                _ => None,
-            };
-        }
-
-        let collector = match anchor.screen {
-            Screen::Programs => Program::holding(&anchor.key).collector(),
-            Screen::Startup => crate::ui::screens::startup::COLLECTOR,
-            Screen::System => System::holding(&anchor.key).collector(),
-            _ => return None,
-        };
-        match self.view.reading(collector) {
-            Reading::Unknown => Some(collector),
-            _ => None,
-        }
+        self.section_of(anchor.screen)?
+            .panes()
+            .iter()
+            .map(|pane| pane.reads())
+            .find(|collector| matches!(self.view.reading(collector), Reading::Unknown))
     }
 
     pub(super) fn fetch_reading(&mut self, collector: &str) {
@@ -147,9 +120,5 @@ impl App {
                 }
             },
         }
-    }
-
-    pub(super) fn running_list(&self) -> Program {
-        self.nav.lists.programs.showing()
     }
 }

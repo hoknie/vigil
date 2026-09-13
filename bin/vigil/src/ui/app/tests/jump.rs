@@ -1,17 +1,18 @@
 use ratatui::crossterm::event::KeyCode;
 
-use crate::ui::{Anchor, Level, Program, Reading, Screen, Startup, View};
+use crate::ui::{Anchor, Level, Reading, Screen, View};
 
 use super::harness::{app, drawn, drawn_at, into, number, press};
+use crate::ui::fixture::screen;
 
 #[test]
 fn o_on_a_finding_about_a_socket_opens_the_ports_section_on_that_socket() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
 
     press(&mut app, KeyCode::Char('o'));
 
-    assert_eq!(app.nav.at(), Screen::Ports);
+    assert_eq!(app.nav.at(), screen("ports"));
     assert_eq!(
         app.level,
         Level::List,
@@ -27,7 +28,7 @@ fn o_on_a_finding_about_a_socket_opens_the_ports_section_on_that_socket() {
 #[test]
 fn a_jump_asks_for_the_reading_that_holds_the_object_because_the_findings_screen_asks_for_none() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
 
     assert_eq!(
         app.wanted_reading(),
@@ -38,7 +39,7 @@ fn a_jump_asks_for_the_reading_that_holds_the_object_because_the_findings_screen
 
     app.view = View::nothing_yet("/nonexistent/vigil.sock");
     let anchor = Anchor {
-        screen: Screen::Ports,
+        screen: screen("ports"),
         key: "tcp|0.0.0.0:4444".into(),
     };
 
@@ -64,11 +65,11 @@ fn a_jump_asks_for_the_reading_that_holds_the_object_because_the_findings_screen
 fn o_on_a_finding_about_an_account_opens_the_accounts_section_at_that_account() {
     let mut app = app();
     app.view.found.findings[0].finding_key = "user|account|contractor".into();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
 
     press(&mut app, KeyCode::Char('o'));
 
-    assert_eq!(app.nav.at(), Screen::Accounts);
+    assert_eq!(app.nav.at(), screen("accounts"));
     assert_eq!(
         app.pane_keys()[app.panes().expect("a section").at()],
         "account|contractor"
@@ -81,11 +82,11 @@ fn o_on_a_finding_about_an_account_opens_the_accounts_section_at_that_account() 
 fn o_on_a_finding_about_a_group_opens_the_list_that_group_is_a_row_of() {
     let mut app = app();
     app.view.found.findings[0].finding_key = "user|group|wheel".into();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
 
     press(&mut app, KeyCode::Char('o'));
 
-    assert_eq!(app.nav.at(), Screen::Accounts);
+    assert_eq!(app.nav.at(), screen("accounts"));
     assert_eq!(app.panes().expect("a section").showing(), 1);
     assert_eq!(
         app.pane_keys()[app.panes().expect("a section").at()],
@@ -97,14 +98,14 @@ fn o_on_a_finding_about_a_group_opens_the_list_that_group_is_a_row_of() {
 fn o_on_a_finding_about_a_program_opens_the_programs_section_on_the_running_list() {
     let mut app = app();
     app.view.found.findings[0].finding_key = "process|exec|/tmp/.x/nc|www-data".into();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
 
     press(&mut app, KeyCode::Char('o'));
 
-    assert_eq!(app.nav.at(), Screen::Programs);
-    assert_eq!(app.nav.lists.programs.showing(), Program::Running);
+    assert_eq!(app.nav.at(), screen("programs"));
+    assert_eq!(app.panes().expect("a section").showing(), 0);
     assert_eq!(
-        app.programs_keys()[app.nav.lists.programs.at()],
+        app.pane_keys()[app.panes().expect("a section").at()],
         "exec|/tmp/.x/nc|www-data"
     );
 }
@@ -114,14 +115,14 @@ fn o_on_a_finding_about_a_cron_job_opens_the_startup_section_on_the_cron_list() 
     let mut app = app();
     app.view.found.findings[0].finding_key =
         "persistence|cron|/var/spool/cron/crontabs/www-data|www-data|/tmp/.x/implant".into();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
 
     press(&mut app, KeyCode::Char('o'));
 
-    assert_eq!(app.nav.at(), Screen::Startup);
-    assert_eq!(app.nav.lists.startup.showing(), Startup::Cron);
+    assert_eq!(app.nav.at(), screen("startup"));
+    assert_eq!(app.panes().expect("a section").showing(), 2);
     assert_eq!(
-        app.startup_keys()[app.nav.lists.startup.at()],
+        app.pane_keys()[app.panes().expect("a section").at()],
         "cron|/var/spool/cron/crontabs/www-data|www-data|/tmp/.x/implant"
     );
 }
@@ -130,16 +131,16 @@ fn o_on_a_finding_about_a_cron_job_opens_the_startup_section_on_the_cron_list() 
 fn a_finding_about_a_launch_walks_to_the_whole_key_because_that_family_adds_no_prefix() {
     let mut app = app();
     app.view = crate::ui::fixture::view_with_launches();
-    app.view.found.findings[0].finding_key = "run|alice|/usr/bin/nmap".into();
-    into(&mut app, Screen::Findings, 80, 30);
+    app.view.found.findings[0].finding_key = "run|alice|/usr/bin/nc.openbsd".into();
+    into(&mut app, Screen::FINDINGS, 80, 30);
 
     press(&mut app, KeyCode::Char('o'));
 
-    assert_eq!(app.nav.at(), Screen::Programs);
-    assert_eq!(app.nav.lists.programs.showing(), Program::Launches);
+    assert_eq!(app.nav.at(), screen("programs"));
+    assert_eq!(app.panes().expect("a section").showing(), 1);
     assert_eq!(
-        app.programs_keys()[app.nav.lists.programs.at()],
-        "run|alice|/usr/bin/nmap"
+        app.pane_keys()[app.panes().expect("a section").at()],
+        "run|alice|/usr/bin/nc.openbsd"
     );
 }
 
@@ -148,13 +149,13 @@ fn the_finding_about_a_dropping_spool_walks_to_the_row_that_says_so() {
     let mut app = app();
     app.view = crate::ui::fixture::view_with_launches();
     app.view.found.findings[0].finding_key = "agent.buffer|launches".into();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
 
     press(&mut app, KeyCode::Char('o'));
 
-    assert_eq!(app.nav.at(), Screen::Programs);
+    assert_eq!(app.nav.at(), screen("programs"));
     assert_eq!(
-        app.programs_keys()[app.nav.lists.programs.at()],
+        app.pane_keys()[app.panes().expect("a section").at()],
         "launches|dropping"
     );
 }
@@ -163,13 +164,13 @@ fn the_finding_about_a_dropping_spool_walks_to_the_row_that_says_so() {
 fn the_finding_about_what_is_waiting_for_a_receiver_walks_to_the_screen_that_names_it() {
     let mut app = app();
     app.view.found.findings[0].finding_key = "agent.buffer|ndjson".into();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
 
     press(&mut app, KeyCode::Char('o'));
 
     assert_eq!(
         app.nav.at(),
-        Screen::Summary,
+        Screen::SUMMARY,
         "a buffer is the agent's own, and the screen about this agent is where it is read"
     );
     let page = drawn_at(&app, 80, 60);
@@ -189,11 +190,11 @@ fn the_finding_about_what_is_waiting_for_a_receiver_walks_to_the_screen_that_nam
 fn a_receiver_this_agent_says_nothing_about_opens_a_screen_that_says_so_in_words() {
     let mut app = app();
     app.view.found.findings[0].finding_key = "agent.buffer|webhook".into();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
 
     press(&mut app, KeyCode::Char('o'));
 
-    assert_eq!(app.nav.at(), Screen::Summary);
+    assert_eq!(app.nav.at(), Screen::SUMMARY);
     let page = drawn(&app);
     assert!(
         page.contains("draws no row for what is waiting to send"),
@@ -214,16 +215,16 @@ fn the_two_buffers_a_finding_can_be_about_do_not_walk_to_the_same_place() {
     let mut spool = app();
     spool.view = crate::ui::fixture::view_with_launches();
     spool.view.found.findings[0].finding_key = "agent.buffer|launches".into();
-    into(&mut spool, Screen::Findings, 80, 30);
+    into(&mut spool, Screen::FINDINGS, 80, 30);
     press(&mut spool, KeyCode::Char('o'));
 
     let mut sending = app();
     sending.view.found.findings[0].finding_key = "agent.buffer|ndjson".into();
-    into(&mut sending, Screen::Findings, 80, 30);
+    into(&mut sending, Screen::FINDINGS, 80, 30);
     press(&mut sending, KeyCode::Char('o'));
 
-    assert_eq!(spool.nav.at(), Screen::Programs);
-    assert_eq!(sending.nav.at(), Screen::Summary);
+    assert_eq!(spool.nav.at(), screen("programs"));
+    assert_eq!(sending.nav.at(), Screen::SUMMARY);
     assert_ne!(
         spool.nav.at(),
         sending.nav.at(),
@@ -236,18 +237,18 @@ fn the_two_buffers_a_finding_can_be_about_do_not_walk_to_the_same_place() {
 fn a_jump_to_an_object_that_is_no_longer_in_the_reading_says_so_instead_of_moving() {
     let mut app = app();
     app.view.found.findings[0].finding_key = "port.listen|tcp|0.0.0.0:9999".into();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
 
     press(&mut app, KeyCode::Char('o'));
 
-    assert_eq!(app.nav.at(), Screen::Findings, "nothing moved");
+    assert_eq!(app.nav.at(), Screen::FINDINGS, "nothing moved");
     assert!(drawn(&app).contains("gone since"), "{}", drawn(&app));
 }
 
 #[test]
 fn escape_after_o_comes_back_to_the_finding_it_was_pressed_on() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
     press(&mut app, KeyCode::Down);
     press(&mut app, KeyCode::Down);
     let left_on = app
@@ -258,11 +259,11 @@ fn escape_after_o_comes_back_to_the_finding_it_was_pressed_on() {
     app.view.found.findings[2].finding_key = "port.listen|tcp|0.0.0.0:4444".into();
 
     press(&mut app, KeyCode::Char('o'));
-    assert_eq!(app.nav.at(), Screen::Ports);
+    assert_eq!(app.nav.at(), screen("ports"));
 
     press(&mut app, KeyCode::Esc);
 
-    assert_eq!(app.nav.at(), Screen::Findings);
+    assert_eq!(app.nav.at(), Screen::FINDINGS);
     assert_eq!(
         app.selected_finding().expect("back on a finding").event_id,
         left_on,
@@ -273,17 +274,17 @@ fn escape_after_o_comes_back_to_the_finding_it_was_pressed_on() {
 #[test]
 fn a_jump_remembers_one_place_and_forgets_it_once_it_has_been_used() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
 
     press(&mut app, KeyCode::Char('o'));
     press(&mut app, KeyCode::Esc);
-    assert_eq!(app.nav.at(), Screen::Findings);
+    assert_eq!(app.nav.at(), Screen::FINDINGS);
 
     press(&mut app, KeyCode::Esc);
 
     assert_eq!(
         app.nav.at(),
-        Screen::Home,
+        Screen::HOME,
         "the second Escape from the same rung is the ladder, not the ring"
     );
 }
@@ -292,36 +293,36 @@ fn a_jump_remembers_one_place_and_forgets_it_once_it_has_been_used() {
 fn walking_into_a_section_from_the_main_screen_leaves_nothing_for_escape_to_come_back_to() {
     let mut app = app();
 
-    press(&mut app, number(Screen::Ports));
+    press(&mut app, number(screen("ports")));
     press(&mut app, KeyCode::Esc);
 
-    assert_eq!(app.nav.at(), Screen::Home);
+    assert_eq!(app.nav.at(), Screen::HOME);
 }
 
 #[test]
 fn changing_section_by_its_number_forgets_where_the_jump_came_from() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
     press(&mut app, KeyCode::Char('o'));
-    assert_eq!(app.nav.at(), Screen::Ports);
+    assert_eq!(app.nav.at(), screen("ports"));
 
-    press(&mut app, number(Screen::Accounts));
+    press(&mut app, number(screen("accounts")));
     press(&mut app, KeyCode::Esc);
 
-    assert_eq!(app.nav.at(), Screen::Home);
+    assert_eq!(app.nav.at(), Screen::HOME);
 }
 
 #[test]
 fn the_finding_that_is_no_longer_in_the_list_is_named_rather_than_returned_to_silently() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
 
     press(&mut app, KeyCode::Char('o'));
     app.view.found.findings.clear();
     app.settle();
     press(&mut app, KeyCode::Esc);
 
-    assert_eq!(app.nav.at(), Screen::Findings, "back where it came from");
+    assert_eq!(app.nav.at(), Screen::FINDINGS, "back where it came from");
     let page = drawn(&app);
     assert!(page.contains("no longer in the list"), "{page}");
     assert!(page.contains("500"), "and how many the agent keeps: {page}");
@@ -330,7 +331,7 @@ fn the_finding_that_is_no_longer_in_the_list_is_named_rather_than_returned_to_si
 #[test]
 fn while_a_jump_is_armed_the_hint_names_the_finding_rather_than_the_main_screen() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
 
     press(&mut app, KeyCode::Char('o'));
 

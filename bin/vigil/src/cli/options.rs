@@ -107,7 +107,7 @@ pub struct Opening {
 fn screen(name: &str) -> Result<Opening, String> {
     if name == DIFFERENCE {
         return Ok(Opening {
-            screen: Screen::Findings,
+            screen: Screen::FINDINGS,
             difference: true,
         });
     }

@@ -3,49 +3,23 @@ use std::collections::BTreeMap;
 use serde_json::{Value, json};
 use vigil_model::{CollectorStatus, Golden, Settled, Shape, Snapshot};
 
-fn rehearses(who: &str, fixture: &Snapshot) {
-    let shape = Shape::of(fixture);
-    if let Err(complaint) = Golden::snapshot(&fixture.source).check(who, &shape.written()) {
-        panic!("{complaint}");
-    }
-}
-
-fn fixtures() -> Vec<(&'static str, Snapshot)> {
-    vec![
-        ("the processes fixture", super::programs::processes()),
-        ("the persistence fixture", super::startup::persistence()),
-        ("the resources fixture", super::resources::resources()),
-        ("the files fixture", super::files::files()),
-        ("the launches fixture", super::launches::launches()),
-    ]
-}
-
 #[test]
-fn the_console_rehearses_on_the_shape_the_agent_actually_sends() {
-    for (who, fixture) in fixtures() {
-        rehearses(who, &fixture);
-    }
-}
-
-#[test]
-fn every_class_the_agent_can_send_has_a_row_on_some_screen() {
-    for (who, fixture) in fixtures() {
-        let sample = Golden::snapshot(&fixture.source)
-            .held()
-            .unwrap_or_else(|| panic!("{who} has no sample to rehearse on"));
-        let published: Shape = serde_json::from_str(&sample).expect("the sample parses");
-        let drawn = Shape::of(&fixture);
-
-        let missing: Vec<&String> = published
-            .classes
-            .keys()
-            .filter(|class| !drawn.classes.contains_key(*class))
-            .collect();
-        assert!(
-            missing.is_empty(),
-            "{who} carries no {missing:?} row and the agent sends one: a class nobody drew is a \
-             screen that answers 'there is nothing here'"
+fn every_reading_the_console_draws_is_the_one_the_module_that_took_it_publishes() {
+    for (collector, drawn) in [
+        ("resources", vigil_resources::fixture::resources()),
+        ("files", vigil_files::fixture::files()),
+        ("ports", vigil_network::fixture::ports()),
+        ("containers", vigil_containers::fixture::containers()),
+    ] {
+        assert_eq!(
+            drawn.source, collector,
+            "the console rehearses on the sample the module publishes, so a screen is never \
+             drawn against a reading nobody checked"
         );
+        let held = Golden::snapshot(collector)
+            .held()
+            .unwrap_or_else(|| panic!("{collector} has no shape on disk"));
+        assert_eq!(Shape::of(&drawn).written(), held);
     }
 }
 

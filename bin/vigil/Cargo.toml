@@ -11,10 +11,16 @@ path = "src/main.rs"
 [dependencies]
 vigil-model = { path = "../../crates/core/vigil-model" }
 vigil-view = { path = "../../crates/core/vigil-view" }
-vigil-ports = { path = "../../crates/collectors/vigil-ports" }
+vigil-module = { path = "../../crates/core/vigil-module" }
+vigil-network = { path = "../../crates/collectors/vigil-network" }
 vigil-users = { path = "../../crates/collectors/vigil-users" }
 vigil-firewall = { path = "../../crates/collectors/vigil-firewall" }
 vigil-containers = { path = "../../crates/collectors/vigil-containers" }
+vigil-persistence = { path = "../../crates/collectors/vigil-persistence" }
+vigil-processes = { path = "../../crates/collectors/vigil-processes" }
+vigil-launches = { path = "../../crates/collectors/vigil-launches" }
+vigil-resources = { path = "../../crates/collectors/vigil-resources" }
+vigil-files = { path = "../../crates/collectors/vigil-files" }
 clap.workspace = true
 ratatui = "0.30"
 serde_json.workspace = true

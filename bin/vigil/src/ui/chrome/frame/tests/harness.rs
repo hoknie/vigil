@@ -1,20 +1,12 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
-use crate::ui::chrome::frame::hints::Back;
 use crate::ui::chrome::frame::{Hints, render};
 use crate::ui::helpers::words::text;
-use crate::ui::{Level, Look, Screen, View, fixture};
+use crate::ui::{Look, Screen, View, fixture};
 
 pub(super) fn quiet() -> Hints<'static> {
-    Hints {
-        typing: false,
-        level: Level::List,
-        message: None,
-        back: Back::MainScreen,
-        panel: false,
-        choosing: false,
-    }
+    Hints::default()
 }
 
 pub(super) fn drawn(
@@ -33,7 +25,7 @@ pub(super) fn drawn_body() -> Rect {
     let mut buffer = Buffer::empty(Rect::new(0, 0, 100, 24));
     render(
         fixture::look(),
-        Screen::Findings,
+        Screen::FINDINGS,
         &fixture::view(),
         quiet(),
         buffer.area,

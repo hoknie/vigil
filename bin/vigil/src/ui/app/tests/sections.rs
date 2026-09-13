@@ -12,7 +12,7 @@ const DEGRADED: &str = "the owner of one socket could not be resolved";
 fn troubled(width: u16, height: u16) -> String {
     let mut app = on(
         &opened(&["ui", "--socket", "/nonexistent/vigil.sock"]),
-        Screen::Home,
+        Screen::HOME,
     );
     app.view = fixture::view_with_trouble();
     drawn_at(&app, width, height);
@@ -27,7 +27,7 @@ fn troubled_on_the_sick_row(width: u16, height: u16) -> String {
 fn with_the_panel(width: u16, height: u16, closed: bool) -> String {
     let mut app = on(
         &opened(&["ui", "--socket", "/nonexistent/vigil.sock"]),
-        Screen::Home,
+        Screen::HOME,
     );
     app.view = fixture::view_with_trouble();
     drawn_at(&app, width, height);
@@ -42,7 +42,7 @@ fn with_the_panel(width: u16, height: u16, closed: bool) -> String {
 fn captured(width: u16) -> String {
     let mut app = App::new(
         &opened(&["capture", "--socket", "/nonexistent/vigil.sock"]),
-        opened(&["capture", "--socket", "/nonexistent/vigil.sock"]).opening(Screen::Home),
+        opened(&["capture", "--socket", "/nonexistent/vigil.sock"]).opening(Screen::HOME),
         fixture::monochrome(),
         Audience::Script,
     );
@@ -107,14 +107,14 @@ fn a_section_in_trouble_is_marked_with_the_cursor_on_it_and_with_the_cursor_away
 fn a_monochrome_page_marks_the_same_sections_as_a_coloured_one() {
     let mut app = on(
         &opened(&["ui", "--socket", "/nonexistent/vigil.sock"]),
-        Screen::Home,
+        Screen::HOME,
     );
     app.view = fixture::view_with_trouble();
     let plain = drawn_at(&app, 80, 30);
 
     let mut coloured = App::new(
         &opened(&["ui", "--socket", "/nonexistent/vigil.sock"]),
-        opened(&["ui", "--socket", "/nonexistent/vigil.sock"]).opening(Screen::Home),
+        opened(&["ui", "--socket", "/nonexistent/vigil.sock"]).opening(Screen::HOME),
         fixture::look().palette,
         Audience::Person,
     );
@@ -233,7 +233,7 @@ fn what_a_script_is_given_carries_every_reason_whether_a_panel_was_asked_for_or_
 fn the_summary_a_script_is_given_carries_every_reason_without_a_key_being_pressed() {
     let mut app = App::new(
         &opened(&["capture", "--socket", "/nonexistent/vigil.sock"]),
-        opened(&["capture", "--socket", "/nonexistent/vigil.sock"]).opening(Screen::Summary),
+        opened(&["capture", "--socket", "/nonexistent/vigil.sock"]).opening(Screen::SUMMARY),
         fixture::monochrome(),
         Audience::Script,
     );
@@ -253,7 +253,7 @@ fn the_summary_a_script_is_given_carries_every_reason_without_a_key_being_presse
 fn the_same_key_unfolds_what_a_row_says_on_both_tables_that_have_rows_with_something_to_say() {
     let mut app = on(
         &opened(&["ui", "--socket", "/nonexistent/vigil.sock"]),
-        Screen::Summary,
+        Screen::SUMMARY,
     );
     app.view = fixture::view_with_trouble();
     drawn_at(&app, 80, 60);

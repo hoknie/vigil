@@ -1,8 +1,9 @@
+use vigil_view::time_of_day;
+
 use ratatui::layout::Alignment;
 use ratatui::text::Line;
 use ratatui::widgets::Block;
 
-use crate::ui::helpers::words::moment;
 use crate::ui::{Look, Screen, View};
 
 pub(super) fn panel(look: Look, screen: Screen, view: &View, focused: bool) -> Block<'static> {
@@ -22,10 +23,7 @@ pub(super) fn panel(look: Look, screen: Screen, view: &View, focused: bool) -> B
     match (view.stale(), view.as_of()) {
         (Some(_), Some(when)) => block.title(
             Line::styled(
-                format!(
-                    " NOT ANSWERING · reading from {} ",
-                    moment::time_of_day(when)
-                ),
+                format!(" NOT ANSWERING · reading from {} ", time_of_day(when)),
                 look.palette.alarm(),
             )
             .alignment(Alignment::Right),
@@ -35,7 +33,7 @@ pub(super) fn panel(look: Look, screen: Screen, view: &View, focused: bool) -> B
         ),
         (None, Some(when)) => block.title(
             Line::styled(
-                format!(" as of {} ", moment::time_of_day(when)),
+                format!(" as of {} ", time_of_day(when)),
                 look.palette.quiet(),
             )
             .alignment(Alignment::Right),

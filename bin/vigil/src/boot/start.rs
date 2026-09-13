@@ -58,7 +58,7 @@ pub fn start(arguments: impl IntoIterator<Item = String>) -> ExitCode {
 fn capture(options: &Console) -> ExitCode {
     let mut app = App::new(
         options,
-        options.opening(Screen::Summary),
+        options.opening(Screen::SUMMARY),
         Palette::from_environment(),
         Audience::Script,
     );
@@ -77,7 +77,7 @@ fn capture(options: &Console) -> ExitCode {
 fn interactive(options: &Console) -> ExitCode {
     let mut app = App::new(
         options,
-        options.opening(Screen::Home),
+        options.opening(Screen::HOME),
         Palette::from_environment(),
         Audience::Person,
     );

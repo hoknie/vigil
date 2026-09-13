@@ -23,7 +23,7 @@ use ratatui::layout::Rect;
 use crate::link::Link;
 use std::collections::BTreeMap;
 
-use crate::ui::{Chooser, Filter, Gone, Level, Look, Nav, Nesting, Screen, Sorting, View};
+use crate::ui::{Chooser, Filter, Gone, Level, Look, Nav, Screen, Sorting, View};
 
 pub struct App {
     link: Link,
@@ -33,7 +33,6 @@ pub struct App {
     filter: Filter,
     detail_open: bool,
     level: Level,
-    startup_nesting: Nesting,
     gone: Option<Gone>,
     chooser: Chooser,
     sorting: BTreeMap<Screen, Sorting>,

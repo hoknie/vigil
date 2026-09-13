@@ -10,7 +10,7 @@ use crate::cli::{Console, Opening};
 use super::App;
 use crate::link::Link;
 
-use crate::ui::{Audience, Chooser, Filter, Level, Look, Nav, Nesting, Palette, Screen, View};
+use crate::ui::{Audience, Chooser, Filter, Level, Look, Nav, Palette, Screen, View};
 
 const REFRESH: Duration = Duration::from_secs(2);
 const TICK: Duration = Duration::from_millis(250);
@@ -26,7 +26,6 @@ impl App {
             filter: Filter::default(),
             detail_open: opening.difference,
             level: Level::default(),
-            startup_nesting: Nesting::default(),
             gone: None,
             chooser: Chooser::default(),
             sorting: Default::default(),
@@ -40,7 +39,7 @@ impl App {
             true => Level::Detail,
             false => Level::top(app.rungs()),
         };
-        if at != Screen::Home {
+        if at != Screen::HOME {
             app.remember_section(at);
         }
         app

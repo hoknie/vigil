@@ -1,4 +1,5 @@
-use crate::ui::helpers::words::moment;
+use vigil_view::time_of_day;
+
 use crate::ui::{Gone, Notice};
 
 pub fn out_of_the_reading(gone: &Gone) -> Notice {
@@ -31,7 +32,7 @@ fn said(notice: Notice, gone: &Gone) -> Notice {
         "The finding said: {} ({}), and the agent last had that row in front of it at {}.",
         gone.title,
         gone.kind,
-        moment::time_of_day(&gone.last_seen)
+        time_of_day(&gone.last_seen)
     ))
 }
 

@@ -1,11 +1,11 @@
 use ratatui::text::Line;
 use vigil_model::{AgentStatus, CollectorState, CollectorStatus};
+use vigil_view::time_of_day;
 
 use super::lines::note;
 use super::room::{ROOM_FOR_THE_NEXT_READING, ROOM_FOR_TWO_COLUMNS};
 use crate::ui::helpers::layout::column;
 use crate::ui::helpers::layout::section;
-use crate::ui::helpers::words::moment;
 use crate::ui::{Look, Report};
 
 pub(super) const NOT_REPORTED: &str = "not reported";
@@ -139,7 +139,7 @@ fn row(collector: &CollectorStatus) -> Cells {
         },
         next: match (off, collector.next_run_at.as_deref()) {
             (true, _) => nothing.clone(),
-            (false, Some(when)) => moment::time_of_day(when).to_string(),
+            (false, Some(when)) => time_of_day(when).to_string(),
             (false, None) => "not yet".to_string(),
         },
         last_read: match off {
@@ -147,7 +147,7 @@ fn row(collector: &CollectorStatus) -> Cells {
             false => collector
                 .last_run_at
                 .as_deref()
-                .map(moment::time_of_day)
+                .map(time_of_day)
                 .unwrap_or("never")
                 .to_string(),
         },

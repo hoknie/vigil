@@ -1,59 +1,8 @@
 use vigil_model::Finding;
 
-use crate::ui::Screen;
+use crate::ui::{Screen, modules};
 
-pub const SOCKETS: &str = "port.listen";
-
-pub const ACCOUNTS: &str = "user";
-
-pub const PROCESSES: &str = "process";
-
-pub const PERSISTENCE: &str = "persistence";
-
-pub const LAUNCHES: &str = "run";
-
-pub const SPOOL: &str = "agent.buffer";
-
-pub const FIREWALL: &str = "firewall";
-
-pub const RESOURCE: &str = "resource";
-
-pub const CONTAINER: &str = "container";
-
-pub const FILE: &str = "file";
-
-pub const DIRECTORY: &str = "directory";
-
-const DROPPING: &str = "launches|dropping";
-
-const AUDIT_SPOOL: &str = "launches";
-
-enum Reach {
-    Rest,
-    Whole,
-    Prefixed(&'static str),
-    OfTheHost,
-    Named,
-}
-
-const TABLE: &[(&str, Screen, Reach)] = &[
-    (SOCKETS, Screen::Ports, Reach::Rest),
-    (ACCOUNTS, Screen::Accounts, Reach::Rest),
-    (PROCESSES, Screen::Programs, Reach::Rest),
-    (PERSISTENCE, Screen::Startup, Reach::Rest),
-    (LAUNCHES, Screen::Programs, Reach::Whole),
-    (FIREWALL, Screen::Firewall, Reach::Prefixed(FIREWALL_ROW)),
-    (RESOURCE, Screen::System, Reach::OfTheHost),
-    (CONTAINER, Screen::Containers, Reach::Named),
-    (FILE, Screen::System, Reach::Whole),
-    (DIRECTORY, Screen::System, Reach::Whole),
-];
-
-const BOOT_ROW: &str = "boot|current";
-
-const FILESYSTEM_ROW: &str = "fs";
-
-const FIREWALL_ROW: &str = "fw-";
+const SPOOL: &str = "agent.buffer";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Anchor {
@@ -63,38 +12,28 @@ pub struct Anchor {
 
 impl Anchor {
     pub fn of(finding: &Finding) -> Option<Anchor> {
-        let (family, rest) = finding.finding_key.split_once('|')?;
-        if family == SPOOL {
-            return Some(match rest {
-                AUDIT_SPOOL => Anchor {
-                    screen: Screen::Programs,
-                    key: DROPPING.to_string(),
-                },
-                receiver => Anchor {
-                    screen: Screen::Summary,
-                    key: receiver.to_string(),
-                },
-            });
+        if let Some(anchor) = declared(&finding.finding_key) {
+            return Some(anchor);
         }
-        let (_, screen, reach) = TABLE.iter().find(|(named, _, _)| *named == family)?;
 
-        Some(Anchor {
-            screen: *screen,
-            key: match reach {
-                Reach::Rest => rest.to_string(),
-                Reach::Whole => finding.finding_key.clone(),
-                Reach::Prefixed(prefix) => format!("{prefix}{rest}"),
-                Reach::OfTheHost => match rest.split_once('|') {
-                    Some((_, mount)) => format!("{FILESYSTEM_ROW}|{mount}"),
-                    None => BOOT_ROW.to_string(),
-                },
-                Reach::Named => rest
-                    .split_once('|')
-                    .map(|(_, named)| named.to_string())
-                    .unwrap_or_else(|| rest.to_string()),
-            },
-        })
+        let (family, rest) = finding.finding_key.split_once('|')?;
+        match family == SPOOL {
+            true => Some(Anchor {
+                screen: Screen::SUMMARY,
+                key: rest.to_string(),
+            }),
+            false => None,
+        }
     }
+}
+
+fn declared(finding_key: &str) -> Option<Anchor> {
+    modules().into_iter().find_map(|module| {
+        let key = module.row_of(finding_key)?;
+        let screen = Screen::parse(module.section()?.name())?;
+
+        Some(Anchor { screen, key })
+    })
 }
 
 #[cfg(test)]
@@ -110,11 +49,19 @@ mod tests {
         finding
     }
 
+    fn onto(key: &str) -> Anchor {
+        Anchor::of(&keyed(key)).unwrap_or_else(|| panic!("{key} is a finding nobody can walk to"))
+    }
+
+    fn screen(name: &str) -> Screen {
+        Screen::parse(name).unwrap_or_else(|| panic!("{name} is not a section of this console"))
+    }
+
     #[test]
     fn a_finding_about_a_socket_points_at_that_socket_on_the_ports_screen() {
-        let anchor = Anchor::of(&keyed("port.listen|tcp|0.0.0.0:4444")).expect("a socket");
+        let anchor = onto("port.listen|tcp|0.0.0.0:4444");
 
-        assert_eq!(anchor.screen, Screen::Ports);
+        assert_eq!(anchor.screen, screen("ports"));
         assert_eq!(
             anchor.key, "tcp|0.0.0.0:4444",
             "the key is the collector's, so the row on the far screen is found by it"
@@ -128,34 +75,52 @@ mod tests {
             ("user|group|docker", "group|docker"),
             ("user|sshkey|deploy|SHA256:abc", "sshkey|deploy|SHA256:abc"),
         ] {
-            let anchor = Anchor::of(&keyed(key)).expect(key);
-            assert_eq!(anchor.screen, Screen::Accounts);
+            let anchor = onto(key);
+            assert_eq!(anchor.screen, screen("accounts"));
             assert_eq!(anchor.key, expected);
         }
     }
 
     #[test]
     fn every_family_of_rules_has_a_section_that_holds_its_object() {
-        for (key, screen) in [
-            ("port.listen|tcp|0.0.0.0:443", Screen::Ports),
-            ("user|account|deploy", Screen::Accounts),
-            ("process|exec|/bin/sh|www-data", Screen::Programs),
-            ("persistence|cron|/etc/crontab|root|/x", Screen::Startup),
-            ("run|alice|/usr/bin/nc", Screen::Programs),
-            ("agent.buffer|launches", Screen::Programs),
+        for (key, named) in [
+            ("port.listen|tcp|0.0.0.0:443", "ports"),
+            ("user|account|deploy", "accounts"),
+            ("process|exec|/bin/sh|www-data", "programs"),
+            ("persistence|cron|/etc/crontab|root|/x", "startup"),
+            ("run|alice|/usr/bin/nc", "programs"),
+            ("agent.buffer|launches", "programs"),
+            ("firewall|summary|nftables", "firewall"),
+            ("resource|disk|/var", "system"),
+            ("file|/etc/hosts", "system"),
+            ("directory|/usr/bin", "system"),
+            ("container|privileged|3ab1", "containers"),
         ] {
-            let anchor = Anchor::of(&keyed(key))
-                .unwrap_or_else(|| panic!("{key} is a finding a reader cannot walk to"));
-            assert_eq!(anchor.screen, screen, "{key}");
+            assert_eq!(onto(key).screen, screen(named), "{key}");
+        }
+    }
+
+    #[test]
+    fn every_family_any_module_of_this_build_raises_can_be_walked_to() {
+        for module in modules() {
+            for family in module.families() {
+                let key = format!("{family}|something|else");
+
+                assert!(
+                    Anchor::of(&keyed(&key)).is_some(),
+                    "{} raises {family} and a reader pressing o on it is told there is \
+                     nowhere to go",
+                    module.name()
+                );
+            }
         }
     }
 
     #[test]
     fn a_finding_about_a_launch_points_at_the_whole_key_because_that_family_adds_no_prefix() {
-        let anchor = Anchor::of(&keyed("run|alice|/usr/bin/nc")).expect("a launch");
-
         assert_eq!(
-            anchor.key, "run|alice|/usr/bin/nc",
+            onto("run|alice|/usr/bin/nc").key,
+            "run|alice|/usr/bin/nc",
             "the launches collector keys its own rows this way; cutting the first segment \
              would look for a row that was never written"
         );
@@ -163,13 +128,21 @@ mod tests {
 
     #[test]
     fn the_finding_about_a_dropping_spool_points_at_the_row_that_says_so() {
-        let anchor = Anchor::of(&keyed("agent.buffer|launches")).expect("a spool");
+        let anchor = onto("agent.buffer|launches");
 
-        assert_eq!(anchor.screen, Screen::Programs);
+        assert_eq!(anchor.screen, screen("programs"));
         assert_eq!(
             anchor.key, "launches|dropping",
             "the finding is keyed by the buffer and its object is the row about the loss"
         );
+    }
+
+    #[test]
+    fn a_buffer_no_module_owns_is_a_receiver_and_its_row_is_on_the_summary() {
+        let anchor = onto("agent.buffer|ndjson");
+
+        assert_eq!(anchor.screen, Screen::SUMMARY);
+        assert_eq!(anchor.key, "ndjson");
     }
 
     #[test]
@@ -183,10 +156,9 @@ mod tests {
             ),
             ("firewall|backend|legacy", "fw-backend|legacy"),
         ] {
-            let anchor = Anchor::of(&keyed(finding_key))
-                .unwrap_or_else(|| panic!("{finding_key} is a finding a reader cannot walk to"));
+            let anchor = onto(finding_key);
 
-            assert_eq!(anchor.screen, Screen::Firewall);
+            assert_eq!(anchor.screen, screen("firewall"));
             assert_eq!(
                 anchor.key, row,
                 "the rule reads the whole family: the finding names it with the word the \

@@ -24,7 +24,7 @@ pub(super) fn opened(line: &[&str]) -> Console {
 pub(super) fn app() -> App {
     on(
         &opened(&["ui", "--socket", "/nonexistent/vigil.sock"]),
-        Screen::Home,
+        Screen::HOME,
     )
 }
 

@@ -2,17 +2,11 @@ use super::App;
 
 use crate::ui::helpers::layout::split;
 use crate::ui::screens::{findings, home};
-use crate::ui::{Level, Offset, Origin, Program, Rungs, Screen, Startup, System, holding};
+use crate::ui::{Level, Offset, Origin, Rungs, Screen, holding};
 
 impl App {
     pub(super) fn rungs(&self) -> Rungs {
-        let menu = match self.section() {
-            Some(_) => self.shown_panes().len() > 1,
-            None => matches!(
-                self.nav.at(),
-                Screen::Programs | Screen::Startup | Screen::System
-            ),
-        };
+        let menu = self.section().is_some() && self.shown_panes().len() > 1;
 
         Rungs::new(menu, self.has_detail())
     }
@@ -71,7 +65,7 @@ impl App {
     }
 
     fn leave_section(&mut self) {
-        if self.nav.at() == Screen::Home {
+        if self.nav.at() == Screen::HOME {
             return;
         }
         match self.nav.came_back() {
@@ -81,7 +75,7 @@ impl App {
             }
             None => {
                 self.remember_section(self.nav.at());
-                self.nav.visit(Screen::Home);
+                self.nav.visit(Screen::HOME);
                 self.arrive();
                 self.refresh_wanted = true;
             }
@@ -102,7 +96,7 @@ impl App {
     }
 
     pub(super) fn open(&mut self) {
-        if self.nav.at() == Screen::Home {
+        if self.nav.at() == Screen::HOME {
             self.open_section();
             return;
         }
@@ -137,12 +131,6 @@ impl App {
                 if let Some(panes) = self.panes_mut() {
                     panes.step_along(by, &shown);
                 }
-            }
-            Screen::Programs => self.nav.lists.programs.step_along(by, Program::ALL),
-            Screen::System => self.nav.lists.system.step_along(by, System::ALL),
-            Screen::Startup => {
-                let shown = Startup::on(&self.view);
-                self.nav.lists.startup.step_along(by, &shown);
             }
             _ => {}
         }

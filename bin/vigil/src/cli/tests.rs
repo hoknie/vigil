@@ -2,6 +2,7 @@ use clap::{CommandFactory, Parser};
 
 use super::options::*;
 use crate::ui::Screen;
+use crate::ui::fixture::screen;
 
 fn parse(line: &[&str]) -> Result<Cli, clap::Error> {
     Cli::try_parse_from(std::iter::once("vigil").chain(line.iter().copied()))
@@ -42,7 +43,7 @@ fn opening_the_console_is_a_subcommand_with_the_flags_it_always_had() {
         ui(&["ui", "--screen", "findings", "--socket", "/tmp/v.sock"]).console,
         Console {
             socket: "/tmp/v.sock".to_string(),
-            screen: Some(plain(Screen::Findings)),
+            screen: Some(plain(Screen::FINDINGS)),
         }
     );
 }
@@ -50,20 +51,20 @@ fn opening_the_console_is_a_subcommand_with_the_flags_it_always_had() {
 #[test]
 fn the_console_opens_on_the_main_screen_and_a_script_still_gets_the_summary() {
     assert_eq!(
-        ui(&["ui"]).console.opening(Screen::Home),
-        plain(Screen::Home),
+        ui(&["ui"]).console.opening(Screen::HOME),
+        plain(Screen::HOME),
         "the main screen is the only door, so it is the one that opens"
     );
     assert_eq!(
-        capture(&["capture"]).opening(Screen::Summary),
-        plain(Screen::Summary),
+        capture(&["capture"]).opening(Screen::SUMMARY),
+        plain(Screen::SUMMARY),
         "a watch loop printing `vigil capture` prints the page it always printed"
     );
     assert_eq!(
         ui(&["ui", "--screen", "home"])
             .console
-            .opening(Screen::Summary),
-        plain(Screen::Home),
+            .opening(Screen::SUMMARY),
+        plain(Screen::HOME),
         "and what was asked for wins over either default"
     );
 }
@@ -71,16 +72,16 @@ fn the_console_opens_on_the_main_screen_and_a_script_still_gets_the_summary() {
 #[test]
 fn the_sections_a_script_could_already_ask_for_still_mean_what_they_meant() {
     for (asked, expected) in [
-        ("summary", Screen::Summary),
-        ("ports", Screen::Ports),
-        ("accounts", Screen::Accounts),
-        ("findings", Screen::Findings),
-        ("programs", Screen::Programs),
-        ("startup", Screen::Startup),
-        ("home", Screen::Home),
+        ("summary", Screen::SUMMARY),
+        ("ports", screen("ports")),
+        ("accounts", screen("accounts")),
+        ("findings", Screen::FINDINGS),
+        ("programs", screen("programs")),
+        ("startup", screen("startup")),
+        ("home", Screen::HOME),
     ] {
         assert_eq!(
-            capture(&["capture", "--screen", asked]).opening(Screen::Summary),
+            capture(&["capture", "--screen", asked]).opening(Screen::SUMMARY),
             plain(expected),
             "--screen {asked}"
         );
@@ -101,7 +102,7 @@ fn printing_a_page_is_a_command_of_its_own_and_takes_the_same_two_flags() {
         capture(&["capture", "--screen", "accounts", "--socket", "/tmp/v.sock"]),
         Console {
             socket: "/tmp/v.sock".to_string(),
-            screen: Some(plain(Screen::Accounts)),
+            screen: Some(plain(screen("accounts"))),
         }
     );
 }
@@ -174,14 +175,14 @@ fn the_name_of_a_screen_that_became_a_panel_still_works_and_opens_the_panel() {
     assert_eq!(
         ui(&["ui", "--screen", "difference"]).console.screen,
         Some(Opening {
-            screen: Screen::Findings,
+            screen: Screen::FINDINGS,
             difference: true
         })
     );
     assert_eq!(
         capture(&["capture", "--screen", "difference"]).screen,
         Some(Opening {
-            screen: Screen::Findings,
+            screen: Screen::FINDINGS,
             difference: true
         })
     );

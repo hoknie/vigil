@@ -4,12 +4,13 @@ use crate::ui::app::App;
 use crate::ui::{Level, Screen};
 
 use super::harness::{app, drawn, drawn_at, into, number, press};
+use crate::ui::fixture::screen;
 
 #[test]
 fn the_console_opens_on_the_main_screen_and_the_arrows_are_in_its_list() {
     let app = app();
 
-    assert_eq!(app.nav.at(), Screen::Home);
+    assert_eq!(app.nav.at(), Screen::HOME);
     assert_eq!(app.level, Level::List);
     assert!(
         drawn(&app).contains("What this agent watches"),
@@ -25,7 +26,7 @@ fn the_main_screen_opens_the_section_the_cursor_is_on() {
 
     press(&mut app, KeyCode::Enter);
 
-    assert_eq!(app.nav.at(), Screen::Accounts);
+    assert_eq!(app.nav.at(), screen("accounts"));
     assert_eq!(
         app.level,
         Level::Menu,
@@ -39,21 +40,21 @@ fn the_right_arrow_opens_a_section_the_way_enter_does() {
 
     press(&mut app, KeyCode::Right);
 
-    assert_eq!(app.nav.at(), Screen::Ports);
+    assert_eq!(app.nav.at(), screen("ports"));
 }
 
 #[test]
 fn escape_from_the_top_of_a_section_goes_to_the_main_screen_and_nowhere_else() {
-    for screen in Screen::ALL {
+    for screen in Screen::all() {
         let mut app = app();
-        press(&mut app, number(*screen));
-        assert_eq!(app.nav.at(), *screen);
+        press(&mut app, number(screen));
+        assert_eq!(app.nav.at(), screen);
 
         press(&mut app, KeyCode::Esc);
 
         assert_eq!(
             app.nav.at(),
-            Screen::Home,
+            Screen::HOME,
             "Escape from the top of {} went somewhere else",
             screen.name()
         );
@@ -69,7 +70,7 @@ fn escape_from_the_top_of_a_section_goes_to_the_main_screen_and_nowhere_else() {
 fn the_main_screen_holds_the_cursor_on_the_section_it_was_left_from() {
     let mut app = app();
 
-    press(&mut app, number(Screen::Startup));
+    press(&mut app, number(screen("startup")));
     press(&mut app, KeyCode::Esc);
 
     let page = drawn(&app);
@@ -82,17 +83,17 @@ fn the_main_screen_holds_the_cursor_on_the_section_it_was_left_from() {
 #[test]
 fn a_number_opens_its_section_from_every_rung_and_lands_on_that_section_s_top_one() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 200, 24);
+    into(&mut app, Screen::FINDINGS, 200, 24);
     press(&mut app, KeyCode::Enter);
     assert_eq!(app.level, Level::Detail);
 
-    press(&mut app, number(Screen::Accounts));
+    press(&mut app, number(screen("accounts")));
 
-    assert_eq!(app.nav.at(), Screen::Accounts);
+    assert_eq!(app.nav.at(), screen("accounts"));
     assert_eq!(app.level, Level::Menu);
 
-    press(&mut app, number(Screen::Summary));
-    assert_eq!(app.nav.at(), Screen::Summary);
+    press(&mut app, number(Screen::SUMMARY));
+    assert_eq!(app.nav.at(), Screen::SUMMARY);
     assert_eq!(
         app.level,
         Level::List,
@@ -103,29 +104,29 @@ fn a_number_opens_its_section_from_every_rung_and_lands_on_that_section_s_top_on
 #[test]
 fn a_digit_leaves_the_submenu_the_way_it_leaves_every_other_level() {
     let mut app = app();
-    press(&mut app, number(Screen::Accounts));
+    press(&mut app, number(screen("accounts")));
     assert_eq!(app.level, Level::Menu);
 
-    press(&mut app, number(Screen::Ports));
+    press(&mut app, number(screen("ports")));
 
-    assert_eq!(app.nav.at(), Screen::Ports);
+    assert_eq!(app.nav.at(), screen("ports"));
     assert_eq!(app.level, Level::Menu);
 }
 
 #[test]
 fn a_number_with_no_section_behind_it_changes_nothing() {
     let mut app = app();
-    press(&mut app, number(Screen::Ports));
+    press(&mut app, number(screen("ports")));
 
     press(&mut app, KeyCode::Char('0'));
 
-    assert_eq!(app.nav.at(), Screen::Ports);
+    assert_eq!(app.nav.at(), screen("ports"));
 }
 
 #[test]
 fn one_level_in_per_press_and_one_level_out_per_press() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 200, 24);
+    into(&mut app, Screen::FINDINGS, 200, 24);
     assert_eq!(app.level, Level::List);
 
     press(&mut app, KeyCode::Enter);
@@ -142,19 +143,19 @@ fn one_level_in_per_press_and_one_level_out_per_press() {
     press(&mut app, KeyCode::Esc);
     assert_eq!(
         app.nav.at(),
-        Screen::Findings,
+        Screen::FINDINGS,
         "that press put the panel away"
     );
     assert!(!app.detail_open);
 
     press(&mut app, KeyCode::Esc);
-    assert_eq!(app.nav.at(), Screen::Home);
+    assert_eq!(app.nav.at(), Screen::HOME);
 }
 
 #[test]
 fn the_first_press_back_out_of_a_detail_leaves_the_panel_open_beside_the_list() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 140, 24);
+    into(&mut app, Screen::FINDINGS, 140, 24);
     press(&mut app, KeyCode::Right);
     assert_eq!(app.level, Level::Detail);
 
@@ -172,7 +173,7 @@ fn the_first_press_back_out_of_a_detail_leaves_the_panel_open_beside_the_list() 
 #[test]
 fn the_second_press_back_puts_the_panel_away_and_gives_the_list_the_whole_width() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 140, 24);
+    into(&mut app, Screen::FINDINGS, 140, 24);
     press(&mut app, KeyCode::Right);
 
     press(&mut app, KeyCode::Left);
@@ -184,7 +185,7 @@ fn the_second_press_back_puts_the_panel_away_and_gives_the_list_the_whole_width(
     assert!(!page.contains("THE SELECTED FINDING"), "{page}");
     assert_eq!(
         app.nav.at(),
-        Screen::Findings,
+        Screen::FINDINGS,
         "and neither press also left the section"
     );
 }
@@ -192,21 +193,21 @@ fn the_second_press_back_puts_the_panel_away_and_gives_the_list_the_whole_width(
 #[test]
 fn the_third_press_back_is_the_one_that_leaves_the_section() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 140, 24);
+    into(&mut app, Screen::FINDINGS, 140, 24);
     press(&mut app, KeyCode::Right);
 
     for _ in 0..3 {
         press(&mut app, KeyCode::Left);
     }
 
-    assert_eq!(app.nav.at(), Screen::Home);
+    assert_eq!(app.nav.at(), Screen::HOME);
     assert!(!app.detail_open);
 }
 
 #[test]
 fn a_terminal_too_narrow_for_both_halves_puts_the_panel_away_on_the_first_press() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 80, 24);
+    into(&mut app, Screen::FINDINGS, 80, 24);
     press(&mut app, KeyCode::Right);
     assert_eq!(app.level, Level::Detail);
 
@@ -219,10 +220,10 @@ fn a_terminal_too_narrow_for_both_halves_puts_the_panel_away_on_the_first_press(
     );
     let page = drawn_at(&app, 80, 24);
     assert!(!page.contains("THE SELECTED FINDING"), "{page}");
-    assert_eq!(app.nav.at(), Screen::Findings);
+    assert_eq!(app.nav.at(), Screen::FINDINGS);
 
     press(&mut app, KeyCode::Left);
-    assert_eq!(app.nav.at(), Screen::Home, "and the next press is the rung");
+    assert_eq!(app.nav.at(), Screen::HOME, "and the next press is the rung");
 }
 
 #[test]
@@ -230,8 +231,8 @@ fn the_left_arrow_and_escape_mean_the_same_thing_on_every_rung() {
     for width in [80u16, 140] {
         let mut arrow = app();
         let mut escape = app();
-        into(&mut arrow, Screen::Findings, width, 24);
-        into(&mut escape, Screen::Findings, width, 24);
+        into(&mut arrow, Screen::FINDINGS, width, 24);
+        into(&mut escape, Screen::FINDINGS, width, 24);
         press(&mut arrow, KeyCode::Right);
         press(&mut escape, KeyCode::Right);
 
@@ -253,7 +254,7 @@ fn the_left_arrow_and_escape_mean_the_same_thing_on_every_rung() {
 fn walking_the_list_with_the_panel_open_keeps_it_open_because_the_two_are_read_against_each_other()
 {
     let mut app = app();
-    into(&mut app, Screen::Findings, 140, 24);
+    into(&mut app, Screen::FINDINGS, 140, 24);
     press(&mut app, KeyCode::Right);
     press(&mut app, KeyCode::Esc);
     assert_eq!(app.level, Level::List);
@@ -276,10 +277,10 @@ fn walking_the_list_with_the_panel_open_keeps_it_open_because_the_two_are_read_a
 #[test]
 fn the_left_arrow_on_the_row_of_lists_walks_along_it_and_never_out_of_the_section() {
     for screen in [
-        Screen::Ports,
-        Screen::Accounts,
-        Screen::Programs,
-        Screen::Startup,
+        screen("ports"),
+        screen("accounts"),
+        screen("programs"),
+        screen("startup"),
     ] {
         let mut app = app();
         into(&mut app, screen, 140, 24);
@@ -308,7 +309,7 @@ fn the_left_arrow_on_the_row_of_lists_walks_along_it_and_never_out_of_the_sectio
 #[test]
 fn the_arrows_move_whatever_has_them_and_nothing_else() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 200, 24);
+    into(&mut app, Screen::FINDINGS, 200, 24);
 
     press(&mut app, KeyCode::Down);
     assert_eq!(app.nav.findings.at(), 1);
@@ -323,7 +324,7 @@ fn the_arrows_move_whatever_has_them_and_nothing_else() {
 #[test]
 fn the_summary_has_nothing_behind_its_lines_so_right_is_the_end_of_travel() {
     let mut app = app();
-    into(&mut app, Screen::Summary, 200, 24);
+    into(&mut app, Screen::SUMMARY, 200, 24);
 
     press(&mut app, KeyCode::Right);
     press(&mut app, KeyCode::Enter);
@@ -335,7 +336,7 @@ fn the_summary_has_nothing_behind_its_lines_so_right_is_the_end_of_travel() {
 #[test]
 fn a_section_with_a_row_of_lists_puts_it_above_the_rows_and_below_nothing() {
     let mut app = app();
-    press(&mut app, number(Screen::Accounts));
+    press(&mut app, number(screen("accounts")));
     assert_eq!(app.level, Level::Menu, "it is the top rung of the section");
     assert!(
         drawn(&app).contains("[users]"),
@@ -349,17 +350,21 @@ fn a_section_with_a_row_of_lists_puts_it_above_the_rows_and_below_nothing() {
     press(&mut app, KeyCode::Esc);
     assert_eq!(app.level, Level::Menu, "and back out one rung at a time");
     press(&mut app, KeyCode::Esc);
-    assert_eq!(app.nav.at(), Screen::Home);
+    assert_eq!(app.nav.at(), Screen::HOME);
 }
 
 #[test]
 fn the_horizontal_arrows_walk_the_row_of_lists_and_leave_the_section_alone() {
     let mut app = app();
-    press(&mut app, number(Screen::Accounts));
+    press(&mut app, number(screen("accounts")));
 
     press(&mut app, KeyCode::Right);
     assert_eq!(app.panes().expect("a section").showing(), 1);
-    assert_eq!(app.nav.at(), Screen::Accounts, "the section did not change");
+    assert_eq!(
+        app.nav.at(),
+        screen("accounts"),
+        "the section did not change"
+    );
     assert!(drawn(&app).contains("[groups]"), "{}", drawn(&app));
 
     press(&mut app, KeyCode::Left);
@@ -381,12 +386,12 @@ fn opened_on(screen: Screen) -> App {
 
 #[test]
 fn the_arrow_up_from_the_first_row_of_any_section_climbs_out_to_the_main_screen() {
-    for screen in Screen::ALL {
-        let mut app = opened_on(*screen);
+    for screen in Screen::all() {
+        let mut app = opened_on(screen);
 
         for press_number in 1..=6 {
             press(&mut app, KeyCode::Up);
-            if app.nav.at() == Screen::Home {
+            if app.nav.at() == Screen::HOME {
                 break;
             }
             assert!(
@@ -400,7 +405,7 @@ fn the_arrow_up_from_the_first_row_of_any_section_climbs_out_to_the_main_screen(
 
         assert_eq!(
             app.nav.at(),
-            Screen::Home,
+            Screen::HOME,
             "{} never reached the main screen",
             screen.name()
         );
@@ -409,31 +414,31 @@ fn the_arrow_up_from_the_first_row_of_any_section_climbs_out_to_the_main_screen(
 
 #[test]
 fn escape_leaves_every_section_and_the_left_arrow_leaves_the_ones_with_no_row_of_names() {
-    for screen in Screen::ALL {
-        let mut app = opened_on(*screen);
+    for screen in Screen::all() {
+        let mut app = opened_on(screen);
 
         for _ in 0..6 {
             press(&mut app, KeyCode::Esc);
-            if app.nav.at() == Screen::Home {
+            if app.nav.at() == Screen::HOME {
                 break;
             }
         }
 
         assert_eq!(
             app.nav.at(),
-            Screen::Home,
+            Screen::HOME,
             "Esc does not leave {}",
             screen.name()
         );
     }
 
-    for screen in Screen::ALL {
-        let mut app = opened_on(*screen);
+    for screen in Screen::all() {
+        let mut app = opened_on(screen);
         let along_a_row_of_names = app.rungs().menu;
 
         for _ in 0..6 {
             press(&mut app, KeyCode::Left);
-            if app.nav.at() == Screen::Home {
+            if app.nav.at() == Screen::HOME {
                 break;
             }
         }
@@ -441,14 +446,14 @@ fn escape_leaves_every_section_and_the_left_arrow_leaves_the_ones_with_no_row_of
         match along_a_row_of_names {
             true => assert_eq!(
                 app.nav.at(),
-                *screen,
+                screen,
                 "on a section with a row of names ← walks the names, and ↑ or Esc is the way \
                  out: {} left under a key that means something else there",
                 screen.name()
             ),
             false => assert_eq!(
                 app.nav.at(),
-                Screen::Home,
+                Screen::HOME,
                 "{} has no row of names, so ← means what Esc means and has to leave it",
                 screen.name()
             ),
@@ -458,20 +463,20 @@ fn escape_leaves_every_section_and_the_left_arrow_leaves_the_ones_with_no_row_of
 
 #[test]
 fn a_panel_opened_on_a_row_is_put_away_before_the_section_is_and_never_holds_the_reader() {
-    for screen in Screen::ALL {
-        let mut app = opened_on(*screen);
+    for screen in Screen::all() {
+        let mut app = opened_on(screen);
         press(&mut app, KeyCode::Right);
 
         for _ in 0..6 {
             press(&mut app, KeyCode::Up);
-            if app.nav.at() == Screen::Home {
+            if app.nav.at() == Screen::HOME {
                 break;
             }
         }
 
         assert_eq!(
             app.nav.at(),
-            Screen::Home,
+            Screen::HOME,
             "{} keeps the reader once a detail has been opened on it",
             screen.name()
         );
@@ -486,7 +491,7 @@ fn the_main_screen_is_the_top_and_the_arrow_up_on_its_first_row_goes_nowhere() {
 
     press(&mut app, KeyCode::Up);
 
-    assert_eq!(app.nav.at(), Screen::Home);
+    assert_eq!(app.nav.at(), Screen::HOME);
     assert!(
         !app.leaving,
         "the way out of the console is q, not the arrows"

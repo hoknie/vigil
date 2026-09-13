@@ -1,6 +1,5 @@
 use vigil_model::Finding;
-
-use crate::ui::helpers::words::moment;
+use vigil_view::time_of_day;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Column {
@@ -38,13 +37,13 @@ impl Column {
         match self {
             Column::Any => format!(
                 "{} {} {} {} {}",
-                moment::time_of_day(&finding.observed_at),
+                time_of_day(&finding.observed_at),
                 finding.severity.as_str(),
                 finding.kind.as_str(),
                 finding.title,
                 finding.finding_key
             ),
-            Column::Time => moment::time_of_day(&finding.observed_at).to_string(),
+            Column::Time => time_of_day(&finding.observed_at).to_string(),
             Column::Severity => finding.severity.as_str().to_string(),
             Column::Kind => finding.kind.as_str().to_string(),
             Column::Title => finding.title.clone(),

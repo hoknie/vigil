@@ -90,7 +90,7 @@ impl App {
     }
 
     fn searching(&mut self) {
-        if self.nav.at() == Screen::Home {
+        if self.nav.at() == Screen::HOME {
             self.message = Some(home::SEARCH_LIVES_IN_A_LIST.to_string());
             return;
         }

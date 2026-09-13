@@ -9,12 +9,11 @@ use crate::ui::chrome::chooser;
 use crate::ui::chrome::frame;
 use crate::ui::chrome::frame::hints::Back;
 use crate::ui::chrome::help;
-use crate::ui::details::{pieces, program, reading, section, startup};
+use crate::ui::details::{pieces, section};
 use crate::ui::helpers::finding::diff;
 use crate::ui::helpers::layout::split;
 use crate::ui::helpers::words::unreachable;
-use crate::ui::screens::startup as starting;
-use crate::ui::screens::{findings, home, pane, programs, summary, system};
+use crate::ui::screens::{findings, home, pane, summary};
 use crate::ui::theme::caption;
 use crate::ui::{Arrows, Level, Screen, holding};
 
@@ -33,6 +32,11 @@ impl App {
                 back: self.back(),
                 panel: self.detail_showing(self.body.get()) || self.showing_why(),
                 choosing: self.choosing(),
+                sorts: !self.sortable().is_empty(),
+                arranges: self
+                    .pane()
+                    .and_then(|pane| pane.arrangements().first().map(|one| one.key)),
+                to_object: self.nav.at() == Screen::FINDINGS,
             },
             area,
             buffer,
@@ -73,7 +77,7 @@ impl App {
 
     pub(super) fn back(&self) -> Back {
         match (self.nav.at(), self.nav.came_from()) {
-            (Screen::Home, _) => Back::Nowhere,
+            (Screen::HOME, _) => Back::Nowhere,
             (_, Some(_)) => Back::Finding,
             (_, None) => Back::MainScreen,
         }
@@ -81,8 +85,8 @@ impl App {
 
     pub(super) fn draw_screen(&self, body: Rect, buffer: &mut Buffer) {
         match self.nav.at() {
-            Screen::Home => self.draw_home(body, buffer),
-            Screen::Summary => summary::render(
+            Screen::HOME => self.draw_home(body, buffer),
+            Screen::SUMMARY => summary::render(
                 &self.view,
                 self.look,
                 self.nav.summary.top(),
@@ -264,15 +268,6 @@ impl App {
                     );
                 }
             }
-            Screen::Programs => match self.look.interactive() {
-                true => programs::render(&self.view, self.look, &self.running(), area, buffer),
-                false => self.print_every_list(area, buffer),
-            },
-            Screen::Startup => match self.look.interactive() {
-                true => starting::render(&self.view, self.look, &self.starting(), area, buffer),
-                false => self.print_every_list(area, buffer),
-            },
-            Screen::System => system::render(&self.view, self.look, &self.made_of(), area, buffer),
             _ => findings::render(&self.view, self.look, &self.found(), area, buffer),
         }
     }
@@ -281,34 +276,6 @@ impl App {
         match self.nav.at() {
             screen if holding(screen.name()).is_some() => pieces::render(
                 &self.pane_detail(),
-                self.look,
-                self.nav.difference.top(),
-                area,
-                buffer,
-            ),
-            Screen::Programs => {
-                let rows = self.programs_rows();
-                program::render(
-                    rows.get(self.nav.lists.programs.at()),
-                    self.running_list(),
-                    self.look,
-                    self.nav.difference.top(),
-                    area,
-                    buffer,
-                )
-            }
-            Screen::Startup => {
-                let rows = self.startup_rows();
-                startup::render(
-                    rows.get(self.nav.lists.startup.at()),
-                    self.look,
-                    self.nav.difference.top(),
-                    area,
-                    buffer,
-                )
-            }
-            Screen::System => reading::render(
-                self.reading_subject(),
                 self.look,
                 self.nav.difference.top(),
                 area,
@@ -326,11 +293,8 @@ impl App {
 
     pub(super) fn list_caption(&self) -> &'static str {
         match self.nav.at() {
-            Screen::Home => "SECTIONS",
+            Screen::HOME => "SECTIONS",
             screen if holding(screen.name()).is_some() => self.pane_caption(),
-            Screen::Programs => self.nav.lists.programs.showing().caption(),
-            Screen::Startup => self.nav.lists.startup.showing().caption(),
-            Screen::System => self.nav.lists.system.showing().caption(),
             _ => "FINDINGS",
         }
     }
@@ -338,9 +302,6 @@ impl App {
     pub(super) fn detail_caption(&self) -> &'static str {
         match self.nav.at() {
             screen if holding(screen.name()).is_some() => self.pane_detail_caption(),
-            Screen::Programs => self.nav.lists.programs.showing().detail(),
-            Screen::Startup => self.nav.lists.startup.showing().detail(),
-            Screen::System => self.nav.lists.system.showing().detail(),
             _ => "THE SELECTED FINDING",
         }
     }

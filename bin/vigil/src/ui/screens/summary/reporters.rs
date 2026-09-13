@@ -1,11 +1,11 @@
 use ratatui::text::Line;
 use vigil_model::{AgentStatus, BufferStatus, ReporterStatus};
+use vigil_view::{bytes, time_of_day};
 
 use super::collectors::{MARK, NOT_REPORTED};
 use super::lines::note;
 use crate::ui::helpers::layout::column;
 use crate::ui::helpers::layout::section;
-use crate::ui::helpers::words::{moment, size};
 use crate::ui::{Look, Report};
 
 pub(super) fn reporters(report: &mut Report, agent: &AgentStatus, look: Look, width: usize) {
@@ -51,7 +51,7 @@ pub(super) fn reporters(report: &mut Report, agent: &AgentStatus, look: Look, wi
                     reporter
                         .last_sent_at
                         .as_deref()
-                        .map(moment::time_of_day)
+                        .map(time_of_day)
                         .unwrap_or("never"),
                     10
                 ),
@@ -92,7 +92,7 @@ fn says(reporter: &ReporterStatus, held: Option<&BufferStatus>) -> Vec<String> {
              oldest went to make room. What was dropped was never sent and is on no screen. {}",
             buffer.dropped_total,
             buffer.pending_ceiling,
-            size::bytes(buffer.bytes_ceiling),
+            bytes(buffer.bytes_ceiling),
             holding(buffer)
         )),
         Some(buffer) if buffer.pending > 0 => said.push(format!(
@@ -113,10 +113,10 @@ fn holding(buffer: &BufferStatus) -> String {
         "{} of {} finding(s) are waiting to go, {} of {}{}.",
         buffer.pending,
         buffer.pending_ceiling,
-        size::bytes(buffer.bytes),
-        size::bytes(buffer.bytes_ceiling),
+        bytes(buffer.bytes),
+        bytes(buffer.bytes_ceiling),
         match &buffer.oldest_at {
-            Some(oldest) => format!(", the oldest found at {}", moment::time_of_day(oldest)),
+            Some(oldest) => format!(", the oldest found at {}", time_of_day(oldest)),
             None => String::new(),
         }
     )
