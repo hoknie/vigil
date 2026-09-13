@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use vigil_rules::{CLOCK_SKEW_SECONDS, DISK_FREE_PERCENT, INODE_FREE_PERCENT, ResourceLimits};
+use vigil_resources::{CLOCK_SKEW_SECONDS, DISK_FREE_PERCENT, INODE_FREE_PERCENT};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default, deny_unknown_fields)]
@@ -20,14 +20,6 @@ impl Default for ResourceThresholds {
 }
 
 impl ResourceThresholds {
-    pub fn limits(&self) -> ResourceLimits {
-        ResourceLimits {
-            clock_skew_seconds: i64::from(self.clock_skew_seconds),
-            disk_free_percent: u64::from(self.disk_free_percent),
-            inode_free_percent: u64::from(self.inode_free_percent),
-        }
-    }
-
     pub fn check(&self) -> Result<(), String> {
         if self.clock_skew_seconds == 0 {
             return Err(
@@ -55,24 +47,35 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_file_that_says_nothing_about_the_limits_runs_on_the_ones_the_rules_declare() {
+    fn a_file_that_says_nothing_about_the_limits_runs_on_the_ones_the_module_declares() {
         let written = ResourceThresholds::default();
 
-        assert_eq!(written.limits(), ResourceLimits::default());
+        assert_eq!(written.clock_skew_seconds, CLOCK_SKEW_SECONDS);
+        assert_eq!(written.disk_free_percent, DISK_FREE_PERCENT);
+        assert_eq!(written.inode_free_percent, INODE_FREE_PERCENT);
         assert_eq!(written.clock_skew_seconds, 300);
     }
 
     #[test]
-    fn a_limit_a_file_names_is_the_one_the_rules_are_built_with() {
+    fn a_limit_a_file_names_is_the_one_the_module_is_handed() {
         let named = ResourceThresholds {
             clock_skew_seconds: 30,
             disk_free_percent: 25,
             inode_free_percent: 5,
         };
+        let config = crate::Config {
+            resources: named,
+            ..crate::Config::default()
+        };
 
-        assert_eq!(named.limits().clock_skew_seconds, 30);
-        assert_eq!(named.limits().disk_free_percent, 25);
-        assert_eq!(named.limits().inode_free_percent, 5);
+        assert_eq!(
+            config.of_the_module("resources"),
+            serde_json::json!({
+                "clock_skew_seconds": 30,
+                "disk_free_percent": 25,
+                "inode_free_percent": 5,
+            })
+        );
     }
 
     #[test]

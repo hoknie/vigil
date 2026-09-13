@@ -123,7 +123,7 @@ fn watching(name: &str, health: Health, readings: Vec<Snapshot>) -> Watching {
         round: Round {
             watches: vec![Watch::new(
                 Box::new(Handed(collector.clone())),
-                vigil_ports::Ports
+                vigil_network::Ports
                     .rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
             )],
             store: FileStore::open(&directory).expect("opens"),

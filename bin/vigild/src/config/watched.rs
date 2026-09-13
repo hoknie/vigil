@@ -1,15 +1,5 @@
 use serde::{Deserialize, Serialize};
-
-pub const CEILING_BYTES: u64 = 1024 * 1024;
-
-const WATCHED_BY_DEFAULT: &[&str] = &[
-    "/etc/ssh/sshd_config",
-    "/etc/pam.d/sshd",
-    "/etc/pam.d/su",
-    "/etc/nsswitch.conf",
-    "/etc/login.defs",
-    "/etc/hosts",
-];
+use vigil_files::{CEILING_BYTES, WATCHED_BY_DEFAULT};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default, deny_unknown_fields)]

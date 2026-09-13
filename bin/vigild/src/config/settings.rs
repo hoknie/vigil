@@ -51,6 +51,22 @@ impl Config {
         crate::modules::every_seconds_of(collector).unwrap_or(WHEN_NOTHING_SAYS_OTHERWISE)
     }
 
+    pub fn of_the_module(&self, key: &str) -> serde_json::Value {
+        match key {
+            "launches" => serde_json::json!({ "record_arguments": self.record_launch_arguments }),
+            "resources" => serde_json::json!({
+                "clock_skew_seconds": self.resources.clock_skew_seconds,
+                "disk_free_percent": self.resources.disk_free_percent,
+                "inode_free_percent": self.resources.inode_free_percent,
+            }),
+            "files" => serde_json::json!({
+                "paths": self.files.paths,
+                "ceiling_bytes": self.files.ceiling_bytes,
+            }),
+            _ => serde_json::Value::Null,
+        }
+    }
+
     pub fn every_seconds_by_default(&self) -> u32 {
         self.interval_seconds.unwrap_or(WHEN_NOTHING_SAYS_OTHERWISE)
     }

@@ -139,7 +139,7 @@ mod tests {
         ];
         let mut watch = Watch::new(
             Box::new(Scripted(Mutex::new(script))),
-            vigil_ports::Ports.rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
+            vigil_network::Ports.rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
         );
 
         let baseline = watch.tick().expect("first reading");
@@ -170,7 +170,7 @@ mod tests {
         ])];
         let mut watch = Watch::new(
             Box::new(Scripted(Mutex::new(script))),
-            vigil_ports::Ports.rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
+            vigil_network::Ports.rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
         );
         watch.restore(snapshot(&[("tcp|0.0.0.0:443", nginx())]));
 
@@ -189,7 +189,7 @@ mod tests {
         ];
         let mut watch = Watch::new(
             Box::new(Scripted(Mutex::new(script))),
-            vigil_ports::Ports.rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
+            vigil_network::Ports.rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
         );
 
         watch.tick().expect("baseline");
