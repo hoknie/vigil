@@ -1,4 +1,5 @@
 use vigil_model::{Golden, Settled};
+use vigil_module::Settings;
 
 use super::{every_seconds_of, is_known, modules, names, subject_of, unit_of, watched};
 
@@ -109,5 +110,57 @@ fn a_finding_is_answered_for_by_the_module_that_raised_it_and_by_no_other() {
                 "{key} is answered for by {answering:?}"
             );
         }
+    }
+}
+
+#[test]
+fn a_module_that_names_a_key_of_its_own_refuses_a_key_inside_it_that_it_does_not_know() {
+    let at_noon = || "2026-09-13T12:00:00.000Z".to_string();
+    let mut named = 0;
+
+    for module in modules() {
+        let Some(key) = module.settings_key() else {
+            continue;
+        };
+        named += 1;
+
+        assert!(
+            module
+                .check(&Settings::of(at_noon, key, serde_json::json!({})))
+                .is_ok(),
+            "{key}: a block with nothing in it is a module left on its own values"
+        );
+        let refusal = module
+            .check(&Settings::of(
+                at_noon,
+                key,
+                serde_json::json!({"nothing-of-the-sort": 1}),
+            ))
+            .expect_err(&format!(
+                "{key}: a key this module never heard of is read as silence, and an operator \
+                 who misspelled one is told nothing"
+            ));
+        assert!(refusal.contains("nothing-of-the-sort"), "{key}: {refusal}");
+    }
+
+    assert!(
+        named > 0,
+        "no module names a key, so this guard reads nothing"
+    );
+}
+
+#[test]
+fn a_module_with_no_key_of_its_own_is_handed_nothing_and_is_content_with_it() {
+    let at_noon = || "2026-09-13T12:00:00.000Z".to_string();
+
+    for module in modules() {
+        if module.settings_key().is_some() {
+            continue;
+        }
+        assert!(
+            module.check(&Settings::plain(at_noon)).is_ok(),
+            "{} takes no settings and refuses to start without them",
+            module.name()
+        );
     }
 }

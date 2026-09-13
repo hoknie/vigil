@@ -39,6 +39,28 @@ impl Default for Watching {
     }
 }
 
+impl Watching {
+    pub fn check(&self) -> Result<(), String> {
+        if self.ceiling_bytes == 0 {
+            return Err(
+                "ceiling_bytes: 0 hashes nothing, and a file nobody hashes is a file nobody \
+                 watches"
+                    .to_string(),
+            );
+        }
+        for path in &self.paths {
+            if !path.starts_with('/') {
+                return Err(format!(
+                    "paths: {path:?} is not an absolute path, and this agent reads no working \
+                     directory of its own"
+                ));
+            }
+        }
+
+        Ok(())
+    }
+}
+
 pub struct Files;
 
 impl Module for Files {
@@ -56,6 +78,12 @@ impl Module for Files {
 
     fn settings_key(&self) -> Option<&'static str> {
         Some("files")
+    }
+
+    fn check(&self, settings: &Settings) -> Result<(), String> {
+        let watching: Watching = settings.read().map_err(|refusal| refusal.to_string())?;
+
+        watching.check()
     }
 
     fn collector(&self, settings: &Settings) -> Result<Box<dyn Collector>, String> {

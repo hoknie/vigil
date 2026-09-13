@@ -146,7 +146,8 @@ interval_seconds: 3
 collectors: [launches]
 schedule: {launches: 3}
 suppressions: []
-record_launch_arguments: false
+launches:
+  record_arguments: false
 reporters:
   - kind: ndjson
     path: $FINDINGS

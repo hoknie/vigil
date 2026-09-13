@@ -34,6 +34,26 @@ impl Default for Thresholds {
 }
 
 impl Thresholds {
+    pub fn check(&self) -> Result<(), String> {
+        if self.clock_skew_seconds == 0 {
+            return Err(
+                "clock_skew_seconds: 0 reports every reading as a clock that moved".to_string(),
+            );
+        }
+        for (named, percent) in [
+            ("disk_free_percent", self.disk_free_percent),
+            ("inode_free_percent", self.inode_free_percent),
+        ] {
+            if percent > 100 {
+                return Err(format!(
+                    "{named}: {percent} is more than a filesystem can have free"
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn limits(&self) -> ResourceLimits {
         ResourceLimits {
             clock_skew_seconds: i64::from(self.clock_skew_seconds),
@@ -60,6 +80,12 @@ impl Module for Resources {
 
     fn settings_key(&self) -> Option<&'static str> {
         Some("resources")
+    }
+
+    fn check(&self, settings: &Settings) -> Result<(), String> {
+        let thresholds: Thresholds = settings.read().map_err(|refusal| refusal.to_string())?;
+
+        thresholds.check()
     }
 
     fn collector(&self, settings: &Settings) -> Result<Box<dyn Collector>, String> {

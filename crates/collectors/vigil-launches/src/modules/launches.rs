@@ -34,6 +34,12 @@ impl Module for Launches {
         Some("launches")
     }
 
+    fn check(&self, settings: &Settings) -> Result<(), String> {
+        let _: Watching = settings.read().map_err(|refusal| refusal.to_string())?;
+
+        Ok(())
+    }
+
     fn collector(&self, settings: &Settings) -> Result<Box<dyn Collector>, String> {
         reading(settings)
     }

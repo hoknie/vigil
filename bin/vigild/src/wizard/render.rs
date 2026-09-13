@@ -1,3 +1,5 @@
+use vigil_launches::Watching;
+
 use super::prose::{WIDTH, comment, indented_comment, wrap};
 use super::{Surveyed, periods};
 use crate::Config;
@@ -19,7 +21,7 @@ pub fn configuration(taken_at: &str, survey: &[Surveyed], defaults: &Config) -> 
     out.push('\n');
     out.push_str(SUPPRESSIONS);
     out.push('\n');
-    out.push_str(&arguments(defaults));
+    out.push_str(&arguments());
 
     out
 }
@@ -118,7 +120,7 @@ const SUPPRESSIONS: &str = "\
 suppressions: []
 ";
 
-fn arguments(defaults: &Config) -> String {
+fn arguments() -> String {
     let mut out = String::new();
     for line in [
         "Whether a finding about a program launch may carry the arguments the command was given.".to_string(),
@@ -127,9 +129,10 @@ fn arguments(defaults: &Config) -> String {
     ] {
         out.push_str(&comment(&line));
     }
+    out.push_str("launches:\n");
     out.push_str(&format!(
-        "record_launch_arguments: {}\n",
-        defaults.record_launch_arguments
+        "  record_arguments: {}\n",
+        Watching::default().record_arguments
     ));
     out
 }

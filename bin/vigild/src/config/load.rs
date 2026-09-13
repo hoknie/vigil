@@ -1,18 +1,26 @@
 use std::fmt;
 
+use vigil_module::Settings;
 use vigil_report::SyslogFacility;
 
-use super::{Config, Receiver};
+use super::{Config, Receiver, split};
+use crate::helpers::rfc3339;
 
 pub fn load(path: &str) -> Result<Config, ConfigError> {
     let text = std::fs::read_to_string(path).map_err(|e| ConfigError {
         path: path.to_string(),
         cause: e.to_string(),
     })?;
-    let config: Config = serde_yaml::from_str(&text).map_err(|e| ConfigError {
+    let read = split::read(&text, &keys()).map_err(|cause| ConfigError {
         path: path.to_string(),
-        cause: e.to_string(),
+        cause,
     })?;
+    let mut config: Config =
+        serde_yaml::from_value(read.of_the_daemon).map_err(|e| ConfigError {
+            path: path.to_string(),
+            cause: e.to_string(),
+        })?;
+    config.of_the_modules = read.of_the_modules;
 
     for (index, suppression) in config.suppressions.iter().enumerate() {
         suppression.validate().map_err(|cause| ConfigError {
@@ -49,15 +57,17 @@ pub fn load(path: &str) -> Result<Config, ConfigError> {
         cause,
     })?;
 
-    config.resources.check().map_err(|cause| ConfigError {
-        path: path.to_string(),
-        cause,
-    })?;
-
-    config.files.check().map_err(|cause| ConfigError {
-        path: path.to_string(),
-        cause,
-    })?;
+    for module in crate::modules::modules() {
+        let Some(key) = module.settings_key() else {
+            continue;
+        };
+        module
+            .check(&Settings::of(rfc3339::now, key, config.of_the_module(key)))
+            .map_err(|cause| ConfigError {
+                path: path.to_string(),
+                cause: format!("{key}: {cause}"),
+            })?;
+    }
 
     for (index, receiver) in config.reporters.iter().enumerate() {
         if let Receiver::Syslog { facility } = receiver {
@@ -69,6 +79,13 @@ pub fn load(path: &str) -> Result<Config, ConfigError> {
     }
 
     Ok(config)
+}
+
+fn keys() -> Vec<&'static str> {
+    crate::modules::modules()
+        .iter()
+        .filter_map(|module| module.settings_key())
+        .collect()
 }
 
 #[derive(Debug)]
@@ -241,6 +258,57 @@ mod tests {
         let error = load(path.to_str().expect("utf-8")).expect_err("must not be accepted");
 
         assert!(error.cause.contains("named twice"), "{error}");
+    }
+
+    #[test]
+    fn a_value_a_module_refuses_stops_the_daemon_at_the_door_and_not_at_the_first_reading() {
+        let dir = std::env::temp_dir().join("vigil-config-test");
+        std::fs::create_dir_all(&dir).expect("temp dir");
+        let path = dir.join("module-value.yaml");
+        std::fs::write(&path, "resources:\n  disk_free_percent: 101\n").expect("write");
+
+        let error = load(path.to_str().expect("utf-8")).expect_err("must not be accepted");
+
+        assert!(error.cause.contains("resources"), "{error}");
+        assert!(error.cause.contains("disk_free_percent"), "{error}");
+    }
+
+    #[test]
+    fn a_misspelled_key_inside_a_module_block_is_refused_by_the_module_that_owns_it() {
+        let dir = std::env::temp_dir().join("vigil-config-test");
+        std::fs::create_dir_all(&dir).expect("temp dir");
+        let path = dir.join("module-typo.yaml");
+        std::fs::write(&path, "files:\n  celing_bytes: 2048\n").expect("write");
+
+        let error = load(path.to_str().expect("utf-8")).expect_err("must not be ignored");
+
+        assert!(error.cause.contains("celing_bytes"), "{error}");
+        assert!(
+            error.cause.contains("files"),
+            "the message says whose key it was: {error}"
+        );
+    }
+
+    #[test]
+    fn a_module_block_the_file_names_reaches_the_module_and_not_the_daemons_own_fields() {
+        let dir = std::env::temp_dir().join("vigil-config-test");
+        std::fs::create_dir_all(&dir).expect("temp dir");
+        let path = dir.join("module-block.yaml");
+        std::fs::write(
+            &path,
+            "retention_days: 5\nlaunches:\n  record_arguments: true\n",
+        )
+        .expect("write");
+
+        let config = load(path.to_str().expect("utf-8")).expect("parses");
+
+        assert_eq!(config.retention_days, 5);
+        assert_eq!(
+            config.of_the_module("launches"),
+            serde_json::json!({"record_arguments": true}),
+            "the daemon carries the block whole and hands it over: what is in it is between \
+             the module and the operator"
+        );
     }
 
     #[test]

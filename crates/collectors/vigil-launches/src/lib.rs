@@ -8,7 +8,7 @@ mod spool;
 mod types;
 mod views;
 
-pub use modules::Launches;
+pub use modules::{Launches, Watching};
 pub use spool::{
     CEILING_BYTES, Cursor, PLUGIN_CONFIG_PATH, Report, SPOOL_PATH, SpoolWriter, cursor_path,
     dropped_note,

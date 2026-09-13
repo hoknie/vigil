@@ -20,6 +20,10 @@ pub trait Module: Send + Sync {
         None
     }
 
+    fn check(&self, _settings: &Settings) -> Result<(), String> {
+        Ok(())
+    }
+
     fn collector(&self, settings: &Settings) -> Result<Box<dyn Collector>, String>;
 
     fn rules(&self, settings: &Settings) -> RuleSet;
