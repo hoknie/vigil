@@ -51,7 +51,7 @@ impl Rule for LaunchSpoolDrained {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rules::fixture;
+    use crate::fixture;
     use crate::rules::launches::LaunchSpoolDropping;
 
     fn apply(change: &Change) -> Option<Finding> {

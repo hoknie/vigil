@@ -9,6 +9,11 @@ mod ports;
 mod spool;
 mod types;
 
+pub use helpers::{
+    Redacted, absent, decode, encode_unpadded, hex, holds_files_of_this_host, redact, sha256,
+    shown_to_the_agent, split_command, steadied, unescaped,
+};
+pub use parsers::{PasswdEntry, parse_passwd, parse_passwd_entries};
 pub use ports::Collector;
 pub use types::{
     COLLECTORS, CollectError, Health, KnownCollector, Presence, collector_names,
@@ -22,6 +27,5 @@ pub use spool::{
 
 #[cfg(target_os = "linux")]
 pub use collectors::{
-    ContainersCollector, FilesCollector, FirewallCollector, LaunchesCollector,
-    PersistenceCollector, PortsCollector, ProcessesCollector, ResourcesCollector, UsersCollector,
+    FilesCollector, LaunchesCollector, PersistenceCollector, ProcessesCollector, ResourcesCollector,
 };

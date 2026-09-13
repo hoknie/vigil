@@ -4,7 +4,7 @@ use serde_json::{Value, json};
 use vigil_model::Snapshot;
 
 use super::reading::LaunchReading;
-use crate::parsers::processes::redact;
+use crate::helpers::redact;
 
 pub const SOURCE: &str = "launches";
 

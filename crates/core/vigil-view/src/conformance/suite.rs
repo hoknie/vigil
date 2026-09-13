@@ -38,7 +38,7 @@ pub fn a_pane_draws_a_cell_for_every_column_it_declares(pane: &dyn Pane, reading
 
 pub fn every_row_the_pane_offers_is_in_the_reading(pane: &dyn Pane, reading: &Snapshot) {
     for row in pane.rows(reading, &Showing::default()) {
-        if !row.selectable {
+        if !row.of_the_reading {
             continue;
         }
         assert!(
@@ -55,7 +55,7 @@ pub fn nothing_is_shown_twice_under_one_key(pane: &dyn Pane, reading: &Snapshot)
     let rows = pane.rows(reading, &Showing::default());
     let mut keys: Vec<&str> = rows
         .iter()
-        .filter(|row| row.selectable)
+        .filter(|row| row.of_the_reading)
         .map(|row| row.key.as_str())
         .collect();
     let total = keys.len();
@@ -79,7 +79,7 @@ pub fn what_the_pane_shows_of_a_row_is_more_than_the_row_itself(
         return;
     }
     for row in pane.rows(reading, &Showing::default()) {
-        if !row.selectable {
+        if !row.of_the_reading {
             continue;
         }
         assert!(
@@ -92,7 +92,17 @@ pub fn what_the_pane_shows_of_a_row_is_more_than_the_row_itself(
     }
 }
 
+pub fn a_pane_says_what_to_write_over_it_and_over_the_row_it_opens(pane: &dyn Pane) {
+    assert!(
+        !pane.caption().is_empty() && !pane.detail_caption().is_empty(),
+        "{} draws a list and a detail with nothing written over either: the captions are \
+         what tells a reader which of the two the keys are moving in",
+        pane.name()
+    );
+}
+
 pub fn run_all(pane: &dyn Pane, reading: &Snapshot) {
+    a_pane_says_what_to_write_over_it_and_over_the_row_it_opens(pane);
     a_pane_reads_the_snapshot_it_says_it_reads(pane, reading);
     a_pane_draws_a_cell_for_every_column_it_declares(pane, reading);
     every_row_the_pane_offers_is_in_the_reading(pane, reading);
@@ -100,7 +110,7 @@ pub fn run_all(pane: &dyn Pane, reading: &Snapshot) {
     what_the_pane_shows_of_a_row_is_more_than_the_row_itself(pane, reading);
 
     assert!(
-        !pane.tally(reading, 0).is_empty(),
+        !pane.tally(reading, &Showing::default(), 0).is_empty(),
         "{} draws a footer with nothing in it: the tally is where a reader learns how much of \
          the reading the screen is showing",
         pane.name()

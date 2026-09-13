@@ -5,7 +5,7 @@ pub struct RowKey {
     pub key: String,
     pub emphasis: Emphasis,
     pub depth: u8,
-    pub selectable: bool,
+    pub of_the_reading: bool,
 }
 
 impl RowKey {
@@ -14,7 +14,7 @@ impl RowKey {
             key: key.into(),
             emphasis: Emphasis::Plain,
             depth: 0,
-            selectable: true,
+            of_the_reading: true,
         }
     }
 
@@ -26,9 +26,9 @@ impl RowKey {
         RowKey { depth, ..self }
     }
 
-    pub fn heading(self) -> RowKey {
+    pub fn of_its_own(self) -> RowKey {
         RowKey {
-            selectable: false,
+            of_the_reading: false,
             ..self
         }
     }

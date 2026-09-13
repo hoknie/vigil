@@ -72,7 +72,7 @@ fn lasted(was: Option<i64>, now: Option<i64>) -> Evidence {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rules::fixture;
+    use crate::fixture;
 
     const ONE_BOOT: &str = "1f0ec2b4-6c8a-4f2b-9c0e-0b2d4a7f5e31";
 

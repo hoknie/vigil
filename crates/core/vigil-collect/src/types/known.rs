@@ -8,18 +8,6 @@ pub struct KnownCollector {
 
 pub const COLLECTORS: &[KnownCollector] = &[
     KnownCollector {
-        name: "ports",
-        subject: "the sockets this host listens on, and the process holding each one",
-        every_seconds: 30,
-        unit: None,
-    },
-    KnownCollector {
-        name: "users",
-        subject: "who may log in to this host, as whom, and with what",
-        every_seconds: 300,
-        unit: None,
-    },
-    KnownCollector {
         name: "persistence",
         subject: "what the host starts by itself: units, timers, cron, shell profiles",
         every_seconds: 300,
@@ -32,20 +20,8 @@ pub const COLLECTORS: &[KnownCollector] = &[
         unit: None,
     },
     KnownCollector {
-        name: "firewall",
-        subject: "the rules by which this host lets network in and drops it",
-        every_seconds: 60,
-        unit: Some("vigil-firewall.timer"),
-    },
-    KnownCollector {
         name: "resources",
         subject: "the boot this host is running, the moment it started and the size of it",
-        every_seconds: 60,
-        unit: None,
-    },
-    KnownCollector {
-        name: "containers",
-        subject: "the containers running on this host, what they may do and what of this host they hold",
         every_seconds: 60,
         unit: None,
     },
@@ -96,34 +72,6 @@ pub fn names() -> Vec<&'static str> {
 mod tests {
     use super::*;
 
-    use vigil_model::{Golden, Settled};
-
-    fn declared() -> Settled {
-        let mut pinned = Settled::new("collectors");
-
-        for collector in COLLECTORS {
-            pinned = pinned.pinning(
-                collector.name,
-                "every_seconds",
-                collector.every_seconds,
-                format!(
-                    "the period {} is declared with among the collectors this build ships",
-                    collector.name
-                ),
-            );
-        }
-
-        pinned
-    }
-
-    #[test]
-    fn the_period_a_collector_declares_is_published_for_the_screens_that_show_it() {
-        if let Err(complaint) = Golden::settled("collectors").write_or_check(&declared().written())
-        {
-            panic!("{complaint}");
-        }
-    }
-
     #[test]
     fn a_name_is_in_the_list_once_and_says_what_it_watches() {
         let mut seen = names();
@@ -145,9 +93,9 @@ mod tests {
     #[test]
     fn a_collector_that_needs_something_running_on_the_host_names_it_rather_than_a_command_guessing()
      {
-        assert_eq!(unit_of("firewall"), Some("vigil-firewall.timer"));
+        assert_eq!(unit_of("nothing-of-ours"), None);
         assert_eq!(
-            unit_of("ports"),
+            unit_of("processes"),
             None,
             "a collector that reads /proc needs nothing started for it, and a command that \
              asked a list of its own would have to be edited every time one of these appears"
@@ -167,7 +115,7 @@ mod tests {
 
     #[test]
     fn a_name_nobody_has_is_not_known() {
-        assert!(is_known("ports"));
+        assert!(is_known("processes"));
         assert!(!is_known("proccesses"));
         assert_eq!(subject_of("proccesses"), None);
         assert_eq!(every_seconds_of("proccesses"), None);
@@ -189,24 +137,20 @@ mod tests {
         }
 
         assert_eq!(every_seconds_of("launches"), Some(15));
-        assert_eq!(every_seconds_of("ports"), Some(30));
-        assert_eq!(every_seconds_of("firewall"), Some(60));
         assert_eq!(every_seconds_of("processes"), Some(30));
-        assert_eq!(every_seconds_of("users"), Some(300));
         assert_eq!(every_seconds_of("persistence"), Some(300));
         assert_eq!(every_seconds_of("resources"), Some(60));
-        assert_eq!(every_seconds_of("containers"), Some(60));
         assert_eq!(every_seconds_of("files"), Some(300));
     }
 
     #[test]
     fn a_subject_that_outlives_a_reboot_is_read_less_often_than_one_that_does_not() {
-        let transient = every_seconds_of("ports").expect("ports");
+        let transient = every_seconds_of("processes").expect("processes");
         let lasting = every_seconds_of("persistence").expect("persistence");
 
         assert!(
             transient < lasting,
-            "a socket exists between two readings or it never existed; a unit waits"
+            "a process exists between two readings or it never existed; a unit waits"
         );
     }
 }

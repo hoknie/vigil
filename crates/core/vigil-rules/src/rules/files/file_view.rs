@@ -82,11 +82,11 @@ impl<'a> FileView<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rules::fixture;
+    use crate::fixture;
 
     #[test]
     fn an_item_of_another_collector_belongs_to_no_family_here() {
-        let socket = fixture::socket("0.0.0.0", 443, "/usr/sbin/nginx", "root");
+        let socket = fixture::of_another_collector("tcp|0.0.0.0:443");
 
         assert_eq!(FileView::new("tcp|0.0.0.0:443", &socket).family(), None);
         assert_eq!(FileView::new("fs|/var", &socket).family(), None);

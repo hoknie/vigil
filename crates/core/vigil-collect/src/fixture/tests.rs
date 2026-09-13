@@ -2,22 +2,10 @@ use vigil_model::{Golden, Shape, Snapshot, class_of};
 
 use crate::COLLECTORS;
 
-use super::{
-    accounts, containers, files, firewall, launches, persistence, ports, processes, resources,
-};
+use super::{files, launches, persistence, processes, resources};
 
 fn readings() -> Vec<Snapshot> {
-    vec![
-        ports(),
-        accounts(),
-        processes(),
-        persistence(),
-        firewall(),
-        launches(),
-        resources(),
-        containers(),
-        files(),
-    ]
+    vec![processes(), persistence(), launches(), resources(), files()]
 }
 
 fn document(reading: &Snapshot) -> String {
@@ -98,9 +86,6 @@ fn a_reading_that_could_not_be_finished_says_so_in_a_row_of_its_own() {
         "launches|dropping",
         "launches|source",
         "modules|unreadable",
-        "unix|unnamed",
-        "sshkey|backup|unreadable",
-        "session-source|utmp",
     ] {
         assert!(
             all.iter().any(|key| *key == marker),

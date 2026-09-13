@@ -1,15 +1,21 @@
 mod absence;
 mod base64;
+mod cmdline;
 mod escapes;
+mod filesystems;
 mod hex;
 mod jitter;
 mod private_tmp;
 mod sha256;
+mod words;
 
 pub use absence::absent;
 pub use base64::{decode, encode_unpadded};
+pub use cmdline::{Redacted, redact};
 pub use escapes::unescaped;
+pub use filesystems::holds_files_of_this_host;
 pub use hex::hex;
 pub use jitter::steadied;
 pub use private_tmp::shown_to_the_agent;
 pub use sha256::sha256;
+pub use words::split_command;

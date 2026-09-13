@@ -12,7 +12,9 @@ fn main() {
             .unwrap_or(0)
     }
 
-    let name = std::env::args().nth(1).unwrap_or_else(|| "ports".into());
+    let name = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "processes".into());
     let rounds: u32 = std::env::args()
         .nth(2)
         .and_then(|value| value.parse().ok())
@@ -20,13 +22,9 @@ fn main() {
 
     let now = || "2026-09-09T12:00:00.000Z".to_string();
     let collector: Box<dyn Collector> = match name.as_str() {
-        "ports" => Box::new(vigil_collect::PortsCollector::new(now)),
-        "users" => Box::new(vigil_collect::UsersCollector::new(now)),
         "persistence" => Box::new(vigil_collect::PersistenceCollector::new(now)),
         "processes" => Box::new(vigil_collect::ProcessesCollector::new(now)),
-        "firewall" => Box::new(vigil_collect::FirewallCollector::new(now)),
         "resources" => Box::new(vigil_collect::ResourcesCollector::new(now)),
-        "containers" => Box::new(vigil_collect::ContainersCollector::new(now)),
         "files" => Box::new(vigil_collect::FilesCollector::new(
             now,
             &[

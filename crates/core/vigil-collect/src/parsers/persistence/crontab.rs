@@ -1,5 +1,5 @@
-use crate::parsers::processes::redact;
-use crate::parsers::processes::split_command;
+use crate::helpers::redact;
+use crate::helpers::split_command;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CronEntry {

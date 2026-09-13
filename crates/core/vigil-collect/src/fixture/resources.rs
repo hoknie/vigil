@@ -1,8 +1,9 @@
+use crate::helpers::holds_files_of_this_host;
 use vigil_model::Snapshot;
 
 use crate::parsers::{
-    Filesystem, MountPoint, ResourcesReading, free_percent_step, holds_files_of_this_host,
-    parse_boot_id, parse_meminfo, parse_mounts, parse_uptime_seconds, resources_snapshot,
+    Filesystem, MountPoint, ResourcesReading, free_percent_step, parse_boot_id, parse_meminfo,
+    parse_mounts, parse_uptime_seconds, resources_snapshot,
 };
 
 const BOOT_ID: &str = "1f0ec2b4-6c8a-4f2b-9c0e-0b2d4a7f5e31\n";

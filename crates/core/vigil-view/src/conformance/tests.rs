@@ -13,6 +13,10 @@ impl Pane for Listening {
         "flat"
     }
 
+    fn caption(&self) -> &'static str {
+        "LISTENING"
+    }
+
     fn about(&self) -> &'static str {
         "every socket this host listens on"
     }
@@ -43,7 +47,7 @@ impl Pane for Listening {
         vec![crate::Piece::field("key", row.key.clone())]
     }
 
-    fn tally(&self, reading: &Snapshot, _shown: usize) -> String {
+    fn tally(&self, reading: &Snapshot, _showing: &Showing<'_>, _shown: usize) -> String {
         format!("{} sockets", reading.items.len())
     }
 

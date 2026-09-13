@@ -6,6 +6,7 @@ license.workspace = true
 
 [dependencies]
 vigil-model = { path = "../vigil-model" }
+serde_json.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

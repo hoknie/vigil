@@ -1,6 +1,6 @@
 use super::links::{Setting, UnitLinks};
-use crate::parsers::processes::redact;
-use crate::parsers::processes::split_command;
+use crate::helpers::redact;
+use crate::helpers::split_command;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct UnitFacts {

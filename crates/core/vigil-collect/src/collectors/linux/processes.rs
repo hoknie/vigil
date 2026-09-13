@@ -3,8 +3,9 @@ use std::io::ErrorKind;
 
 use vigil_model::{Rfc3339, Snapshot};
 
+use crate::helpers::redact;
 use crate::parsers::{
-    ProcessRow, ProcessesReading, parse_passwd, parse_status, processes_snapshot, redact,
+    ProcessRow, ProcessesReading, parse_passwd, parse_status, processes_snapshot,
 };
 use crate::{CollectError, Collector, Health};
 

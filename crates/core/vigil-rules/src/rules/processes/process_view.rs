@@ -122,12 +122,12 @@ impl<'a> ProcessView<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rules::fixture;
+    use crate::fixture;
 
     #[test]
     fn an_item_of_another_collector_is_not_a_program() {
-        let socket = fixture::socket("0.0.0.0", 443, "/usr/sbin/nginx", "root");
-        let account = fixture::account("deploy", 1000, "/bin/bash");
+        let socket = fixture::of_another_collector("tcp|0.0.0.0:443");
+        let account = fixture::of_another_collector("account|deploy");
         let unit = fixture::unit("nginx.service", "/usr/sbin/nginx", "root");
 
         assert!(!ProcessView::new(&socket).is_program());

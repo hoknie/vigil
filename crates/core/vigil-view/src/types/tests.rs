@@ -15,23 +15,31 @@ fn a_column_the_terminal_has_no_room_for_is_not_offered_to_the_renderer() {
 }
 
 #[test]
-fn a_row_that_is_only_a_heading_is_not_a_row_the_cursor_can_land_on() {
-    let heading = RowKey::of("/usr/bin/nc").heading();
+fn a_row_a_pane_made_up_says_so_and_is_never_looked_for_in_the_reading() {
+    let heading = RowKey::of("program|/usr/bin/nc").of_its_own();
     let socket = RowKey::of("tcp|0.0.0.0:443");
 
-    assert!(!heading.selectable);
-    assert!(socket.selectable);
+    assert!(
+        !heading.of_the_reading,
+        "a heading a pane groups rows under is not an item the collector wrote, and a \
+         finding must never be walked to it"
+    );
+    assert!(socket.of_the_reading);
 }
 
 #[test]
-fn a_pane_that_offers_no_toggles_is_shown_whole_rather_than_shown_empty() {
-    let showing = Showing::default();
+fn a_pane_whose_filter_nobody_has_touched_is_shown_whole_rather_than_shown_empty() {
+    let untouched = Showing::default();
+    let hiding = Showing::default().hiding(&["udp"]);
 
     assert!(
-        showing.wants("tcp"),
-        "an empty choice is every choice: a pane whose filter nobody has touched must draw \
-         its rows, not none of them"
+        untouched.wants("udp"),
+        "what the reader has switched off is what is hidden; a reader who has switched off \
+         nothing is shown everything"
     );
+    assert!(hiding.wants("tcp"));
+    assert!(!hiding.wants("udp"));
+    assert!(hiding.narrowed());
 }
 
 #[test]

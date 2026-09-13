@@ -2,9 +2,9 @@ use std::fs;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
+use crate::helpers::holds_files_of_this_host;
 use crate::parsers::{
-    MemoryFacts, MountPoint, holds_files_of_this_host, parse_boot_id, parse_meminfo, parse_mounts,
-    parse_uptime_seconds,
+    MemoryFacts, MountPoint, parse_boot_id, parse_meminfo, parse_mounts, parse_uptime_seconds,
 };
 
 pub(super) const BOOT_ID: &str = "sys/kernel/random/boot_id";

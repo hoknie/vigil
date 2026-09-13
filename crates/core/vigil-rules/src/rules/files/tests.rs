@@ -1,6 +1,6 @@
 use vigil_model::Change;
 
-use crate::rules::fixture;
+use crate::fixture;
 use crate::rules::verdict::files;
 
 #[test]

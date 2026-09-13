@@ -1,10 +1,5 @@
 use crate::helpers::unescaped;
 
-const LOCAL_FILESYSTEMS: &[&str] = &[
-    "btrfs", "exfat", "ext2", "ext3", "ext4", "f2fs", "jfs", "msdos", "ntfs", "ntfs3", "overlay",
-    "reiserfs", "tmpfs", "vfat", "xfs", "zfs",
-];
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MountPoint {
     pub source: String,
@@ -38,13 +33,10 @@ pub fn parse_mounts(text: &str) -> Vec<MountPoint> {
     mounted
 }
 
-pub fn holds_files_of_this_host(kind: &str) -> bool {
-    LOCAL_FILESYSTEMS.contains(&kind)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::helpers::holds_files_of_this_host;
 
     const FROM_A_SMALL_HOST: &str = "sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0\n\
          proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0\n\

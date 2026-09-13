@@ -1,6 +1,6 @@
 use vigil_model::Change;
 
-use crate::rules::fixture;
+use crate::fixture;
 use crate::rules::verdict::{resources, resources_tick};
 
 const ONE_BOOT: &str = "1f0ec2b4-6c8a-4f2b-9c0e-0b2d4a7f5e31";

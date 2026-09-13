@@ -82,7 +82,7 @@ impl Rule for InodesLow {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rules::fixture;
+    use crate::fixture;
 
     fn apply(change: &Change) -> Option<Finding> {
         let mut mint = || "event-1".to_string();

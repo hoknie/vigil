@@ -79,7 +79,7 @@ pub fn room(view: &ResourceView<'_>) -> Evidence {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rules::fixture;
+    use crate::fixture;
 
     #[test]
     fn a_finding_about_a_filesystem_names_the_mount_point_a_person_would_look_for() {
