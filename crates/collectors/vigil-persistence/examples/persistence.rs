@@ -1,8 +1,10 @@
 use std::time::Instant;
 
+#[cfg(target_os = "linux")]
 use vigil_module::{Module, Settings};
 use vigil_view::{Room, Section, Showing};
 
+#[cfg(target_os = "linux")]
 const TAKEN_AT: &str = "2026-09-13T12:00:00.000Z";
 const ROUNDS: u32 = 200;
 const WINDOW: usize = 40;
@@ -15,10 +17,10 @@ fn main() {
 #[cfg(target_os = "linux")]
 fn reading() {
     let settings = Settings::plain(|| TAKEN_AT.to_string());
-    let collector = match vigil_containers::Containers.collector(&settings) {
+    let collector = match vigil_persistence::Persistence.collector(&settings) {
         Ok(collector) => collector,
         Err(why) => {
-            println!("containers: {why}");
+            println!("persistence: {why}");
             return;
         }
     };
@@ -26,13 +28,13 @@ fn reading() {
     let started = Instant::now();
     let Ok(first) = collector.collect() else {
         println!(
-            "containers: nothing to read here: {:?}",
+            "persistence: nothing to read here: {:?}",
             collector.available()
         );
         return;
     };
     println!(
-        "containers: first reading {:.2} ms, {} items, {} bytes as the baseline",
+        "persistence: first reading {:.2} ms, {} items, {} bytes as the baseline",
         started.elapsed().as_secs_f64() * 1000.0,
         first.items.len(),
         serde_json::to_string(&first).expect("serialises").len()
@@ -43,22 +45,22 @@ fn reading() {
         let _ = collector.collect();
     }
     println!(
-        "containers: {:.2} ms per reading over {ROUNDS}",
+        "persistence: {:.2} ms per reading over {ROUNDS}",
         started.elapsed().as_secs_f64() * 1000.0 / f64::from(ROUNDS)
     );
 }
 
 #[cfg(not(target_os = "linux"))]
 fn reading() {
-    println!("containers: this reading is taken on Linux; nothing to measure here");
+    println!("persistence: this reading is taken on Linux; nothing to measure here");
 }
 
 fn drawing() {
-    let reading = vigil_containers::fixture::containers();
+    let reading = vigil_persistence::fixture::persistence();
     let room = Room::of(160);
 
     println!("pane          rows ms  cells ms (a window of {WINDOW})");
-    for pane in vigil_containers::WhatRunsInContainers.panes() {
+    for pane in vigil_persistence::WhatStartsByItself.panes() {
         if !pane.shown(&reading) {
             continue;
         }
