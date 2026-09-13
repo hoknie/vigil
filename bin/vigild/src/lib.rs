@@ -12,4 +12,5 @@ mod types;
 mod wizard;
 
 pub use boot::{run, start};
-pub use config::{Config, ConfigError, Receiver, Suppression};
+pub use config::{Config, ConfigError, Receiver};
+pub use vigil_config::Suppression;

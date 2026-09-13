@@ -10,6 +10,13 @@ impl App {
     pub fn on_key(&mut self, code: KeyCode, modifiers: KeyModifiers) {
         let action = keys::action(code, modifiers, self.typing());
 
+        if self.asking().is_some() {
+            self.message = None;
+            self.walk_the_reason(action);
+            self.settle();
+            return;
+        }
+
         if self.choosing() {
             self.message = None;
             self.walk_the_choice(action);
@@ -33,11 +40,19 @@ impl App {
     pub(super) fn act(&mut self, action: Action) {
         match action {
             Action::Leave => self.leaving = true,
-            Action::Back => self.go_back(),
+            Action::Back => match self.picked_here() {
+                true => self.picked.clear(),
+                false => self.go_back(),
+            },
             Action::Refresh => self.refresh_wanted = true,
             Action::Go(screen) => self.visit(screen),
             Action::Sideways(by) => self.sideways(by),
-            Action::Move(motion) => self.move_within(motion),
+            Action::Move(motion) => {
+                self.picked.let_go();
+                self.move_within(motion)
+            }
+            Action::Pick(motion) => self.pick_along(motion),
+            Action::Gather(motion) => self.gather_along(motion),
             Action::Open => self.open(),
             Action::ToObject => self.jump_to_object(),
             Action::Sort => self.sorting(),
@@ -71,6 +86,17 @@ impl App {
 
     pub(super) fn choosing(&self) -> bool {
         self.chooser.choosing().is_some()
+    }
+
+    fn walk_the_reason(&mut self, action: Action) {
+        match action {
+            Action::Leave => self.leaving = true,
+            Action::Type(character) => self.typed_into_the_reason(character),
+            Action::Erase => self.erased_from_the_reason(),
+            Action::Accept => self.do_the_deed(),
+            Action::Abandon | Action::Back => self.left_the_reason(),
+            _ => {}
+        }
     }
 
     fn walk_the_choice(&mut self, action: Action) {

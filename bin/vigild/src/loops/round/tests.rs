@@ -109,6 +109,7 @@ fn watching(name: &str, health: Health, readings: Vec<Snapshot>) -> Watching {
     let directory = temporary_directory(name);
     let shared = Shared::new(State::new(
         Startup {
+            configuration_path: "/etc/vigil/vigil.yaml".to_string(),
             host: crate::socket::fixture::host(),
             started_at: "2026-09-11T09:00:00.000Z".into(),
             interval_seconds: 30,

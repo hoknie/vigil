@@ -1,6 +1,8 @@
 use std::path::Path;
 
-use super::{configuration, take, write};
+use vigil_config::write;
+
+use super::{configuration, take};
 use crate::Config;
 use crate::helpers::rfc3339;
 

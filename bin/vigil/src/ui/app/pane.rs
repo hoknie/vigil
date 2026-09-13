@@ -3,6 +3,7 @@ use vigil_view::{Pane, Piece, RowKey, Section};
 use super::App;
 
 use crate::ui::screens::pane;
+use crate::ui::screens::unknown::Unknown;
 use crate::ui::{Arrows, Panes, Reading, Screen, holding};
 
 impl App {
@@ -11,7 +12,10 @@ impl App {
     }
 
     pub(super) fn section_of(&self, screen: Screen) -> Option<Box<dyn Section>> {
-        holding(screen.name())
+        match screen == Screen::UNKNOWN {
+            true => Some(Box::new(Unknown::of(&self.view))),
+            false => holding(screen.name()),
+        }
     }
 
     pub(super) fn panes(&self) -> Option<&Panes> {
@@ -174,8 +178,9 @@ impl App {
         pane.detail(snapshot, row, self.look.text_width(self.body.get().width))
     }
 
-    pub(super) fn pane_caption(&self) -> &'static str {
-        self.pane().map_or("", |pane| pane.caption())
+    pub(super) fn pane_caption(&self) -> String {
+        self.pane()
+            .map_or_else(String::new, |pane| pane.caption().to_string())
     }
 
     pub(super) fn pane_detail_caption(&self) -> &'static str {

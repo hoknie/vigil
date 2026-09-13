@@ -93,13 +93,13 @@ fn the_console_asks_for_the_reading_behind_the_section_it_is_showing_and_no_othe
     let mut app = app();
 
     press(&mut app, number(screen("ports")));
-    assert_eq!(app.wanted_reading(), Some("ports"));
+    assert_eq!(app.wanted_reading().as_deref(), Some("ports"));
 
     press(&mut app, number(screen("accounts")));
-    assert_eq!(app.wanted_reading(), Some("users"));
+    assert_eq!(app.wanted_reading().as_deref(), Some("users"));
 
     press(&mut app, number(screen("startup")));
-    assert_eq!(app.wanted_reading(), Some("persistence"));
+    assert_eq!(app.wanted_reading().as_deref(), Some("persistence"));
 
     press(&mut app, number(Screen::FINDINGS));
     assert_eq!(
@@ -116,12 +116,12 @@ fn the_two_lists_of_one_section_belong_to_two_collectors_and_only_the_open_one_i
 
     press(&mut app, number(screen("programs")));
     assert_eq!(app.panes().expect("a section").showing(), 0);
-    assert_eq!(app.wanted_reading(), Some("processes"));
+    assert_eq!(app.wanted_reading().as_deref(), Some("processes"));
 
     press(&mut app, KeyCode::Right);
 
     assert_eq!(app.panes().expect("a section").showing(), 1);
-    assert_eq!(app.wanted_reading(), Some("launches"));
+    assert_eq!(app.wanted_reading().as_deref(), Some("launches"));
 }
 
 #[test]

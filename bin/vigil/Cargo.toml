@@ -10,6 +10,7 @@ path = "src/main.rs"
 
 [dependencies]
 vigil-model = { path = "../../crates/core/vigil-model" }
+vigil-config = { path = "../../crates/core/vigil-config" }
 vigil-view = { path = "../../crates/core/vigil-view" }
 vigil-module = { path = "../../crates/core/vigil-module" }
 vigil-network = { path = "../../crates/collectors/vigil-network" }

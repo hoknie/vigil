@@ -1636,6 +1636,7 @@ dependencies = [
  "clap",
  "ratatui",
  "serde_json",
+ "vigil-config",
  "vigil-containers",
  "vigil-files",
  "vigil-firewall",
@@ -1665,6 +1666,14 @@ dependencies = [
  "serde_json",
  "sha2",
  "vigil-model",
+]
+
+[[package]]
+name = "vigil-config"
+version = "1.0.6"
+dependencies = [
+ "serde",
+ "serde_yaml",
 ]
 
 [[package]]
@@ -1842,6 +1851,7 @@ dependencies = [
  "serde_yaml",
  "sha2",
  "vigil-collect",
+ "vigil-config",
  "vigil-containers",
  "vigil-files",
  "vigil-firewall",

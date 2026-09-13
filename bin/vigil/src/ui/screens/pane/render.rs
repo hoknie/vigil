@@ -23,7 +23,13 @@ pub fn render(
     buffer: &mut Buffer,
 ) {
     let panes = section.panes();
-    let Some(pane) = panes.get(showing.at.min(panes.len().saturating_sub(1))) else {
+    if panes.is_empty() {
+        crate::ui::Notice::plain("Nothing is listed here.")
+            .saying("The agent is not reporting a reading for this section.")
+            .render(look, area, buffer);
+        return;
+    }
+    let Some(pane) = panes.get(showing.at.min(panes.len() - 1)) else {
         return;
     };
 

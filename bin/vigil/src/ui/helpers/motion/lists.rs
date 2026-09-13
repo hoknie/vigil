@@ -20,6 +20,13 @@ impl Default for Lists {
 }
 
 impl Lists {
+    pub fn ready(&mut self, section: &'static str, count: usize) {
+        self.panes
+            .entry(section)
+            .or_insert_with(|| Panes::of(count))
+            .ready(count);
+    }
+
     pub fn of(&self, section: &str) -> Option<&Panes> {
         self.panes.get(section)
     }

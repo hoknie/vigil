@@ -3,6 +3,7 @@ use crate::ui::Level;
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Hints<'a> {
     pub typing: bool,
+    pub asking: Option<&'a str>,
     pub level: Level,
     pub message: Option<&'a str>,
     pub back: Back,

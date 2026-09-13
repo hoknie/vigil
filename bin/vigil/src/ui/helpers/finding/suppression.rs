@@ -5,18 +5,25 @@ pub fn snippet(finding: &Finding) -> Vec<String> {
 }
 
 pub fn entry(key: &str, kind: Option<&str>) -> Vec<String> {
-    let mut lines = vec![
-        "suppressions:".to_string(),
-        format!("  - finding_key: {}", quoted(key)),
-        "    reason: \"\"".to_string(),
-        "  # the reason is required: say why, in your own words.".to_string(),
-        "  # optional on that entry, either or both:".to_string(),
-    ];
-    if let Some(kind) = kind {
-        lines.push(format!("  #   kind: {kind}"));
-    }
-    lines.push("  #   until: \"2026-12-31T00:00:00.000Z\"".to_string());
-    lines
+    vec![
+        format!("vigil suppress add {} --reason \"...\"", quoted(key)),
+        match kind {
+            Some(kind) => format!("  -k {kind}"),
+            None => "  -k <kind>".to_string(),
+        } + " only that kind \u{b7} -u <day> until then \u{b7} -p by prefix",
+        "or by hand, in the file the daemon reads at start:".to_string(),
+        "  suppressions:".to_string(),
+        format!("    - finding_key: {}", quoted(key)),
+        "      reason: \"\"".to_string(),
+    ]
+}
+
+pub fn widest(key: &str, kind: Option<&str>) -> usize {
+    entry(key, kind)
+        .iter()
+        .map(|line| line.chars().count())
+        .max()
+        .unwrap_or(0)
 }
 
 fn quoted(text: &str) -> String {
@@ -41,6 +48,25 @@ mod tests {
     use crate::ui::fixture;
 
     #[test]
+    fn it_names_the_command_that_writes_the_entry_as_well_as_the_entry_itself() {
+        let mut finding = fixture::finding("A group gained a member", Severity::High);
+        finding.finding_key = "user|group|docker".into();
+
+        let lines = snippet(&finding);
+
+        assert_eq!(
+            lines[0], "vigil suppress add \"user|group|docker\" --reason \"...\"",
+            "an operator reading a key off the screen has to type it again by hand \
+             without this line"
+        );
+        assert!(
+            lines.iter().any(|line| line.contains("suppressions:")),
+            "and the file it ends up in is still spelled out, for a host managed by hand \
+             or by a configuration tool: {lines:#?}"
+        );
+    }
+
+    #[test]
     fn the_key_in_the_snippet_is_the_finding_key_character_for_character() {
         let mut finding = fixture::finding("A group gained a member", Severity::High);
         finding.finding_key = "user|group|docker".into();
@@ -48,7 +74,7 @@ mod tests {
         let lines = snippet(&finding);
 
         assert!(
-            lines.contains(&"  - finding_key: \"user|group|docker\"".to_string()),
+            lines.contains(&"    - finding_key: \"user|group|docker\"".to_string()),
             "{lines:#?}"
         );
     }
@@ -86,9 +112,8 @@ mod tests {
         let lines = snippet(&finding);
 
         assert!(
-            lines[1].ends_with("a\\\"b\""),
-            "the quote is escaped, not closed: {}",
-            lines[1]
+            lines.iter().any(|line| line.ends_with("a\\\"b\"")),
+            "the quote is escaped, not closed: {lines:#?}"
         );
     }
 }

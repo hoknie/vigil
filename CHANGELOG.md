@@ -7,7 +7,18 @@ Format:
 
 ## [1.0.6] - 09/--/2026
 
+### Added
+- `vigil suppress` cmd for control suppress
+- `findings` now can suppress from ui
+- picking rows on the findings screen
+
+### Fixed
+- double suppresion for one item
+
 ### Changed
+- not default config path is correctly resolve from now
+- update screen for unknown
+- a pane names now is dyn
 - `vigil.yaml` is read in two passes: the daemon's own keys, then the key each module names as its own
 - reorganized crates
 

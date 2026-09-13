@@ -7,21 +7,21 @@ use crate::types::{
 const NARROW: u16 = 80;
 
 pub trait Pane: Send + Sync {
-    fn name(&self) -> &'static str;
+    fn name(&self) -> &str;
 
-    fn caption(&self) -> &'static str;
+    fn caption(&self) -> &str;
 
     fn detail_caption(&self) -> &'static str {
         "THE SELECTED ROW"
     }
 
-    fn about(&self) -> &'static str;
+    fn about(&self) -> &str;
 
     fn shown(&self, _reading: &Snapshot) -> bool {
         true
     }
 
-    fn reads(&self) -> &'static str;
+    fn reads(&self) -> &str;
 
     fn columns(&self, room: Room) -> Vec<Column>;
 

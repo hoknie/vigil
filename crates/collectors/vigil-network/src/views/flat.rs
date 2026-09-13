@@ -14,11 +14,11 @@ pub(super) const ROOM_FOR_THE_COMMAND: u16 = 118;
 pub(super) struct Flat;
 
 impl Pane for Flat {
-    fn name(&self) -> &'static str {
+    fn name(&self) -> &str {
         "sockets"
     }
 
-    fn caption(&self) -> &'static str {
+    fn caption(&self) -> &str {
         "LISTENING"
     }
 
@@ -26,11 +26,11 @@ impl Pane for Flat {
         "THE SELECTED SOCKET"
     }
 
-    fn about(&self) -> &'static str {
+    fn about(&self) -> &str {
         "one row per listening socket: the reading itself, and what a finding is keyed by"
     }
 
-    fn reads(&self) -> &'static str {
+    fn reads(&self) -> &str {
         "ports"
     }
 

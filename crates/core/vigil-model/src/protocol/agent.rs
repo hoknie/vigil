@@ -17,6 +17,8 @@ pub struct Silence {
 pub struct AgentStatus {
     pub version: String,
     pub started_at: Rfc3339,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub configuration_path: Option<String>,
     pub interval_seconds: u32,
     pub collectors: Vec<CollectorStatus>,
     pub reporters: Vec<ReporterStatus>,
@@ -43,6 +45,17 @@ mod tests {
             "interval_seconds": 30, "collectors": [], "reporters": [],
             "findings": {"retained": 0, "capacity": 500, "total": 0, "dropped": 0}
         }"#
+    }
+
+    #[test]
+    fn an_agent_that_does_not_say_which_file_it_read_is_not_an_agent_with_no_configuration() {
+        let older: AgentStatus =
+            serde_json::from_str(an_agent_that_says_nothing_about_its_store()).expect("reads");
+
+        assert_eq!(
+            older.configuration_path, None,
+            "a console that read this as a path would edit a file this daemon never opened"
+        );
     }
 
     #[test]
@@ -79,6 +92,7 @@ mod tests {
         AgentStatus {
             version: "0.1.0".into(),
             started_at: "2026-09-09T08:00:00.000Z".into(),
+            configuration_path: Some("/etc/vigil/vigil.yaml".into()),
             interval_seconds: 30,
             collectors: Vec::new(),
             reporters: Vec::new(),

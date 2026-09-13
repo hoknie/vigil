@@ -12,19 +12,19 @@ const ROOM_FOR_THE_TYPE: u16 = 118;
 pub(super) struct TheRuleset;
 
 impl Pane for TheRuleset {
-    fn name(&self) -> &'static str {
+    fn name(&self) -> &str {
         "the ruleset"
     }
 
-    fn caption(&self) -> &'static str {
+    fn caption(&self) -> &str {
         "THE RULESET"
     }
 
-    fn about(&self) -> &'static str {
+    fn about(&self) -> &str {
         "every table, chain and policy the kernel holds, as the ruleset was last written down"
     }
 
-    fn reads(&self) -> &'static str {
+    fn reads(&self) -> &str {
         "firewall"
     }
 
