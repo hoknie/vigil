@@ -1637,9 +1637,15 @@ dependencies = [
  "ratatui",
  "serde_json",
  "vigil-containers",
+ "vigil-files",
  "vigil-firewall",
+ "vigil-launches",
  "vigil-model",
- "vigil-ports",
+ "vigil-module",
+ "vigil-network",
+ "vigil-persistence",
+ "vigil-processes",
+ "vigil-resources",
  "vigil-users",
  "vigil-view",
 ]
@@ -1648,7 +1654,7 @@ dependencies = [
 name = "vigil-audit-plugin"
 version = "1.0.5"
 dependencies = [
- "vigil-collect",
+ "vigil-launches",
 ]
 
 [[package]]
@@ -1674,9 +1680,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "vigil-files"
+version = "1.0.5"
+dependencies = [
+ "serde",
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
 name = "vigil-firewall"
 version = "1.0.5"
 dependencies = [
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
+name = "vigil-launches"
+version = "1.0.5"
+dependencies = [
+ "rustix",
+ "serde",
  "serde_json",
  "vigil-collect",
  "vigil-model",
@@ -1706,7 +1739,31 @@ dependencies = [
 ]
 
 [[package]]
-name = "vigil-ports"
+name = "vigil-network"
+version = "1.0.5"
+dependencies = [
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
+name = "vigil-persistence"
+version = "1.0.5"
+dependencies = [
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
+name = "vigil-processes"
 version = "1.0.5"
 dependencies = [
  "serde_json",
@@ -1723,6 +1780,20 @@ version = "1.0.5"
 dependencies = [
  "serde_json",
  "vigil-model",
+]
+
+[[package]]
+name = "vigil-resources"
+version = "1.0.5"
+dependencies = [
+ "rustix",
+ "serde",
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
 ]
 
 [[package]]
@@ -1772,11 +1843,16 @@ dependencies = [
  "sha2",
  "vigil-collect",
  "vigil-containers",
+ "vigil-files",
  "vigil-firewall",
+ "vigil-launches",
  "vigil-model",
  "vigil-module",
- "vigil-ports",
+ "vigil-network",
+ "vigil-persistence",
+ "vigil-processes",
  "vigil-report",
+ "vigil-resources",
  "vigil-rules",
  "vigil-store",
  "vigil-users",

@@ -1,8 +1,8 @@
 use serde_json::{Value, json};
 use vigil_model::{Evidence, Finding, Kind, KnownKind, Severity, State, Subject};
 
-use super::file_view::FileView;
-use crate::RuleContext;
+use crate::types::FileView;
+use vigil_rules::RuleContext;
 
 pub struct FileFinding<'a> {
     pub kind: KnownKind,

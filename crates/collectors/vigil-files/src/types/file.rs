@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Family {
     File,
     Directory,
@@ -18,6 +18,23 @@ const WRITABLE_BY_ANYONE: u32 = 0o0002;
 
 const STICKY: u32 = 0o1000;
 
+impl Family {
+    pub fn of(key: &str) -> Option<Family> {
+        match key.split('|').next()? {
+            FILE => Some(Family::File),
+            DIRECTORY => Some(Family::Directory),
+            _ => None,
+        }
+    }
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Family::File => FILE,
+            Family::Directory => DIRECTORY,
+        }
+    }
+}
+
 pub struct FileView<'a> {
     key: &'a str,
     value: &'a Value,
@@ -29,11 +46,7 @@ impl<'a> FileView<'a> {
     }
 
     pub fn family(&self) -> Option<Family> {
-        match self.key.split('|').next()? {
-            FILE => Some(Family::File),
-            DIRECTORY => Some(Family::Directory),
-            _ => None,
-        }
+        Family::of(self.key)
     }
 
     pub fn is(&self, family: Family) -> bool {
@@ -83,10 +96,11 @@ impl<'a> FileView<'a> {
 mod tests {
     use super::*;
     use crate::fixture;
+    use vigil_rules::fixture as neighbours;
 
     #[test]
     fn an_item_of_another_collector_belongs_to_no_family_here() {
-        let socket = fixture::of_another_collector("tcp|0.0.0.0:443");
+        let socket = neighbours::of_another_collector("tcp|0.0.0.0:443");
 
         assert_eq!(FileView::new("tcp|0.0.0.0:443", &socket).family(), None);
         assert_eq!(FileView::new("fs|/var", &socket).family(), None);
@@ -143,5 +157,26 @@ mod tests {
         assert_eq!(view.bits(), None);
         assert!(!view.runs_as_its_owner());
         assert!(!view.writable_by_anyone());
+    }
+
+    #[test]
+    fn each_row_of_the_reading_is_named_by_the_word_its_key_opens_with() {
+        assert_eq!(Family::of("file|/etc/hosts"), Some(Family::File));
+        assert_eq!(Family::of("directory|/usr/bin"), Some(Family::Directory));
+        assert_eq!(Family::of("unit|nginx.service"), None);
+        assert_eq!(Family::of("container|3ab1"), None);
+    }
+
+    #[test]
+    fn a_watched_file_is_read_before_the_directory_a_program_could_be_dropped_into() {
+        let mut order = vec![Family::Directory, Family::File];
+        order.sort();
+
+        assert_eq!(
+            order,
+            vec![Family::File, Family::Directory],
+            "the list opens with the files an operator named and closes with the directories \
+             this agent adds of its own accord"
+        );
     }
 }

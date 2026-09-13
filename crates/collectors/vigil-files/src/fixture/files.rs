@@ -1,6 +1,7 @@
 use vigil_model::Snapshot;
 
-use crate::helpers::{hex, sha256};
+use vigil_collect::{hex, sha256};
+
 use crate::parsers::{FilesReading, WatchedDirectory, WatchedFile, files_snapshot};
 
 const SSHD_CONFIG: &str = "Port 22\nPermitRootLogin no\nPasswordAuthentication no\n";

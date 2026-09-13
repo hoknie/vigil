@@ -66,7 +66,7 @@ build() {
 
 measure() {
     echo "  $1: $(wc -c < "$RULESET") bytes of nft --json, $(grep -o '"rule":' "$RULESET" | wc -l | tr -d ' ') rule(s) in it"
-    cargo run --release --quiet --example cost -p vigil-collect -- firewall "${ROUNDS:-2000}"
+    cargo run --release --quiet --example firewall -p vigil-firewall
 }
 
 say "a host with nothing in its ruleset"

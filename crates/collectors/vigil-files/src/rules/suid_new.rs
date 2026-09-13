@@ -1,8 +1,8 @@
 use vigil_model::{Change, Evidence, Finding, KnownKind, Severity};
 
 use super::file_finding::{FileFinding, build, standing};
-use super::file_view::{Family, FileView};
-use crate::{Rule, RuleContext};
+use crate::types::{Family, FileView};
+use vigil_rules::{Rule, RuleContext};
 
 pub struct FileSuidNew;
 

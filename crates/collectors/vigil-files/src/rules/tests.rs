@@ -1,7 +1,8 @@
 use vigil_model::Change;
 
+use super::verdict::files;
 use crate::fixture;
-use crate::rules::verdict::files;
+use vigil_rules::fixture as neighbours;
 
 #[test]
 fn exactly_one_file_rule_fires_for_each_change_a_host_can_produce() {
@@ -123,4 +124,22 @@ fn a_path_that_stopped_being_watched_is_not_a_finding_about_the_file() {
         "a row that left the reading means the path left the configuration, and somebody \
          editing the configuration is not an incident on this host"
     );
+}
+
+#[test]
+fn a_row_of_another_collector_reaches_no_rule_of_this_module() {
+    for key in ["fs|/var", "tcp|0.0.0.0:443", "container|3ab1c0f2d4e5"] {
+        let change = Change::Changed {
+            key: key.into(),
+            before: neighbours::of_another_collector(key),
+            after: neighbours::of_another_collector(key),
+        };
+
+        assert!(
+            files(&change).is_empty(),
+            "these rules are handed every change of their own reading and nothing else; a \
+             rule that answers about {key} would report the same host twice, once here and \
+             once in the module that owns it"
+        );
+    }
 }

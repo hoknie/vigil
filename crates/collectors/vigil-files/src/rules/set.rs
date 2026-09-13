@@ -1,5 +1,5 @@
 use super::{FileChanged, FilePermissionsChanged, FileSuidNew, PathWritableByAll};
-use crate::RuleSet;
+use vigil_rules::RuleSet;
 
 pub fn file_rules() -> RuleSet {
     RuleSet::of(vec![

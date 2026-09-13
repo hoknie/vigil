@@ -1,7 +1,7 @@
 use std::fs;
 
 use super::FilesCollector;
-use crate::Health;
+use vigil_collect::Health;
 
 impl FilesCollector {
     pub(super) fn health(&self) -> Health {

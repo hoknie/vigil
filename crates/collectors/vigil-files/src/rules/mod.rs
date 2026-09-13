@@ -1,9 +1,10 @@
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod verdict;
 
 mod file_changed;
 mod file_finding;
-mod file_view;
 mod path_writable_by_all;
 mod permissions_changed;
 mod set;
