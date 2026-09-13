@@ -39,6 +39,10 @@ pub trait Pane: Send + Sync {
         None
     }
 
+    fn nothing_was_read(&self) -> &'static str {
+        "Nothing is listed here: nothing was read."
+    }
+
     fn row_for(&self, reading: &Snapshot, named: &str) -> Option<String> {
         match reading.items.contains_key(named) {
             true => Some(named.to_string()),

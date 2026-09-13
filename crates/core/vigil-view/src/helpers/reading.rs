@@ -1,5 +1,6 @@
 use serde_json::Value;
 
+use super::size::bytes;
 use crate::types::Piece;
 
 pub fn every_field(
@@ -62,7 +63,7 @@ fn values(item: &Value) -> Vec<(String, Said)> {
 
 fn with_a_size(name: &str, value: &Value) -> String {
     match (name.ends_with("_bytes"), value.as_u64()) {
-        (true, Some(bytes)) => format!("{} ({bytes} bytes)", bytes_of(bytes)),
+        (true, Some(bytes)) => format!("{} ({bytes} bytes)", self::bytes(bytes)),
         _ => plain(value),
     }
 }
@@ -77,23 +78,6 @@ fn plain(value: &Value) -> String {
         },
         other => other.to_string(),
     }
-}
-
-fn bytes_of(bytes: u64) -> String {
-    const STEPS: &[(u64, &str)] = &[
-        (1024 * 1024 * 1024 * 1024, "TB"),
-        (1024 * 1024 * 1024, "GB"),
-        (1024 * 1024, "MB"),
-        (1024, "kB"),
-    ];
-
-    for (step, name) in STEPS {
-        if bytes >= *step {
-            return format!("{:.1} {name}", bytes as f64 / *step as f64);
-        }
-    }
-
-    format!("{bytes} B")
 }
 
 #[cfg(test)]
