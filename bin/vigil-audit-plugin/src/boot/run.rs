@@ -1,7 +1,7 @@
 use std::io::{self, Read};
 use std::process::ExitCode;
 
-use vigil_collect::SpoolWriter;
+use vigil_launches::SpoolWriter;
 
 use crate::cli::{Command, Options, USAGE, parse};
 

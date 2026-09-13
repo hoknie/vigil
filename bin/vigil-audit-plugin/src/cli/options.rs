@@ -1,4 +1,4 @@
-use vigil_collect::{CEILING_BYTES, SPOOL_PATH};
+use vigil_launches::{CEILING_BYTES, SPOOL_PATH};
 
 pub const USAGE: &str = "\
 usage: vigil-audit-plugin [--spool PATH] [--ceiling BYTES]
