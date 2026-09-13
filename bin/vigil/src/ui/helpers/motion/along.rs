@@ -67,11 +67,11 @@ impl<C: Choice> Along<C> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ui::Subject;
+    use crate::ui::Startup;
 
     use super::*;
 
-    fn looking_for(along: &mut Along<Subject>, word: &str) {
+    fn looking_for(along: &mut Along<Startup>, word: &str) {
         let search = along.search_mut();
         search.start();
         for character in word.chars() {
@@ -82,10 +82,10 @@ mod tests {
 
     #[test]
     fn a_search_belongs_to_the_list_it_was_typed_into_and_not_to_the_screen() {
-        let mut along: Along<Subject> = Along::default();
+        let mut along: Along<Startup> = Along::default();
         looking_for(&mut along, "docker");
 
-        along.show(Subject::Groups);
+        along.show(Startup::Timers);
 
         assert_eq!(along.search().query(), "");
         assert_eq!(
@@ -93,13 +93,13 @@ mod tests {
             1,
             "a list left narrowed has to be counted where the reader is looking"
         );
-        along.show(Subject::Users);
+        along.show(Startup::Units);
         assert_eq!(along.search().query(), "docker");
     }
 
     #[test]
     fn widening_a_list_puts_its_cursor_back_at_the_top_of_it() {
-        let mut along: Along<Subject> = Along::default();
+        let mut along: Along<Startup> = Along::default();
         looking_for(&mut along, "root");
         along
             .cursor_mut()

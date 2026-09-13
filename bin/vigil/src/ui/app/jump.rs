@@ -1,7 +1,6 @@
 use super::App;
 
-use crate::ui::screens::ports;
-use crate::ui::{Anchor, Gone, Level, Origin, Program, Screen, Startup, Subject};
+use crate::ui::{Anchor, Gone, Level, Origin, Program, Screen, Startup, holding};
 
 impl App {
     pub(super) fn jump_to_object(&mut self) {
@@ -50,31 +49,18 @@ impl App {
 
     fn point_at(&mut self, anchor: &Anchor) -> bool {
         match anchor.screen {
-            Screen::Ports => {
-                let keys = self.ports_keys();
-                self.nav
-                    .lists
-                    .ports
-                    .cursor_mut()
-                    .point_at(&anchor.key, &keys)
-                    || {
-                        self.nav.lists.ports.show(ports::Arrangement::default());
-                        let keys = self.ports_keys();
-                        self.nav
-                            .lists
-                            .ports
-                            .cursor_mut()
-                            .point_at(&anchor.key, &keys)
-                    }
-            }
-            Screen::Accounts => {
-                self.nav.lists.accounts.show(Subject::holding(&anchor.key));
-                let keys = self.accounts_keys();
-                self.nav
-                    .lists
-                    .accounts
-                    .cursor_mut()
-                    .point_at(&anchor.key, &keys)
+            screen if holding(screen.name()).is_some() => {
+                let Some(row) = self.row_named(screen, &anchor.key) else {
+                    return false;
+                };
+                if let Some(at) = self.pane_of_holding(screen, &row)
+                    && let Some(panes) = self.panes_of_mut(screen)
+                {
+                    panes.show(at);
+                }
+                let keys = self.pane_keys_of(screen);
+                self.panes_of_mut(screen)
+                    .is_some_and(|panes| panes.cursor_mut().point_at(&row, &keys))
             }
             Screen::Programs => {
                 self.nav.lists.programs.show(Program::holding(&anchor.key));
@@ -105,18 +91,6 @@ impl App {
                     .system
                     .cursor_mut()
                     .point_at(&anchor.key, &keys)
-            }
-            Screen::Firewall | Screen::Containers => {
-                let screen = anchor.screen;
-                let keys = match screen {
-                    Screen::Containers => {
-                        crate::ui::screens::containers::identities(&self.view, &self.contained())
-                    }
-                    other => self.rows_of(other),
-                };
-                let key = anchor.key.clone();
-                self.one_mut(screen)
-                    .is_some_and(|one| one.cursor_mut().point_at(&key, &keys))
             }
             Screen::Summary => self.view.status.as_ref().is_some_and(|status| {
                 status.agent.buffers.as_ref().is_some_and(|buffers| {

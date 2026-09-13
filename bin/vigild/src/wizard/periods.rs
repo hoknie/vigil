@@ -34,7 +34,7 @@ mod tests {
     fn surveyed(name: &str, health: Health) -> Surveyed {
         Surveyed {
             name: name.to_string(),
-            subject: vigil_collect::subject_of_collector(name)
+            subject: crate::modules::subject_of(name)
                 .unwrap_or("what it watches")
                 .to_string(),
             health,

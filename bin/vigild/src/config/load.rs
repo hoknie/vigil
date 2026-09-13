@@ -24,13 +24,13 @@ pub fn load(path: &str) -> Result<Config, ConfigError> {
     if let Some(enabled) = &config.collectors {
         let mut already: Vec<&str> = Vec::new();
         for (index, name) in enabled.iter().enumerate() {
-            if !vigil_collect::is_known_collector(name) {
+            if !crate::modules::is_known(name) {
                 return Err(ConfigError {
                     path: path.to_string(),
                     cause: format!(
                         "collector #{}: unknown collector {name:?}; known: {}",
                         index + 1,
-                        vigil_collect::collector_names().join(", ")
+                        crate::modules::names().join(", ")
                     ),
                 });
             }
@@ -184,7 +184,7 @@ mod tests {
         assert_eq!(
             config.collectors,
             Some(
-                vigil_collect::collector_names()
+                crate::modules::names()
                     .iter()
                     .map(|name| name.to_string())
                     .collect()

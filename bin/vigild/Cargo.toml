@@ -13,6 +13,11 @@ clap.workspace = true
 vigil-model = { path = "../../crates/core/vigil-model" }
 vigil-rules = { path = "../../crates/core/vigil-rules" }
 vigil-collect = { path = "../../crates/core/vigil-collect" }
+vigil-module = { path = "../../crates/core/vigil-module" }
+vigil-ports = { path = "../../crates/collectors/vigil-ports" }
+vigil-users = { path = "../../crates/collectors/vigil-users" }
+vigil-firewall = { path = "../../crates/collectors/vigil-firewall" }
+vigil-containers = { path = "../../crates/collectors/vigil-containers" }
 vigil-store = { path = "../../crates/consumers/vigil-store" }
 vigil-report = { path = "../../crates/consumers/vigil-report" }
 serde.workspace = true

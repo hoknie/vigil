@@ -4,33 +4,10 @@ use super::App;
 
 use crate::ui::Arrows;
 use crate::ui::details::reading::Subject;
-use crate::ui::screens::{
-    accounts, containers, findings, firewall, ports, programs, startup, system,
-};
-use crate::ui::{One, Screen, System};
+use crate::ui::screens::{findings, programs, startup, system};
+use crate::ui::{Screen, System};
 
 impl App {
-    pub(super) fn showing(&self) -> accounts::Showing<'_> {
-        accounts::Showing {
-            subject: self.nav.lists.accounts.showing(),
-            search: self.nav.lists.accounts.search(),
-            cursor: self.nav.lists.accounts.at(),
-            elsewhere: self.nav.lists.accounts.narrowed_elsewhere(),
-            arrows: Arrows::at(self.level),
-        }
-    }
-
-    pub(super) fn listening(&self) -> ports::Showing<'_> {
-        ports::Showing {
-            arrangement: self.nav.lists.ports.showing(),
-            protocols: &self.ports_protocols,
-            search: self.nav.lists.ports.search(),
-            cursor: self.nav.lists.ports.at(),
-            arrows: Arrows::at(self.level),
-            sorting: self.sorted(),
-        }
-    }
-
     pub(super) fn running(&self) -> programs::Showing<'_> {
         programs::Showing {
             program: self.nav.lists.programs.showing(),
@@ -50,43 +27,6 @@ impl App {
             elsewhere: self.nav.lists.startup.narrowed_elsewhere(),
             arrows: Arrows::at(self.level),
         }
-    }
-
-    pub(super) fn one(&self, screen: Screen) -> Option<&One> {
-        match screen {
-            Screen::Firewall => Some(&self.nav.lists.firewall),
-            Screen::Containers => Some(&self.nav.lists.containers),
-            _ => None,
-        }
-    }
-
-    pub(super) fn one_mut(&mut self, screen: Screen) -> Option<&mut One> {
-        match screen {
-            Screen::Firewall => Some(&mut self.nav.lists.firewall),
-            Screen::Containers => Some(&mut self.nav.lists.containers),
-            _ => None,
-        }
-    }
-
-    pub(super) fn filtering(&self) -> firewall::Showing<'_> {
-        firewall::Showing {
-            search: self.nav.lists.firewall.search(),
-            cursor: self.nav.lists.firewall.at(),
-            arrows: Arrows::at(self.level),
-            gone: self.gone.as_ref(),
-            sorting: self.sorted(),
-        }
-    }
-
-    pub(super) fn firewall_rows(&self) -> Vec<firewall::Row<'_>> {
-        firewall::rows(&self.view, &self.filtering())
-    }
-
-    pub(super) fn firewall_keys(&self) -> Vec<String> {
-        self.firewall_rows()
-            .into_iter()
-            .map(|row| row.key)
-            .collect()
     }
 
     pub(super) fn made_of(&self) -> system::Showing<'_> {
@@ -113,27 +53,6 @@ impl App {
                 .map(|row| row.key)
                 .collect(),
         }
-    }
-
-    pub(super) fn contained(&self) -> containers::Showing<'_> {
-        containers::Showing {
-            search: self.nav.lists.containers.search(),
-            cursor: self.nav.lists.containers.at(),
-            arrows: Arrows::at(self.level),
-            gone: self.gone.as_ref(),
-            sorting: self.sorted(),
-        }
-    }
-
-    pub(super) fn containers_rows(&self) -> Vec<containers::Row<'_>> {
-        containers::rows(&self.view, &self.contained())
-    }
-
-    pub(super) fn containers_keys(&self) -> Vec<String> {
-        self.containers_rows()
-            .into_iter()
-            .map(|row| row.key)
-            .collect()
     }
 
     pub(super) fn reading_subject(&self) -> Option<Subject<'_>> {
@@ -164,43 +83,8 @@ impl App {
                     })
                 }
             },
-            Screen::Containers => {
-                let rows = self.containers_rows();
-                let row = rows.get(self.nav.lists.containers.at())?;
-                Some(Subject {
-                    key: row.key.clone(),
-                    kind: row.kind.name(),
-                    named: containers::fields::what(row),
-                    means: containers::fields::means(row),
-                    item: row.item,
-                })
-            }
             _ => None,
         }
-    }
-
-    pub(super) fn ports_rows(&self) -> Vec<ports::Row<'_>> {
-        ports::rows(&self.view, &self.listening())
-    }
-
-    pub(super) fn ports_keys(&self) -> Vec<String> {
-        self.ports_rows().into_iter().map(|row| row.key).collect()
-    }
-
-    pub(super) fn accounts_rows(&self) -> Vec<accounts::Row<'_>> {
-        accounts::rows(
-            &self.view,
-            self.nav.lists.accounts.showing(),
-            self.nav.lists.accounts.search(),
-        )
-    }
-
-    pub(super) fn accounts_keys(&self) -> Vec<String> {
-        accounts::keys(
-            &self.view,
-            self.nav.lists.accounts.showing(),
-            self.nav.lists.accounts.search(),
-        )
     }
 
     pub(super) fn programs_rows(&self) -> Vec<programs::Row<'_>> {

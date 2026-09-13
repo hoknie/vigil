@@ -1636,7 +1636,12 @@ dependencies = [
  "clap",
  "ratatui",
  "serde_json",
+ "vigil-containers",
+ "vigil-firewall",
  "vigil-model",
+ "vigil-ports",
+ "vigil-users",
+ "vigil-view",
 ]
 
 [[package]]
@@ -1657,6 +1662,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "vigil-containers"
+version = "1.0.5"
+dependencies = [
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
+name = "vigil-firewall"
+version = "1.0.5"
+dependencies = [
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
 name = "vigil-model"
 version = "1.0.5"
 dependencies = [
@@ -1672,6 +1701,18 @@ dependencies = [
  "serde_json",
  "vigil-collect",
  "vigil-model",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
+name = "vigil-ports"
+version = "1.0.5"
+dependencies = [
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
  "vigil-rules",
  "vigil-view",
 ]
@@ -1701,6 +1742,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "vigil-users"
+version = "1.0.5"
+dependencies = [
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
 name = "vigil-view"
 version = "1.0.5"
 dependencies = [
@@ -1718,10 +1771,15 @@ dependencies = [
  "serde_yaml",
  "sha2",
  "vigil-collect",
+ "vigil-containers",
+ "vigil-firewall",
  "vigil-model",
+ "vigil-module",
+ "vigil-ports",
  "vigil-report",
  "vigil-rules",
  "vigil-store",
+ "vigil-users",
 ]
 
 [[package]]

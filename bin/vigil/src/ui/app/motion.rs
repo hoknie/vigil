@@ -1,7 +1,7 @@
 use super::App;
 
-use crate::ui::screens::{findings, home, ports, summary};
-use crate::ui::{Level, Motion, Offset, Program, Screen, Startup, Subject, System};
+use crate::ui::screens::{findings, home, summary};
+use crate::ui::{Level, Motion, Offset, Program, Screen, Startup, System, holding};
 
 impl App {
     pub(super) fn move_within(&mut self, motion: Motion) {
@@ -37,22 +37,13 @@ impl App {
                     );
                     self.nav.summary.step(motion, total, page);
                 }
-                Screen::Accounts => {
-                    let keys = self.accounts_keys();
-                    self.nav
-                        .lists
-                        .accounts
-                        .cursor_mut()
-                        .step(motion, &keys, rows);
-                    self.nav.difference = Offset::default();
-                }
-                Screen::Ports => {
-                    let keys = self.ports_keys();
-                    self.nav
-                        .lists
-                        .ports
-                        .cursor_mut()
-                        .step(motion, &keys, rows.saturating_sub(1));
+                screen if holding(screen.name()).is_some() => {
+                    let keys = self.pane_keys();
+                    if let Some(panes) = self.panes_mut() {
+                        panes
+                            .cursor_mut()
+                            .step(motion, &keys, rows.saturating_sub(1));
+                    }
                     self.nav.difference = Offset::default();
                 }
                 Screen::Programs => {
@@ -78,19 +69,12 @@ impl App {
                     self.nav.lists.system.cursor_mut().step(motion, &keys, rows);
                     self.nav.difference = Offset::default();
                 }
-                Screen::Firewall | Screen::Containers => {
-                    let screen = self.nav.at();
-                    let keys = self.rows_of(screen);
-                    if let Some(one) = self.one_mut(screen) {
-                        one.cursor_mut().step(motion, &keys, rows);
-                    }
-                    self.nav.difference = Offset::default();
-                }
                 Screen::Findings => {
                     let keys = findings::keys(&self.passing());
                     self.nav.findings.step(motion, &keys, rows);
                     self.nav.difference = Offset::default();
                 }
+                _ => {}
             },
         }
     }
@@ -110,22 +94,13 @@ impl App {
             Screen::Home => self.nav.sections.at() == 0,
             Screen::Summary => self.nav.summary.top() == 0,
             Screen::Findings => self.nav.findings.at() == 0,
-            Screen::Ports => self.nav.lists.ports.at() == 0,
-            Screen::Accounts => self.nav.lists.accounts.at() == 0,
+            screen if holding(screen.name()).is_some() => {
+                self.panes().is_some_and(|panes| panes.at() == 0)
+            }
             Screen::Programs => self.nav.lists.programs.at() == 0,
             Screen::Startup => self.nav.lists.startup.at() == 0,
             Screen::System => self.nav.lists.system.at() == 0,
-            Screen::Firewall | Screen::Containers => {
-                self.one(self.nav.at()).is_some_and(|one| one.at() == 0)
-            }
-        }
-    }
-
-    pub(super) fn rows_of(&self, screen: Screen) -> Vec<String> {
-        match screen {
-            Screen::Firewall => self.firewall_keys(),
-            Screen::Containers => self.containers_keys(),
-            _ => Vec::new(),
+            _ => true,
         }
     }
 
@@ -139,9 +114,14 @@ impl App {
                     _ => count.saturating_sub(1),
                 };
                 match self.nav.at() {
-                    Screen::Ports => {
-                        let names = ports::Arrangement::ALL;
-                        self.nav.lists.ports.show(names[ends(names.len())]);
+                    screen if holding(screen.name()).is_some() => {
+                        let shown = self.shown_panes();
+                        let at = ends(shown.len());
+                        if let Some(index) = shown.get(at).copied()
+                            && let Some(panes) = self.panes_mut()
+                        {
+                            panes.show(index);
+                        }
                     }
                     Screen::Programs => {
                         let names = Program::ALL;
@@ -157,12 +137,7 @@ impl App {
                             self.nav.lists.startup.show(list);
                         }
                     }
-                    _ => {
-                        let shown = Subject::on(&self.view);
-                        if let Some(subject) = shown.get(ends(shown.len())).copied() {
-                            self.nav.lists.accounts.show(subject);
-                        }
-                    }
+                    _ => {}
                 }
                 self.detail_open = false;
                 self.refresh_wanted = true;
@@ -176,8 +151,10 @@ impl App {
         let page = body.height as usize;
 
         self.nav.sections.settle(&home::keys(&self.view));
-        let listening = self.ports_keys();
-        self.nav.lists.ports.cursor_mut().settle(&listening);
+        let rows = self.pane_keys();
+        if let Some(panes) = self.panes_mut() {
+            panes.cursor_mut().settle(&rows);
+        }
         let findings = findings::keys(&self.passing());
         self.nav.findings.settle(&findings);
         self.nav.summary.settle(
@@ -190,20 +167,12 @@ impl App {
             ),
             page,
         );
-        let accounts = self.accounts_keys();
-        self.nav.lists.accounts.cursor_mut().settle(&accounts);
         let running = self.programs_keys();
         self.nav.lists.programs.cursor_mut().settle(&running);
         let starting = self.startup_keys();
         self.nav.lists.startup.cursor_mut().settle(&starting);
         let made_of = self.system_keys();
         self.nav.lists.system.cursor_mut().settle(&made_of);
-        for screen in [Screen::Firewall, Screen::Containers] {
-            let keys = self.rows_of(screen);
-            if let Some(one) = self.one_mut(screen) {
-                one.cursor_mut().settle(&keys);
-            }
-        }
         if let Some(area) = self.detail_area() {
             let total = self.detail_height(area);
             self.nav.difference.settle(total, area.height as usize);

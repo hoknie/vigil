@@ -11,6 +11,7 @@ mod levels;
 mod motion;
 mod narrowing;
 mod page;
+mod pane;
 mod printing;
 mod rows;
 mod session;
@@ -22,9 +23,7 @@ use ratatui::layout::Rect;
 use crate::link::Link;
 use std::collections::BTreeMap;
 
-use crate::ui::{
-    Chooser, Filter, Gone, Level, Look, Nav, Nesting, Protocols, Screen, Sorting, View,
-};
+use crate::ui::{Chooser, Filter, Gone, Level, Look, Nav, Nesting, Screen, Sorting, View};
 
 pub struct App {
     link: Link,
@@ -34,7 +33,6 @@ pub struct App {
     filter: Filter,
     detail_open: bool,
     level: Level,
-    ports_protocols: Protocols,
     startup_nesting: Nesting,
     gone: Option<Gone>,
     chooser: Chooser,

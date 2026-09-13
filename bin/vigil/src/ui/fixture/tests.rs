@@ -12,13 +12,9 @@ fn rehearses(who: &str, fixture: &Snapshot) {
 
 fn fixtures() -> Vec<(&'static str, Snapshot)> {
     vec![
-        ("the ports fixture", super::sockets::snapshot()),
-        ("the users fixture", super::accounts::accounts()),
         ("the processes fixture", super::programs::processes()),
         ("the persistence fixture", super::startup::persistence()),
-        ("the firewall fixture", super::firewall::firewall()),
         ("the resources fixture", super::resources::resources()),
-        ("the containers fixture", super::containers::containers()),
         ("the files fixture", super::files::files()),
         ("the launches fixture", super::launches::launches()),
     ]

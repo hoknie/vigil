@@ -1,7 +1,7 @@
 use ratatui::crossterm::event::KeyCode;
 
 use crate::ui::app::App;
-use crate::ui::{Level, Screen, Subject};
+use crate::ui::{Level, Screen};
 
 use super::harness::{app, drawn, drawn_at, into, number, press};
 
@@ -358,17 +358,13 @@ fn the_horizontal_arrows_walk_the_row_of_lists_and_leave_the_section_alone() {
     press(&mut app, number(Screen::Accounts));
 
     press(&mut app, KeyCode::Right);
-    assert_eq!(app.nav.lists.accounts.showing(), Subject::Groups);
+    assert_eq!(app.panes().expect("a section").showing(), 1);
     assert_eq!(app.nav.at(), Screen::Accounts, "the section did not change");
     assert!(drawn(&app).contains("[groups]"), "{}", drawn(&app));
 
     press(&mut app, KeyCode::Left);
     press(&mut app, KeyCode::Left);
-    assert_eq!(
-        app.nav.lists.accounts.showing(),
-        Subject::LoggedIn,
-        "and it wraps"
-    );
+    assert_eq!(app.panes().expect("a section").showing(), 5, "and it wraps");
 }
 
 fn opened_on(screen: Screen) -> App {

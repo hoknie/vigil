@@ -2,23 +2,20 @@ use ratatui::layout::Rect;
 
 use super::App;
 
-use crate::ui::details::{account, firewall, program, reading, socket, startup};
+use crate::ui::details::{pieces, program, reading, startup};
 use crate::ui::helpers::finding::diff;
 use crate::ui::helpers::layout::split;
-use crate::ui::{Level, Screen};
+use crate::ui::{Level, Screen, holding};
 
 impl App {
     pub(super) fn has_detail(&self) -> bool {
         match self.nav.at() {
             Screen::Findings => self.selected_finding().is_some(),
-            Screen::Ports => !self.ports_keys().is_empty(),
-            Screen::Accounts => !self.accounts_keys().is_empty(),
+            screen if holding(screen.name()).is_some() => !self.pane_keys().is_empty(),
             Screen::Programs => !self.programs_keys().is_empty(),
             Screen::Startup => !self.startup_keys().is_empty(),
-            Screen::Firewall => !self.firewall_keys().is_empty(),
             Screen::System => !self.system_keys().is_empty(),
-            Screen::Containers => !self.containers_keys().is_empty(),
-            Screen::Home | Screen::Summary => false,
+            _ => false,
         }
     }
 
@@ -36,18 +33,8 @@ impl App {
     pub(super) fn detail_height(&self, area: Rect) -> usize {
         let width = self.look.text_width(area.width);
         match self.nav.at() {
-            Screen::Ports => {
-                let rows = self.ports_rows();
-                socket::height(rows.get(self.nav.lists.ports.at()), self.look, width)
-            }
-            Screen::Accounts => {
-                let rows = self.accounts_rows();
-                account::height(
-                    rows.get(self.nav.lists.accounts.at()),
-                    &self.view,
-                    self.look,
-                    width,
-                )
+            screen if holding(screen.name()).is_some() => {
+                pieces::height(&self.pane_detail(), self.look, width)
             }
             Screen::Programs => {
                 let rows = self.programs_rows();
@@ -61,10 +48,6 @@ impl App {
             Screen::Startup => {
                 let rows = self.startup_rows();
                 startup::height(rows.get(self.nav.lists.startup.at()), self.look, width)
-            }
-            Screen::Firewall => {
-                let rows = self.firewall_rows();
-                firewall::height(rows.get(self.nav.lists.firewall.at()), self.look, width)
             }
             Screen::System | Screen::Containers => {
                 reading::height(self.reading_subject(), self.look, width)

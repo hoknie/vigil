@@ -1,6 +1,6 @@
 use ratatui::crossterm::event::KeyCode;
 
-use crate::ui::{Anchor, Level, Program, Reading, Screen, Startup, Subject, View};
+use crate::ui::{Anchor, Level, Program, Reading, Screen, Startup, View};
 
 use super::harness::{app, drawn, drawn_at, into, number, press};
 
@@ -18,7 +18,7 @@ fn o_on_a_finding_about_a_socket_opens_the_ports_section_on_that_socket() {
         "straight onto the row: a cursor they cannot see is not being shown the object"
     );
     assert_eq!(
-        app.ports_keys()[app.nav.lists.ports.at()],
+        app.pane_keys()[app.panes().expect("a section").at()],
         "tcp|0.0.0.0:4444",
         "and on the row the finding is about, not on the first one"
     );
@@ -63,33 +63,33 @@ fn a_jump_asks_for_the_reading_that_holds_the_object_because_the_findings_screen
 #[test]
 fn o_on_a_finding_about_an_account_opens_the_accounts_section_at_that_account() {
     let mut app = app();
-    app.view.found.findings[0].finding_key = "user|account|backdoor".into();
+    app.view.found.findings[0].finding_key = "user|account|contractor".into();
     into(&mut app, Screen::Findings, 80, 30);
 
     press(&mut app, KeyCode::Char('o'));
 
     assert_eq!(app.nav.at(), Screen::Accounts);
     assert_eq!(
-        app.accounts_keys()[app.nav.lists.accounts.at()],
-        "account|backdoor"
+        app.pane_keys()[app.panes().expect("a section").at()],
+        "account|contractor"
     );
     assert_eq!(app.level, Level::List);
-    assert!(drawn(&app).contains("backdoor"), "{}", drawn(&app));
+    assert!(drawn(&app).contains("contractor"), "{}", drawn(&app));
 }
 
 #[test]
 fn o_on_a_finding_about_a_group_opens_the_list_that_group_is_a_row_of() {
     let mut app = app();
-    app.view.found.findings[0].finding_key = "user|group|docker".into();
+    app.view.found.findings[0].finding_key = "user|group|wheel".into();
     into(&mut app, Screen::Findings, 80, 30);
 
     press(&mut app, KeyCode::Char('o'));
 
     assert_eq!(app.nav.at(), Screen::Accounts);
-    assert_eq!(app.nav.lists.accounts.showing(), Subject::Groups);
+    assert_eq!(app.panes().expect("a section").showing(), 1);
     assert_eq!(
-        app.accounts_keys()[app.nav.lists.accounts.at()],
-        "group|docker"
+        app.pane_keys()[app.panes().expect("a section").at()],
+        "group|wheel"
     );
 }
 

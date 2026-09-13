@@ -5,8 +5,8 @@ use super::App;
 
 use crate::ui::details::section;
 use crate::ui::screens::startup as starting;
-use crate::ui::screens::{accounts, home, programs};
-use crate::ui::{Arrows, Program, Screen, Search, Startup, Subject};
+use crate::ui::screens::{home, pane, programs};
+use crate::ui::{Arrows, Program, Screen, Search, Startup, holding};
 
 impl App {
     pub(super) fn print_every_section(&self, area: Rect, buffer: &mut Buffer) {
@@ -68,10 +68,9 @@ impl App {
 
     fn every_list(&self) -> Vec<Band> {
         match self.nav.at() {
-            Screen::Accounts => Subject::on(&self.view)
-                .into_iter()
-                .map(Band::Account)
-                .collect(),
+            screen if holding(screen.name()).is_some() => {
+                self.shown_panes().into_iter().map(Band::Pane).collect()
+            }
             Screen::Programs => Program::ALL.iter().copied().map(Band::Program).collect(),
             _ => Startup::on(&self.view)
                 .into_iter()
@@ -82,9 +81,12 @@ impl App {
 
     fn printed_height(&self, band: Band, search: &Search, width: u16) -> u16 {
         match band {
-            Band::Account(subject) => {
-                accounts::printed_height(&self.view, self.look, subject, search, width)
-            }
+            Band::Pane(at) => match (self.section(), self.printing_pane(at, search)) {
+                (Some(section), Some(showing)) => {
+                    pane::printed_height(&self.view, self.look, section.as_ref(), &showing, width)
+                }
+                _ => 0,
+            },
             Band::Program(program) => programs::printed_height(&self.view, program, search, width),
             Band::Startup(list) => {
                 starting::printed_height(&self.view, &starting::Showing::plain(list, search), width)
@@ -94,19 +96,20 @@ impl App {
 
     fn print_one_list(&self, band: Band, search: &Search, area: Rect, buffer: &mut Buffer) {
         match band {
-            Band::Account(subject) => accounts::render(
-                &self.view,
-                self.look,
-                &accounts::Showing {
-                    subject,
-                    search,
-                    cursor: 0,
-                    elsewhere: 0,
-                    arrows: Arrows::Away,
-                },
-                area,
-                buffer,
-            ),
+            Band::Pane(at) => {
+                if let (Some(section), Some(showing)) =
+                    (self.section(), self.printing_pane(at, search))
+                {
+                    pane::render(
+                        &self.view,
+                        self.look,
+                        section.as_ref(),
+                        &showing,
+                        area,
+                        buffer,
+                    );
+                }
+            }
             Band::Program(program) => programs::render(
                 &self.view,
                 self.look,
@@ -133,7 +136,7 @@ impl App {
 
 #[derive(Clone, Copy)]
 enum Band {
-    Account(Subject),
+    Pane(usize),
     Program(Program),
     Startup(Startup),
 }

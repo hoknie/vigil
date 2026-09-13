@@ -97,10 +97,10 @@ fn a_printed_accounts_page_still_holds_every_object_the_collector_wrote() {
     let page = text::to_text(&buffer);
 
     for object in [
-        "backdoor",
-        "docker",
+        "contractor",
+        "wheel",
         "%wheel",
-        "SHA256:3VaOaGZ8",
+        "SHA256:ie96zLdp",
         "backup",
         "pts/0",
     ] {
@@ -142,8 +142,8 @@ fn the_accounts_screen_draws_the_users_reading_and_not_the_ports_one() {
     let page = drawn(&app);
 
     assert_eq!(app.nav.at(), Screen::Accounts);
-    assert!(page.contains("account"), "{page}");
-    assert!(page.contains("backdoor"), "{page}");
+    assert!(page.contains("ACCOUNT"), "{page}");
+    assert!(page.contains("contractor"), "{page}");
     assert!(!page.contains("0.0.0.0:4444"), "{page}");
 }
 

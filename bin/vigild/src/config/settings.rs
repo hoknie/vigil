@@ -48,7 +48,7 @@ impl Config {
         if let Some(one_for_all) = self.interval_seconds {
             return one_for_all;
         }
-        vigil_collect::every_seconds_of_collector(collector).unwrap_or(WHEN_NOTHING_SAYS_OTHERWISE)
+        crate::modules::every_seconds_of(collector).unwrap_or(WHEN_NOTHING_SAYS_OTHERWISE)
     }
 
     pub fn every_seconds_by_default(&self) -> u32 {
@@ -86,7 +86,7 @@ mod tests {
             ..Config::default()
         };
 
-        for name in vigil_collect::collector_names() {
+        for name in crate::modules::names() {
             assert_eq!(config.every_seconds(name), 10, "{name}");
         }
     }

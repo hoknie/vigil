@@ -1,22 +1,20 @@
 use super::App;
 
 use crate::ui::helpers::layout::split;
-use crate::ui::screens::{findings, home, ports};
-use crate::ui::{Level, Offset, Origin, Program, Rungs, Screen, Startup, Subject, System};
+use crate::ui::screens::{findings, home};
+use crate::ui::{Level, Offset, Origin, Program, Rungs, Screen, Startup, System, holding};
 
 impl App {
     pub(super) fn rungs(&self) -> Rungs {
-        Rungs::new(
-            matches!(
+        let menu = match self.section() {
+            Some(_) => self.shown_panes().len() > 1,
+            None => matches!(
                 self.nav.at(),
-                Screen::Accounts
-                    | Screen::Ports
-                    | Screen::Programs
-                    | Screen::Startup
-                    | Screen::System
+                Screen::Programs | Screen::Startup | Screen::System
             ),
-            self.has_detail(),
-        )
+        };
+
+        Rungs::new(menu, self.has_detail())
     }
 
     pub(super) fn visit(&mut self, screen: Screen) {
@@ -134,17 +132,19 @@ impl App {
             };
         }
         match self.nav.at() {
-            Screen::Ports => self.nav.lists.ports.step_along(by, ports::Arrangement::ALL),
+            screen if holding(screen.name()).is_some() => {
+                let shown = self.shown_panes();
+                if let Some(panes) = self.panes_mut() {
+                    panes.step_along(by, &shown);
+                }
+            }
             Screen::Programs => self.nav.lists.programs.step_along(by, Program::ALL),
             Screen::System => self.nav.lists.system.step_along(by, System::ALL),
             Screen::Startup => {
                 let shown = Startup::on(&self.view);
                 self.nav.lists.startup.step_along(by, &shown);
             }
-            _ => {
-                let shown = Subject::on(&self.view);
-                self.nav.lists.accounts.step_along(by, &shown);
-            }
+            _ => {}
         }
         self.detail_open = false;
         self.nav.difference = Offset::default();

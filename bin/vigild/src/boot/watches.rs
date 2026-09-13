@@ -11,22 +11,12 @@ pub struct Family {
 
 #[cfg(target_os = "linux")]
 pub fn families(config: &Config) -> Result<Vec<Family>, String> {
-    use vigil_rules::{
-        account_rules, container_rules, file_rules, firewall_rules, launch_rules,
-        listening_port_rules, persistence_rules, process_rules, resource_rules,
-    };
+    use vigil_rules::{file_rules, launch_rules, persistence_rules, process_rules, resource_rules};
 
     use crate::helpers::rfc3339;
 
-    Ok(vec![
-        Family {
-            collector: Box::new(vigil_collect::PortsCollector::new(rfc3339::now)),
-            rules: listening_port_rules(),
-        },
-        Family {
-            collector: Box::new(vigil_collect::UsersCollector::new(rfc3339::now)),
-            rules: account_rules(),
-        },
+    let mut families = of_the_modules()?;
+    families.extend([
         Family {
             collector: Box::new(vigil_collect::PersistenceCollector::new(rfc3339::now)),
             rules: persistence_rules(),
@@ -36,16 +26,8 @@ pub fn families(config: &Config) -> Result<Vec<Family>, String> {
             rules: process_rules(),
         },
         Family {
-            collector: Box::new(vigil_collect::FirewallCollector::new(rfc3339::now)),
-            rules: firewall_rules(),
-        },
-        Family {
             collector: Box::new(vigil_collect::ResourcesCollector::new(rfc3339::now)),
             rules: resource_rules(config.resources.limits()),
-        },
-        Family {
-            collector: Box::new(vigil_collect::ContainersCollector::new(rfc3339::now)),
-            rules: container_rules(),
         },
         Family {
             collector: Box::new(vigil_collect::FilesCollector::new(
@@ -62,27 +44,40 @@ pub fn families(config: &Config) -> Result<Vec<Family>, String> {
             )),
             rules: launch_rules(),
         },
-    ])
+    ]);
+
+    Ok(families)
+}
+
+#[cfg(target_os = "linux")]
+fn of_the_modules() -> Result<Vec<Family>, String> {
+    use vigil_module::Settings;
+
+    use crate::helpers::rfc3339;
+
+    let mut families = Vec::new();
+    for module in crate::modules::modules() {
+        let settings = Settings::plain(rfc3339::now);
+        families.push(Family {
+            collector: module.collector(&settings)?,
+            rules: module.rules(&settings),
+        });
+    }
+
+    Ok(families)
 }
 
 #[cfg(not(target_os = "linux"))]
 pub fn families(config: &Config) -> Result<Vec<Family>, String> {
-    use vigil_rules::{
-        account_rules, container_rules, file_rules, firewall_rules, launch_rules,
-        listening_port_rules, persistence_rules, process_rules, resource_rules,
-    };
+    use vigil_rules::{file_rules, launch_rules, persistence_rules, process_rules, resource_rules};
 
     let _ = (
-        container_rules(),
         file_rules(),
         config.files.ceiling_bytes,
         config.record_launch_arguments,
         resource_rules(config.resources.limits()),
-        listening_port_rules(),
-        account_rules(),
         persistence_rules(),
         process_rules(),
-        firewall_rules(),
         launch_rules(),
     );
     Err(format!(

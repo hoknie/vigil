@@ -1,8 +1,8 @@
 use ratatui::crossterm::event::KeyCode;
 use vigil_model::Severity;
 
+use crate::ui::Screen;
 use crate::ui::fixture;
-use crate::ui::{Screen, Subject};
 
 use super::harness::{app, into, press};
 
@@ -90,7 +90,7 @@ fn each_list_keeps_the_row_its_reader_left_it_on() {
     let mut app = app();
     into(&mut app, Screen::Accounts, 120, 40);
     press(&mut app, KeyCode::Down);
-    let was = app.accounts_keys()[app.nav.lists.accounts.at()].clone();
+    let was = app.pane_keys()[app.panes().expect("a section").at()].clone();
 
     press(&mut app, KeyCode::Esc);
     press(&mut app, KeyCode::Right);
@@ -99,9 +99,9 @@ fn each_list_keeps_the_row_its_reader_left_it_on() {
     press(&mut app, KeyCode::Esc);
     press(&mut app, KeyCode::Left);
 
-    assert_eq!(app.nav.lists.accounts.showing(), Subject::Users);
+    assert_eq!(app.panes().expect("a section").showing(), 0);
     assert_eq!(
-        app.accounts_keys()[app.nav.lists.accounts.at()],
+        app.pane_keys()[app.panes().expect("a section").at()],
         was,
         "coming back to a list put the reader at the top of it"
     );

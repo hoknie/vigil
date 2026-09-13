@@ -72,7 +72,7 @@ mod tests {
     #[test]
     fn a_phase_never_lands_outside_the_period_it_shifts() {
         for every_seconds in [1u32, 15, 30, 300, 3_600] {
-            for collector in vigil_collect::collector_names() {
+            for collector in crate::modules::names() {
                 assert!(seconds(A_HOST, collector, every_seconds) < every_seconds);
             }
         }

@@ -5,7 +5,7 @@ use std::time::Instant;
 use serde_json::json;
 use vigil_collect::{CollectError, Collector, Health};
 use vigil_model::{CollectorState, Finding, Snapshot};
-use vigil_rules::listening_port_rules;
+use vigil_module::{Module, Settings};
 use vigil_store::FileStore;
 
 use crate::budget::Meter;
@@ -123,7 +123,8 @@ fn watching(name: &str, health: Health, readings: Vec<Snapshot>) -> Watching {
         round: Round {
             watches: vec![Watch::new(
                 Box::new(Handed(collector.clone())),
-                listening_port_rules(),
+                vigil_ports::Ports
+                    .rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
             )],
             store: FileStore::open(&directory).expect("opens"),
             policy: Policy::new(Vec::new()),

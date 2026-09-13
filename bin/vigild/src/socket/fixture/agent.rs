@@ -1,13 +1,14 @@
-use vigil_collect::{Health, every_seconds_of_collector};
+use vigil_collect::Health;
 use vigil_model::Snapshot;
 
+use crate::modules::every_seconds_of;
 use crate::socket::State;
 use crate::types::{Reading, Startup};
 
 use super::host;
 
 pub fn period(collector: &str) -> u32 {
-    every_seconds_of_collector(collector)
+    every_seconds_of(collector)
         .unwrap_or_else(|| panic!("{collector} is not a collector this build ships"))
 }
 

@@ -4,8 +4,8 @@ use ratatui::widgets::Row as TableRow;
 use super::fields::{flag, strings, text};
 use super::row::Row;
 use crate::ui::helpers::layout::column;
-use crate::ui::screens::ports::basename;
 use crate::ui::{Notice, Search, View};
+use vigil_view::basename;
 
 pub(super) fn header(wide: bool) -> TableRow<'static> {
     match wide {

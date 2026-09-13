@@ -57,7 +57,7 @@ fn the_period_the_daemon_answers_with_is_the_one_the_collector_declares() {
 fn a_collector_this_build_ships_and_no_answer_names_is_one_no_screen_has_seen() {
     let pinned = settled();
 
-    for name in vigil_collect::collector_names() {
+    for name in crate::modules::names() {
         assert!(
             pinned
                 .values

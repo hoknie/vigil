@@ -6,6 +6,7 @@ mod config;
 mod helpers;
 mod identity;
 mod loops;
+mod modules;
 mod socket;
 mod types;
 mod wizard;

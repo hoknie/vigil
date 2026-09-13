@@ -5,8 +5,8 @@ use super::fields::text;
 use super::row::Row;
 use crate::ui::helpers::layout::column;
 use crate::ui::helpers::words::moment;
-use crate::ui::screens::ports::basename;
 use crate::ui::{Notice, Search, View};
+use vigil_view::basename;
 
 pub(super) fn header(wide: bool) -> TableRow<'static> {
     match wide {

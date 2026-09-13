@@ -1,7 +1,6 @@
 use ratatui::crossterm::event::KeyCode;
 
-use crate::ui::screens::ports;
-use crate::ui::{Level, Screen, Subject};
+use crate::ui::{Level, Screen};
 
 use super::harness::{app, drawn, drawn_at, into, press, typed};
 
@@ -34,9 +33,9 @@ fn the_ports_views_are_a_submenu_and_the_filter_holds_across_both_of_them() {
 
     press(&mut app, KeyCode::Right);
     let grouped = drawn_at(&app, 120, 24);
-    assert_eq!(app.nav.lists.ports.showing(), ports::Arrangement::ByProgram);
+    assert_eq!(app.panes().expect("a section").showing(), 1);
     assert!(grouped.contains("grouped by program"), "{grouped}");
-    assert!(grouped.contains("nginx (2)"), "{grouped}");
+    assert!(grouped.contains("nginx (1)"), "{grouped}");
 
     press(&mut app, KeyCode::Down);
     press(&mut app, KeyCode::Char('t'));
@@ -46,9 +45,9 @@ fn the_ports_views_are_a_submenu_and_the_filter_holds_across_both_of_them() {
 
     press(&mut app, KeyCode::Esc);
     press(&mut app, KeyCode::Left);
-    assert_eq!(app.nav.lists.ports.showing(), ports::Arrangement::Flat);
+    assert_eq!(app.panes().expect("a section").showing(), 0);
     assert!(
-        app.ports_protocols.holding_back(),
+        app.panes().expect("a section").hiding(),
         "the filter is the screen's, not the view's, and climbing a rung does not drop it"
     );
 }
@@ -61,15 +60,15 @@ fn a_search_on_one_ports_view_does_not_narrow_the_other() {
     press(&mut app, KeyCode::Char('/'));
     typed(&mut app, "nginx");
     press(&mut app, KeyCode::Enter);
-    assert!(app.nav.lists.ports.search().holding_back());
+    assert!(app.panes().expect("a section").search().holding_back());
 
     press(&mut app, super::harness::number(Screen::Accounts));
     press(&mut app, super::harness::number(Screen::Ports));
     press(&mut app, KeyCode::Right);
 
-    assert_eq!(app.nav.lists.ports.showing(), ports::Arrangement::ByProgram);
+    assert_eq!(app.panes().expect("a section").showing(), 1);
     assert!(
-        !app.nav.lists.ports.search().holding_back(),
+        !app.panes().expect("a section").search().holding_back(),
         "the other view is showing everything"
     );
     assert!(
@@ -86,7 +85,13 @@ fn a_letter_that_belongs_to_one_screen_does_nothing_on_another() {
 
     press(&mut app, KeyCode::Char('t'));
 
-    assert!(!app.ports_protocols.holding_back());
+    assert!(
+        !app.nav
+            .lists
+            .of("ports")
+            .expect("the ports section")
+            .hiding()
+    );
 }
 
 #[test]
@@ -249,15 +254,30 @@ fn the_ports_and_the_accounts_have_a_search_of_their_own() {
     assert!(!page.contains("/tmp/.x/nc"), "{page}");
 
     press(&mut app, KeyCode::Esc);
-    assert!(!app.nav.lists.ports.search().holding_back());
+    assert!(!app.panes().expect("a section").search().holding_back());
 
     into(&mut app, Screen::Accounts, 120, 40);
     press(&mut app, KeyCode::Char('/'));
-    typed(&mut app, "docker");
+    typed(&mut app, "contractor");
     press(&mut app, KeyCode::Enter);
-    assert!(app.nav.lists.accounts.search().holding_back());
-    assert!(!app.nav.lists.ports.search().holding_back());
-    assert!(drawn_at(&app, 120, 40).contains("docker"));
+    assert!(
+        app.nav
+            .lists
+            .of("accounts")
+            .expect("the accounts section")
+            .search()
+            .holding_back()
+    );
+    assert!(
+        !app.nav
+            .lists
+            .of("ports")
+            .expect("the ports section")
+            .search()
+            .holding_back(),
+        "a search typed into one section is not a search in another"
+    );
+    assert!(drawn_at(&app, 120, 40).contains("contractor"));
 }
 
 #[test]
@@ -302,23 +322,30 @@ fn a_search_belongs_to_the_list_it_was_typed_into_and_the_others_say_they_are_na
     let mut app = app();
     press(&mut app, super::harness::number(Screen::Accounts));
     press(&mut app, KeyCode::Right);
-    assert_eq!(app.nav.lists.accounts.showing(), Subject::Groups);
+    assert_eq!(app.panes().expect("a section").showing(), 1);
 
     press(&mut app, KeyCode::Char('/'));
-    typed(&mut app, "docker");
+    typed(&mut app, "wheel");
     press(&mut app, KeyCode::Enter);
 
     let page = drawn_at(&app, 120, 40);
-    assert!(page.contains("docker"), "{page}");
-    assert!(!page.contains("wheel"), "{page}");
+    assert!(page.contains("wheel"), "{page}");
+    assert_eq!(
+        app.pane_keys(),
+        vec!["group|wheel".to_string()],
+        "the search narrowed the list it was typed into"
+    );
 
     press(&mut app, super::harness::number(Screen::Ports));
     press(&mut app, super::harness::number(Screen::Accounts));
     press(&mut app, KeyCode::Left);
-    assert_eq!(app.nav.lists.accounts.showing(), Subject::Users);
+    assert_eq!(app.panes().expect("a section").showing(), 0);
 
     let page = drawn_at(&app, 160, 40);
-    assert!(page.contains("backdoor"), "the other list is whole: {page}");
+    assert!(
+        page.contains("contractor"),
+        "the other list is whole: {page}"
+    );
     assert!(
         page.contains("other list(s) narrowed by a search"),
         "and it says that one of them is not: {page}"
