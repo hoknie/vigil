@@ -37,4 +37,5 @@ fn a_module_names_the_reading_it_takes_and_how_often_it_takes_it() {
         "nothing on the host has to be started for /proc/net"
     );
     assert!(!Ports.subject().is_empty());
+    assert!(Ports.section().is_some());
 }

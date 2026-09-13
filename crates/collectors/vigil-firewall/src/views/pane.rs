@@ -66,6 +66,10 @@ impl Pane for TheRuleset {
         SORTED_BY.to_vec()
     }
 
+    fn nothing_was_read(&self) -> &'static str {
+        "No table, chain or policy is listed here: nothing was read."
+    }
+
     fn offers(&self) -> Offers {
         Offers::default()
     }

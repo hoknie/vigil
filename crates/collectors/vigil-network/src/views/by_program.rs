@@ -123,6 +123,10 @@ impl Pane for ByProgram {
         kinds()
     }
 
+    fn nothing_was_read(&self) -> &'static str {
+        "No listening socket is listed here: nothing was read."
+    }
+
     fn offers(&self) -> Offers {
         Offers::default().sorted(false)
     }

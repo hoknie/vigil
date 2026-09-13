@@ -1,8 +1,10 @@
 use vigil_collect::Collector;
 use vigil_module::{Module, Settings};
 use vigil_rules::RuleSet;
+use vigil_view::Section;
 
 use crate::rules::listening_port_rules;
+use crate::views::Listening;
 
 const FAMILIES: &[&str] = &["port.listen"];
 
@@ -27,6 +29,10 @@ impl Module for Ports {
 
     fn rules(&self, _settings: &Settings) -> RuleSet {
         listening_port_rules()
+    }
+
+    fn section(&self) -> Option<Box<dyn Section>> {
+        Some(Box::new(Listening))
     }
 
     fn families(&self) -> &[&'static str] {

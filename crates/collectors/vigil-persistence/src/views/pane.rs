@@ -103,6 +103,10 @@ impl Pane for Of {
         }
     }
 
+    fn nothing_was_read(&self) -> &'static str {
+        "Nothing this host starts by itself is listed here: nothing was read."
+    }
+
     fn offers(&self) -> Offers {
         Offers::default().sorted(false)
     }

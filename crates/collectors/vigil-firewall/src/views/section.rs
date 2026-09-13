@@ -20,4 +20,8 @@ impl Section for WhatTheHostLetsIn {
     fn panes(&self) -> Vec<Box<dyn Pane>> {
         vec![Box::new(TheRuleset)]
     }
+
+    fn shows_what_has_gone(&self) -> bool {
+        true
+    }
 }

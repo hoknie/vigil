@@ -78,6 +78,10 @@ impl Pane for Of {
         Some(notices::nothing_read())
     }
 
+    fn nothing_was_read(&self) -> &'static str {
+        "No account is listed here: nothing was read."
+    }
+
     fn offers(&self) -> Offers {
         Offers::default().sorted(false)
     }
