@@ -5,7 +5,7 @@ use super::App;
 
 use crate::ui::details::section;
 use crate::ui::screens::{home, pane};
-use crate::ui::{Arrows, Search, holding};
+use crate::ui::{Arrows, Search};
 
 impl App {
     pub(super) fn print_every_section(&self, area: Rect, buffer: &mut Buffer) {
@@ -67,7 +67,7 @@ impl App {
 
     fn every_list(&self) -> Vec<Band> {
         match self.nav.at() {
-            screen if holding(screen.name()).is_some() => {
+            screen if screen.draws_a_reading() => {
                 self.shown_panes().into_iter().map(Band::Pane).collect()
             }
             _ => Vec::new(),

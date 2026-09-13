@@ -1,6 +1,6 @@
 use super::App;
 
-use crate::ui::{Anchor, Gone, Level, Origin, Screen, holding};
+use crate::ui::{Anchor, Gone, Level, Origin, Screen};
 
 impl App {
     pub(super) fn jump_to_object(&mut self) {
@@ -22,7 +22,7 @@ impl App {
         let last_seen = Gone::of(finding, anchor.key.clone());
 
         if let Some(collector) = self.reading_needed(&anchor) {
-            self.fetch_reading(collector);
+            self.fetch_reading(&collector);
         }
 
         let gone = match self.point_at(&anchor) {
@@ -51,7 +51,7 @@ impl App {
 
     fn point_at(&mut self, anchor: &Anchor) -> bool {
         match anchor.screen {
-            screen if holding(screen.name()).is_some() => {
+            screen if screen.draws_a_reading() => {
                 let Some(row) = self.row_named(screen, &anchor.key) else {
                     return false;
                 };

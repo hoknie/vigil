@@ -68,12 +68,12 @@ fn each_reading_of_the_section_asks_the_agent_for_the_collector_that_holds_it() 
     let mut app = app();
     press(&mut app, number(screen("system")));
 
-    assert_eq!(app.wanted_reading(), Some("resources"));
+    assert_eq!(app.wanted_reading().as_deref(), Some("resources"));
 
     press(&mut app, KeyCode::Right);
 
     assert_eq!(
-        app.wanted_reading(),
+        app.wanted_reading().as_deref(),
         Some("files"),
         "a section of two readings asks for the one the reader is looking at, and not for both"
     );

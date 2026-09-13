@@ -5,13 +5,13 @@ use super::App;
 use crate::ui::details::pieces;
 use crate::ui::helpers::finding::diff;
 use crate::ui::helpers::layout::split;
-use crate::ui::{Level, Screen, holding};
+use crate::ui::{Level, Screen};
 
 impl App {
     pub(super) fn has_detail(&self) -> bool {
         match self.nav.at() {
             Screen::FINDINGS => self.selected_finding().is_some(),
-            screen if holding(screen.name()).is_some() => !self.pane_keys().is_empty(),
+            screen if screen.draws_a_reading() => !self.pane_keys().is_empty(),
             _ => false,
         }
     }
@@ -30,7 +30,7 @@ impl App {
     pub(super) fn detail_height(&self, area: Rect) -> usize {
         let width = self.look.text_width(area.width);
         match self.nav.at() {
-            screen if holding(screen.name()).is_some() => {
+            screen if screen.draws_a_reading() => {
                 pieces::height(&self.pane_detail(), self.look, width)
             }
             _ => diff::height(self.selected_finding(), self.look, width),

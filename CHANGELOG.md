@@ -8,6 +8,8 @@ Format:
 ## [1.0.6] - 09/--/2026
 
 ### Changed
+- update screen for unknown
+- a pane names now is dyn
 - `vigil.yaml` is read in two passes: the daemon's own keys, then the key each module names as its own
 - reorganized crates
 

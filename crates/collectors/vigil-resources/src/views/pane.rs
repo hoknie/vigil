@@ -18,11 +18,11 @@ const SORTED_BY: &[&str] = &["KIND", "WHAT", "FREE", "INODES", "SIZE"];
 pub(super) struct TheHost;
 
 impl Pane for TheHost {
-    fn name(&self) -> &'static str {
+    fn name(&self) -> &str {
         "the host"
     }
 
-    fn caption(&self) -> &'static str {
+    fn caption(&self) -> &str {
         "THE HOST"
     }
 
@@ -30,12 +30,12 @@ impl Pane for TheHost {
         "THE SELECTED PART"
     }
 
-    fn about(&self) -> &'static str {
+    fn about(&self) -> &str {
         "the boot this host is running, the memory it has and the filesystems it holds its \
          files on"
     }
 
-    fn reads(&self) -> &'static str {
+    fn reads(&self) -> &str {
         "resources"
     }
 

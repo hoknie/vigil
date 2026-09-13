@@ -2,7 +2,8 @@ use super::standing::Standing;
 use crate::ui::{Group, Screen};
 
 pub struct Row {
-    pub opens: Option<Screen>,
+    pub opens: Screen,
+    pub opens_reading: Option<String>,
     pub number: Option<u8>,
     pub name: String,
     pub holds: String,
@@ -12,9 +13,10 @@ pub struct Row {
 
 impl Row {
     pub fn group(&self) -> Group {
-        match self.opens {
-            Some(screen) => screen.group(),
-            None => Group::Reads,
-        }
+        self.opens.group()
+    }
+
+    pub fn is_a_section_of_its_own(&self) -> bool {
+        self.opens_reading.is_none()
     }
 }

@@ -10,11 +10,11 @@ const ROOM_FOR_THE_PATH: u16 = 118;
 pub struct Launches;
 
 impl Pane for Launches {
-    fn name(&self) -> &'static str {
+    fn name(&self) -> &str {
         "launches"
     }
 
-    fn caption(&self) -> &'static str {
+    fn caption(&self) -> &str {
         "LAUNCHES"
     }
 
@@ -22,12 +22,12 @@ impl Pane for Launches {
         "THE SELECTED LAUNCH"
     }
 
-    fn about(&self) -> &'static str {
+    fn about(&self) -> &str {
         "one row per person and program the kernel's audit records have seen run; rows are \
          never removed from it"
     }
 
-    fn reads(&self) -> &'static str {
+    fn reads(&self) -> &str {
         "launches"
     }
 

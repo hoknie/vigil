@@ -43,7 +43,7 @@ fn a_section_past_the_ninth_draws_no_number_and_is_opened_by_the_cursor() {
     let view = fixture::view();
 
     for row in rows(&view) {
-        match row.opens.and_then(|screen| screen.digit()) {
+        match row.opens.digit() {
             Some(number) => assert_eq!(row.number, Some(number)),
             None => assert_eq!(
                 row.number, None,

@@ -2,7 +2,7 @@ use super::App;
 
 use crate::ui::helpers::layout::split;
 use crate::ui::screens::{findings, home};
-use crate::ui::{Level, Offset, Origin, Rungs, Screen, holding};
+use crate::ui::{Level, Offset, Origin, Rungs, Screen};
 
 impl App {
     pub(super) fn rungs(&self) -> Rungs {
@@ -112,9 +112,27 @@ impl App {
         let Some(row) = self.section_under_cursor() else {
             return;
         };
-        match row.opens {
-            Some(screen) => self.visit(screen),
-            None => self.message = Some(home::nothing_to_open(&row.name)),
+        let screen = row.opens;
+
+        self.visit(screen);
+        if let Some(named) = row.opens_reading {
+            self.onto_the_reading(screen, &named);
+        }
+    }
+
+    fn onto_the_reading(&mut self, screen: Screen, named: &str) {
+        let Some(section) = self.section_of(screen) else {
+            return;
+        };
+        let Some(at) = section
+            .panes()
+            .iter()
+            .position(|pane| pane.reads() == named)
+        else {
+            return;
+        };
+        if let Some(panes) = self.panes_of_mut(screen) {
+            panes.show(at);
         }
     }
 
@@ -126,7 +144,7 @@ impl App {
             };
         }
         match self.nav.at() {
-            screen if holding(screen.name()).is_some() => {
+            screen if screen.draws_a_reading() => {
                 let shown = self.shown_panes();
                 if let Some(panes) = self.panes_mut() {
                     panes.step_along(by, &shown);

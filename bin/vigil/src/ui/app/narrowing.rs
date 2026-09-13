@@ -1,6 +1,6 @@
 use super::App;
 
-use crate::ui::{Cursor, Level, Offset, Panes, Screen, Search, holding};
+use crate::ui::{Cursor, Level, Offset, Panes, Screen, Search};
 
 pub const DETAILS: char = 'd';
 
@@ -12,7 +12,7 @@ impl App {
     pub(super) fn search(&self) -> Option<&Search> {
         match self.nav.at() {
             Screen::FINDINGS => Some(self.filter.search()),
-            screen if holding(screen.name()).is_some() => self.panes().map(Panes::search),
+            screen if screen.draws_a_reading() => self.panes().map(Panes::search),
             _ => None,
         }
     }
@@ -20,7 +20,7 @@ impl App {
     pub(super) fn search_mut(&mut self) -> Option<&mut Search> {
         match self.nav.at() {
             Screen::FINDINGS => Some(self.filter.search_mut()),
-            screen if holding(screen.name()).is_some() => self.panes_mut().map(Panes::search_mut),
+            screen if screen.draws_a_reading() => self.panes_mut().map(Panes::search_mut),
             _ => None,
         }
     }
@@ -31,7 +31,7 @@ impl App {
                 self.detail_open = !self.detail_open;
                 true
             }
-            screen if holding(screen.name()).is_some() => self.switch_a_kind(key),
+            screen if screen.draws_a_reading() => self.switch_a_kind(key),
             _ => false,
         };
         if moved {
@@ -91,7 +91,7 @@ impl App {
             .panes()
             .iter()
             .find(|pane| pane.arrangements().iter().any(|one| one.key == key))
-            .map(|pane| pane.name())
+            .map(|pane| pane.name().to_string())
         else {
             return false;
         };
@@ -114,7 +114,7 @@ impl App {
         let everything = self.level == Level::Menu;
         match self.nav.at() {
             Screen::FINDINGS => self.filter.holding_back(),
-            screen if holding(screen.name()).is_some() => self.panes().is_some_and(|panes| {
+            screen if screen.draws_a_reading() => self.panes().is_some_and(|panes| {
                 panes.search().holding_back() || (everything && panes.hiding())
             }),
             _ => false,
@@ -127,7 +127,7 @@ impl App {
                 self.filter.clear();
                 self.nav.findings = Cursor::default();
             }
-            screen if holding(screen.name()).is_some() => {
+            screen if screen.draws_a_reading() => {
                 let menu = self.level == Level::Menu;
                 if let Some(panes) = self.panes_mut() {
                     panes.widen();

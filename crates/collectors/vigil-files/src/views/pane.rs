@@ -15,11 +15,11 @@ const SORTED_BY: &[&str] = &["KIND", "PATH", "MODE", "OWNER", "SIZE", "STANDING"
 pub(super) struct WatchedFiles;
 
 impl Pane for WatchedFiles {
-    fn name(&self) -> &'static str {
+    fn name(&self) -> &str {
         "watched files"
     }
 
-    fn caption(&self) -> &'static str {
+    fn caption(&self) -> &str {
         "WATCHED FILES"
     }
 
@@ -27,12 +27,12 @@ impl Pane for WatchedFiles {
         "THE SELECTED PATH"
     }
 
-    fn about(&self) -> &'static str {
+    fn about(&self) -> &str {
         "the files this host is configured by, and the directories on PATH a program could be \
          dropped into"
     }
 
-    fn reads(&self) -> &'static str {
+    fn reads(&self) -> &str {
         "files"
     }
 

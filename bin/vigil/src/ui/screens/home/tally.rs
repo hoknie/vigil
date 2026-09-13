@@ -2,7 +2,10 @@ use super::row::Row;
 use crate::ui::Screen;
 
 pub(super) fn tally(rows: &[Row], width: u16) -> String {
-    let sections = rows.iter().filter(|row| row.opens.is_some()).count();
+    let sections = rows
+        .iter()
+        .filter(|row| row.is_a_section_of_its_own())
+        .count();
     let numbered = Screen::numbered();
     let off = rows
         .iter()
