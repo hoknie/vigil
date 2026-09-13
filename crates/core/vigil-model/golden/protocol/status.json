@@ -164,6 +164,12 @@
         ],
         "always": false
       },
+      "configuration_path": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
       "findings": {
         "types": [
           "object"

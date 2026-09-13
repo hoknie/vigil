@@ -3,14 +3,21 @@ use ratatui::text::Line;
 use super::tally::journal;
 use crate::ui::{Filter, Look, Notice, View};
 
-pub(super) fn notice(view: &View, filter: &Filter) -> Notice {
-    match (&view.found.refused, filter.holding_back()) {
-        (Some(reason), _) => Notice::loud("The findings were refused.").saying(reason.clone()),
-        (None, true) => Notice::plain(format!("Nothing here is {}.", filter.describe())).saying(
+pub(super) fn notice(view: &View, filter: &Filter, hidden: usize) -> Notice {
+    match (&view.found.refused, filter.holding_back(), hidden) {
+        (Some(reason), _, _) => Notice::loud("The findings were refused.").saying(reason.clone()),
+        (None, _, hidden) if hidden > 0 => {
+            Notice::plain("Nothing is on this screen: what the agent raised is silenced from here.")
+                .saying(format!(
+                    "{hidden} row(s) hidden here, and the agent goes on raising them until it is \
+             restarted. Press u to take the entry out of the configuration again."
+                ))
+        }
+        (None, true, _) => Notice::plain(format!("Nothing here is {}.", filter.describe())).saying(
             "Filtered here, not by the agent: press f to lower the floor, / to change the \
              search.",
         ),
-        (None, false) => nothing_open(view),
+        (None, false, _) => nothing_open(view),
     }
 }
 

@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::Suppression;
+use vigil_config::Suppression;
 
 const WHEN_NOTHING_SAYS_OTHERWISE: u32 = 30;
 

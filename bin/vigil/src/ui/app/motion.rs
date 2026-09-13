@@ -116,8 +116,10 @@ impl App {
         if let Some(panes) = self.panes_mut() {
             panes.cursor_mut().settle(&rows);
         }
+        self.dismissed.settle(&self.view.found.findings);
         let findings = findings::keys(&self.passing());
         self.nav.findings.settle(&findings);
+        self.picked.settle(&findings);
         self.nav.summary.settle(
             summary::height(
                 &self.view,

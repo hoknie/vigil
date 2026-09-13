@@ -10,7 +10,9 @@ use crate::cli::{Console, Opening};
 use super::App;
 use crate::link::Link;
 
-use crate::ui::{Audience, Chooser, Filter, Level, Look, Nav, Palette, Screen, View};
+use crate::ui::{
+    Audience, Chooser, Dismissed, Filter, Level, Look, Nav, Palette, Picked, Screen, View,
+};
 
 const REFRESH: Duration = Duration::from_secs(2);
 const TICK: Duration = Duration::from_millis(250);
@@ -24,6 +26,10 @@ impl App {
             nav: Nav::opening(at),
             view: View::nothing_yet(options.socket.clone()),
             filter: Filter::default(),
+            picked: Picked::default(),
+            dismissed: Dismissed::default(),
+            asking: None,
+            named_configuration: options.config.clone(),
             detail_open: opening.difference,
             level: Level::default(),
             gone: None,

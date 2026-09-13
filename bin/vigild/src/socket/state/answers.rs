@@ -17,6 +17,7 @@ impl State {
         AgentStatus {
             version: env!("CARGO_PKG_VERSION").to_string(),
             started_at: self.startup.started_at.clone(),
+            configuration_path: Some(self.startup.configuration_path.clone()),
             interval_seconds: self.startup.interval_seconds,
             collectors: self.collectors.clone(),
             reporters: self.reporters.clone(),

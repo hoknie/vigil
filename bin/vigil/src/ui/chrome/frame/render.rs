@@ -70,10 +70,16 @@ pub fn render(
     title(look, view).render(band(0), buffer);
     Paragraph::new(Line::styled(status(view, area.width), look.palette.quiet()))
         .render(band(area.height - 2), buffer);
-    match hints.message {
-        Some(message) => Paragraph::new(Line::styled(format!(" {message}"), look.palette.alarm()))
-            .render(band(area.height - 1), buffer),
-        None => Paragraph::new(Line::styled(
+    match (hints.message, hints.asking) {
+        (Some(message), _) => {
+            Paragraph::new(Line::styled(format!(" {message}"), look.palette.alarm()))
+                .render(band(area.height - 1), buffer)
+        }
+        (None, Some(asking)) => {
+            Paragraph::new(Line::styled(asking.to_string(), look.palette.heading()))
+                .render(band(area.height - 1), buffer)
+        }
+        (None, None) => Paragraph::new(Line::styled(
             keys(&hints, screen, area.width),
             look.palette.quiet(),
         ))

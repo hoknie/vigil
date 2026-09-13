@@ -28,6 +28,49 @@ pub(super) fn app() -> App {
     )
 }
 
+pub(super) const SHIPPED: &str = "\
+state_dir: /var/lib/vigil
+suppressions: []
+reporters: []
+";
+
+pub(super) fn a_configuration() -> String {
+    let directory = std::env::temp_dir().join(format!(
+        "vigil-console-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|since| since.as_nanos())
+            .unwrap_or(0)
+    ));
+    std::fs::create_dir_all(&directory).expect("temp dir");
+    let path = directory.join("vigil.yaml");
+    std::fs::write(&path, SHIPPED).expect("writes");
+    path.to_str().expect("utf-8").to_string()
+}
+
+pub(super) fn watching(path: &str) -> App {
+    on(
+        &opened(&[
+            "ui",
+            "--socket",
+            "/nonexistent/vigil.sock",
+            "--config",
+            path,
+        ]),
+        Screen::HOME,
+    )
+}
+
+pub(super) fn silenced(path: &str) -> Vec<String> {
+    let text = std::fs::read_to_string(path).expect("readable");
+    vigil_config::silenced(&text)
+        .expect("the daemon would read it")
+        .iter()
+        .map(|held| held.describe())
+        .collect()
+}
+
 pub(super) fn on(options: &Console, screen: Screen) -> App {
     let mut app = App::new(
         options,

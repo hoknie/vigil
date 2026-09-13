@@ -21,12 +21,14 @@ const ROOM_FOR_THE_CURSOR: u16 = 8;
 
 impl App {
     pub fn draw(&self, area: Rect, buffer: &mut Buffer) {
+        let asking = self.asking().map(|asking| asking.line(area.width as usize));
         let body = frame::render(
             self.look,
             self.nav.at(),
             &self.view,
             frame::Hints {
                 typing: self.typing(),
+                asking: asking.as_deref(),
                 level: self.level,
                 message: self.message.as_deref(),
                 back: self.back(),
@@ -285,6 +287,7 @@ impl App {
                 self.selected_finding(),
                 self.look,
                 self.nav.difference.top(),
+                self.picked.count(),
                 area,
                 buffer,
             ),

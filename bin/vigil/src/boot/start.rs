@@ -8,8 +8,9 @@ use clap::Parser;
 
 use crate::cli::{
     CAPTURE_MOVED, COLLECTOR_LIVES_IN_THE_DAEMON, CONFIGURE_LIVES_IN_THE_DAEMON, Cli, Command,
-    Console, the_old_shape,
+    Console, Silencing, the_old_shape,
 };
+use crate::config;
 use crate::ui::{App, Audience, Palette, Screen, to_text};
 
 const NARROWEST: u16 = 80;
@@ -44,6 +45,24 @@ pub fn start(arguments: impl IntoIterator<Item = String>) -> ExitCode {
             false => interactive(&ui.console),
         },
         Command::Capture(console) => capture(&console),
+        Command::Suppress(asked) => {
+            let options = asked.options();
+            let (doing, outcome) = match asked.doing {
+                Silencing::Add(_) => ("add", config::add(&options)),
+                Silencing::Remove(_) => ("remove", config::remove(&options)),
+                Silencing::List(_) => ("list", config::list(&options)),
+            };
+            match outcome {
+                Ok(said) => {
+                    eprintln!("vigil suppress {doing}:\n  {}", said.join("\n  "));
+                    ExitCode::SUCCESS
+                }
+                Err(error) => {
+                    eprintln!("vigil suppress {doing}: {error}");
+                    ExitCode::FAILURE
+                }
+            }
+        }
         Command::Configure => {
             eprintln!("{CONFIGURE_LIVES_IN_THE_DAEMON}");
             ExitCode::from(2)

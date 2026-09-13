@@ -6,7 +6,7 @@ pub const DETAILS: char = 'd';
 
 impl App {
     pub(super) fn typing(&self) -> bool {
-        self.search().is_some_and(Search::typing)
+        self.asking().is_some() || self.search().is_some_and(Search::typing)
     }
 
     pub(super) fn search(&self) -> Option<&Search> {
@@ -31,6 +31,7 @@ impl App {
                 self.detail_open = !self.detail_open;
                 true
             }
+            Screen::FINDINGS => self.picking_key(key),
             screen if screen.draws_a_reading() => self.switch_a_kind(key),
             _ => false,
         };

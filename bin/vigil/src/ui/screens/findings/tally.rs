@@ -3,8 +3,14 @@ use vigil_model::StoreStatus;
 
 use crate::ui::{Filter, Sorting, View};
 
-pub(super) fn tally(view: &View, filter: &Filter, sorting: Sorting, footer: Rect) -> String {
-    let shown = filter.passing(&view.found.findings).len();
+pub(super) fn tally(
+    view: &View,
+    filter: &Filter,
+    sorting: Sorting,
+    shown: usize,
+    hidden: usize,
+    footer: Rect,
+) -> String {
     let mut parts = vec![format!(
         "{shown} shown of {} held{} · cap {}",
         view.found.findings.len(),
@@ -14,6 +20,12 @@ pub(super) fn tally(view: &View, filter: &Filter, sorting: Sorting, footer: Rect
         },
         view.found.capacity,
     )];
+
+    if hidden > 0 {
+        parts.push(format!(
+            "{hidden} silenced from here \u{b7} u takes the entry back out"
+        ));
+    }
 
     if !sorting.as_read() {
         parts.push(format!("sorted by {}", sorting.describe(super::SORTED_BY)));

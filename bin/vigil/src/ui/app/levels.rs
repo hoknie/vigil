@@ -22,6 +22,7 @@ impl App {
     }
 
     pub(super) fn arrive(&mut self) {
+        self.picked.clear();
         self.level = Level::top(self.rungs());
         self.detail_open = false;
         self.gone = None;

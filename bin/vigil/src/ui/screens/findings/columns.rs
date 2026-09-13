@@ -4,15 +4,27 @@ use vigil_model::Finding;
 
 use super::shape::Shape;
 
-pub(super) fn header(shape: Shape) -> Row<'static> {
-    match shape {
-        Shape::Roomy => Row::new(vec!["TIME", "SEVERITY", "KIND", "TITLE", "OBJECT", "SEEN"]),
-        Shape::Plain => Row::new(vec!["TIME", "SEVERITY", "KIND", "TITLE"]),
-        Shape::Cramped => Row::new(vec!["TIME", "SEVERITY", "TITLE"]),
+pub(super) fn header(shape: Shape, picking: bool) -> Row<'static> {
+    let mut named = match shape {
+        Shape::Roomy => vec!["TIME", "SEVERITY", "KIND", "TITLE", "OBJECT", "SEEN"],
+        Shape::Plain => vec!["TIME", "SEVERITY", "KIND", "TITLE"],
+        Shape::Cramped => vec!["TIME", "SEVERITY", "TITLE"],
+    };
+    if picking {
+        named.insert(0, "");
     }
+    Row::new(named)
 }
 
-pub(super) fn widths(shape: Shape, severity: u16) -> Vec<Constraint> {
+pub(super) fn widths(shape: Shape, severity: u16, picking: bool) -> Vec<Constraint> {
+    let mut widths = shaped(shape, severity);
+    if picking {
+        widths.insert(0, Constraint::Length(1));
+    }
+    widths
+}
+
+fn shaped(shape: Shape, severity: u16) -> Vec<Constraint> {
     match shape {
         Shape::Roomy => vec![
             Constraint::Length(8),

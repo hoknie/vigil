@@ -7,6 +7,7 @@ mod keys;
 mod levels;
 mod motion;
 mod narrowing;
+mod picking;
 mod readings;
 mod sections;
 mod sorting;

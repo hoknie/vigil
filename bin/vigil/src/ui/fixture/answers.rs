@@ -43,6 +43,7 @@ pub fn watching() -> AgentStatus {
 
 pub fn starting() -> AgentStatus {
     AgentStatus {
+        configuration_path: Some("/etc/vigil/vigil.yaml".to_string()),
         version: "0.1.0".into(),
         started_at: "2026-09-09T08:00:00.000Z".into(),
         interval_seconds: 30,

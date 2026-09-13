@@ -11,6 +11,7 @@ path = "src/main.rs"
 [dependencies]
 clap.workspace = true
 vigil-model = { path = "../../crates/core/vigil-model" }
+vigil-config = { path = "../../crates/core/vigil-config" }
 vigil-rules = { path = "../../crates/core/vigil-rules" }
 vigil-collect = { path = "../../crates/core/vigil-collect" }
 vigil-module = { path = "../../crates/core/vigil-module" }

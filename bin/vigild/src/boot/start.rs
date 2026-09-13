@@ -4,7 +4,7 @@ use clap::Parser;
 
 use clap::CommandFactory;
 
-use crate::cli::{Cli, Command, Switch};
+use crate::cli::{Cli, Command, SUPPRESS_LIVES_IN_THE_CONSOLE, Switch};
 use crate::{collector, wizard};
 
 pub fn start(arguments: impl IntoIterator<Item = String>) -> ExitCode {
@@ -46,6 +46,10 @@ pub fn start(arguments: impl IntoIterator<Item = String>) -> ExitCode {
                     ExitCode::FAILURE
                 }
             }
+        }
+        (Some(Command::Suppress { .. }), _) => {
+            eprintln!("{SUPPRESS_LIVES_IN_THE_CONSOLE}");
+            ExitCode::from(2)
         }
         (None, Some(path)) => match super::run(&path) {
             Ok(()) => ExitCode::SUCCESS,

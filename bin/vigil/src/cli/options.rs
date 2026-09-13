@@ -1,6 +1,7 @@
 use clap::{Args, Parser, Subcommand};
 
 use super::style;
+use crate::config;
 use crate::ui::Screen;
 
 pub const DEFAULT_SOCKET: &str = "/run/vigil/vigil.sock";
@@ -50,6 +51,18 @@ cannot be drawn into."
     )]
     Capture(Console),
 
+    #[command(
+        about = "Write down what this host is expected to do, so the agent stays quiet about it",
+        long_about = "\
+Write down what this host is expected to do, so the agent stays quiet about it.
+
+An entry goes into `suppressions:` in the daemon's configuration. What it covers is judged the
+moment a finding is raised: it reaches neither the local journal nor a receiver, and the
+summary says how many were silenced. Every entry needs a reason, in your words. The daemon
+reads the file at start, so a restart is named after every change."
+    )]
+    Suppress(Suppress),
+
     #[command(hide = true)]
     Configure,
 
@@ -62,9 +75,163 @@ cannot be drawn into."
 
 #[derive(Debug, Clone, PartialEq, Eq, Args)]
 #[command(styles = style::HELP)]
+pub struct Suppress {
+    #[command(subcommand)]
+    pub doing: Silencing,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Subcommand)]
+pub enum Silencing {
+    #[command(about = "Stop reporting the object a finding is about")]
+    Add(Silence),
+
+    #[command(about = "Report it again: take the entry out of the configuration")]
+    Remove(Naming),
+
+    #[command(about = "What the configuration silences now")]
+    List(Reading),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Args)]
+#[command(styles = style::HELP)]
+pub struct Reading {
+    #[arg(
+        long,
+        value_name = "PATH",
+        default_value = config::DEFAULT_PATH,
+        help = "The configuration file to read"
+    )]
+    pub config: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Args)]
+#[command(styles = style::HELP)]
+pub struct Naming {
+    #[arg(
+        value_name = "OBJECT",
+        required = true,
+        help = "The object key, as the console draws it on the finding"
+    )]
+    pub keys: Vec<String>,
+
+    #[arg(
+        long,
+        value_name = "PATH",
+        default_value = config::DEFAULT_PATH,
+        help = "The configuration file to edit"
+    )]
+    pub config: String,
+
+    #[arg(
+        short = 'd',
+        long,
+        help = "Print what would be done, and do none of it"
+    )]
+    pub dry_run: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Args)]
+#[command(styles = style::HELP)]
+pub struct Silence {
+    #[arg(
+        value_name = "OBJECT",
+        required = true,
+        help = "The object key, as the console draws it on the finding"
+    )]
+    pub keys: Vec<String>,
+
+    #[arg(
+        short,
+        long,
+        required = true,
+        value_name = "TEXT",
+        help = "Why this host is expected to do it, in your words"
+    )]
+    pub reason: String,
+
+    #[arg(
+        short,
+        long,
+        help = "Cover every object whose key begins with what was named"
+    )]
+    pub prefix: bool,
+
+    #[arg(
+        short,
+        long,
+        value_name = "KIND",
+        help = "Silence only this kind of finding about it"
+    )]
+    pub kind: Option<String>,
+
+    #[arg(
+        short,
+        long,
+        value_name = "WHEN",
+        help = "Stop silencing it at this moment (2026-12-31 or 2026-12-31T00:00:00.000Z)"
+    )]
+    pub until: Option<String>,
+
+    #[arg(
+        long,
+        value_name = "PATH",
+        default_value = config::DEFAULT_PATH,
+        help = "The configuration file to edit"
+    )]
+    pub config: String,
+
+    #[arg(
+        short = 'd',
+        long,
+        help = "Print what would be written, and write nothing"
+    )]
+    pub dry_run: bool,
+}
+
+impl Suppress {
+    pub fn options(&self) -> config::Options {
+        match &self.doing {
+            Silencing::Add(asked) => config::Options {
+                keys: asked.keys.clone(),
+                reason: asked.reason.clone(),
+                kind: asked.kind.clone(),
+                until: asked.until.clone(),
+                prefix: asked.prefix,
+                path: asked.config.clone(),
+                dry_run: asked.dry_run,
+            },
+            Silencing::Remove(asked) => config::Options {
+                keys: asked.keys.clone(),
+                path: asked.config.clone(),
+                dry_run: asked.dry_run,
+                ..config::Options::default()
+            },
+            Silencing::List(asked) => config::Options {
+                path: asked.config.clone(),
+                ..config::Options::default()
+            },
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Args)]
+#[command(styles = style::HELP)]
 pub struct Console {
     #[arg(long, value_name = "PATH", default_value = DEFAULT_SOCKET)]
     pub socket: String,
+
+    #[arg(
+        long,
+        value_name = "PATH",
+        help = "The configuration to silence a finding in",
+        long_help = "\
+The configuration to silence a finding in, when it is not the one the daemon says it read.
+
+The daemon answers with the file it was started with, and that is the file the findings screen
+writes to. Name one here to edit another. The daemon reads its configuration at start, so a
+restart is named after every change."
+    )]
+    pub config: Option<String>,
 
     #[arg(
         long,

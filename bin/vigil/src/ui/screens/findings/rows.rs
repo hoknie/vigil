@@ -7,6 +7,8 @@ use super::shape::Shape;
 use crate::ui::Look;
 use crate::ui::helpers::layout::column;
 
+const PICKED: &str = "\u{d7}";
+
 pub fn keys(passing: &[&Finding]) -> Vec<String> {
     passing
         .iter()
@@ -14,21 +16,39 @@ pub fn keys(passing: &[&Finding]) -> Vec<String> {
         .collect()
 }
 
-pub(super) fn row(finding: &Finding, look: Look, shape: Shape, columns: &[usize]) -> Row<'static> {
+pub(super) fn row(
+    finding: &Finding,
+    look: Look,
+    shape: Shape,
+    columns: &[usize],
+    picked: Option<bool>,
+) -> Row<'static> {
     let cut = |index: usize, text: String| match columns.get(index) {
         Some(width) => column::fit(&text, *width),
         None => text,
     };
 
-    let mut cells = vec![
-        Cell::from(cut(0, time_of_day(&finding.observed_at).to_string())),
-        Cell::from(Span::styled(
-            cut(1, finding.severity.as_str().to_string()),
-            look.palette.severity(&finding.severity),
-        )),
-    ];
+    let mut cells = Vec::new();
+    let mut at = 0;
 
-    let mut at = 2;
+    if let Some(picked) = picked {
+        cells.push(Cell::from(match picked {
+            true => PICKED,
+            false => " ",
+        }));
+        at += 1;
+    }
+
+    cells.push(Cell::from(cut(
+        at,
+        time_of_day(&finding.observed_at).to_string(),
+    )));
+    cells.push(Cell::from(Span::styled(
+        cut(at + 1, finding.severity.as_str().to_string()),
+        look.palette.severity(&finding.severity),
+    )));
+    at += 2;
+
     if shape != Shape::Cramped {
         cells.push(Cell::from(cut(at, finding.kind.as_str().to_string())));
         at += 1;
@@ -38,5 +58,10 @@ pub(super) fn row(finding: &Finding, look: Look, shape: Shape, columns: &[usize]
         cells.push(Cell::from(cut(at + 1, finding.finding_key.clone())));
         cells.push(Cell::from(cut(at + 2, finding.occurrences.to_string())));
     }
-    Row::new(cells)
+
+    let row = Row::new(cells);
+    match picked {
+        Some(true) => row.style(look.palette.marked()),
+        _ => row,
+    }
 }

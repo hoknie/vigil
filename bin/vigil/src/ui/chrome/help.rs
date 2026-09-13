@@ -46,9 +46,8 @@ fn rows() -> Vec<(&'static str, &'static str)> {
     vec![
         (
             "",
-            "EVERY RUNG: the arrows move whatever has them; → in, ← out",
+            "EVERY RUNG: → in, ← out; ▸ in a heading has the arrows now",
         ),
-        ("▸ in a heading", "what has them now"),
         ("1 - 9", "open one; the numbers are on the main screen"),
         ("", "IN A LIST OR A REPORT"),
         ("j / k, ↑ ↓", "a row at a time"),
@@ -58,6 +57,10 @@ fn rows() -> Vec<(&'static str, &'static str)> {
         ("/", "search: every value the agent read about a row"),
         ("o", "the object a finding is about; Esc comes back to it"),
         ("s / f", "sort this list / narrow the findings"),
+        (
+            "shift/ctrl ↑↓",
+            "pick findings; x here, a all, d silence them, u undo",
+        ),
         (
             "t T u U x, a",
             "show / hide kinds of socket, or all (ports)",
@@ -106,6 +109,8 @@ mod tests {
             "o",
             "/",
             "s / f",
+            "shift/ctrl",
+            "d silence them",
             "Esc",
             "r",
             "as a tree",
