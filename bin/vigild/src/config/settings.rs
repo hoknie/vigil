@@ -1,8 +1,9 @@
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
-use super::{ResourceThresholds, Suppression, WatchedFiles};
+use super::Suppression;
 
 const WHEN_NOTHING_SAYS_OTHERWISE: u32 = 30;
 
@@ -17,9 +18,8 @@ pub struct Config {
     pub collectors: Option<Vec<String>>,
     pub reporters: Vec<Receiver>,
     pub suppressions: Vec<Suppression>,
-    pub resources: ResourceThresholds,
-    pub files: WatchedFiles,
-    pub record_launch_arguments: bool,
+    #[serde(skip)]
+    pub of_the_modules: BTreeMap<String, Value>,
 }
 
 impl Default for Config {
@@ -33,9 +33,7 @@ impl Default for Config {
             collectors: None,
             reporters: Vec::new(),
             suppressions: Vec::new(),
-            resources: ResourceThresholds::default(),
-            files: WatchedFiles::default(),
-            record_launch_arguments: false,
+            of_the_modules: BTreeMap::new(),
         }
     }
 }
@@ -48,7 +46,11 @@ impl Config {
         if let Some(one_for_all) = self.interval_seconds {
             return one_for_all;
         }
-        vigil_collect::every_seconds_of_collector(collector).unwrap_or(WHEN_NOTHING_SAYS_OTHERWISE)
+        crate::modules::every_seconds_of(collector).unwrap_or(WHEN_NOTHING_SAYS_OTHERWISE)
+    }
+
+    pub fn of_the_module(&self, key: &str) -> Value {
+        self.of_the_modules.get(key).cloned().unwrap_or(Value::Null)
     }
 
     pub fn every_seconds_by_default(&self) -> u32 {
@@ -86,7 +88,7 @@ mod tests {
             ..Config::default()
         };
 
-        for name in vigil_collect::collector_names() {
+        for name in crate::modules::names() {
             assert_eq!(config.every_seconds(name), 10, "{name}");
         }
     }
@@ -117,5 +119,17 @@ mod tests {
         let config = Config::default();
 
         assert_eq!(config.every_seconds("from-a-later-version"), 30);
+    }
+
+    #[test]
+    fn a_module_whose_key_the_file_never_names_is_handed_nothing_and_falls_back_on_its_own() {
+        let config = Config::default();
+
+        assert_eq!(
+            config.of_the_module("files"),
+            Value::Null,
+            "the daemon holds no default of a module's own: a key nobody wrote is a module \
+             left to its own values, not a module handed the daemon's idea of them"
+        );
     }
 }

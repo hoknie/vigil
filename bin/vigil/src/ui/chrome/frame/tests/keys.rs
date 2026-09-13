@@ -11,7 +11,7 @@ fn drawn_with(hints: Hints<'_>) -> String {
     let mut buffer = Buffer::empty(Rect::new(0, 0, 100, 24));
     render(
         fixture::look(),
-        Screen::Findings,
+        Screen::FINDINGS,
         &fixture::view(),
         hints,
         buffer.area,
@@ -61,7 +61,7 @@ fn the_hint_names_the_place_escape_goes_back_to_and_changes_when_that_place_does
 
 #[test]
 fn a_terminal_with_no_room_for_the_long_hint_still_says_where_the_rest_are() {
-    let (page, _) = drawn(fixture::look(), Screen::Findings, &fixture::view(), 40, 24);
+    let (page, _) = drawn(fixture::look(), Screen::FINDINGS, &fixture::view(), 40, 24);
 
     assert!(page.contains("? keys"), "{page}");
     for line in page.lines() {
@@ -74,7 +74,7 @@ fn an_answer_to_the_key_just_pressed_takes_the_hint_bar_and_does_not_move_the_ta
     let mut buffer = Buffer::empty(Rect::new(0, 0, 100, 24));
     let body = render(
         fixture::look(),
-        Screen::Findings,
+        Screen::FINDINGS,
         &fixture::view(),
         Hints {
             message: Some("That socket is not in the current reading."),

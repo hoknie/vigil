@@ -1,17 +1,8 @@
 use vigil_model::Severity;
 
-use super::accounts::accounts;
 use super::agent::{agent, collector};
-use super::containers::containers;
-use super::files::files;
 use super::findings::finding;
-use super::firewall::firewall;
 use super::host::host;
-use super::launches::launches;
-use super::programs::processes;
-use super::resources::resources;
-use super::sockets::snapshot;
-use super::startup::persistence;
 use super::{Reading, Status, View};
 
 pub fn view() -> View {
@@ -26,16 +17,32 @@ pub fn view() -> View {
         found: Default::default(),
         trouble: None,
     };
-    view.readings.put("ports", Reading::Taken(snapshot()));
-    view.readings.put("users", Reading::Taken(accounts()));
-    view.readings.put("processes", Reading::Taken(processes()));
     view.readings
-        .put("persistence", Reading::Taken(persistence()));
-    view.readings.put("firewall", Reading::Taken(firewall()));
-    view.readings.put("resources", Reading::Taken(resources()));
+        .put("ports", Reading::Taken(vigil_network::fixture::ports()));
     view.readings
-        .put("containers", Reading::Taken(containers()));
-    view.readings.put("files", Reading::Taken(files()));
+        .put("users", Reading::Taken(vigil_users::fixture::users()));
+    view.readings.put(
+        "processes",
+        Reading::Taken(vigil_processes::fixture::processes()),
+    );
+    view.readings.put(
+        "persistence",
+        Reading::Taken(vigil_persistence::fixture::persistence()),
+    );
+    view.readings.put(
+        "firewall",
+        Reading::Taken(vigil_firewall::fixture::firewall()),
+    );
+    view.readings.put(
+        "resources",
+        Reading::Taken(vigil_resources::fixture::resources()),
+    );
+    view.readings.put(
+        "containers",
+        Reading::Taken(vigil_containers::fixture::containers()),
+    );
+    view.readings
+        .put("files", Reading::Taken(vigil_files::fixture::files()));
     view.found.findings = vec![
         finding("A new listening port on 0.0.0.0:4444", Severity::Critical),
         finding("A user logged in from a new address", Severity::Low),
@@ -62,6 +69,9 @@ pub fn view_with_launches() -> View {
             .collectors
             .push(collector("launches", 15, 2, 0));
     }
-    view.readings.put("launches", Reading::Taken(launches()));
+    view.readings.put(
+        "launches",
+        Reading::Taken(vigil_launches::fixture::launches()),
+    );
     view
 }

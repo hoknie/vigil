@@ -1,0 +1,127 @@
+use serde_json::Value;
+use vigil_model::Snapshot;
+
+use super::fields::{members, objects, text};
+use crate::types::Kind;
+
+pub fn could_log_in(account: &Value) -> bool {
+    account.get("uid").and_then(Value::as_u64) == Some(0)
+        || account.get("interactive").and_then(Value::as_bool) == Some(true)
+        || account
+            .get("password_permits_login")
+            .and_then(Value::as_bool)
+            == Some(true)
+        || account.get("shadow_readable").and_then(Value::as_bool) != Some(true)
+}
+
+pub fn password(account: &Value) -> String {
+    if account.get("shadow_readable").and_then(Value::as_bool) != Some(true) {
+        return "unknown".to_string();
+    }
+    text(account, "password").unwrap_or("unknown").to_string()
+}
+
+pub fn privileged(group: &Value) -> bool {
+    group.get("privileged").and_then(Value::as_bool) == Some(true)
+}
+
+pub fn readable(key: &Value) -> bool {
+    key.get("readable").and_then(Value::as_bool) == Some(true)
+}
+
+pub(super) fn remote(session: &Value) -> bool {
+    session.get("remote").and_then(Value::as_bool) == Some(true)
+}
+
+pub fn attended(session: &Value) -> bool {
+    session.get("attended").and_then(Value::as_bool) != Some(false)
+}
+
+pub fn answers(source: &Value) -> bool {
+    source.get("answers").and_then(Value::as_bool) == Some(true)
+}
+
+pub fn what(session: &Value) -> String {
+    let said: Vec<&str> = ["class", "state", "type"]
+        .iter()
+        .filter_map(|field| text(session, field))
+        .filter(|value| !value.is_empty() && *value != "unspecified")
+        .collect();
+
+    match said.is_empty() {
+        true => "a login this host recorded and said no more about".to_string(),
+        false => said.join(" · "),
+    }
+}
+
+pub fn seen_by(session: &Value) -> String {
+    let sources: Vec<&str> = session
+        .get("seen_by")
+        .and_then(Value::as_array)
+        .map(Vec::as_slice)
+        .unwrap_or_default()
+        .iter()
+        .filter_map(Value::as_str)
+        .collect();
+
+    match sources.is_empty() {
+        true => "?".to_string(),
+        false => sources.join(", "),
+    }
+}
+
+pub fn groups_of<'a>(reading: &'a Snapshot, name: &str) -> Vec<(&'a str, &'a Value)> {
+    objects(reading, Kind::Group)
+        .filter(|(_, group)| members(group).any(|member| member == name))
+        .collect()
+}
+
+pub fn sudo_for<'a>(reading: &'a Snapshot, name: &str) -> Vec<(&'a str, &'a Value)> {
+    let groups: Vec<&str> = groups_of(reading, name)
+        .into_iter()
+        .filter_map(|(_, group)| text(group, "name"))
+        .collect();
+
+    objects(reading, Kind::Sudoer)
+        .filter(|(_, grant)| match text(grant, "who") {
+            Some(who) => match who.strip_prefix('%') {
+                Some(group) => groups.contains(&group),
+                None => who == name,
+            },
+            None => false,
+        })
+        .collect()
+}
+
+pub fn route_to_root(reading: &Snapshot, account: &Value) -> String {
+    let name = text(account, "name").unwrap_or_default();
+
+    let mut routes: Vec<String> = Vec::new();
+    if account.get("uid").and_then(Value::as_u64) == Some(0) {
+        routes.push("uid 0".to_string());
+    }
+    for (_, group) in groups_of(reading, name) {
+        if privileged(group)
+            && let Some(group) = text(group, "name")
+        {
+            routes.push(group.to_string());
+        }
+    }
+    let grants = sudo_for(reading, name);
+    if !grants.is_empty() {
+        let all = grants
+            .iter()
+            .any(|(_, grant)| grant.get("all_commands").and_then(Value::as_bool) == Some(true));
+        let nopasswd = grants
+            .iter()
+            .any(|(_, grant)| grant.get("nopasswd").and_then(Value::as_bool) == Some(true));
+        routes.push(match (all, nopasswd) {
+            (true, true) => "sudo to every command, without a password".to_string(),
+            (true, false) => "sudo to every command".to_string(),
+            (false, true) => "sudo, without a password".to_string(),
+            (false, false) => "sudo".to_string(),
+        });
+    }
+
+    routes.join(" · ")
+}

@@ -3,11 +3,12 @@ use ratatui::crossterm::event::KeyCode;
 use crate::ui::{Level, Screen};
 
 use super::harness::{app, drawn_at, into, press};
+use crate::ui::fixture::screen;
 
 #[test]
 fn back_on_the_list_the_detail_follows_the_cursor_down_it() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 200, 30);
+    into(&mut app, Screen::FINDINGS, 200, 30);
     press(&mut app, KeyCode::Enter);
     press(&mut app, KeyCode::Esc);
 
@@ -39,7 +40,7 @@ fn every_motion_key_reaches_the_end_of_a_long_detail() {
             "process": {"cmdline": "another", "exe": "/tmp/.x/nc"},
             "user": "www-data",
         }));
-        into(&mut app, Screen::Findings, 200, 14);
+        into(&mut app, Screen::FINDINGS, 200, 14);
         press(&mut app, KeyCode::Enter);
 
         let area = app.detail_area().expect("the detail is open");
@@ -62,7 +63,7 @@ fn every_motion_key_reaches_the_end_of_a_long_detail() {
 #[test]
 fn a_detail_with_nothing_to_scroll_says_so_rather_than_looking_broken() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 200, 40);
+    into(&mut app, Screen::FINDINGS, 200, 40);
     press(&mut app, KeyCode::Enter);
 
     let tall = drawn_at(&app, 200, 40);
@@ -78,7 +79,7 @@ fn a_detail_with_nothing_to_scroll_says_so_rather_than_looking_broken() {
 #[test]
 fn on_a_terminal_with_room_for_one_half_the_detail_is_shown_only_while_it_has_the_arrows() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 80, 24);
+    into(&mut app, Screen::FINDINGS, 80, 24);
 
     press(&mut app, KeyCode::Enter);
     let detail = drawn_at(&app, 80, 24);
@@ -98,7 +99,7 @@ fn on_a_terminal_with_room_for_one_half_the_detail_is_shown_only_while_it_has_th
 #[test]
 fn the_ports_screen_has_a_detail_of_its_own() {
     let mut app = app();
-    into(&mut app, Screen::Ports, 200, 24);
+    into(&mut app, screen("ports"), 200, 24);
 
     press(&mut app, KeyCode::Right);
 

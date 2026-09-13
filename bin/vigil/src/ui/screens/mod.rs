@@ -1,10 +1,4 @@
-pub mod accounts;
-pub mod containers;
 pub mod findings;
-pub mod firewall;
 pub mod home;
-pub mod ports;
-pub mod programs;
-pub mod startup;
+pub mod pane;
 pub mod summary;
-pub mod system;

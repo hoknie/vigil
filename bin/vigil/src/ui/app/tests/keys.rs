@@ -35,10 +35,10 @@ fn q_leaves_from_every_screen_and_every_level() {
     press(&mut home, KeyCode::Char('q'));
     assert!(home.leaving, "q did nothing on the main screen");
 
-    for screen in Screen::ALL {
+    for screen in Screen::all() {
         for depth in 0..3 {
             let mut app = app();
-            into(&mut app, *screen, 200, 24);
+            into(&mut app, screen, 200, 24);
             for _ in 0..depth {
                 press(&mut app, KeyCode::Enter);
             }

@@ -1,142 +1,121 @@
 use super::group::Group;
+use crate::ui::{holding, sections};
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Screen {
-    #[default]
-    Home,
-    Ports,
-    Accounts,
-    Programs,
-    Startup,
-    Firewall,
-    System,
-    Containers,
-    Summary,
-    Findings,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Screen {
+    name: &'static str,
 }
-
-const HOME: &str = "home";
 
 const NUMBERED: usize = 9;
 
+const OF_THE_CONSOLE: &[(&str, &str, &str)] = &[
+    (
+        "home",
+        "What this agent watches",
+        "every section of this console",
+    ),
+    (
+        "summary",
+        "This host and its agent",
+        "this host and its agent",
+    ),
+    ("findings", "What the agent has found", "what it has found"),
+];
+
+impl Default for Screen {
+    fn default() -> Screen {
+        Screen::HOME
+    }
+}
+
 impl Screen {
-    pub const ALL: &'static [Screen] = &[
-        Screen::Ports,
-        Screen::Accounts,
-        Screen::Programs,
-        Screen::Startup,
-        Screen::Firewall,
-        Screen::System,
-        Screen::Containers,
-        Screen::Summary,
-        Screen::Findings,
-    ];
+    pub const HOME: Screen = Screen { name: "home" };
+
+    pub const SUMMARY: Screen = Screen { name: "summary" };
+
+    pub const FINDINGS: Screen = Screen { name: "findings" };
+
+    pub fn all() -> Vec<Screen> {
+        let mut every: Vec<Screen> = sections()
+            .iter()
+            .map(|section| Screen {
+                name: section.name(),
+            })
+            .collect();
+        every.push(Screen::SUMMARY);
+        every.push(Screen::FINDINGS);
+        every
+    }
 
     pub fn name(self) -> &'static str {
-        match self {
-            Screen::Home => HOME,
-            Screen::Ports => "ports",
-            Screen::Accounts => "accounts",
-            Screen::Programs => "programs",
-            Screen::Startup => "startup",
-            Screen::Firewall => "firewall",
-            Screen::System => "system",
-            Screen::Containers => "containers",
-            Screen::Summary => "summary",
-            Screen::Findings => "findings",
-        }
+        self.name
     }
 
     pub fn title(self) -> &'static str {
-        match self {
-            Screen::Home => "What this agent watches",
-            Screen::Ports => "What is listening",
-            Screen::Accounts => "Who can log in",
-            Screen::Programs => "What has run here",
-            Screen::Startup => "What starts by itself",
-            Screen::Firewall => "What the host lets in",
-            Screen::System => "The host and the files watched on it",
-            Screen::Containers => "What is running in containers",
-            Screen::Summary => "This host and its agent",
-            Screen::Findings => "What the agent has found",
+        match self.of_the_console() {
+            Some((title, _)) => title,
+            None => holding(self.name).map_or("", |section| section.title()),
         }
     }
 
     pub fn holds(self) -> &'static str {
-        match self {
-            Screen::Home => "every section of this console",
-            Screen::Ports => "what is listening",
-            Screen::Accounts => "who can log in",
-            Screen::Programs => "what has run here",
-            Screen::Startup => "what starts by itself",
-            Screen::Firewall => "what the host lets in",
-            Screen::System => "the host and its files",
-            Screen::Containers => "what runs in containers",
-            Screen::Summary => "this host and its agent",
-            Screen::Findings => "what it has found",
+        match self.of_the_console() {
+            Some((_, holds)) => holds,
+            None => holding(self.name).map_or("", |section| section.holds()),
         }
     }
 
     pub fn group(self) -> Group {
-        match self {
-            Screen::Ports
-            | Screen::Accounts
-            | Screen::Programs
-            | Screen::Startup
-            | Screen::Firewall
-            | Screen::System
-            | Screen::Containers => Group::Reads,
-            Screen::Home | Screen::Summary | Screen::Findings => Group::Concludes,
+        match self.of_the_console() {
+            Some(_) => Group::Concludes,
+            None => Group::Reads,
         }
     }
 
-    pub fn collectors(self) -> &'static [&'static str] {
-        match self {
-            Screen::Ports => &["ports"],
-            Screen::Accounts => &["users"],
-            Screen::Programs => &["processes", "launches"],
-            Screen::Startup => &["persistence"],
-            Screen::Firewall => &["firewall"],
-            Screen::System => &["resources", "files"],
-            Screen::Containers => &["containers"],
-            Screen::Home | Screen::Summary | Screen::Findings => &[],
+    pub fn collectors(self) -> Vec<&'static str> {
+        let Some(section) = holding(self.name) else {
+            return Vec::new();
+        };
+
+        let mut named: Vec<&'static str> = Vec::new();
+        for pane in section.panes() {
+            if !named.contains(&pane.reads()) {
+                named.push(pane.reads());
+            }
         }
+        named
     }
 
-    pub fn holding(collector: &str) -> Option<Screen> {
-        Screen::ALL
-            .iter()
-            .copied()
+    pub fn shows_what_has_gone(self) -> bool {
+        holding(self.name).is_some_and(|section| section.shows_what_has_gone())
+    }
+
+    pub fn showing(collector: &str) -> Option<Screen> {
+        Screen::all()
+            .into_iter()
             .find(|screen| screen.collectors().contains(&collector))
     }
 
     pub fn parse(name: &str) -> Option<Screen> {
-        if name == HOME {
-            return Some(Screen::Home);
+        if name == Screen::HOME.name {
+            return Some(Screen::HOME);
         }
-        Screen::ALL
-            .iter()
-            .copied()
+        Screen::all()
+            .into_iter()
             .find(|screen| screen.name() == name)
     }
 
     pub fn digit(self) -> Option<u8> {
-        match self {
-            Screen::Ports => Some(1),
-            Screen::Accounts => Some(2),
-            Screen::Programs => Some(3),
-            Screen::Startup => Some(4),
-            Screen::Firewall => Some(5),
-            Screen::System => Some(6),
-            Screen::Containers => Some(7),
-            Screen::Summary => Some(8),
-            Screen::Findings => Some(9),
-            Screen::Home => None,
+        let at = Screen::all().iter().position(|screen| *screen == self)?;
+
+        match at < NUMBERED {
+            true => u8::try_from(at + 1).ok(),
+            false => None,
         }
     }
 
     pub fn numbered() -> usize {
-        Screen::ALL
+        Screen::all()
             .iter()
             .filter(|screen| screen.digit().is_some())
             .count()
@@ -144,11 +123,17 @@ impl Screen {
     }
 
     pub fn unnumbered() -> Vec<Screen> {
-        Screen::ALL
-            .iter()
-            .copied()
+        Screen::all()
+            .into_iter()
             .filter(|screen| screen.digit().is_none())
             .collect()
+    }
+
+    fn of_the_console(self) -> Option<(&'static str, &'static str)> {
+        OF_THE_CONSOLE
+            .iter()
+            .find(|(name, _, _)| *name == self.name)
+            .map(|(_, title, holds)| (*title, *holds))
     }
 }
 
@@ -158,12 +143,12 @@ mod tests {
 
     #[test]
     fn every_screen_has_a_name_a_script_can_ask_for() {
-        for screen in Screen::ALL {
-            assert_eq!(Screen::parse(screen.name()), Some(*screen));
+        for screen in Screen::all() {
+            assert_eq!(Screen::parse(screen.name()), Some(screen));
         }
         assert_eq!(
             Screen::parse("home"),
-            Some(Screen::Home),
+            Some(Screen::HOME),
             "the main screen is asked for by name too, and is not one of the numbered sections"
         );
         assert_eq!(Screen::parse("resources"), None);
@@ -171,7 +156,7 @@ mod tests {
 
     #[test]
     fn renumbering_the_sections_is_a_deliberate_edit_and_not_a_side_effect() {
-        let pairs: Vec<(Option<u8>, &str)> = Screen::ALL
+        let pairs: Vec<(Option<u8>, &str)> = Screen::all()
             .iter()
             .map(|screen| (screen.digit(), screen.name()))
             .collect();
@@ -189,19 +174,19 @@ mod tests {
                 (Some(8), "summary"),
                 (Some(9), "findings"),
             ],
-            "a new section moved the numbers of the sections below it: rewrite this table by \
-             hand, and the help and the pty run with it"
+            "the numbers are the order the modules are listed in: moving a module in the \
+             registry moves the key that opens it, and the help and the pty run with it"
         );
     }
 
     #[test]
     fn what_the_agent_reads_is_numbered_before_what_it_makes_of_the_reading() {
-        let reads: Vec<u8> = Screen::ALL
+        let reads: Vec<u8> = Screen::all()
             .iter()
             .filter(|screen| screen.group() == Group::Reads)
             .filter_map(|screen| screen.digit())
             .collect();
-        let concludes: Vec<u8> = Screen::ALL
+        let concludes: Vec<u8> = Screen::all()
             .iter()
             .filter(|screen| screen.group() == Group::Concludes)
             .filter_map(|screen| screen.digit())
@@ -209,16 +194,16 @@ mod tests {
 
         assert!(
             reads.iter().max() < concludes.iter().min(),
-            "the numbers are positions in ALL and the main screen draws the two groups in \
-             order: a reading numbered after a conclusion puts the row of one group between \
+            "the numbers are positions in the list and the main screen draws the two groups \
+             in order: a reading numbered after a conclusion puts the row of one group between \
              the rows of the other. Reads {reads:?}, concludes {concludes:?}"
         );
     }
 
     #[test]
     fn the_main_screen_has_no_number_because_escape_is_the_way_back_to_it() {
-        assert_eq!(Screen::Home.digit(), None);
-        assert!(!Screen::ALL.contains(&Screen::Home));
+        assert_eq!(Screen::HOME.digit(), None);
+        assert!(!Screen::all().contains(&Screen::HOME));
     }
 
     #[test]
@@ -228,7 +213,7 @@ mod tests {
             "there are nine digits, and the tenth section is reached with the cursor"
         );
         assert_eq!(
-            Screen::ALL
+            Screen::all()
                 .iter()
                 .filter(|screen| screen.digit().is_some())
                 .count(),
@@ -243,7 +228,7 @@ mod tests {
 
     #[test]
     fn every_screen_says_what_looking_at_it_is_for() {
-        for screen in Screen::ALL.iter().chain([Screen::Home].iter()) {
+        for screen in Screen::all().iter().chain([Screen::HOME].iter()) {
             assert!(!screen.title().is_empty(), "{}", screen.name());
             assert!(!screen.holds().is_empty(), "{}", screen.name());
         }
@@ -251,20 +236,43 @@ mod tests {
 
     #[test]
     fn every_collector_a_section_reads_belongs_to_that_one_section_and_no_other() {
-        for screen in Screen::ALL {
+        for screen in Screen::all() {
             for collector in screen.collectors() {
                 assert_eq!(
-                    Screen::holding(collector),
-                    Some(*screen),
+                    Screen::showing(collector),
+                    Some(screen),
                     "{collector} is claimed by two sections"
                 );
             }
         }
         assert_eq!(
-            Screen::holding("resources"),
-            Some(Screen::System),
+            Screen::showing("resources"),
+            Some(Screen::parse("system").expect("the host and its files")),
             "one section holds two readings, and both of them belong to it"
         );
-        assert_eq!(Screen::holding("nothing-of-the-sort"), None);
+        assert_eq!(Screen::showing("nothing-of-the-sort"), None);
+    }
+
+    #[test]
+    fn the_three_screens_the_console_writes_itself_are_the_ones_no_module_declares() {
+        for screen in [Screen::HOME, Screen::SUMMARY, Screen::FINDINGS] {
+            assert!(
+                holding(screen.name()).is_none(),
+                "{} is declared by a module and written out here as well",
+                screen.name()
+            );
+            assert_eq!(screen.group(), Group::Concludes);
+            assert!(screen.collectors().is_empty());
+        }
+        for screen in Screen::all() {
+            if screen.group() == Group::Reads {
+                assert!(
+                    holding(screen.name()).is_some(),
+                    "{} is drawn from a table of its own rather than from the module that \
+                     declares it",
+                    screen.name()
+                );
+            }
+        }
     }
 }

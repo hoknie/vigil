@@ -30,7 +30,7 @@ pub fn enable(options: &Options) -> Result<String, String> {
     let name = known(&options.name)?;
     let mut said = Vec::new();
 
-    if let Some(unit) = vigil_collect::unit_of_collector(name) {
+    if let Some(unit) = crate::modules::unit_of(name) {
         said.push(start(unit, options.dry_run)?);
     }
 
@@ -59,7 +59,7 @@ pub fn disable(options: &Options) -> Result<String, String> {
     let mut said = Vec::new();
 
     let text = read(&options.path)?;
-    let every: Vec<(&str, u32)> = vigil_collect::COLLECTORS
+    let every: Vec<(&str, u32)> = crate::modules::watched()
         .iter()
         .map(|collector| (collector.name, collector.every_seconds))
         .collect();
@@ -70,7 +70,7 @@ pub fn disable(options: &Options) -> Result<String, String> {
         Edit::Changed(after) => said.push(put(options, &text, &after)?),
     }
 
-    match vigil_collect::unit_of_collector(name) {
+    match crate::modules::unit_of(name) {
         None => said.push(format!(
             "nothing on this host was started for {name}, so nothing was stopped"
         )),
@@ -127,7 +127,7 @@ fn start(unit: &str, dry_run: bool) -> Result<String, String> {
 
 fn written(options: &Options, name: &str) -> Result<String, String> {
     let text = read(&options.path)?;
-    let every_seconds = vigil_collect::every_seconds_of_collector(name).unwrap_or(60);
+    let every_seconds = crate::modules::every_seconds_of(name).unwrap_or(60);
 
     match edit::add(&text, name, every_seconds) {
         Edit::NotOurs(why) => Err(why),
@@ -183,14 +183,14 @@ fn read(path: &str) -> Result<String, String> {
 }
 
 fn known(name: &str) -> Result<&'static str, String> {
-    vigil_collect::COLLECTORS
+    crate::modules::watched()
         .iter()
         .find(|collector| collector.name == name)
         .map(|collector| collector.name)
         .ok_or_else(|| {
             format!(
                 "no collector called {name:?}. This build has: {}",
-                vigil_collect::collector_names().join(", ")
+                crate::modules::names().join(", ")
             )
         })
 }
@@ -210,7 +210,7 @@ mod tests {
 
     #[test]
     fn every_collector_this_build_ships_can_be_named_to_this_command() {
-        for name in vigil_collect::collector_names() {
+        for name in crate::modules::names() {
             assert_eq!(known(name), Ok(name));
         }
     }
@@ -218,10 +218,10 @@ mod tests {
     #[test]
     fn what_has_to_be_running_on_the_host_is_asked_of_the_collector_and_not_of_a_list_here() {
         assert_eq!(
-            vigil_collect::unit_of_collector("firewall"),
+            crate::modules::unit_of("firewall"),
             Some("vigil-firewall.timer")
         );
-        assert_eq!(vigil_collect::unit_of_collector("ports"), None);
+        assert_eq!(crate::modules::unit_of("ports"), None);
 
         let source = include_str!("run.rs");
         assert!(

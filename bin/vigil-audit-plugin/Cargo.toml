@@ -9,4 +9,4 @@ name = "vigil-audit-plugin"
 path = "src/main.rs"
 
 [dependencies]
-vigil-collect = { path = "../../crates/vigil-collect" }
+vigil-launches = { path = "../../crates/collectors/vigil-launches" }

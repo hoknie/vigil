@@ -1,24 +1,26 @@
 use vigil_model::{CollectorState, CollectorStatus};
+use vigil_view::time_of_day;
 
 use super::notices::{NO_SECTION, NOT_WATCHED};
 
 pub(super) const NO_SCREEN: &str = "no screen draws it yet";
 use super::row::Row;
 use super::standing::Standing;
-use crate::ui::helpers::words::moment;
-use crate::ui::{Screen, View};
+use crate::ui::{Group, Screen, View};
 
 pub fn rows(view: &View) -> Vec<Row> {
-    let mut rows: Vec<Row> = Screen::ALL
+    let every = Screen::all();
+
+    let mut rows: Vec<Row> = every
         .iter()
-        .filter(|screen| screen.group() == crate::ui::Group::Reads)
+        .filter(|screen| screen.group() == Group::Reads)
         .map(|screen| section(view, *screen))
         .collect();
     rows.extend(strangers(view));
     rows.extend(
-        Screen::ALL
+        every
             .iter()
-            .filter(|screen| screen.group() == crate::ui::Group::Concludes)
+            .filter(|screen| screen.group() == Group::Concludes)
             .map(|screen| section(view, *screen)),
     );
     rows
@@ -36,8 +38,8 @@ fn section(view: &View, screen: Screen) -> Row {
         holds: screen.holds().to_string(),
         collector: screen.collectors().join(" · "),
         standing: match screen {
-            Screen::Summary => answering(view),
-            Screen::Findings => found(view),
+            Screen::SUMMARY => answering(view),
+            Screen::FINDINGS => found(view),
             _ => reading(view, screen),
         },
     }
@@ -47,9 +49,7 @@ fn answering(view: &View) -> Standing {
     let losing = losing(view);
 
     Standing {
-        read: view
-            .as_of()
-            .map(|when| moment::time_of_day(when).to_string()),
+        read: view.as_of().map(|when| time_of_day(when).to_string()),
         unwell: view.stale().is_some() || losing.is_some(),
         note: losing,
         ..Standing::plain(match view.stale() {
@@ -88,9 +88,7 @@ fn found(view: &View) -> Standing {
 
     Standing {
         objects: Some(view.found.findings.len()),
-        read: view
-            .as_of()
-            .map(|when| moment::time_of_day(when).to_string()),
+        read: view.as_of().map(|when| time_of_day(when).to_string()),
         ..Standing::plain(severity)
     }
 }
@@ -150,7 +148,7 @@ fn reading(view: &View, screen: Screen) -> Standing {
             .iter()
             .filter_map(|collector| collector.last_run_at.as_deref())
             .max()
-            .map(|when| moment::time_of_day(when).to_string()),
+            .map(|when| time_of_day(when).to_string()),
         note: reasons(&present),
         unwell,
     }
@@ -193,7 +191,7 @@ fn strangers(view: &View) -> Vec<Row> {
         .agent
         .collectors
         .iter()
-        .filter(|collector| Screen::holding(&collector.name).is_none())
+        .filter(|collector| Screen::showing(&collector.name).is_none())
         .map(|collector| Row {
             opens: None,
             number: None,
@@ -208,7 +206,7 @@ fn strangers(view: &View) -> Vec<Row> {
                 read: collector
                     .last_run_at
                     .as_deref()
-                    .map(|when| moment::time_of_day(when).to_string()),
+                    .map(|when| time_of_day(when).to_string()),
                 note: Some(NO_SECTION.to_string()),
                 unwell: collector.state.is_trouble(),
                 state: collector.state.as_str().to_string(),

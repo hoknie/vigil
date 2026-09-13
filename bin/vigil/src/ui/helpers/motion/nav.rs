@@ -51,28 +51,29 @@ impl Nav {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ui::fixture::screen;
 
     fn from_a_finding() -> Origin {
-        Origin::new(Screen::Findings, "0199a1b2-c3d4-7e5f-8a9b-000000000001")
+        Origin::new(Screen::FINDINGS, "0199a1b2-c3d4-7e5f-8a9b-000000000001")
     }
 
     #[test]
     fn escape_after_a_jump_comes_back_to_the_row_it_was_pressed_on() {
-        let mut nav = Nav::opening(Screen::Findings);
+        let mut nav = Nav::opening(Screen::FINDINGS);
 
-        nav.jump(Screen::Ports, from_a_finding());
-        assert_eq!(nav.at(), Screen::Ports);
+        nav.jump(screen("ports"), from_a_finding());
+        assert_eq!(nav.at(), screen("ports"));
 
         let back = nav.came_back().expect("somewhere to come back to");
-        assert_eq!(nav.at(), Screen::Findings);
+        assert_eq!(nav.at(), Screen::FINDINGS);
         assert_eq!(back.key(), "0199a1b2-c3d4-7e5f-8a9b-000000000001");
     }
 
     #[test]
     fn a_jump_remembers_one_place_and_forgets_it_once_it_has_been_used() {
-        let mut nav = Nav::opening(Screen::Findings);
+        let mut nav = Nav::opening(Screen::FINDINGS);
 
-        nav.jump(Screen::Ports, from_a_finding());
+        nav.jump(screen("ports"), from_a_finding());
         nav.came_back();
 
         assert!(
@@ -83,20 +84,20 @@ mod tests {
 
     #[test]
     fn walking_into_a_section_from_the_main_screen_leaves_nothing_for_escape_to_come_back_to() {
-        let mut nav = Nav::opening(Screen::Home);
+        let mut nav = Nav::opening(Screen::HOME);
 
-        nav.visit(Screen::Accounts);
+        nav.visit(screen("accounts"));
 
         assert!(nav.came_back().is_none());
-        assert_eq!(nav.at(), Screen::Accounts);
+        assert_eq!(nav.at(), screen("accounts"));
     }
 
     #[test]
     fn changing_section_by_its_number_forgets_where_the_jump_came_from() {
-        let mut nav = Nav::opening(Screen::Findings);
-        nav.jump(Screen::Ports, from_a_finding());
+        let mut nav = Nav::opening(Screen::FINDINGS);
+        nav.jump(screen("ports"), from_a_finding());
 
-        nav.visit(Screen::Accounts);
+        nav.visit(screen("accounts"));
 
         assert!(nav.came_from().is_none());
         assert!(nav.came_back().is_none());
@@ -104,9 +105,9 @@ mod tests {
 
     #[test]
     fn jumping_into_the_section_already_open_records_nothing_to_come_back_from() {
-        let mut nav = Nav::opening(Screen::Ports);
+        let mut nav = Nav::opening(screen("ports"));
 
-        nav.jump(Screen::Ports, from_a_finding());
+        nav.jump(screen("ports"), from_a_finding());
 
         assert!(nav.came_back().is_none());
     }

@@ -1,0 +1,60 @@
+use serde_json::Value;
+use vigil_model::Snapshot;
+use vigil_view::{RowKey, Showing, Sorting};
+
+use super::fields::{self, sort_key};
+use crate::types::Kind;
+
+pub(super) fn rows(reading: &Snapshot, showing: &Showing<'_>) -> Vec<RowKey> {
+    let mut rows: Vec<((Kind, String, String), String)> = reading
+        .items
+        .iter()
+        .filter(|(key, _)| Kind::of(key).is_some())
+        .filter(|(key, item)| showing.matches(key, item))
+        .map(|(key, item)| (sort_key(key, item), key.clone()))
+        .collect();
+
+    rows.sort();
+    let mut keys: Vec<String> = rows.into_iter().map(|(_, key)| key).collect();
+    sort(&mut keys, reading, showing.sorting);
+
+    keys.into_iter().map(RowKey::of).collect()
+}
+
+pub(super) fn summary(reading: &Snapshot) -> Option<&Value> {
+    reading
+        .items
+        .iter()
+        .find(|(key, _)| Kind::of(key) == Some(Kind::Ruleset))
+        .map(|(_, item)| item)
+}
+
+pub(super) const SORTED_BY: &[&str] = &["KIND", "WHAT", "HOOK", "POLICY", "RULES"];
+
+fn sort(keys: &mut [String], reading: &Snapshot, sorting: Sorting) {
+    if sorting.as_read() {
+        return;
+    }
+    keys.sort_by(|left, right| {
+        let ordering =
+            sorted_on(reading, left, sorting.by).cmp(&sorted_on(reading, right, sorting.by));
+        match sorting.descending {
+            true => ordering.reverse(),
+            false => ordering,
+        }
+    });
+}
+
+fn sorted_on(reading: &Snapshot, key: &str, by: usize) -> String {
+    let Some(item) = reading.items.get(key) else {
+        return String::new();
+    };
+    match by {
+        1 => Kind::of(key).map_or(String::new(), |kind| kind.name().to_string()),
+        2 => fields::what(key, item).to_lowercase(),
+        3 => fields::hook(key, item),
+        4 => fields::policy(key, item),
+        5 => format!("{:0>12}", fields::rules(item)),
+        _ => String::new(),
+    }
+}

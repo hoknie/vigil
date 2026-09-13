@@ -67,14 +67,6 @@ impl Arrows {
     }
 }
 
-pub trait Choice: Copy + Default + PartialEq {
-    const COUNT: usize;
-
-    fn index(self) -> usize;
-
-    fn step(self, by: isize, shown: &[Self]) -> Self;
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

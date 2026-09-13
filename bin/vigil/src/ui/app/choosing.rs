@@ -2,8 +2,8 @@ use vigil_model::Severity;
 
 use super::App;
 
-use crate::ui::screens::{containers, findings, firewall, ports, system};
-use crate::ui::{Choosing, Column, Level, Screen, Sorting, System};
+use crate::ui::screens::findings;
+use crate::ui::{Choosing, Column, Level, Screen, Sorting, holding};
 
 const NOTHING_SORTS: &str =
     "Nothing on this screen sorts: it is one page, not a list of rows to put in an order.";
@@ -15,17 +15,11 @@ const NOTHING_FILTERS: &str = "Nothing to filter here: the severity floor and th
                                live on the findings. Press / to search this list.";
 
 impl App {
-    pub(super) fn sortable(&self) -> &'static [&'static str] {
+    pub(super) fn sortable(&self) -> Vec<&'static str> {
         match self.nav.at() {
-            Screen::Findings => findings::SORTED_BY,
-            Screen::Ports => ports::SORTED_BY,
-            Screen::Firewall => firewall::SORTED_BY,
-            Screen::System => match self.nav.lists.system.showing() {
-                System::Host => system::host::SORTED_BY,
-                System::Files => system::files::SORTED_BY,
-            },
-            Screen::Containers => containers::SORTED_BY,
-            _ => &[],
+            Screen::FINDINGS => findings::SORTED_BY.to_vec(),
+            screen if holding(screen.name()).is_some() => self.pane_sortable(),
+            _ => Vec::new(),
         }
     }
 
@@ -37,9 +31,7 @@ impl App {
     }
 
     pub(super) fn sorting(&mut self) {
-        if self.nav.at() == Screen::Ports
-            && self.nav.lists.ports.showing() == ports::Arrangement::ByProgram
-        {
+        if holding(self.nav.at().name()).is_some() && self.pane_sortable().is_empty() {
             self.message = Some(GROUPS_ARE_THE_ORDER.to_string());
             return;
         }
@@ -50,12 +42,12 @@ impl App {
         }
         let at = self.sorted().chosen();
         self.chooser
-            .open(Choosing::Sort, Sorting::offered(columns), at);
+            .open(Choosing::Sort, Sorting::offered(&columns), at);
         self.level = Level::List;
     }
 
     pub(super) fn narrowing(&mut self) {
-        if self.nav.at() != Screen::Findings {
+        if self.nav.at() != Screen::FINDINGS {
             self.message = Some(NOTHING_FILTERS.to_string());
             return;
         }
@@ -110,10 +102,9 @@ impl App {
 
     fn list_cursor_to_the_top(&mut self) {
         self.nav.findings = crate::ui::Cursor::default();
-        self.nav.lists.firewall = crate::ui::One::default();
-        self.nav.lists.containers = crate::ui::One::default();
-        self.nav.lists.system.widen();
-        *self.nav.lists.ports.cursor_mut() = crate::ui::Cursor::default();
+        if let Some(panes) = self.panes_mut() {
+            *panes.cursor_mut() = crate::ui::Cursor::default();
+        }
     }
 }
 

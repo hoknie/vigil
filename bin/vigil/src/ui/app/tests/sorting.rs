@@ -4,6 +4,7 @@ use ratatui::layout::Rect;
 
 use super::harness::{app, drawn, drawn_at, into, number, opened, press};
 use crate::ui::app::App;
+use crate::ui::fixture::screen;
 use crate::ui::helpers::words::text;
 use crate::ui::{Audience, Screen, fixture};
 
@@ -23,7 +24,7 @@ fn at(page: &str, wanted: &str) -> usize {
 #[test]
 fn a_column_sorts_the_rows_both_ways_round_and_the_screen_says_which_way() {
     let mut app = app();
-    press(&mut app, number(Screen::Findings));
+    press(&mut app, number(Screen::FINDINGS));
 
     chose(&mut app, 3);
     let up = drawn_at(&app, 120, 30);
@@ -45,17 +46,17 @@ fn a_column_sorts_the_rows_both_ways_round_and_the_screen_says_which_way() {
 #[test]
 fn a_sort_belongs_to_the_list_it_was_chosen_in() {
     let mut app = app();
-    press(&mut app, number(Screen::Findings));
+    press(&mut app, number(Screen::FINDINGS));
     chose(&mut app, 4);
 
-    into(&mut app, Screen::Ports, 120, 30);
+    into(&mut app, screen("ports"), 120, 30);
     let ports = drawn_at(&app, 120, 30);
     assert!(
         !ports.contains("sorted by"),
         "the order chosen on another list followed the reader here: {ports}"
     );
 
-    press(&mut app, number(Screen::Findings));
+    press(&mut app, number(Screen::FINDINGS));
     assert!(
         drawn_at(&app, 120, 30).contains("sorted by SEVERITY"),
         "and the list it was chosen in kept it: {}",
@@ -66,7 +67,7 @@ fn a_sort_belongs_to_the_list_it_was_chosen_in() {
 #[test]
 fn the_order_a_reader_chose_puts_them_at_the_top_of_the_list_and_not_at_a_row_number() {
     let mut app = app();
-    press(&mut app, number(Screen::Findings));
+    press(&mut app, number(Screen::FINDINGS));
     press(&mut app, KeyCode::Down);
     press(&mut app, KeyCode::Down);
 
@@ -84,7 +85,7 @@ fn the_order_a_reader_chose_puts_them_at_the_top_of_the_list_and_not_at_a_row_nu
 fn what_a_script_is_given_is_the_order_the_agent_sent_and_says_nothing_about_an_order() {
     let mut app = App::new(
         &opened(&["capture", "--socket", "/nonexistent/vigil.sock"]),
-        opened(&["capture", "--socket", "/nonexistent/vigil.sock"]).opening(Screen::Findings),
+        opened(&["capture", "--socket", "/nonexistent/vigil.sock"]).opening(Screen::FINDINGS),
         fixture::monochrome(),
         Audience::Script,
     );
@@ -106,7 +107,7 @@ fn what_a_script_is_given_is_the_order_the_agent_sent_and_says_nothing_about_an_
 #[test]
 fn the_grouped_view_is_an_order_already_and_says_where_the_sorting_is_done() {
     let mut app = app();
-    press(&mut app, number(Screen::Ports));
+    press(&mut app, number(screen("ports")));
     press(&mut app, KeyCode::Right);
     press(&mut app, KeyCode::Down);
 
@@ -121,7 +122,7 @@ fn the_grouped_view_is_an_order_already_and_says_where_the_sorting_is_done() {
 #[test]
 fn a_screen_that_sorts_says_so_on_the_key_line_and_the_choice_says_how_to_walk_it() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
 
     assert!(drawn(&app).contains("s sort"), "{}", drawn(&app));
 

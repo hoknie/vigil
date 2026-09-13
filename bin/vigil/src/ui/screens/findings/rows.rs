@@ -1,11 +1,11 @@
 use ratatui::text::Span;
 use ratatui::widgets::{Cell, Row};
 use vigil_model::Finding;
+use vigil_view::time_of_day;
 
 use super::shape::Shape;
 use crate::ui::Look;
 use crate::ui::helpers::layout::column;
-use crate::ui::helpers::words::moment;
 
 pub fn keys(passing: &[&Finding]) -> Vec<String> {
     passing
@@ -21,10 +21,7 @@ pub(super) fn row(finding: &Finding, look: Look, shape: Shape, columns: &[usize]
     };
 
     let mut cells = vec![
-        Cell::from(cut(
-            0,
-            moment::time_of_day(&finding.observed_at).to_string(),
-        )),
+        Cell::from(cut(0, time_of_day(&finding.observed_at).to_string())),
         Cell::from(Span::styled(
             cut(1, finding.severity.as_str().to_string()),
             look.palette.severity(&finding.severity),

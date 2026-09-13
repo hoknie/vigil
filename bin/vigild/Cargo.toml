@@ -10,11 +10,21 @@ path = "src/main.rs"
 
 [dependencies]
 clap.workspace = true
-vigil-model = { path = "../../crates/vigil-model" }
-vigil-rules = { path = "../../crates/vigil-rules" }
-vigil-collect = { path = "../../crates/vigil-collect" }
-vigil-store = { path = "../../crates/vigil-store" }
-vigil-report = { path = "../../crates/vigil-report" }
+vigil-model = { path = "../../crates/core/vigil-model" }
+vigil-rules = { path = "../../crates/core/vigil-rules" }
+vigil-collect = { path = "../../crates/core/vigil-collect" }
+vigil-module = { path = "../../crates/core/vigil-module" }
+vigil-network = { path = "../../crates/collectors/vigil-network" }
+vigil-users = { path = "../../crates/collectors/vigil-users" }
+vigil-firewall = { path = "../../crates/collectors/vigil-firewall" }
+vigil-containers = { path = "../../crates/collectors/vigil-containers" }
+vigil-persistence = { path = "../../crates/collectors/vigil-persistence" }
+vigil-processes = { path = "../../crates/collectors/vigil-processes" }
+vigil-launches = { path = "../../crates/collectors/vigil-launches" }
+vigil-resources = { path = "../../crates/collectors/vigil-resources" }
+vigil-files = { path = "../../crates/collectors/vigil-files" }
+vigil-store = { path = "../../crates/consumers/vigil-store" }
+vigil-report = { path = "../../crates/consumers/vigil-report" }
 serde.workspace = true
 serde_yaml.workspace = true
 serde_json.workspace = true

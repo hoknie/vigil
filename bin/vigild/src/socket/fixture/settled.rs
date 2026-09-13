@@ -1,5 +1,5 @@
+use crate::modules::every_seconds_of;
 use serde_json::Value;
-use vigil_collect::every_seconds_of_collector;
 use vigil_model::{CollectorState, Settled, class_of};
 
 use super::statuses;
@@ -37,7 +37,7 @@ fn collector(pinned: Settled, key: &str, answer: &Value) -> Settled {
         return pinned;
     }
 
-    let declared = every_seconds_of_collector(&name)
+    let declared = every_seconds_of(&name)
         .unwrap_or_else(|| panic!("{name} is not a collector this build ships"));
 
     pinned.pinning(

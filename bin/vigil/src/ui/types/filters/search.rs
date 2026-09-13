@@ -88,7 +88,7 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::ui::helpers::words::haystack::haystack;
+    use vigil_view::haystack;
 
     fn looking_for(wanted: &str) -> Search {
         let mut search = Search::default();

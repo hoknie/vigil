@@ -11,80 +11,28 @@ pub struct Family {
 
 #[cfg(target_os = "linux")]
 pub fn families(config: &Config) -> Result<Vec<Family>, String> {
-    use vigil_rules::{
-        account_rules, container_rules, file_rules, firewall_rules, launch_rules,
-        listening_port_rules, persistence_rules, process_rules, resource_rules,
-    };
+    use vigil_module::Settings;
 
     use crate::helpers::rfc3339;
 
-    Ok(vec![
-        Family {
-            collector: Box::new(vigil_collect::PortsCollector::new(rfc3339::now)),
-            rules: listening_port_rules(),
-        },
-        Family {
-            collector: Box::new(vigil_collect::UsersCollector::new(rfc3339::now)),
-            rules: account_rules(),
-        },
-        Family {
-            collector: Box::new(vigil_collect::PersistenceCollector::new(rfc3339::now)),
-            rules: persistence_rules(),
-        },
-        Family {
-            collector: Box::new(vigil_collect::ProcessesCollector::new(rfc3339::now)),
-            rules: process_rules(),
-        },
-        Family {
-            collector: Box::new(vigil_collect::FirewallCollector::new(rfc3339::now)),
-            rules: firewall_rules(),
-        },
-        Family {
-            collector: Box::new(vigil_collect::ResourcesCollector::new(rfc3339::now)),
-            rules: resource_rules(config.resources.limits()),
-        },
-        Family {
-            collector: Box::new(vigil_collect::ContainersCollector::new(rfc3339::now)),
-            rules: container_rules(),
-        },
-        Family {
-            collector: Box::new(vigil_collect::FilesCollector::new(
-                rfc3339::now,
-                &config.files.paths,
-                config.files.ceiling_bytes,
-            )),
-            rules: file_rules(),
-        },
-        Family {
-            collector: Box::new(vigil_collect::LaunchesCollector::new(
-                rfc3339::now,
-                config.record_launch_arguments,
-            )),
-            rules: launch_rules(),
-        },
-    ])
+    let mut families = Vec::new();
+    for module in crate::modules::modules() {
+        let settings = match module.settings_key() {
+            Some(key) => Settings::of(rfc3339::now, key, config.of_the_module(key)),
+            None => Settings::plain(rfc3339::now),
+        };
+        families.push(Family {
+            collector: module.collector(&settings)?,
+            rules: module.rules(&settings),
+        });
+    }
+
+    Ok(families)
 }
 
 #[cfg(not(target_os = "linux"))]
 pub fn families(config: &Config) -> Result<Vec<Family>, String> {
-    use vigil_rules::{
-        account_rules, container_rules, file_rules, firewall_rules, launch_rules,
-        listening_port_rules, persistence_rules, process_rules, resource_rules,
-    };
-
-    let _ = (
-        container_rules(),
-        file_rules(),
-        config.files.ceiling_bytes,
-        config.record_launch_arguments,
-        resource_rules(config.resources.limits()),
-        listening_port_rules(),
-        account_rules(),
-        persistence_rules(),
-        process_rules(),
-        firewall_rules(),
-        launch_rules(),
-    );
+    let _ = config.of_the_module("files");
     Err(format!(
         "this build has no collector for {}: vigil reads a Linux /proc. Run it on Linux: `just docker` opens a container with the working copy mounted.",
         std::env::consts::OS

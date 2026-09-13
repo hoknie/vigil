@@ -9,18 +9,13 @@ use crate::ui::chrome::chooser;
 use crate::ui::chrome::frame;
 use crate::ui::chrome::frame::hints::Back;
 use crate::ui::chrome::help;
-use crate::ui::details::{
-    account, firewall as firewall_detail, program, reading, section, socket, startup,
-};
+use crate::ui::details::{pieces, section};
 use crate::ui::helpers::finding::diff;
 use crate::ui::helpers::layout::split;
 use crate::ui::helpers::words::unreachable;
-use crate::ui::screens::startup as starting;
-use crate::ui::screens::{
-    accounts, containers, findings, firewall, home, ports, programs, summary, system,
-};
+use crate::ui::screens::{findings, home, pane, summary};
 use crate::ui::theme::caption;
-use crate::ui::{Arrows, Level, Screen};
+use crate::ui::{Arrows, Level, Screen, holding};
 
 const ROOM_FOR_THE_CURSOR: u16 = 8;
 
@@ -37,6 +32,11 @@ impl App {
                 back: self.back(),
                 panel: self.detail_showing(self.body.get()) || self.showing_why(),
                 choosing: self.choosing(),
+                sorts: !self.sortable().is_empty(),
+                arranges: self
+                    .pane()
+                    .and_then(|pane| pane.arrangements().first().map(|one| one.key)),
+                to_object: self.nav.at() == Screen::FINDINGS,
             },
             area,
             buffer,
@@ -77,7 +77,7 @@ impl App {
 
     pub(super) fn back(&self) -> Back {
         match (self.nav.at(), self.nav.came_from()) {
-            (Screen::Home, _) => Back::Nowhere,
+            (Screen::HOME, _) => Back::Nowhere,
             (_, Some(_)) => Back::Finding,
             (_, None) => Back::MainScreen,
         }
@@ -85,8 +85,8 @@ impl App {
 
     pub(super) fn draw_screen(&self, body: Rect, buffer: &mut Buffer) {
         match self.nav.at() {
-            Screen::Home => self.draw_home(body, buffer),
-            Screen::Summary => summary::render(
+            Screen::HOME => self.draw_home(body, buffer),
+            Screen::SUMMARY => summary::render(
                 &self.view,
                 self.look,
                 self.nav.summary.top(),
@@ -252,25 +252,21 @@ impl App {
 
     pub(super) fn draw_list(&self, area: Rect, buffer: &mut Buffer) {
         match self.nav.at() {
-            Screen::Ports => ports::render(&self.view, self.look, &self.listening(), area, buffer),
-            Screen::Accounts => match self.look.interactive() {
-                true => accounts::render(&self.view, self.look, &self.showing(), area, buffer),
-                false => self.print_every_list(area, buffer),
-            },
-            Screen::Programs => match self.look.interactive() {
-                true => programs::render(&self.view, self.look, &self.running(), area, buffer),
-                false => self.print_every_list(area, buffer),
-            },
-            Screen::Startup => match self.look.interactive() {
-                true => starting::render(&self.view, self.look, &self.starting(), area, buffer),
-                false => self.print_every_list(area, buffer),
-            },
-            Screen::Firewall => {
-                firewall::render(&self.view, self.look, &self.filtering(), area, buffer)
-            }
-            Screen::System => system::render(&self.view, self.look, &self.made_of(), area, buffer),
-            Screen::Containers => {
-                containers::render(&self.view, self.look, &self.contained(), area, buffer)
+            screen if holding(screen.name()).is_some() => {
+                if !self.look.interactive() && self.shown_panes().len() > 1 {
+                    self.print_every_list(area, buffer);
+                    return;
+                }
+                if let (Some(section), Some(showing)) = (self.section(), self.showing_pane()) {
+                    pane::render(
+                        &self.view,
+                        self.look,
+                        section.as_ref(),
+                        &showing,
+                        area,
+                        buffer,
+                    );
+                }
             }
             _ => findings::render(&self.view, self.look, &self.found(), area, buffer),
         }
@@ -278,65 +274,13 @@ impl App {
 
     pub(super) fn draw_detail(&self, area: Rect, buffer: &mut Buffer) {
         match self.nav.at() {
-            Screen::Ports => {
-                let rows = self.ports_rows();
-                socket::render(
-                    rows.get(self.nav.lists.ports.at()),
-                    self.look,
-                    self.nav.difference.top(),
-                    area,
-                    buffer,
-                )
-            }
-            Screen::Accounts => {
-                let rows = self.accounts_rows();
-                account::render(
-                    rows.get(self.nav.lists.accounts.at()),
-                    &self.view,
-                    self.look,
-                    self.nav.difference.top(),
-                    area,
-                    buffer,
-                )
-            }
-            Screen::Programs => {
-                let rows = self.programs_rows();
-                program::render(
-                    rows.get(self.nav.lists.programs.at()),
-                    self.running_list(),
-                    self.look,
-                    self.nav.difference.top(),
-                    area,
-                    buffer,
-                )
-            }
-            Screen::Startup => {
-                let rows = self.startup_rows();
-                startup::render(
-                    rows.get(self.nav.lists.startup.at()),
-                    self.look,
-                    self.nav.difference.top(),
-                    area,
-                    buffer,
-                )
-            }
-            Screen::System | Screen::Containers => reading::render(
-                self.reading_subject(),
+            screen if holding(screen.name()).is_some() => pieces::render(
+                &self.pane_detail(),
                 self.look,
                 self.nav.difference.top(),
                 area,
                 buffer,
             ),
-            Screen::Firewall => {
-                let rows = self.firewall_rows();
-                firewall_detail::render(
-                    rows.get(self.nav.lists.firewall.at()),
-                    self.look,
-                    self.nav.difference.top(),
-                    area,
-                    buffer,
-                )
-            }
             _ => diff::render(
                 self.selected_finding(),
                 self.look,
@@ -349,26 +293,15 @@ impl App {
 
     pub(super) fn list_caption(&self) -> &'static str {
         match self.nav.at() {
-            Screen::Home => "SECTIONS",
-            Screen::Ports => self.nav.lists.ports.showing().caption(),
-            Screen::Accounts => self.nav.lists.accounts.showing().caption(),
-            Screen::Programs => self.nav.lists.programs.showing().caption(),
-            Screen::Startup => self.nav.lists.startup.showing().caption(),
-            Screen::Firewall => "THE RULESET",
-            Screen::System => self.nav.lists.system.showing().caption(),
-            Screen::Containers => "CONTAINERS AND SOCKETS",
+            Screen::HOME => "SECTIONS",
+            screen if holding(screen.name()).is_some() => self.pane_caption(),
             _ => "FINDINGS",
         }
     }
 
     pub(super) fn detail_caption(&self) -> &'static str {
         match self.nav.at() {
-            Screen::Ports => "THE SELECTED SOCKET",
-            Screen::Accounts => self.nav.lists.accounts.showing().detail(),
-            Screen::Programs => self.nav.lists.programs.showing().detail(),
-            Screen::Startup => self.nav.lists.startup.showing().detail(),
-            Screen::System => self.nav.lists.system.showing().detail(),
-            Screen::Firewall | Screen::Containers => "THE SELECTED ROW",
+            screen if holding(screen.name()).is_some() => self.pane_detail_caption(),
             _ => "THE SELECTED FINDING",
         }
     }

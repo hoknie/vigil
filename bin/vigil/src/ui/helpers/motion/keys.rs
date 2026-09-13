@@ -31,10 +31,12 @@ pub fn action(code: KeyCode, modifiers: KeyModifiers, typing: bool) -> Action {
         KeyCode::Char('r') | KeyCode::F(5) => Action::Refresh,
         KeyCode::Char('?') => Action::Help,
         KeyCode::F(1) => Action::Help,
-        KeyCode::Char(digit @ '1'..='9') => match Screen::ALL.get(digit as usize - '1' as usize) {
-            Some(screen) => Action::Go(*screen),
-            None => Action::Ignore,
-        },
+        KeyCode::Char(digit @ '1'..='9') => {
+            match Screen::all().get(digit as usize - '1' as usize) {
+                Some(screen) => Action::Go(*screen),
+                None => Action::Ignore,
+            }
+        }
         KeyCode::Right | KeyCode::Char('l') => Action::Sideways(1),
         KeyCode::Left | KeyCode::Char('h') => Action::Sideways(-1),
         KeyCode::Down | KeyCode::Char('j') => Action::Move(Motion::Down),
@@ -58,6 +60,7 @@ pub fn action(code: KeyCode, modifiers: KeyModifiers, typing: bool) -> Action {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ui::fixture::screen;
 
     fn plain(code: KeyCode) -> Action {
         action(code, KeyModifiers::NONE, false)
@@ -87,10 +90,10 @@ mod tests {
 
     #[test]
     fn the_digits_name_the_sections_in_the_order_the_main_screen_lists_them() {
-        assert_eq!(plain(KeyCode::Char('1')), Action::Go(Screen::Ports));
-        assert_eq!(plain(KeyCode::Char('5')), Action::Go(Screen::Firewall));
-        assert_eq!(plain(KeyCode::Char('7')), Action::Go(Screen::Containers));
-        assert_eq!(plain(KeyCode::Char('9')), Action::Go(Screen::Findings));
+        assert_eq!(plain(KeyCode::Char('1')), Action::Go(screen("ports")));
+        assert_eq!(plain(KeyCode::Char('5')), Action::Go(screen("firewall")));
+        assert_eq!(plain(KeyCode::Char('7')), Action::Go(screen("containers")));
+        assert_eq!(plain(KeyCode::Char('9')), Action::Go(Screen::FINDINGS));
         for digit in 1..=9u8 {
             let key = char::from_digit(u32::from(digit), 10).expect("one of nine");
             assert!(
@@ -107,7 +110,7 @@ mod tests {
 
     #[test]
     fn the_number_drawn_on_a_row_is_the_number_that_opens_it() {
-        for screen in Screen::ALL {
+        for screen in Screen::all() {
             let Some(number) = screen.digit() else {
                 continue;
             };
@@ -115,7 +118,7 @@ mod tests {
 
             assert_eq!(
                 plain(KeyCode::Char(drawn)),
-                Action::Go(*screen),
+                Action::Go(screen),
                 "the main screen draws {number} on {} and {number} opens something else",
                 screen.name()
             );

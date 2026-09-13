@@ -6,10 +6,10 @@ pub fn check(config: &Config) -> Result<(), String> {
     }
 
     for (name, every_seconds) in &config.schedule {
-        if !vigil_collect::is_known_collector(name) {
+        if !crate::modules::is_known(name) {
             return Err(format!(
                 "schedule {name:?}: unknown collector; known: {}",
-                vigil_collect::collector_names().join(", ")
+                crate::modules::names().join(", ")
             ));
         }
         if let Some(enabled) = &config.collectors
@@ -43,7 +43,7 @@ mod tests {
         let config = load(path.to_str().expect("utf-8")).expect("parses");
 
         assert_eq!(config.interval_seconds, Some(10));
-        for name in vigil_collect::collector_names() {
+        for name in crate::modules::names() {
             assert_eq!(
                 config.every_seconds(name),
                 10,

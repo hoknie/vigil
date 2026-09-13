@@ -1,7 +1,6 @@
 use super::App;
 
-use crate::ui::types::content::nesting;
-use crate::ui::{Cursor, Level, Offset, One, Screen, Search, Startup};
+use crate::ui::{Cursor, Level, Offset, Panes, Screen, Search, holding};
 
 pub const DETAILS: char = 'd';
 
@@ -12,47 +11,27 @@ impl App {
 
     pub(super) fn search(&self) -> Option<&Search> {
         match self.nav.at() {
-            Screen::Findings => Some(self.filter.search()),
-            Screen::Ports => Some(self.nav.lists.ports.search()),
-            Screen::Accounts => Some(self.nav.lists.accounts.search()),
-            Screen::Programs => Some(self.nav.lists.programs.search()),
-            Screen::Startup => Some(self.nav.lists.startup.search()),
-            Screen::System => Some(self.nav.lists.system.search()),
-            Screen::Firewall | Screen::Containers => self.one(self.nav.at()).map(One::search),
-            Screen::Home | Screen::Summary => None,
+            Screen::FINDINGS => Some(self.filter.search()),
+            screen if holding(screen.name()).is_some() => self.panes().map(Panes::search),
+            _ => None,
         }
     }
 
     pub(super) fn search_mut(&mut self) -> Option<&mut Search> {
         match self.nav.at() {
-            Screen::Findings => Some(self.filter.search_mut()),
-            Screen::Ports => Some(self.nav.lists.ports.search_mut()),
-            Screen::Accounts => Some(self.nav.lists.accounts.search_mut()),
-            Screen::Programs => Some(self.nav.lists.programs.search_mut()),
-            Screen::Startup => Some(self.nav.lists.startup.search_mut()),
-            Screen::System => Some(self.nav.lists.system.search_mut()),
-            Screen::Firewall | Screen::Containers => {
-                let screen = self.nav.at();
-                self.one_mut(screen).map(One::search_mut)
-            }
-            Screen::Home | Screen::Summary => None,
+            Screen::FINDINGS => Some(self.filter.search_mut()),
+            screen if holding(screen.name()).is_some() => self.panes_mut().map(Panes::search_mut),
+            _ => None,
         }
     }
 
     pub(super) fn letter(&mut self, key: char) {
         let moved = match self.nav.at() {
-            Screen::Home | Screen::Summary if key == DETAILS => {
+            Screen::HOME | Screen::SUMMARY if key == DETAILS => {
                 self.detail_open = !self.detail_open;
                 true
             }
-            Screen::Ports => match key {
-                'a' => {
-                    self.ports_protocols.clear();
-                    true
-                }
-                other => self.ports_protocols.toggle(other),
-            },
-            Screen::Startup if key == nesting::KEY => self.switch_the_view(),
+            screen if holding(screen.name()).is_some() => self.switch_a_kind(key),
             _ => false,
         };
         if moved {
@@ -61,15 +40,66 @@ impl App {
         }
     }
 
-    fn switch_the_view(&mut self) -> bool {
-        if self.nav.lists.startup.showing() != Startup::Units {
-            self.message = Some(
-                "The tree is a view of the units list: press ← or → to it, then t.".to_string(),
-            );
-            return false;
+    fn switch_a_kind(&mut self, key: char) -> bool {
+        if self.switch_the_view(key) {
+            return true;
         }
-        self.startup_nesting.toggle();
+        if key == 'a' {
+            if let Some(panes) = self.panes_mut() {
+                panes.show_every_kind();
+            }
+            return true;
+        }
+        let Some(pane) = self.pane() else {
+            return false;
+        };
+        let Some(toggle) = pane.toggles().into_iter().find(|toggle| toggle.key == key) else {
+            return false;
+        };
+        if let Some(panes) = self.panes_mut() {
+            panes.toggle(toggle.name);
+        }
         true
+    }
+
+    fn switch_the_view(&mut self, key: char) -> bool {
+        let Some(pane) = self.pane() else {
+            return false;
+        };
+        let every = pane.arrangements();
+        if !every.iter().any(|one| one.key == key) {
+            return self.said_where_the_view_lives(key);
+        }
+
+        let here = self
+            .panes()
+            .and_then(Panes::arranged)
+            .and_then(|name| every.iter().position(|one| one.name == name))
+            .unwrap_or(0);
+        let next = every[(here + 1) % every.len()].name;
+        if let Some(panes) = self.panes_mut() {
+            panes.arrange(next);
+        }
+        true
+    }
+
+    fn said_where_the_view_lives(&mut self, key: char) -> bool {
+        let Some(section) = self.section() else {
+            return false;
+        };
+        let Some(elsewhere) = section
+            .panes()
+            .iter()
+            .find(|pane| pane.arrangements().iter().any(|one| one.key == key))
+            .map(|pane| pane.name())
+        else {
+            return false;
+        };
+
+        self.message = Some(format!(
+            "That view belongs to the {elsewhere} list: press \u{2190} or \u{2192} to it, then {key}."
+        ));
+        false
     }
 
     pub(super) fn saying(&self) -> bool {
@@ -77,51 +107,36 @@ impl App {
     }
 
     pub(super) fn showing_why(&self) -> bool {
-        self.nav.at() == Screen::Summary && self.detail_open
+        self.nav.at() == Screen::SUMMARY && self.detail_open
     }
 
     pub(super) fn narrowed(&self) -> bool {
         let everything = self.level == Level::Menu;
         match self.nav.at() {
-            Screen::Findings => self.filter.holding_back(),
-            Screen::Ports => {
-                self.nav.lists.ports.search().holding_back()
-                    || (everything && self.ports_protocols.holding_back())
-            }
-            Screen::Accounts => self.nav.lists.accounts.search().holding_back(),
-            Screen::Programs => self.nav.lists.programs.search().holding_back(),
-            Screen::Startup => self.nav.lists.startup.search().holding_back(),
-            Screen::System => self.nav.lists.system.search().holding_back(),
-            Screen::Firewall | Screen::Containers => self
-                .one(self.nav.at())
-                .is_some_and(|one| one.search().holding_back()),
-            Screen::Home | Screen::Summary => false,
+            Screen::FINDINGS => self.filter.holding_back(),
+            screen if holding(screen.name()).is_some() => self.panes().is_some_and(|panes| {
+                panes.search().holding_back() || (everything && panes.hiding())
+            }),
+            _ => false,
         }
     }
 
     pub(super) fn widen(&mut self) {
         match self.nav.at() {
-            Screen::Findings => {
+            Screen::FINDINGS => {
                 self.filter.clear();
                 self.nav.findings = Cursor::default();
             }
-            Screen::Ports => {
-                self.nav.lists.ports.widen();
-                if self.level == Level::Menu {
-                    self.ports_protocols.clear();
+            screen if holding(screen.name()).is_some() => {
+                let menu = self.level == Level::Menu;
+                if let Some(panes) = self.panes_mut() {
+                    panes.widen();
+                    if menu {
+                        panes.show_every_kind();
+                    }
                 }
             }
-            Screen::Accounts => self.nav.lists.accounts.widen(),
-            Screen::Programs => self.nav.lists.programs.widen(),
-            Screen::Startup => self.nav.lists.startup.widen(),
-            Screen::System => self.nav.lists.system.widen(),
-            Screen::Firewall | Screen::Containers => {
-                let screen = self.nav.at();
-                if let Some(one) = self.one_mut(screen) {
-                    one.widen();
-                }
-            }
-            Screen::Home | Screen::Summary => {}
+            _ => {}
         }
     }
 }

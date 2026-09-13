@@ -528,7 +528,7 @@ printf '[Unit]\nDescription=Web server\n[Service]\nExecStart=/usr/sbin/nginx\n[I
 printf '[Unit]\nDescription=Key value store\n[Service]\nExecStart=/usr/bin/redis-server\n[Install]\nWantedBy=multi-user.target\n' > /etc/systemd/system/redis.service
 printf '[Unit]\nDescription=Sidecar of the web server\nPartOf=nginx.service\n[Service]\nExecStart=/usr/bin/sidecar\n' > /etc/systemd/system/sidecar.service
 printf '[Unit]\nDescription=Nothing pulls this one in\n[Service]\nExecStart=/bin/sh\n' > /etc/systemd/system/lonely.service
-printf 'state_dir: /tmp/vigil-tree\nsocket_path: /tmp/vigil-tree/vigil.sock\nretention_days: 1\ninterval_seconds: 5\ncollectors:\n  - persistence\nschedule:\n  persistence: 5\nsuppressions: []\nrecord_launch_arguments: false\nreporters: []\n' > /tmp/vigil-tree/vigil.yaml
+printf 'state_dir: /tmp/vigil-tree\nsocket_path: /tmp/vigil-tree/vigil.sock\nretention_days: 1\ninterval_seconds: 5\ncollectors:\n  - persistence\nschedule:\n  persistence: 5\nsuppressions: []\nlaunches:\n  record_arguments: false\nreporters: []\n' > /tmp/vigil-tree/vigil.yaml
 } } seeding
 
 set daemon 0

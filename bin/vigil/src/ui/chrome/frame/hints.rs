@@ -1,5 +1,6 @@
 use crate::ui::Level;
 
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Hints<'a> {
     pub typing: bool,
     pub level: Level,
@@ -7,10 +8,14 @@ pub struct Hints<'a> {
     pub back: Back,
     pub panel: bool,
     pub choosing: bool,
+    pub sorts: bool,
+    pub arranges: Option<char>,
+    pub to_object: bool,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum Back {
+    #[default]
     MainScreen,
     Finding,
     Nowhere,

@@ -82,7 +82,7 @@ mod tests {
     use serde_json::json;
     use std::sync::Mutex;
     use vigil_collect::CollectError;
-    use vigil_rules::listening_port_rules;
+    use vigil_module::{Module, Settings};
 
     use super::*;
 
@@ -139,7 +139,7 @@ mod tests {
         ];
         let mut watch = Watch::new(
             Box::new(Scripted(Mutex::new(script))),
-            listening_port_rules(),
+            vigil_network::Ports.rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
         );
 
         let baseline = watch.tick().expect("first reading");
@@ -170,7 +170,7 @@ mod tests {
         ])];
         let mut watch = Watch::new(
             Box::new(Scripted(Mutex::new(script))),
-            listening_port_rules(),
+            vigil_network::Ports.rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
         );
         watch.restore(snapshot(&[("tcp|0.0.0.0:443", nginx())]));
 
@@ -189,7 +189,7 @@ mod tests {
         ];
         let mut watch = Watch::new(
             Box::new(Scripted(Mutex::new(script))),
-            listening_port_rules(),
+            vigil_network::Ports.rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
         );
 
         watch.tick().expect("baseline");

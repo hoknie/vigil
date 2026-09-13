@@ -1,0 +1,13 @@
+[package]
+name = "vigil-module"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+vigil-model = { path = "../vigil-model" }
+vigil-collect = { path = "../vigil-collect" }
+vigil-rules = { path = "../vigil-rules" }
+vigil-view = { path = "../vigil-view" }
+serde.workspace = true
+serde_json.workspace = true

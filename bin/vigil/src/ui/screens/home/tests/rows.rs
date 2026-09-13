@@ -1,6 +1,7 @@
 use vigil_model::{CollectorState, CollectorStatus};
 
 use super::harness::drawn;
+use crate::ui::fixture::screen;
 use crate::ui::screens::home::{keys, rows};
 use crate::ui::{Screen, View, fixture};
 
@@ -18,7 +19,7 @@ fn every_section_of_this_console_is_a_row_and_the_reader_can_reach_it() {
 
     let named: Vec<String> = keys(&view);
 
-    for screen in Screen::ALL {
+    for screen in Screen::all() {
         assert!(
             named.iter().any(|name| name == screen.name()),
             "{} is unreachable: a section that is not on the main screen does not exist",
@@ -206,7 +207,7 @@ fn a_collector_this_console_has_a_section_for_is_never_a_row_with_nothing_behind
 
     assert_eq!(
         firewall.opens,
-        Some(Screen::Firewall),
+        Some(screen("firewall")),
         "a reading with a section of its own must open it, not sit among the strangers"
     );
     assert_eq!(firewall.number, Some(5));

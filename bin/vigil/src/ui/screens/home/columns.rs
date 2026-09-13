@@ -105,10 +105,7 @@ mod tests {
             super::super::rows::NO_SCREEN.chars().count() <= HOLDS_LEAST,
             "the row of a reading with no screen of its own is drawn in this column too"
         );
-        for screen in Screen::ALL {
-            if *screen == Screen::Home {
-                continue;
-            }
+        for screen in Screen::all() {
             assert!(
                 screen.holds().chars().count() <= HOLDS_LEAST,
                 "{} holds {:?}, which is {} characters in a column of {HOLDS_LEAST}",

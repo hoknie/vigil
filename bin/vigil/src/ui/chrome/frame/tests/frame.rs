@@ -3,11 +3,12 @@ use ratatui::layout::Rect;
 
 use super::harness::{drawn, quiet};
 use crate::ui::chrome::frame::render;
+use crate::ui::fixture::screen;
 use crate::ui::{Audience, Look, Screen, fixture};
 
 #[test]
 fn the_frame_names_the_host_the_open_section_the_facts_and_the_keys() {
-    let (page, body) = drawn(fixture::look(), Screen::Ports, &fixture::view(), 80, 24);
+    let (page, body) = drawn(fixture::look(), screen("ports"), &fixture::view(), 80, 24);
 
     assert!(page.contains("app-01"), "{page}");
     assert!(page.contains("alpine"), "{page}");
@@ -20,7 +21,7 @@ fn the_frame_names_the_host_the_open_section_the_facts_and_the_keys() {
 
 #[test]
 fn the_row_of_screen_names_is_gone_and_the_panel_has_the_band_it_took() {
-    let (page, body) = drawn(fixture::look(), Screen::Ports, &fixture::view(), 80, 24);
+    let (page, body) = drawn(fixture::look(), screen("ports"), &fixture::view(), 80, 24);
 
     assert!(
         !page.contains("1 summary"),
@@ -34,7 +35,7 @@ fn the_row_of_screen_names_is_gone_and_the_panel_has_the_band_it_took() {
 fn a_script_gets_the_heading_and_the_facts_without_a_box_or_key_hints() {
     let (page, body) = drawn(
         Look::new(fixture::monochrome(), Audience::Script),
-        Screen::Summary,
+        Screen::SUMMARY,
         &fixture::view(),
         80,
         24,
@@ -56,7 +57,7 @@ fn a_terminal_too_short_for_a_frame_gets_the_screen_instead() {
 
     let body = render(
         fixture::look(),
-        Screen::Summary,
+        Screen::SUMMARY,
         &fixture::view(),
         quiet(),
         buffer.area,
@@ -71,7 +72,7 @@ fn nothing_runs_off_the_side_at_any_of_the_widths_this_is_read_at() {
     for width in [80u16, 120, 200] {
         let (page, _) = drawn(
             fixture::look(),
-            Screen::Findings,
+            Screen::FINDINGS,
             &fixture::view(),
             width,
             24,

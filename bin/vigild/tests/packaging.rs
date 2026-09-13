@@ -99,8 +99,7 @@ fn nothing_the_firewall_reading_runs_takes_an_argument_from_the_host() {
 #[test]
 fn the_timer_writes_the_reading_at_the_period_the_collector_reads_it() {
     let timer = named("vigil-firewall.timer");
-    let declared = vigil_collect::every_seconds_of_collector("firewall")
-        .expect("firewall is a collector this build ships");
+    let declared = vigil_module::Module::every_seconds(&vigil_firewall::Firewall);
 
     assert_eq!(
         settings(&timer, "OnUnitActiveSec"),

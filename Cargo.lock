@@ -1631,24 +1631,35 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "vigil"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "clap",
  "ratatui",
  "serde_json",
+ "vigil-containers",
+ "vigil-files",
+ "vigil-firewall",
+ "vigil-launches",
  "vigil-model",
+ "vigil-module",
+ "vigil-network",
+ "vigil-persistence",
+ "vigil-processes",
+ "vigil-resources",
+ "vigil-users",
+ "vigil-view",
 ]
 
 [[package]]
 name = "vigil-audit-plugin"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
- "vigil-collect",
+ "vigil-launches",
 ]
 
 [[package]]
 name = "vigil-collect"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "rustix",
  "serde_json",
@@ -1657,24 +1668,137 @@ dependencies = [
 ]
 
 [[package]]
+name = "vigil-containers"
+version = "1.0.6"
+dependencies = [
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
+name = "vigil-files"
+version = "1.0.6"
+dependencies = [
+ "serde",
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
+name = "vigil-firewall"
+version = "1.0.6"
+dependencies = [
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
+name = "vigil-launches"
+version = "1.0.6"
+dependencies = [
+ "rustix",
+ "serde",
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
 name = "vigil-model"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "serde",
  "serde_json",
 ]
 
 [[package]]
+name = "vigil-module"
+version = "1.0.6"
+dependencies = [
+ "serde",
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
+name = "vigil-network"
+version = "1.0.6"
+dependencies = [
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
+name = "vigil-persistence"
+version = "1.0.6"
+dependencies = [
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
+name = "vigil-processes"
+version = "1.0.6"
+dependencies = [
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
 name = "vigil-report"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "serde_json",
  "vigil-model",
 ]
 
 [[package]]
+name = "vigil-resources"
+version = "1.0.6"
+dependencies = [
+ "rustix",
+ "serde",
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
 name = "vigil-rules"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "serde_json",
  "vigil-model",
@@ -1682,7 +1806,27 @@ dependencies = [
 
 [[package]]
 name = "vigil-store"
-version = "1.0.5"
+version = "1.0.6"
+dependencies = [
+ "serde_json",
+ "vigil-model",
+]
+
+[[package]]
+name = "vigil-users"
+version = "1.0.6"
+dependencies = [
+ "serde_json",
+ "vigil-collect",
+ "vigil-model",
+ "vigil-module",
+ "vigil-rules",
+ "vigil-view",
+]
+
+[[package]]
+name = "vigil-view"
+version = "1.0.6"
 dependencies = [
  "serde_json",
  "vigil-model",
@@ -1690,7 +1834,7 @@ dependencies = [
 
 [[package]]
 name = "vigild"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "clap",
  "serde",
@@ -1698,10 +1842,20 @@ dependencies = [
  "serde_yaml",
  "sha2",
  "vigil-collect",
+ "vigil-containers",
+ "vigil-files",
+ "vigil-firewall",
+ "vigil-launches",
  "vigil-model",
+ "vigil-module",
+ "vigil-network",
+ "vigil-persistence",
+ "vigil-processes",
  "vigil-report",
+ "vigil-resources",
  "vigil-rules",
  "vigil-store",
+ "vigil-users",
 ]
 
 [[package]]

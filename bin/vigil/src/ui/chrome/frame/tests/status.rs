@@ -6,7 +6,7 @@ use crate::ui::{Screen, fixture};
 fn a_collector_that_is_off_is_counted_apart_from_one_that_is_not_reading() {
     let view = fixture::view();
 
-    let (page, _) = drawn(fixture::look(), Screen::Summary, &view, 120, 24);
+    let (page, _) = drawn(fixture::look(), Screen::SUMMARY, &view, 120, 24);
 
     assert!(page.contains("9 collector(s), 8 reading, 1 off"), "{page}");
     assert!(!page.contains("not reading everything"), "{page}");
@@ -19,7 +19,7 @@ fn a_collector_that_is_off_and_one_that_is_failing_are_two_different_numbers() {
         status.agent.collectors[0].state = vigil_model::CollectorState::Degraded;
     }
 
-    let (page, _) = drawn(fixture::look(), Screen::Summary, &view, 120, 24);
+    let (page, _) = drawn(fixture::look(), Screen::SUMMARY, &view, 120, 24);
 
     assert!(
         page.contains("9 collector(s), 1 not reading everything, 1 off"),
@@ -36,7 +36,7 @@ fn a_status_bar_with_no_room_drops_a_whole_fact_rather_than_half_a_word() {
         "No such file or directory (os error 2)",
     ));
 
-    let (narrow, _) = drawn(fixture::look(), Screen::Summary, &view, 60, 24);
+    let (narrow, _) = drawn(fixture::look(), Screen::SUMMARY, &view, 60, 24);
 
     assert!(
         narrow.contains("NOT ANSWERING"),

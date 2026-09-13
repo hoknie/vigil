@@ -33,7 +33,7 @@ pub fn take(config: &crate::Config) -> Result<Vec<Surveyed>, String> {
         .into_iter()
         .map(|family| Surveyed {
             name: family.collector.name().to_string(),
-            subject: vigil_collect::subject_of_collector(family.collector.name())
+            subject: crate::modules::subject_of(family.collector.name())
                 .unwrap_or("what it watches")
                 .to_string(),
             health: family.collector.available(),

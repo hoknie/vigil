@@ -1,11 +1,22 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/vigil-model",
-    "crates/vigil-rules",
-    "crates/vigil-collect",
-    "crates/vigil-store",
-    "crates/vigil-report",
+    "crates/core/vigil-model",
+    "crates/core/vigil-rules",
+    "crates/core/vigil-collect",
+    "crates/core/vigil-view",
+    "crates/core/vigil-module",
+    "crates/collectors/vigil-network",
+    "crates/collectors/vigil-users",
+    "crates/collectors/vigil-firewall",
+    "crates/collectors/vigil-containers",
+    "crates/collectors/vigil-files",
+    "crates/collectors/vigil-persistence",
+    "crates/collectors/vigil-processes",
+    "crates/collectors/vigil-launches",
+    "crates/collectors/vigil-resources",
+    "crates/consumers/vigil-store",
+    "crates/consumers/vigil-report",
     "bin/vigild",
     "bin/vigil",
     "bin/vigil-audit-plugin",
@@ -13,7 +24,7 @@ members = [
 
 [workspace.package]
 edition = "2024"
-version = "1.0.5"
+version = "1.0.6"
 license = "Apache-2.0"
 
 [workspace.dependencies]

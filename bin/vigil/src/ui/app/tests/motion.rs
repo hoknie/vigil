@@ -1,15 +1,16 @@
 use ratatui::crossterm::event::KeyCode;
 use vigil_model::Severity;
 
+use crate::ui::Screen;
 use crate::ui::fixture;
-use crate::ui::{Screen, Subject};
 
 use super::harness::{app, into, press};
+use crate::ui::fixture::screen;
 
 #[test]
 fn the_cursor_holds_on_to_its_finding_when_a_new_one_arrives_above_it() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
     press(&mut app, KeyCode::Down);
     let held = app
         .selected_finding()
@@ -33,7 +34,7 @@ fn the_cursor_holds_on_to_its_finding_when_a_new_one_arrives_above_it() {
 #[test]
 fn a_list_that_shrank_under_the_cursor_does_not_leave_it_pointing_past_the_end() {
     let mut app = app();
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
     press(&mut app, KeyCode::Down);
 
     app.view.found.findings.truncate(1);
@@ -52,7 +53,7 @@ fn the_page_keys_and_the_ends_of_a_list_all_work() {
             Severity::Low,
         ));
     }
-    into(&mut app, Screen::Findings, 80, 30);
+    into(&mut app, Screen::FINDINGS, 80, 30);
 
     press(&mut app, KeyCode::End);
     assert_eq!(app.nav.findings.at(), app.view.found.findings.len() - 1);
@@ -73,11 +74,11 @@ fn the_main_screen_keeps_the_cursor_on_the_section_it_was_left_from() {
     press(&mut app, KeyCode::Down);
     press(&mut app, KeyCode::Down);
     press(&mut app, KeyCode::Enter);
-    assert_eq!(app.nav.at(), Screen::Programs);
+    assert_eq!(app.nav.at(), screen("programs"));
 
     press(&mut app, KeyCode::Esc);
 
-    assert_eq!(app.nav.at(), Screen::Home);
+    assert_eq!(app.nav.at(), Screen::HOME);
     assert_eq!(
         app.nav.sections.at(),
         2,
@@ -88,9 +89,9 @@ fn the_main_screen_keeps_the_cursor_on_the_section_it_was_left_from() {
 #[test]
 fn each_list_keeps_the_row_its_reader_left_it_on() {
     let mut app = app();
-    into(&mut app, Screen::Accounts, 120, 40);
+    into(&mut app, screen("accounts"), 120, 40);
     press(&mut app, KeyCode::Down);
-    let was = app.accounts_keys()[app.nav.lists.accounts.at()].clone();
+    let was = app.pane_keys()[app.panes().expect("a section").at()].clone();
 
     press(&mut app, KeyCode::Esc);
     press(&mut app, KeyCode::Right);
@@ -99,9 +100,9 @@ fn each_list_keeps_the_row_its_reader_left_it_on() {
     press(&mut app, KeyCode::Esc);
     press(&mut app, KeyCode::Left);
 
-    assert_eq!(app.nav.lists.accounts.showing(), Subject::Users);
+    assert_eq!(app.panes().expect("a section").showing(), 0);
     assert_eq!(
-        app.accounts_keys()[app.nav.lists.accounts.at()],
+        app.pane_keys()[app.panes().expect("a section").at()],
         was,
         "coming back to a list put the reader at the top of it"
     );

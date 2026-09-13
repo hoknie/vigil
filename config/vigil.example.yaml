@@ -12,25 +12,25 @@ retention_days: 90
 collectors:
   - ports
   - users
-  - persistence
   - processes
+  - launches
+  - persistence
   - firewall
   - resources
-  - containers
   - files
-  - launches
+  - containers
 
 # How often each collector reads, in seconds.
 schedule:
   ports: 30
   users: 300
-  persistence: 300
   processes: 30
+  launches: 15
+  persistence: 300
   firewall: 60
   resources: 60
-  containers: 60
   files: 300
-  launches: 15
+  containers: 60
 
 # What this host is expected to do, written out so the agent stays quiet about it.
 suppressions: []
@@ -55,8 +55,9 @@ files:
   # A file above this size is watched by its permissions alone and its content is not hashed.
   ceiling_bytes: 1048576
 
-# Whether the arguments a program was launched with are kept.
-record_launch_arguments: false
+launches:
+  # Whether the arguments a program was launched with are kept.
+  record_arguments: false
 
 # Where findings go. An empty list keeps them on this host, in the journal under state_dir.
 # An entry names a kind: ndjson, syslog, webhook or host_findings.
