@@ -7,7 +7,7 @@ const EMPTY: &str = "suppressions: []";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Edit {
-    Changed(String),
+    Changed { text: String, entries: usize },
     AlreadySo,
     NotOurs(String),
 }
@@ -21,12 +21,22 @@ pub fn add(text: &str, entries: &[Entry]) -> Edit {
         Shape::Block(at) => (Some(at), items(&lines, at)),
     };
 
-    let named: Vec<(String, bool)> = held.iter().filter_map(|item| item.key.clone()).collect();
-    let written: Vec<String> = entries
-        .iter()
-        .filter(|entry| !named.contains(&(entry.key.clone(), entry.prefix)))
-        .flat_map(Entry::lines)
-        .collect();
+    let mut named: Vec<Named> = held.iter().filter_map(Item::named).collect();
+    let mut written: Vec<String> = Vec::new();
+    let mut wrote = 0;
+    for entry in entries {
+        let asked = Named {
+            key: entry.key.clone(),
+            prefix: entry.prefix,
+            kind: entry.kind.clone(),
+        };
+        if named.contains(&asked) {
+            continue;
+        }
+        named.push(asked);
+        written.extend(entry.lines());
+        wrote += 1;
+    }
     if written.is_empty() {
         return Edit::AlreadySo;
     }
@@ -49,7 +59,10 @@ pub fn add(text: &str, entries: &[Entry]) -> Edit {
             }
         }
     }
-    Edit::Changed(joined(&out))
+    Edit::Changed {
+        text: joined(&out),
+        entries: wrote,
+    }
 }
 
 pub fn remove(text: &str, keys: &[String]) -> Edit {
@@ -82,7 +95,10 @@ pub fn remove(text: &str, keys: &[String]) -> Edit {
     if held.len() == doomed.len() {
         out[heading] = EMPTY.to_string();
     }
-    Edit::Changed(joined(&out))
+    Edit::Changed {
+        text: joined(&out),
+        entries: doomed.len(),
+    }
 }
 
 pub fn named(text: &str) -> Vec<String> {
@@ -107,11 +123,29 @@ struct Item {
     start: usize,
     end: usize,
     key: Option<(String, bool)>,
+    kind: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Named {
+    key: String,
+    prefix: bool,
+    kind: Option<String>,
 }
 
 impl Item {
     fn holds(&self, line: usize) -> bool {
         line >= self.start && line < self.end
+    }
+
+    fn named(&self) -> Option<Named> {
+        let (key, prefix) = self.key.clone()?;
+
+        Some(Named {
+            key,
+            prefix,
+            kind: self.kind.clone(),
+        })
     }
 }
 
@@ -145,6 +179,7 @@ fn items(lines: &[&str], heading: usize) -> Vec<Item> {
                 start: at,
                 end: at + 1,
                 key: keyed(first.trim()),
+                kind: kinded(first.trim()),
             }),
             None => {
                 if let Some(item) = items.last_mut() {
@@ -152,11 +187,20 @@ fn items(lines: &[&str], heading: usize) -> Vec<Item> {
                     if item.key.is_none() {
                         item.key = keyed(held);
                     }
+                    if item.kind.is_none() {
+                        item.kind = kinded(held);
+                    }
                 }
             }
         }
     }
     items
+}
+
+fn kinded(field: &str) -> Option<String> {
+    field
+        .strip_prefix("kind:")
+        .map(|value| unquoted(value.trim()))
 }
 
 fn keyed(field: &str) -> Option<(String, bool)> {
@@ -211,7 +255,14 @@ reporters: []
 
     fn changed(edit: Edit) -> String {
         match edit {
-            Edit::Changed(text) => text,
+            Edit::Changed { text, .. } => text,
+            other => panic!("{other:?}"),
+        }
+    }
+
+    fn wrote(edit: Edit) -> usize {
+        match edit {
+            Edit::Changed { entries, .. } => entries,
             other => panic!("{other:?}"),
         }
     }
@@ -276,6 +327,82 @@ reporters: []
 
         assert_eq!(after.matches("user|group|docker").count(), 1, "{after}");
         assert!(after.contains("user|group|sudo"), "{after}");
+    }
+
+    #[test]
+    fn one_key_named_twice_in_one_call_is_written_down_once() {
+        let after = changed(add(
+            SHIPPED,
+            &[entry("user|group|docker"), entry("user|group|docker")],
+        ));
+
+        assert_eq!(
+            after.matches("user|group|docker").count(),
+            1,
+            "the same object asked for twice is one entry, and a file with it twice is a file \
+             an operator has to read twice to learn one thing:\n{after}"
+        );
+        assert_eq!(
+            wrote(add(SHIPPED, &[entry("a|b"), entry("a|b"), entry("c|d")])),
+            2
+        );
+    }
+
+    #[test]
+    fn the_same_object_narrowed_to_two_kinds_is_two_entries_because_it_is_two_statements() {
+        let one = changed(add(
+            SHIPPED,
+            &[Entry {
+                kind: Some("port.listen.new".into()),
+                ..entry("port.listen|tcp|0.0.0.0:8080")
+            }],
+        ));
+
+        let both = changed(add(
+            &one,
+            &[Entry {
+                kind: Some("port.listen.removed".into()),
+                ..entry("port.listen|tcp|0.0.0.0:8080")
+            }],
+        ));
+
+        assert_eq!(
+            both.matches("  - finding_key:").count(),
+            2,
+            "silencing 'the port appeared' is not silencing 'the port is gone', and a command \
+             that called the second one a duplicate would refuse to write what was asked:\n{both}"
+        );
+        assert_eq!(
+            add(
+                &both,
+                &[Entry {
+                    kind: Some("port.listen.new".into()),
+                    ..entry("port.listen|tcp|0.0.0.0:8080")
+                }]
+            ),
+            Edit::AlreadySo,
+            "and the same object with the same kind is still one entry"
+        );
+    }
+
+    #[test]
+    fn an_entry_written_by_hand_with_a_kind_is_read_with_it_and_not_taken_for_a_broader_one() {
+        let by_hand = "\
+suppressions:
+  - finding_key: \"user|group|docker\"
+    kind: user.group.privileged_member_added
+    reason: the deploy user belongs there
+";
+
+        assert_eq!(
+            add(by_hand, &[entry("user|group|docker")]),
+            Edit::Changed {
+                text: changed(add(by_hand, &[entry("user|group|docker")])),
+                entries: 1,
+            },
+            "an entry that silences one kind does not silence the object, so the broader one \
+             is a new entry and not a duplicate"
+        );
     }
 
     #[test]
@@ -403,7 +530,7 @@ suppressions:
         assert_eq!(add(by_hand, &[entry("user|group|docker")]), Edit::AlreadySo);
         assert!(matches!(
             remove(by_hand, &["user|group|docker".to_string()]),
-            Edit::Changed(_)
+            Edit::Changed { .. }
         ));
     }
 

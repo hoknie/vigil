@@ -263,6 +263,54 @@ fn a_configuration_this_console_cannot_write_takes_nothing_off_the_screen_and_sa
 }
 
 #[test]
+fn an_object_already_written_down_is_not_written_down_twice_and_the_line_says_so() {
+    let (mut app, path) = over_a_configuration();
+    press(&mut app, KeyCode::Char('d'));
+    because(&mut app, "ours");
+    press(&mut app, KeyCode::Char('u'));
+
+    press(&mut app, KeyCode::Char('d'));
+    because(&mut app, "ours again");
+    press(&mut app, KeyCode::Char('u'));
+    press(&mut app, KeyCode::Char('d'));
+    because(&mut app, "and again");
+
+    assert_eq!(
+        silenced(&path).len(),
+        1,
+        "three rounds of the same object, one entry: {:#?}",
+        silenced(&path)
+    );
+}
+
+#[test]
+fn an_object_somebody_silenced_already_is_taken_off_the_screen_without_claiming_a_write() {
+    let path = a_configuration();
+    let mut app = watching(&path);
+    into(&mut app, Screen::FINDINGS, 200, 30);
+    press(&mut app, KeyCode::Char('d'));
+    because(&mut app, "ours");
+    assert_eq!(silenced(&path).len(), 1);
+
+    let mut again = crate::ui::fixture::finding("It happened once more", Severity::High);
+    again.finding_key = "port.listen|tcp|0.0.0.0:4444".into();
+    app.view.found.findings.push(again);
+    app.dismissed = crate::ui::Dismissed::default();
+    app.settle();
+
+    press(&mut app, KeyCode::Char('d'));
+    because(&mut app, "ours");
+
+    let page = drawn_at(&app, 200, 30);
+    assert!(page.contains("already silenced in"), "{page}");
+    assert_eq!(silenced(&path).len(), 1, "{:#?}", silenced(&path));
+    assert!(
+        !page.contains("It happened once more"),
+        "and it still leaves the screen: {page}"
+    );
+}
+
+#[test]
 fn bringing_it_back_takes_the_entry_out_of_the_configuration_as_well_as_back_on_the_screen() {
     let (mut app, path) = over_a_configuration();
     press(&mut app, KeyCode::Char('d'));

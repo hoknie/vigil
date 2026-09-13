@@ -9,6 +9,12 @@ pub const DEFAULT_PATH: &str = "/etc/vigil/vigil.yaml";
 pub const RESTART: &str = "systemctl try-restart vigild.service";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Done {
+    pub said: Vec<String>,
+    pub entries: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Options {
     pub keys: Vec<String>,
     pub reason: String,
@@ -33,64 +39,96 @@ impl Default for Options {
     }
 }
 
-pub fn add(options: &Options) -> Result<Vec<String>, String> {
+pub fn add(options: &Options) -> Result<Done, String> {
     let entries = asked(options)?;
     let text = read(&options.path)?;
 
     match vigil_config::add(&text, &entries) {
         Edit::NotOurs(why) => Err(why),
-        Edit::AlreadySo => Ok(vec![format!(
-            "every one of those is already in {}, and nothing was written",
-            options.path
-        )]),
-        Edit::Changed(after) => {
+        Edit::AlreadySo => Ok(Done {
+            said: vec![format!(
+                "already in {}, so nothing was written: {}",
+                options.path,
+                entries
+                    .iter()
+                    .map(|entry| match &entry.kind {
+                        Some(kind) => format!("{} ({kind})", entry.key),
+                        None => entry.key.clone(),
+                    })
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            )],
+            entries: 0,
+        }),
+        Edit::Changed { text: after, .. } => {
             let mut said = vec![put(&options.path, &text, &after, options.dry_run)?];
             for entry in &entries {
                 said.push(format!("{}: {}", entry.named(), entry.key));
             }
             said.push(restart_note());
-            Ok(said)
+            Ok(Done {
+                said,
+                entries: entries.len(),
+            })
         }
     }
 }
 
-pub fn remove(options: &Options) -> Result<Vec<String>, String> {
+pub fn remove(options: &Options) -> Result<Done, String> {
     let text = read(&options.path)?;
 
     match vigil_config::remove(&text, &options.keys) {
         Edit::NotOurs(why) => Err(why),
-        Edit::AlreadySo => Ok(vec![
-            format!(
-                "nothing in {} is written down for {}, so the file was not touched",
-                options.path,
-                options.keys.join(", ")
-            ),
-            match vigil_config::named(&text) {
-                held if held.is_empty() => "it silences nothing at all".to_string(),
-                held => format!("it silences: {}", held.join(", ")),
-            },
-        ]),
-        Edit::Changed(after) => Ok(vec![
-            put(&options.path, &text, &after, options.dry_run)?,
-            format!("no longer silenced: {}", options.keys.join(", ")),
-            restart_note(),
-        ]),
+        Edit::AlreadySo => Ok(Done {
+            said: vec![
+                format!(
+                    "nothing in {} is written down for {}, so the file was not touched",
+                    options.path,
+                    options.keys.join(", ")
+                ),
+                match vigil_config::named(&text) {
+                    held if held.is_empty() => "it silences nothing at all".to_string(),
+                    held => format!("it silences: {}", held.join(", ")),
+                },
+            ],
+            entries: 0,
+        }),
+        Edit::Changed {
+            text: after,
+            entries,
+        } => Ok(Done {
+            said: vec![
+                put(&options.path, &text, &after, options.dry_run)?,
+                format!(
+                    "{entries} entry(ies) taken out, and {} is reported again",
+                    options.keys.join(", ")
+                ),
+                restart_note(),
+            ],
+            entries,
+        }),
     }
 }
 
-pub fn list(options: &Options) -> Result<Vec<String>, String> {
+pub fn list(options: &Options) -> Result<Done, String> {
     let held = silenced(&read(&options.path)?).map_err(|why| format!("{}: {why}", options.path))?;
 
     if held.is_empty() {
-        return Ok(vec![format!(
-            "{} silences nothing: every finding this host raises reaches the console",
-            options.path
-        )]);
+        return Ok(Done {
+            said: vec![format!(
+                "{} silences nothing: every finding this host raises reaches the console",
+                options.path
+            )],
+            entries: 0,
+        });
     }
 
     let mut said = vec![format!("{} suppression(s) in {}", held.len(), options.path)];
     said.extend(held.iter().map(Suppression::describe));
-    Ok(said)
+    Ok(Done {
+        entries: held.len(),
+        said,
+    })
 }
 
 fn restart_note() -> String {
@@ -107,17 +145,19 @@ fn asked(options: &Options) -> Result<Vec<Entry>, String> {
         Some(written) => Some(moment(written)?),
     };
 
-    let entries: Vec<Entry> = options
-        .keys
-        .iter()
-        .map(|key| Entry {
+    let mut entries: Vec<Entry> = Vec::new();
+    for key in &options.keys {
+        let entry = Entry {
             key: key.clone(),
             prefix: options.prefix,
             kind: kind.clone(),
             until: until.clone(),
             reason: options.reason.trim().to_string(),
-        })
-        .collect();
+        };
+        if !entries.contains(&entry) {
+            entries.push(entry);
+        }
+    }
 
     for entry in &entries {
         as_written(entry)
@@ -219,9 +259,29 @@ mod tests {
             "2026-09-13T10:00:00.000Z"
         ));
         assert!(
-            said.iter().any(|line| line.contains(RESTART)),
+            said.said.iter().any(|line| line.contains(RESTART)),
             "an entry that is not read until a restart, with nobody told to restart, is an \
              operator watching the same finding come back: {said:#?}"
+        );
+    }
+
+    #[test]
+    fn one_object_named_twice_on_the_command_line_is_asked_for_once() {
+        let path = temporary("twice.yaml");
+
+        let done = add(&Options {
+            keys: vec!["user|group|docker".into(), "user|group|docker".into()],
+            ..silencing(&path, "unused")
+        })
+        .expect("writes");
+
+        assert_eq!(done.entries, 1, "{:#?}", done.said);
+        assert_eq!(
+            std::fs::read_to_string(&path)
+                .expect("readable")
+                .matches("user|group|docker")
+                .count(),
+            1
         );
     }
 
@@ -274,7 +334,8 @@ mod tests {
                 path: path.clone(),
                 ..Options::default()
             })
-            .expect("reads")[0]
+            .expect("reads")
+            .said[0]
                 .contains("silences nothing")
         );
 
@@ -285,8 +346,8 @@ mod tests {
             ..Options::default()
         })
         .expect("reads");
-        assert!(said[0].contains("1 suppression(s)"), "{said:#?}");
-        assert!(said[1].contains("user|group|docker"), "{said:#?}");
-        assert!(said[1].contains("the staging api"), "{said:#?}");
+        assert!(said.said[0].contains("1 suppression(s)"), "{said:#?}");
+        assert!(said.said[1].contains("user|group|docker"), "{said:#?}");
+        assert!(said.said[1].contains("the staging api"), "{said:#?}");
     }
 }

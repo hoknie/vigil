@@ -53,8 +53,8 @@ pub fn start(arguments: impl IntoIterator<Item = String>) -> ExitCode {
                 Silencing::List(_) => ("list", config::list(&options)),
             };
             match outcome {
-                Ok(said) => {
-                    eprintln!("vigil suppress {doing}:\n  {}", said.join("\n  "));
+                Ok(done) => {
+                    eprintln!("vigil suppress {doing}:\n  {}", done.said.join("\n  "));
                     ExitCode::SUCCESS
                 }
                 Err(error) => {

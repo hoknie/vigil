@@ -132,17 +132,23 @@ impl App {
         };
         match config::add(&asked) {
             Err(why) => self.message = Some(format!("Nothing was silenced. {why}")),
-            Ok(_) => {
+            Ok(done) => {
                 match asking.deed() {
                     Deed::Remove => self.dismissed.silence(asking.keys().to_vec()),
                 }
                 self.picked.clear();
-                self.message = Some(format!(
-                    "{} object(s) silenced \u{b7} {} applies it \u{b7} written to {}",
-                    asking.keys().len(),
-                    config::RESTART,
-                    self.configuration_path()
-                ));
+                self.message = Some(match done.entries {
+                    0 => format!(
+                        "{} object(s) already silenced in {}",
+                        asking.keys().len(),
+                        self.configuration_path()
+                    ),
+                    written => format!(
+                        "{written} object(s) silenced \u{b7} {} applies it \u{b7} written to {}",
+                        config::RESTART,
+                        self.configuration_path()
+                    ),
+                });
             }
         }
     }

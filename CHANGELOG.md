@@ -12,6 +12,9 @@ Format:
 - `findings` now can suppress from ui
 - picking rows on the findings screen
 
+### Fixed
+- double suppresion for one item
+
 ### Changed
 - not default config path is correctly resolve from now
 - update screen for unknown
