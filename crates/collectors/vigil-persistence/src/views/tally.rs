@@ -1,0 +1,59 @@
+use vigil_model::Snapshot;
+use vigil_view::{Showing, time_of_day};
+
+use super::rows::{nested, parents_of, rows};
+use crate::types::{Kind, List};
+
+pub(super) fn tally(reading: &Snapshot, list: List, showing: &Showing<'_>) -> String {
+    let held = reading
+        .items
+        .keys()
+        .filter(|key| List::holding(key) == list && !Kind::of(key).mark())
+        .count();
+    let whole = reading.items.len();
+    let shown = rows(reading, list, showing)
+        .into_iter()
+        .filter(|row| !Kind::of(&row.key).mark())
+        .count();
+
+    let mut parts = vec![match showing.holding_back() {
+        false => format!(
+            "{held} {} of {whole} in this reading, read at {}",
+            list.things(held),
+            time_of_day(&reading.taken_at)
+        ),
+        true => format!(
+            "{shown} of {held} {}, read at {}",
+            list.things(held),
+            time_of_day(&reading.taken_at)
+        ),
+    }];
+
+    if nested(list, showing)
+        && rows(reading, list, showing)
+            .iter()
+            .any(|row| parents_of(&reading.items, &row.key) > 1)
+    {
+        parts.push("+N means N more pull it in".to_string());
+    }
+
+    let marked = reading
+        .items
+        .keys()
+        .filter(|key| List::holding(key) == list && Kind::of(key).mark())
+        .count();
+    if marked > 0 {
+        parts.push(format!("{marked} row(s) about the reading itself"));
+    }
+    if showing.elsewhere > 0 {
+        parts.push(format!(
+            "{} other list(s) narrowed by a search of their own",
+            showing.elsewhere
+        ));
+    }
+    if let Some(reason) = showing.note {
+        parts.push(format!("incomplete: {reason}"));
+    }
+
+    parts.join(" · ")
+}

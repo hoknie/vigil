@@ -2,8 +2,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde_json::Value;
 
-use super::kind::Kind;
-use crate::ui::screens::programs::strings;
+use super::fields::strings;
+use crate::types::Kind;
 
 pub(super) struct Placed {
     pub key: String,
