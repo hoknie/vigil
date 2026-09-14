@@ -1,6 +1,6 @@
+use vigil_view::conformance::the_index_lists_every_search_and_sort_as_the_rows_do_in;
 use vigil_view::{Facet, Pane, RowKey, Section, Showing};
 
-use super::agreed::the_index_lists_what_the_rows_list;
 use super::scaled::many_launches;
 use crate::views::WhatHasRunHere;
 
@@ -44,7 +44,7 @@ fn every_search_and_every_sort_of_many_launches_lists_from_the_index_what_the_re
     );
 
     for only in narrowings() {
-        the_index_lists_what_the_rows_list(
+        the_index_lists_every_search_and_sort_as_the_rows_do_in(
             pane.as_ref(),
             &reading,
             Showing::default().narrowing(&only),

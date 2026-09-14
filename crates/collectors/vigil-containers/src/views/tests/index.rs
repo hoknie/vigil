@@ -1,9 +1,12 @@
 use serde_json::{Value, json};
 use vigil_model::Snapshot;
+use vigil_view::conformance::{
+    every_view_answers_from_its_index_and_its_counts_as_from_the_reading,
+    the_index_lists_every_search_and_sort_as_the_rows_do_in,
+};
 use vigil_view::{Facet, Pane, Section, Showing};
 
 use super::super::WhatRunsInContainers;
-use super::listing::lists_as_the_rows_do;
 use crate::fixture::containers;
 
 fn pane() -> Box<dyn Pane> {
@@ -36,18 +39,33 @@ fn moved(item: &mut Value, copy: usize) {
     }
 }
 
+fn indexed(pane: &dyn Pane, reading: &Snapshot) -> usize {
+    pane.index(reading, &Showing::default())
+        .expect("the containers answer from an index")
+        .len()
+}
+
 #[test]
 fn the_containers_list_every_search_and_sort_from_their_index_as_their_rows_do() {
     let pane = pane();
     let nothing = Snapshot::new("containers", "2026-09-14T09:00:00.000Z".to_string());
-
-    assert_eq!(
-        lists_as_the_rows_do(pane.as_ref(), &nothing, Showing::default()),
-        0
-    );
     let sample = containers();
+
+    for reading in [&nothing, &sample] {
+        the_index_lists_every_search_and_sort_as_the_rows_do_in(
+            pane.as_ref(),
+            reading,
+            Showing::default(),
+        );
+    }
     assert_eq!(
-        lists_as_the_rows_do(pane.as_ref(), &sample, Showing::default()),
+        indexed(pane.as_ref(), &nothing),
+        0,
+        "a host read with no containers indexes nothing, or a search would find containers that \
+         are not there"
+    );
+    assert_eq!(
+        indexed(pane.as_ref(), &sample),
         pane.rows(&sample, &Showing::default()).len(),
         "the index holds the containers and not the runtime sockets, which the footer counts \
          and the table does not list"
@@ -59,8 +77,9 @@ fn a_larger_host_full_of_ties_lists_its_containers_from_the_index_in_the_order_t
     let pane = pane();
     let reading = scaled(60);
 
+    every_view_answers_from_its_index_and_its_counts_as_from_the_reading(pane.as_ref(), &reading);
     assert!(
-        lists_as_the_rows_do(pane.as_ref(), &reading, Showing::default()) >= 120,
+        indexed(pane.as_ref(), &reading) >= 120,
         "sixty copies of two containers are what put many rows under one runtime and one answer \
          about the host"
     );
@@ -85,6 +104,6 @@ fn nothing_else_the_console_keeps_about_the_list_changes_what_the_containers_ind
             .narrowing(&facets)
             .noting(Some("a note")),
     ] {
-        lists_as_the_rows_do(pane.as_ref(), &reading, around);
+        the_index_lists_every_search_and_sort_as_the_rows_do_in(pane.as_ref(), &reading, around);
     }
 }

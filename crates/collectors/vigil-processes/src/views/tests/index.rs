@@ -1,6 +1,6 @@
+use vigil_view::conformance::the_index_lists_every_search_and_sort_as_the_rows_do_in;
 use vigil_view::{Pane, RowKey, Section, Showing};
 
-use super::agreed::the_index_lists_what_the_rows_list;
 use super::scaled::many_programs;
 use crate::views::WhatHasRunHere;
 
@@ -11,6 +11,7 @@ fn pane() -> Box<dyn Pane> {
 #[test]
 fn every_search_of_many_running_programs_lists_from_the_index_what_the_reading_lists() {
     let reading = many_programs(40);
+    let pane = pane();
     assert!(
         reading
             .items
@@ -22,8 +23,19 @@ fn every_search_of_many_running_programs_lists_from_the_index_what_the_reading_l
         "a sample with one row about the reading and a handful of programs never shows the \
          rows about the reading kept ahead of a larger list"
     );
+    assert_eq!(
+        pane.index(&reading, &Showing::default())
+            .expect("a pane that builds no index is walked whole on every keystroke")
+            .len(),
+        pane.rows(&reading, &Showing::default()).len(),
+        "the index holds every row the list shows before anything is searched for"
+    );
 
-    the_index_lists_what_the_rows_list(pane().as_ref(), &reading, Showing::default());
+    the_index_lists_every_search_and_sort_as_the_rows_do_in(
+        pane.as_ref(),
+        &reading,
+        Showing::default(),
+    );
 }
 
 #[test]

@@ -1,9 +1,12 @@
 use serde_json::{Value, json};
 use vigil_model::Snapshot;
+use vigil_view::conformance::{
+    every_view_answers_from_its_index_and_its_counts_as_from_the_reading,
+    the_index_lists_every_search_and_sort_as_the_rows_do_in,
+};
 use vigil_view::{Facet, Pane, Section, Showing};
 
 use super::super::WhatTheHostLetsIn;
-use super::listing::lists_as_the_rows_do;
 use crate::fixture::firewall;
 
 fn pane() -> Box<dyn Pane> {
@@ -45,18 +48,33 @@ fn renamed(item: &mut Value, copy: usize) {
     }
 }
 
+fn indexed(pane: &dyn Pane, reading: &Snapshot) -> usize {
+    pane.index(reading, &Showing::default())
+        .expect("the ruleset answers from an index")
+        .len()
+}
+
 #[test]
 fn the_ruleset_lists_every_search_and_sort_from_its_index_as_its_rows_do() {
     let pane = pane();
     let nothing = Snapshot::new("firewall", "2026-09-14T09:00:00.000Z".to_string());
-
-    assert_eq!(
-        lists_as_the_rows_do(pane.as_ref(), &nothing, Showing::default()),
-        0
-    );
     let sample = firewall();
+
+    for reading in [&nothing, &sample] {
+        the_index_lists_every_search_and_sort_as_the_rows_do_in(
+            pane.as_ref(),
+            reading,
+            Showing::default(),
+        );
+    }
     assert_eq!(
-        lists_as_the_rows_do(pane.as_ref(), &sample, Showing::default()),
+        indexed(pane.as_ref(), &nothing),
+        0,
+        "a ruleset that was read empty indexes nothing, or a search would find rules on a host \
+         that has none"
+    );
+    assert_eq!(
+        indexed(pane.as_ref(), &sample),
         pane.rows(&sample, &Showing::default()).len(),
         "the index holds every row the ruleset lists before anything is typed, and nothing more"
     );
@@ -67,8 +85,9 @@ fn a_larger_ruleset_full_of_ties_lists_from_the_index_in_the_order_it_is_read() 
     let pane = pane();
     let reading = scaled(30);
 
+    every_view_answers_from_its_index_and_its_counts_as_from_the_reading(pane.as_ref(), &reading);
     assert!(
-        lists_as_the_rows_do(pane.as_ref(), &reading, Showing::default()) > 200,
+        indexed(pane.as_ref(), &reading) > 200,
         "thirty copies of one ruleset are what put many chains under one hook and one policy"
     );
 }
@@ -92,6 +111,6 @@ fn nothing_else_the_console_keeps_about_the_list_changes_what_the_ruleset_index_
             .narrowing(&facets)
             .noting(Some("a note")),
     ] {
-        lists_as_the_rows_do(pane.as_ref(), &reading, around);
+        the_index_lists_every_search_and_sort_as_the_rows_do_in(pane.as_ref(), &reading, around);
     }
 }

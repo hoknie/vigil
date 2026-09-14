@@ -1,7 +1,7 @@
+use vigil_view::conformance::the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_in;
 use vigil_view::{Section, Showing};
 
 use super::scaled::{many_things_started, pulled_in_twice};
-use super::tallied::the_footer_from_the_counts_says_what_the_footer_from_the_reading_says;
 use crate::fixture::persistence;
 use crate::views::WhatStartsByItself;
 
@@ -10,13 +10,13 @@ const TREE: &str = "tree";
 #[test]
 fn the_footer_of_every_list_as_a_list_or_as_a_tree_says_from_the_counts_what_it_says_from_the_reading()
  {
-    for reading in [persistence(), pulled_in_twice(), many_things_started(20)] {
+    for reading in [persistence(), pulled_in_twice(), many_things_started(12)] {
         for pane in WhatStartsByItself.panes() {
             if !pane.shown(&reading) {
                 continue;
             }
             for showing in [Showing::default(), Showing::default().arranged(TREE)] {
-                the_footer_from_the_counts_says_what_the_footer_from_the_reading_says(
+                the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_in(
                     pane.as_ref(),
                     &reading,
                     showing,

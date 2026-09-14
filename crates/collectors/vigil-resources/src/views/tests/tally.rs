@@ -1,7 +1,7 @@
+use vigil_view::conformance::the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_in;
 use vigil_view::{Pane, RowKey, Section, Showing};
 
 use super::scaled::many_filesystems;
-use super::tallied::the_footer_from_the_counts_says_what_the_footer_from_the_reading_says;
 use crate::views::TheHostAndItsFiles;
 
 fn pane() -> Box<dyn Pane> {
@@ -10,7 +10,7 @@ fn pane() -> Box<dyn Pane> {
 
 #[test]
 fn the_footer_of_many_filesystems_says_from_the_listed_rows_what_it_says_from_the_reading() {
-    the_footer_from_the_counts_says_what_the_footer_from_the_reading_says(
+    the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_in(
         pane().as_ref(),
         &many_filesystems(40),
         Showing::default(),

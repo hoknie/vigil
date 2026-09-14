@@ -1,9 +1,9 @@
 use vigil_model::Snapshot;
+use vigil_view::conformance::the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_in;
 use vigil_view::{Facet, Pane, Section, Showing};
 
 use super::super::WhatTheHostLetsIn;
 use super::index::scaled;
-use super::tallying::tallies_as_the_reading_does;
 use crate::fixture::firewall;
 
 fn pane() -> Box<dyn Pane> {
@@ -16,7 +16,11 @@ fn the_footer_from_what_was_counted_once_says_what_the_whole_ruleset_says() {
     let nothing = Snapshot::new("firewall", "2026-09-14T09:00:00.000Z".to_string());
 
     for reading in [firewall(), scaled(4), nothing] {
-        tallies_as_the_reading_does(pane.as_ref(), &reading, Showing::default());
+        the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_in(
+            pane.as_ref(),
+            &reading,
+            Showing::default(),
+        );
     }
 }
 
@@ -38,6 +42,10 @@ fn the_footer_counts_the_policies_of_the_chains_listed_whatever_else_the_console
             .arranged("by table")
             .opening(&opened),
     ] {
-        tallies_as_the_reading_does(pane.as_ref(), &reading, around);
+        the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_in(
+            pane.as_ref(),
+            &reading,
+            around,
+        );
     }
 }

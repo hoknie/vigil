@@ -1,6 +1,6 @@
+use vigil_view::conformance::the_index_lists_every_search_and_sort_as_the_rows_do_in;
 use vigil_view::{Pane, RowKey, Section, Showing};
 
-use super::agreed::the_index_lists_what_the_rows_list;
 use super::scaled::many_filesystems;
 use crate::views::TheHostAndItsFiles;
 
@@ -12,13 +12,25 @@ fn pane() -> Box<dyn Pane> {
 fn every_search_and_every_sort_of_a_host_with_many_filesystems_lists_from_the_index_what_the_reading_lists()
  {
     let reading = many_filesystems(40);
+    let pane = pane();
     assert!(
         reading.items.len() >= 200,
         "a sample of five rows has no ties to break and proves nothing about the order they \
          are broken in"
     );
+    assert_eq!(
+        pane.index(&reading, &Showing::default())
+            .expect("a pane that builds no index is walked whole on every keystroke")
+            .len(),
+        pane.rows(&reading, &Showing::default()).len(),
+        "the index holds every row the list shows before anything is searched for"
+    );
 
-    the_index_lists_what_the_rows_list(pane().as_ref(), &reading, Showing::default());
+    the_index_lists_every_search_and_sort_as_the_rows_do_in(
+        pane.as_ref(),
+        &reading,
+        Showing::default(),
+    );
 }
 
 #[test]

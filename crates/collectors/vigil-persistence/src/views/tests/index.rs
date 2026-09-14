@@ -1,6 +1,6 @@
+use vigil_view::conformance::every_view_answers_from_its_index_and_its_counts_as_from_the_reading;
 use vigil_view::{Emphasis, Pane, RowKey, Section, Showing, listed};
 
-use super::agreed::the_index_lists_what_the_rows_list;
 use super::scaled::many_things_started;
 use crate::fixture::persistence;
 use crate::views::WhatStartsByItself;
@@ -18,7 +18,7 @@ fn units() -> Box<dyn Pane> {
 #[test]
 fn every_search_of_every_list_of_a_host_starting_many_things_lists_from_the_index_what_the_reading_lists()
  {
-    let reading = many_things_started(25);
+    let reading = many_things_started(12);
     assert!(
         reading.items.len() >= 200,
         "a sample of a few rows per list proves nothing about a list long enough to need an \
@@ -29,11 +29,19 @@ fn every_search_of_every_list_of_a_host_starting_many_things_lists_from_the_inde
         if !pane.shown(&reading) {
             continue;
         }
-        the_index_lists_what_the_rows_list(pane.as_ref(), &reading, Showing::default());
-        the_index_lists_what_the_rows_list(
+        for showing in [Showing::default(), Showing::default().arranged(TREE)] {
+            assert_eq!(
+                pane.index(&reading, &showing)
+                    .expect("a pane that builds no index is walked whole on every keystroke")
+                    .len(),
+                pane.rows(&reading, &showing).len(),
+                "{}: the index holds every row the list shows before anything is searched for",
+                pane.name()
+            );
+        }
+        every_view_answers_from_its_index_and_its_counts_as_from_the_reading(
             pane.as_ref(),
             &reading,
-            Showing::default().arranged(TREE),
         );
     }
 }

@@ -30,6 +30,7 @@ Format:
 - `vigil.yaml` is read in two passes: the daemon's own keys, then the key each module names as its own
 - reorganized crates
 - hotkeys changed for more UX
+- improved lists perfomance
 
 ### Fixed
 - a socket state between two readings of an unchanged host

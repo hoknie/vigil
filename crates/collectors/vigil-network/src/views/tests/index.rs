@@ -1,9 +1,9 @@
 use serde_json::{Value, json};
 use vigil_model::Snapshot;
+use vigil_view::conformance::the_index_lists_every_search_and_sort_as_the_rows_do_in;
 use vigil_view::{Pane, Section, Showing, listed};
 
 use super::super::Listening;
-use super::listing::lists_as_the_rows_do;
 use crate::fixture::ports;
 
 pub(super) const KINDS_SWITCHED_OFF: [&[&str]; 5] = [
@@ -44,20 +44,28 @@ fn moved(item: &mut Value, copy: usize) {
     }
 }
 
+fn indexed(pane: &dyn Pane, reading: &Snapshot, showing: &Showing<'_>) -> usize {
+    pane.index(reading, showing)
+        .expect("every pane of this crate answers from an index")
+        .len()
+}
+
 #[test]
 fn the_socket_list_with_kinds_switched_off_lists_every_search_and_sort_as_its_rows_do() {
     let pane = &panes()[0];
 
     for reading in [ports(), scaled(6)] {
         for hidden in KINDS_SWITCHED_OFF {
-            let indexed =
-                lists_as_the_rows_do(pane.as_ref(), &reading, Showing::default().hiding(hidden));
-            let wanted = pane
-                .rows(&reading, &Showing::default().hiding(hidden))
-                .len();
+            let showing = Showing::default().hiding(hidden);
+            the_index_lists_every_search_and_sort_as_the_rows_do_in(
+                pane.as_ref(),
+                &reading,
+                showing,
+            );
 
             assert_eq!(
-                indexed, wanted,
+                indexed(pane.as_ref(), &reading, &showing),
+                pane.rows(&reading, &showing).len(),
                 "the index is built once for the kinds the reader left on, so it holds every \
                  socket of those kinds and not one socket of a kind switched off: {hidden:?}"
             );
@@ -90,7 +98,7 @@ fn the_tree_opened_at_any_heading_lists_every_search_as_its_rows_do() {
     ];
     for opened in openings {
         for hidden in [&[][..], KINDS_SWITCHED_OFF[0], KINDS_SWITCHED_OFF[1]] {
-            lists_as_the_rows_do(
+            the_index_lists_every_search_and_sort_as_the_rows_do_in(
                 pane.as_ref(),
                 &reading,
                 Showing::default().opening(opened).hiding(hidden),
@@ -109,8 +117,9 @@ fn a_larger_reading_with_ties_and_programs_sharing_a_name_lists_from_the_index_a
 
     for pane in panes() {
         let showing = Showing::default().opening(&opened);
+        the_index_lists_every_search_and_sort_as_the_rows_do_in(pane.as_ref(), &reading, showing);
         assert!(
-            lists_as_the_rows_do(pane.as_ref(), &reading, showing) > 250,
+            indexed(pane.as_ref(), &reading, &showing) > 250,
             "a larger reading is what puts many rows under one user, one program and one pid"
         );
     }
@@ -129,7 +138,11 @@ fn a_larger_reading_with_ties_and_programs_sharing_a_name_lists_from_the_index_a
         let showing = Showing::searching(search).opening(&opened);
         let (_, rows) = listed(tree.as_ref(), &reading, &showing, &index, None);
 
-        assert_eq!(rows, tree.rows(&reading, &showing), "{search:?}");
+        assert_eq!(
+            rows,
+            tree.rows(&reading, &showing),
+            "the tree lists from its index what it lists from the reading for {search:?}"
+        );
         assert!(
             rows.iter()
                 .filter(|row| !row.of_the_reading && row.key != "unresolved")

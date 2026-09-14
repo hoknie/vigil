@@ -1,6 +1,6 @@
 use serde_json::{Value, json};
 use vigil_model::Snapshot;
-use vigil_view::{Index, Pane, Showing, listed};
+use vigil_view::{Pane, Showing, conformance};
 
 use super::host::a_host_with_names_that_prefix_one_another as host;
 use crate::fixture::users;
@@ -8,6 +8,20 @@ use crate::types::Subject;
 use crate::views::pane::Of;
 
 const COPIES: usize = 12;
+
+pub(super) const SEARCHED: &[&str] = &[
+    "deploy",
+    "deploy.1",
+    "DEPLOY2",
+    "SHA256:",
+    "sha256:",
+    "unreadable",
+    "utmp",
+    "logind",
+    "Pts/",
+    "pts/",
+    "session-source",
+];
 
 fn renamed(key: &str, item: &Value, copy: usize) -> (String, Value) {
     let suffix = format!(".{copy}");
@@ -52,38 +66,6 @@ pub(super) fn scaled() -> Snapshot {
     scaled
 }
 
-fn searches_for(index: &Index) -> Vec<String> {
-    let mut searches: Vec<String> = vec![
-        String::new(),
-        "nothing on this host reads like this".to_string(),
-    ];
-    searches.extend(('a'..='z').chain('0'..='9').map(String::from));
-    searches.extend(
-        [
-            "|",
-            ".",
-            "%",
-            "deploy",
-            "deploy.1",
-            "DEPLOY2",
-            "SHA256:",
-            "unreadable",
-            "utmp",
-            "Pts/",
-        ]
-        .map(String::from),
-    );
-    for at in (0..index.len()).step_by((index.len() / 6).max(1)) {
-        let text: Vec<char> = index.haystack(at).chars().collect();
-        for (from, length) in [(0, 2), (text.len() / 3, 5), (text.len() / 2, 9)] {
-            let piece: String = text.iter().skip(from).take(length).collect();
-            searches.push(piece.to_uppercase());
-            searches.push(piece);
-        }
-    }
-    searches
-}
-
 #[test]
 fn the_scaled_reading_holds_every_row_a_search_from_the_index_could_get_wrong() {
     let reading = scaled();
@@ -125,34 +107,11 @@ fn every_list_answers_each_keystroke_from_its_index_exactly_as_its_rows_answer_i
     let reading = scaled();
 
     for subject in Subject::ALL.iter().copied() {
-        let pane = Of(subject);
-        let index = pane
-            .index(&reading, &Showing::default())
-            .expect("every accounts list builds an index");
-
-        for search in searches_for(&index) {
-            let showing = Showing::searching(&search);
-            let (found, from_the_index) = listed(&pane, &reading, &showing, &index, None);
-            assert_eq!(
-                from_the_index,
-                pane.rows(&reading, &showing),
-                "{subject:?} searching {search:?}: the console answers a keystroke from the index, \
-                 and the rows read from the reading are what it must say"
-            );
-
-            for longer in [
-                format!("{search}e"),
-                format!("{search}.1"),
-                format!("{search}|"),
-            ] {
-                let narrowed = Showing::searching(&longer);
-                assert_eq!(
-                    listed(&pane, &reading, &narrowed, &index, Some(&found)).1,
-                    pane.rows(&reading, &narrowed),
-                    "{subject:?} narrowing {search:?} to {longer:?}: the next keystroke only looks \
-                     among what the last one found, and must still find what the reading holds"
-                );
-            }
-        }
+        conformance::the_index_lists_every_search_and_sort_as_the_rows_do_also(
+            &Of(subject),
+            &reading,
+            Showing::default(),
+            SEARCHED,
+        );
     }
 }

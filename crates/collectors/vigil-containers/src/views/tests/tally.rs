@@ -1,9 +1,9 @@
 use vigil_model::Snapshot;
+use vigil_view::conformance::the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_in;
 use vigil_view::{Facet, Pane, Section, Showing};
 
 use super::super::WhatRunsInContainers;
 use super::index::scaled;
-use super::tallying::tallies_as_the_reading_does;
 use crate::fixture::containers;
 
 fn pane() -> Box<dyn Pane> {
@@ -16,7 +16,11 @@ fn the_footer_from_what_was_counted_once_says_what_the_whole_host_says() {
     let nothing = Snapshot::new("containers", "2026-09-14T09:00:00.000Z".to_string());
 
     for reading in [containers(), scaled(6), nothing] {
-        tallies_as_the_reading_does(pane.as_ref(), &reading, Showing::default());
+        the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_in(
+            pane.as_ref(),
+            &reading,
+            Showing::default(),
+        );
     }
 }
 
@@ -38,6 +42,10 @@ fn the_footer_counts_the_same_containers_and_sockets_whatever_else_the_console_k
             .arranged("by runtime")
             .opening(&opened),
     ] {
-        tallies_as_the_reading_does(pane.as_ref(), &reading, around);
+        the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_in(
+            pane.as_ref(),
+            &reading,
+            around,
+        );
     }
 }
