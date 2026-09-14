@@ -90,14 +90,17 @@ fn rows() -> Vec<(&'static str, &'static str)> {
             "",
             "THE LISTS OF A SECTION: \u{2190} \u{2192} along them, \u{2193} into one",
         ),
-        ("", "  ports: sockets \u{b7} by program"),
+        (
+            "",
+            "  ports: sockets \u{b7} by program   \u{b7}   system: the host \u{b7} watched files",
+        ),
         (
             "",
             "  accounts: users \u{b7} groups \u{b7} sudo \u{b7} keys \u{b7} ssh users \u{b7} logged in",
         ),
         (
             "",
-            "  programs: running \u{b7} launches   \u{b7}   system: the host \u{b7} watched files",
+            "  programs: running \u{b7} launches (f: its person or its program)",
         ),
         (
             "",
@@ -208,6 +211,12 @@ mod tests {
         let page = text::to_text(&buffer);
         assert!(page.contains("? / q"), "the last group is cut off: {page}");
         assert!(page.contains("startup:"), "{page}");
+        assert!(
+            page.contains("f: its person or its program"),
+            "the launches narrow by the row under the cursor, and a key that does that only \
+             on one list is looked up here or not found at all: {page}"
+        );
+        assert!(page.contains("system: the host"), "{page}");
     }
 
     #[test]

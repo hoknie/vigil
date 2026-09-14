@@ -4,7 +4,7 @@ use super::destruction::destroy;
 use super::programs;
 use super::report::killed;
 use super::signal::send;
-use super::targets::{self, Aim};
+use super::targets::{self, Aim, Target};
 
 pub const MOST_AT_ONCE: usize = 64;
 
@@ -73,7 +73,7 @@ fn socket(key: &str, killing: Killing, reading: Option<&Snapshot>, ours: u32) ->
         Aim::At(target) => {
             let outcome = match killing {
                 Killing::Destroy => destroy(&target),
-                signalled => send(target.pid, signalled),
+                signalled => send(target.pid, signalled, &|pid| still_holds(&target, pid)),
             };
             match outcome {
                 Ok(said) => killed(&target, &said),
@@ -84,10 +84,21 @@ fn socket(key: &str, killing: Killing, reading: Option<&Snapshot>, ours: u32) ->
     }
 }
 
+fn still_holds(target: &Target, pid: u32) -> bool {
+    target
+        .program
+        .as_deref()
+        .is_none_or(|executable| vigil_processes::still_running(pid, executable, None))
+}
+
 fn program(key: &str, killing: Killing, reading: Option<&Snapshot>, ours: u32) -> Killed {
     match programs::aim(key, reading, killing, ours, &vigil_processes::running) {
         programs::Aim::Nowhere(refused) => refused,
-        programs::Aim::At(program) => programs::stop(&program, killing, &send),
+        programs::Aim::At(program) => programs::stop(&program, killing, &|pid, killing| {
+            send(pid, killing, &|pid| {
+                vigil_processes::still_running(pid, &program.executable, Some(program.uid))
+            })
+        }),
     }
 }
 

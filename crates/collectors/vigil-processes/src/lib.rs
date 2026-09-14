@@ -7,7 +7,7 @@ mod rules;
 mod types;
 mod views;
 
-pub use collectors::running;
+pub use collectors::{running, still_running};
 pub use modules::Processes;
 pub use types::ProcessView;
 pub use views::{Running, WhatHasRunHere};

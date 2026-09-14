@@ -12,6 +12,7 @@ pub fn launch(user: &str, auid: u64, executable: &str) -> Value {
         "writable_path": is_writable_path(executable),
         "first_seen": "2026-09-09T12:00:00.000Z",
         "runs": 1,
+        "last_audit_id": "1757419203.412:3421",
         "audit_id": "1757419203.412:3421",
         "arguments": Value::Null,
         "arguments_redacted": false,

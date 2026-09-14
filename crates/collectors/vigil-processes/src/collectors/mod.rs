@@ -4,6 +4,6 @@ mod elsewhere;
 mod linux;
 
 #[cfg(not(target_os = "linux"))]
-pub use elsewhere::running;
+pub use elsewhere::{running, still_running};
 #[cfg(target_os = "linux")]
-pub use linux::{ProcessesCollector, running};
+pub use linux::{ProcessesCollector, running, still_running};

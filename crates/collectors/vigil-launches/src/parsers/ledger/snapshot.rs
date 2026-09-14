@@ -48,7 +48,7 @@ pub fn launches_snapshot(
         let key = format!("run|{name}|{executable}");
 
         if let Some(known) = snapshot.items.get_mut(&key) {
-            ran_again(known);
+            ran_again(known, &execution.id);
             continue;
         }
         if snapshot.items.len() >= LIMIT {
@@ -77,6 +77,7 @@ pub fn launches_snapshot(
                 "writable_path": is_writable_path(executable),
                 "first_seen": taken_at,
                 "runs": 1,
+                "last_audit_id": execution.id,
                 "audit_id": execution.id,
                 "arguments": arguments,
                 "arguments_redacted": arguments_redacted,
@@ -137,12 +138,34 @@ pub fn launches_snapshot(
     snapshot
 }
 
-fn ran_again(known: &mut Value) {
+fn ran_again(known: &mut Value, id: &str) {
     let Some(fields) = known.as_object_mut() else {
         return;
     };
+    let counted = fields
+        .get("last_audit_id")
+        .or_else(|| fields.get("audit_id"))
+        .and_then(Value::as_str)
+        .and_then(moment);
+    if let (Some(counted), Some(now)) = (counted, moment(id))
+        && now <= counted
+    {
+        return;
+    }
+
     let before = fields.get("runs").and_then(Value::as_u64).unwrap_or(1);
     fields.insert("runs".to_string(), json!(before.saturating_add(1)));
+    fields.insert("last_audit_id".to_string(), json!(id));
+}
+
+fn moment(id: &str) -> Option<(u64, u64, u64)> {
+    let (time, serial) = id.split_once(':')?;
+    let (seconds, milliseconds) = time.split_once('.')?;
+    Some((
+        seconds.parse().ok()?,
+        milliseconds.parse().ok()?,
+        serial.parse().ok()?,
+    ))
 }
 
 pub fn any_launch_was_read(items: &BTreeMap<String, Value>) -> bool {

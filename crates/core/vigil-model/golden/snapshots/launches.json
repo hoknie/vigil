@@ -78,6 +78,12 @@
         ],
         "always": true
       },
+      "last_audit_id": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
       "runs": {
         "types": [
           "number"
