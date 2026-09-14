@@ -8,11 +8,6 @@ to every file you modify. Where the tree does not yet comply, the gap is recorde
 exceptions are recorded in §10 together with their rationale; any violation missing from §10 is
 a defect.
 
-The principles are inherited from `is-waf` and adapted to this product. `vigil` has no HTTP, no
-database, no tenants and no control plane; its building blocks are collectors, snapshots, rules,
-sinks and screens. Where `is-waf` has `controllers → cases → services → repositories → db`,
-`vigil` has `collector → snapshot → differ → rule → finding → store/sink`.
-
 ---
 
 ## 1. Core principles
@@ -127,8 +122,6 @@ bin/vigil-audit-plugin ──► collectors/vigil-launches
 - **modules are independent of one another, and so are features.** If a foreign subsystem is
   needed, declare a trait in the crate's own `ports/` and provide the implementation in the
   composition root;
-- **`waf-*` is never linked.** The contract (§8) stays one-way because the reverse dependency
-  does not exist anywhere in the tree.
 
 ---
 
@@ -618,7 +611,6 @@ suite (samples that must be accepted and samples that must be rejected). Rules f
 | File size budget | ≤300 lines, >400 is a smell | ✅ the longest `.rs` file is 298 lines |
 | Function size budget | hard limit ≤300 lines | ✅ |
 | Measurement for cost-affecting changes | before-and-after numbers | ✅ |
-| `waf-*` in dependencies | never linked | ✅ `bin/vigild/tests/standalone.rs` over `cargo metadata` |
 
 ---
 
