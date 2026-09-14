@@ -3,9 +3,8 @@ use vigil_model::Snapshot;
 use vigil_view::Cell;
 
 use super::columns::where_from;
-use super::facts::{password, readable, route_to_root, seen_by, what};
-use super::fields::{members, number, objects, rules, text};
-use super::rows::keys_of;
+use super::facts::{group_named, keys_of, password, readable, route_to_root, seen_by, what};
+use super::fields::{members, number, rules, text};
 use crate::types::{Kind, Subject};
 
 pub(super) fn cells(
@@ -155,10 +154,9 @@ fn reaches(reading: &Snapshot, item: &Value) -> String {
     match who.strip_prefix('%') {
         None => who.to_string(),
         Some(group) => {
-            let members: Vec<&str> = objects(reading, Kind::Group)
-                .filter(|(_, item)| text(item, "name") == Some(group))
-                .flat_map(|(_, item)| members(item))
-                .collect();
+            let members: Vec<&str> = group_named(reading, group)
+                .map(|found| members(found).collect())
+                .unwrap_or_default();
             match members.is_empty() {
                 true => format!("{who}: nobody is in it"),
                 false => format!("{who}: {}", members.join(", ")),

@@ -3,9 +3,11 @@ mod tests;
 
 mod detail;
 mod fields;
+mod footer;
 mod launches;
 mod pane;
 mod section;
+mod sorted;
 
 pub use pane::Launches;
 pub use section::WhatHasRunHere;

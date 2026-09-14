@@ -1,5 +1,6 @@
 use vigil_model::Snapshot;
 
+use super::views::every_view_answers_from_its_index_and_its_counts_as_from_the_reading;
 use crate::{Pane, Room, Showing};
 
 const ROOMS: [u16; 2] = [80, 160];
@@ -147,6 +148,7 @@ pub fn run_all(pane: &dyn Pane, reading: &Snapshot) {
     nothing_is_shown_twice_under_one_key(pane, reading);
     what_the_pane_shows_of_a_row_is_more_than_the_row_itself(pane, reading);
     a_pane_that_gathers_rows_starts_with_every_one_of_them_put_away(pane, reading);
+    every_view_answers_from_its_index_and_its_counts_as_from_the_reading(pane, reading);
 
     assert!(
         !pane.tally(reading, &Showing::default(), 0).is_empty(),

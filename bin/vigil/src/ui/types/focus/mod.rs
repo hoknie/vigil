@@ -1,12 +1,6 @@
 pub mod action;
-pub mod anchor;
-pub mod asking;
 pub mod chooser;
-pub mod cursor;
-pub mod deed;
-pub mod levels;
-pub mod motion;
-pub mod offset;
-pub mod origin;
-pub mod picked;
+pub mod form;
+pub mod picking;
+pub mod position;
 pub mod sorting;

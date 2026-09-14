@@ -3,11 +3,11 @@ use vigil_model::Snapshot;
 use vigil_view::Piece;
 
 use super::title;
-use crate::types::Kind;
 use crate::views::facts::{
-    could_log_in, groups_of, password, readable, route_to_root, seen_by, sudo_for,
+    could_log_in, groups_for, keys_of, password, readable, route_to_root, seen_by, sessions_of,
+    sudo_for,
 };
-use crate::views::fields::{number, objects, rules, text};
+use crate::views::fields::{number, rules, text};
 
 pub(super) fn account(item: &Value, reading: &Snapshot) -> Vec<Piece> {
     let name = text(item, "name").unwrap_or("?");
@@ -51,7 +51,7 @@ pub(super) fn account(item: &Value, reading: &Snapshot) -> Vec<Piece> {
         false => said.push(Piece::warning(format!("root by {routes}"))),
     }
 
-    let groups = groups_of(reading, name);
+    let groups = groups_for(reading, item);
     if groups.is_empty() {
         said.push(Piece::field("groups", "none in this reading"));
     }
@@ -66,7 +66,7 @@ pub(super) fn account(item: &Value, reading: &Snapshot) -> Vec<Piece> {
         ));
     }
 
-    let grants = sudo_for(reading, name);
+    let grants = sudo_for(reading, item);
     if grants.is_empty() {
         said.push(Piece::field("sudo", "nothing grants it sudo"));
     }
@@ -98,9 +98,7 @@ pub(super) fn account(item: &Value, reading: &Snapshot) -> Vec<Piece> {
     said.push(Piece::Blank);
 
     said.push(Piece::heading("KEYS THAT LOG IN WITHOUT A PASSWORD"));
-    let keys: Vec<(&str, &Value)> = objects(reading, Kind::Key)
-        .filter(|(_, key)| text(key, "user") == Some(name))
-        .collect();
+    let keys: Vec<(&str, &Value)> = keys_of(reading, name).collect();
     if keys.is_empty() {
         said.push(Piece::field("keys", "none in this reading"));
     }
@@ -133,9 +131,7 @@ pub(super) fn account(item: &Value, reading: &Snapshot) -> Vec<Piece> {
     said.push(Piece::Blank);
 
     said.push(Piece::heading("LOGGED IN NOW"));
-    let sessions: Vec<(&str, &Value)> = objects(reading, Kind::Session)
-        .filter(|(_, session)| text(session, "user") == Some(name))
-        .collect();
+    let sessions = sessions_of(reading, name);
     match sessions.is_empty() {
         true => said.push(Piece::field("sessions", "none")),
         false => {

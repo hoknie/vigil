@@ -7,6 +7,8 @@ const THE_ONE_PLACE: &str = "bin/vigild/src/collector/host.rs";
 
 const THE_OTHER_PLACE: &str = "bin/vigild/src/killing/destruction.rs";
 
+const THE_ACCOUNTS_PLACE: &str = "bin/vigild/src/accounts/tools.rs";
+
 fn sources() -> Vec<(String, String)> {
     let mut read = Vec::new();
     for tree in [
@@ -43,7 +45,8 @@ fn walk(at: &Path, into: &mut Vec<(String, String)>) {
 }
 
 #[test]
-fn the_two_places_that_start_a_program_are_the_operators_command_and_the_kill_it_asked_for() {
+fn the_three_places_that_start_a_program_are_the_operators_command_the_kill_and_the_account_change_it_asked_for()
+ {
     let mut starts: Vec<String> = Vec::new();
 
     for (named, text) in sources() {
@@ -53,23 +56,29 @@ fn the_two_places_that_start_a_program_are_the_operators_command_and_the_kill_it
     }
     starts.sort();
 
-    let mut expected = vec![THE_ONE_PLACE.to_string(), THE_OTHER_PLACE.to_string()];
+    let mut expected = vec![
+        THE_ONE_PLACE.to_string(),
+        THE_OTHER_PLACE.to_string(),
+        THE_ACCOUNTS_PLACE.to_string(),
+    ];
     expected.sort();
 
     assert_eq!(
         starts, expected,
-        "this daemon watches a host it does not touch, and it starts a program in two \
-         places, both of them an operator's own instruction arriving at the front door: \
-         `vigild collector <name> enable`, and the kill a person confirmed at the console \
-         after switching killing on in vigil.yaml. The second was added on 2026-09-14 with \
-         the trade-off stated: see docs/designs/2026-09-14-DESIGN-console-kill.md. A third \
-         place is a path from a reading, a rule or an unasked-for message to execution on \
-         the host, and that is the failure the contract has no reverse channel for"
+        "this daemon watches a host it does not touch, and it starts a program in three \
+         places, each of them an operator's own instruction arriving at the front door: \
+         `vigild collector <name> enable`, the kill a person confirmed at the console after \
+         switching killing on in vigil.yaml, and the change to an account a person saved at \
+         the console after switching accounts on. The second and the third were added on \
+         2026-09-14 with the trade-off stated: see docs/designs/2026-09-14-DESIGN-console-kill.md \
+         and docs/designs/2026-09-14-DESIGN-console-accounts.md. A fourth place is a path from \
+         a reading, a rule or an unasked-for message to execution on the host, and that is \
+         the failure the contract has no reverse channel for"
     );
 }
 
 #[test]
-fn the_watching_loop_and_the_rules_reach_neither_of_them() {
+fn the_watching_loop_and_the_rules_reach_none_of_them() {
     for (named, text) in sources() {
         let watches = named.starts_with("bin/vigild/src/loops")
             || named.starts_with("crates/core/vigil-rules")
@@ -77,7 +86,13 @@ fn the_watching_loop_and_the_rules_reach_neither_of_them() {
         if !watches {
             continue;
         }
-        for how in ["killing::carry_out", "destruction::", "host::enable"] {
+        for how in [
+            "killing::carry_out",
+            "destruction::",
+            "host::enable",
+            "accounts::",
+            "tools::",
+        ] {
             assert!(
                 !text.contains(how),
                 "{named} reaches something that acts on this host. A reading that ends in a \
@@ -120,6 +135,44 @@ fn the_place_that_starts_one_is_reached_from_the_command_line_and_from_nowhere_e
         .expect("the socket");
     for reached in [loops, socket] {
         assert!(!reached.contains("collector::"), "{reached}");
+    }
+}
+
+#[test]
+fn the_account_tools_are_reached_only_through_the_console_change_and_from_nowhere_else() {
+    let text =
+        fs::read_to_string(workspace().join(THE_ACCOUNTS_PLACE)).expect("the accounts place");
+    assert!(
+        !text.contains("\"sh\"") && !text.contains("/bin/sh"),
+        "the account tools are run with their arguments, never through a shell"
+    );
+
+    let callers: Vec<String> = sources()
+        .into_iter()
+        .filter(|(named, text)| {
+            named != THE_ACCOUNTS_PLACE
+                && !named.starts_with("bin/vigild/src/accounts/")
+                && (text.contains("accounts::carry_out")
+                    || (text.contains("crate::accounts") && text.contains("carry_out")))
+        })
+        .map(|(named, _)| named)
+        .collect();
+
+    assert_eq!(
+        callers,
+        vec!["bin/vigild/src/socket/change.rs".to_string()],
+        "a person saving a form at the console is the one road to usermod, visudo and the \
+         rest: the watching loop, the rules and the reading answers do not reach them"
+    );
+
+    for (named, text) in sources() {
+        if named.starts_with("bin/vigild/src/accounts/") || named == THE_ACCOUNTS_PLACE {
+            continue;
+        }
+        assert!(
+            !text.contains("tools::run"),
+            "{named} runs an account tool from outside the accounts module"
+        );
     }
 }
 

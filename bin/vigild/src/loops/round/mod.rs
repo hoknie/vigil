@@ -1,3 +1,4 @@
+mod asked;
 mod budget;
 mod health;
 mod kept;
@@ -74,6 +75,7 @@ impl Round {
             }
 
             self.take_what_the_console_did();
+            self.read_what_the_console_asked_for(&mut said);
 
             match self.schedule.due_now(Instant::now()) {
                 Some(index) => {
@@ -91,7 +93,7 @@ impl Round {
             Some(soonest) => soonest.min(health.waiting(now)),
             None => health.waiting(now),
         };
-        let until = match self.shared.with(|state| state.killing_from_the_console()) {
+        let until = match self.shared.with(|state| state.console_may_act()) {
             true => until.min(WHILE_THE_CONSOLE_MAY_ACT),
             false => until,
         };

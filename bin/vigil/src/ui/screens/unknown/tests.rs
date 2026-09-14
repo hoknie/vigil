@@ -72,6 +72,30 @@ fn the_detail_of_a_row_holds_every_value_the_agent_recorded_about_it() {
 }
 
 #[test]
+fn a_reading_nobody_draws_is_searched_and_sorted_from_its_index_as_from_the_reading() {
+    let view = with_a_reading_nobody_draws();
+    let section = Unknown::of(&view);
+    let pane = section.panes().remove(0);
+    let crate::ui::Reading::Taken(reading) = view.reading("kernel") else {
+        panic!("the sample carries the reading");
+    };
+
+    assert!(
+        pane.index(reading, &Showing::default()).is_some(),
+        "the console answers every keystroke on this list from an index, so the list has to \
+         give it one"
+    );
+    vigil_view::conformance::the_index_lists_every_search_and_sort_as_the_rows_do(
+        pane.as_ref(),
+        reading,
+    );
+    vigil_view::conformance::the_tally_from_the_counts_says_what_the_tally_from_the_reading_says(
+        pane.as_ref(),
+        reading,
+    );
+}
+
+#[test]
 fn a_reading_this_build_has_a_section_for_is_never_listed_here() {
     let section = Unknown::of(&fixture::view());
 

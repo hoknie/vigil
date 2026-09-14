@@ -84,13 +84,31 @@ impl State {
         self.startup.killing_from_the_console
     }
 
-    pub fn record_a_kill(&mut self, findings: &[Finding]) {
-        self.record_findings(findings);
-        self.raised_by_a_kill.extend(findings.iter().cloned());
+    pub fn accounts_from_the_console(&self) -> bool {
+        self.startup.accounts_from_the_console
     }
 
-    pub fn take_what_a_kill_raised(&mut self) -> Vec<Finding> {
-        std::mem::take(&mut self.raised_by_a_kill)
+    pub fn console_may_act(&self) -> bool {
+        self.killing_from_the_console() || self.accounts_from_the_console()
+    }
+
+    pub fn record_what_the_console_did(&mut self, findings: &[Finding]) {
+        self.record_findings(findings);
+        self.raised_by_the_console.extend(findings.iter().cloned());
+    }
+
+    pub fn take_what_the_console_raised(&mut self) -> Vec<Finding> {
+        std::mem::take(&mut self.raised_by_the_console)
+    }
+
+    pub fn ask_for_a_reading(&mut self, collector: &str) {
+        self.readings_asked_for.insert(collector.to_string());
+    }
+
+    pub fn take_readings_asked_for(&mut self) -> Vec<String> {
+        std::mem::take(&mut self.readings_asked_for)
+            .into_iter()
+            .collect()
     }
 
     pub fn recall_findings(&mut self, history: Vec<Finding>, held: u64) {

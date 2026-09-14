@@ -1,4 +1,6 @@
-use vigil_model::Snapshot;
+use std::ops::Bound;
+
+use vigil_model::{AccountObject, Snapshot};
 
 use super::kind::Kind;
 
@@ -24,6 +26,18 @@ impl Subject {
         Subject::LoggedIn,
         Subject::Other,
     ];
+
+    pub fn object(self) -> Option<AccountObject> {
+        match self {
+            Subject::Users => Some(AccountObject::User),
+            Subject::Groups => Some(AccountObject::Group),
+            Subject::Sudo => Some(AccountObject::Sudo),
+            Subject::Keys => Some(AccountObject::Key),
+            Subject::SshUsers => Some(AccountObject::SshUser),
+            Subject::LoggedIn => Some(AccountObject::Session),
+            Subject::Other => None,
+        }
+    }
 
     pub fn shown(self, reading: &Snapshot) -> bool {
         self != Subject::Other || holds_something_unknown(reading)
@@ -123,10 +137,28 @@ impl Subject {
 }
 
 fn holds_something_unknown(reading: &Snapshot) -> bool {
+    let mut prefixes: Vec<&str> = Kind::KNOWN.iter().map(|kind| kind.prefix()).collect();
+    prefixes.sort_unstable();
+
+    let mut from: Option<String> = None;
+    for prefix in prefixes {
+        if unknown_between(reading, from.as_deref(), Bound::Excluded(prefix)) {
+            return true;
+        }
+        from = Some(format!("{}}}", prefix.trim_end_matches('|')));
+    }
+    unknown_between(reading, from.as_deref(), Bound::Unbounded)
+}
+
+fn unknown_between(reading: &Snapshot, from: Option<&str>, to: Bound<&str>) -> bool {
+    let from = match from {
+        Some(from) => Bound::Included(from),
+        None => Bound::Unbounded,
+    };
     reading
         .items
-        .keys()
-        .any(|key| Kind::of(key) == Kind::Unknown)
+        .range::<str, _>((from, to))
+        .any(|(key, _)| Kind::of(key) == Kind::Unknown)
 }
 
 #[cfg(test)]
@@ -161,6 +193,47 @@ mod tests {
             Subject::Other.shown(&reading),
             "an object of a kind this build never heard of is still shown to the reader"
         );
+    }
+
+    #[test]
+    fn the_other_tab_appears_exactly_when_a_walk_over_every_key_finds_a_kind_this_build_does_not_know()
+     {
+        for extra in [
+            None,
+            Some(""),
+            Some("account"),
+            Some("account}"),
+            Some("accounting|x"),
+            Some("aardvark|x"),
+            Some("group"),
+            Some("groups|x"),
+            Some("keyring|root|0x1234"),
+            Some("session"),
+            Some("session-source"),
+            Some("session-sources|x"),
+            Some("sessionz|x"),
+            Some("sshkey"),
+            Some("sudoer"),
+            Some("sudoers|x"),
+            Some("~after everything"),
+        ] {
+            let mut reading = users();
+            if let Some(key) = extra {
+                reading.items.insert(key.to_string(), json!({}));
+            }
+            let walked = reading
+                .items
+                .keys()
+                .any(|key| Kind::of(key) == Kind::Unknown);
+
+            assert_eq!(
+                holds_something_unknown(&reading),
+                walked,
+                "{extra:?}: this is asked on every keypress, so only the gaps between the known \
+                 kinds are looked at, and a key in a gap still goes through Kind::of because a \
+                 bare kind name is that kind"
+            );
+        }
     }
 
     #[test]

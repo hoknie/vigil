@@ -5,6 +5,7 @@
     "account|contractor": {
       "account_expires_day": 20000,
       "gid": 1001,
+      "groups": [],
       "home": "/home/contractor",
       "interactive": true,
       "name": "contractor",
@@ -19,6 +20,10 @@
     "account|deploy": {
       "account_expires_day": null,
       "gid": 1000,
+      "groups": [
+        "deploy",
+        "wheel"
+      ],
       "home": "/home/deploy",
       "interactive": true,
       "name": "deploy",
@@ -33,6 +38,9 @@
     "account|root": {
       "account_expires_day": null,
       "gid": 0,
+      "groups": [
+        "root"
+      ],
       "home": "/root",
       "interactive": true,
       "name": "root",
@@ -47,6 +55,7 @@
     "account|svc-runner": {
       "account_expires_day": null,
       "gid": 998,
+      "groups": [],
       "home": "/var/lib/runner",
       "interactive": true,
       "name": "svc-runner",
@@ -61,6 +70,7 @@
     "account|www-data": {
       "account_expires_day": null,
       "gid": 33,
+      "groups": [],
       "home": "/var/www",
       "interactive": false,
       "name": "www-data",

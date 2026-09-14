@@ -1,9 +1,15 @@
+use serde_json::Value;
 use vigil_model::Snapshot;
-use vigil_view::{Cell, Column, Facet, Notice, Pane, Piece, Room, RowKey, Showing, time_of_day};
+use vigil_view::{
+    Cell, Column, Counts, Facet, Index, Notice, Pane, Piece, Room, RowKey, Showing, haystack,
+    time_of_day,
+};
 
 use super::detail;
 use super::fields::{marked, text};
-use super::launches::{self, PROGRAM, USER};
+use super::footer::{counted, footer};
+use super::launches;
+use super::sorted::sorted_on;
 
 const ROOM_FOR_THE_PATH: u16 = 118;
 
@@ -46,6 +52,30 @@ impl Pane for Launches {
 
         rows.sort_by(|left, right| launches::order(*left, *right, showing.sorting));
         rows.into_iter().map(|(key, _)| RowKey::of(key)).collect()
+    }
+
+    fn index(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Index> {
+        let mut read: Vec<(u8, &String, &Value)> = reading
+            .items
+            .iter()
+            .map(|(key, item)| (u8::from(!marked(key)), key, item))
+            .collect();
+        read.sort_by(|left, right| (left.0, left.1).cmp(&(right.0, right.1)));
+
+        let mut index = Index::new(self.sorted_by().len());
+        for (group, key, item) in read {
+            index.push(
+                RowKey::of(key.as_str()),
+                &haystack(key, item),
+                group,
+                sorted_on(item),
+            );
+            index.faceted(match marked(key) {
+                true => Vec::new(),
+                false => launches::facets_of(item),
+            });
+        }
+        Some(index)
     }
 
     fn cells(&self, reading: &Snapshot, row: &RowKey, room: Room) -> Vec<Cell> {
@@ -113,6 +143,20 @@ impl Pane for Launches {
         parts.join(" · ")
     }
 
+    fn counts(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Counts> {
+        Some(counted(reading))
+    }
+
+    fn tally_listed(
+        &self,
+        reading: &Snapshot,
+        showing: &Showing<'_>,
+        rows: &[RowKey],
+        counts: &Counts,
+    ) -> String {
+        footer(reading, showing, rows, counts)
+    }
+
     fn empty(&self, showing: &Showing<'_>) -> Notice {
         launches::empty(showing)
     }
@@ -129,9 +173,6 @@ impl Pane for Launches {
             return Vec::new();
         }
 
-        vec![
-            Facet::new(USER, launches::who(item)),
-            Facet::new(PROGRAM, launches::executable(item)),
-        ]
+        launches::facets_of(item)
     }
 }

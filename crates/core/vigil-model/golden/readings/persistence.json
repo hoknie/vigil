@@ -123,6 +123,7 @@
       "description": null,
       "name": "locked.service",
       "path": "/etc/systemd/system/locked.service",
+      "pulled_in_by": [],
       "readable": false,
       "run_as": "root",
       "type": "service"
@@ -133,6 +134,7 @@
       "description": "Multi-User System",
       "name": "multi-user.target",
       "path": "/lib/systemd/system/multi-user.target",
+      "pulled_in_by": [],
       "readable": true,
       "run_as": "root",
       "type": "target"
@@ -149,6 +151,7 @@
         "web.target"
       ],
       "path": "/lib/systemd/system/nginx.service",
+      "pulled_in_by": [],
       "readable": true,
       "required_by": [
         "web.target"
@@ -173,6 +176,7 @@
       "description": null,
       "name": "rescue-shell.service",
       "path": "/etc/systemd/system/rescue-shell.service",
+      "pulled_in_by": [],
       "readable": true,
       "run_as": "root",
       "type": "service"

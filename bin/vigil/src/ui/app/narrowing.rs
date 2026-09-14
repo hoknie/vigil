@@ -2,7 +2,7 @@ use super::App;
 
 use crate::ui::{Cursor, Level, Offset, Panes, Screen, Search, holding};
 
-use super::marking::{MARK, SUPPRESS, UNMARK_EVERY};
+use super::deeds::{DELETE, EDIT, MARK, NEW, NOTHING_TO_CHANGE, SUPPRESS, UNMARK_EVERY};
 
 pub const DETAILS: char = 'd';
 
@@ -38,7 +38,16 @@ impl App {
                 MARK => self.mark_under_the_cursor(),
                 UNMARK_EVERY => self.unmark_everything(),
                 SUPPRESS => self.show_the_suppressions(),
-                _ => self.switch_a_kind(key),
+                NEW | EDIT | DELETE if self.changes_offered().is_some() => {
+                    self.changing_by_key(key)
+                }
+                _ => {
+                    let switched = self.switch_a_kind(key);
+                    if !switched && self.message.is_none() && [NEW, EDIT, DELETE].contains(&key) {
+                        self.message = Some(NOTHING_TO_CHANGE.to_string());
+                    }
+                    switched
+                }
             },
             _ => false,
         };

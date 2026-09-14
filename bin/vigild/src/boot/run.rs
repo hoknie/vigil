@@ -1,8 +1,7 @@
 use std::path::Path;
 
-use super::{
-    baselines, console, greeting, health, history, outgoing, policy, reporters, schedule, watches,
-};
+use super::store::{baselines, health, history};
+use super::{console, greeting, outgoing, policy, reporters, schedule, watches};
 use crate::budget::Meter;
 use crate::helpers::{absolute, agent_finding, rfc3339};
 use crate::loops::Round;
@@ -33,6 +32,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
                 .map(|(name, every_seconds)| (name.to_string(), every_seconds))
                 .collect(),
             killing_from_the_console: config.killing.from_the_console,
+            accounts_from_the_console: config.accounts.from_the_console,
         },
         &watches::healths(&watches),
         &reporters::names(&reporters),

@@ -6,7 +6,9 @@ use super::Round;
 
 impl Round {
     pub(super) fn take_what_the_console_did(&mut self) {
-        let raised = self.shared.with(|state| state.take_what_a_kill_raised());
+        let raised = self
+            .shared
+            .with(|state| state.take_what_the_console_raised());
         if raised.is_empty() {
             return;
         }

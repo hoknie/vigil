@@ -46,21 +46,23 @@ pub fn render(view: &View, look: Look, showing: &Showing<'_>, area: Rect, buffer
         let shape = Shape::of(area.width);
         let widths = widths(shape, severity_width(&passing), picking);
         let columns = listing::column_widths(look, &widths, table);
+        let draw = |at: usize| {
+            let finding = passing[at];
+            row(
+                finding,
+                look,
+                shape,
+                &columns,
+                picking.then(|| picked.holds(&finding.event_id)),
+            )
+        };
         listing::render(
             look,
             header(shape, picking),
-            passing
-                .iter()
-                .map(|finding| {
-                    row(
-                        finding,
-                        look,
-                        shape,
-                        &columns,
-                        picking.then(|| picked.holds(&finding.event_id)),
-                    )
-                })
-                .collect(),
+            listing::Rows {
+                total: passing.len(),
+                drawn: &draw,
+            },
             &widths,
             listing::Where {
                 at: cursor,

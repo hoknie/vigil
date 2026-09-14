@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 mod ndjson;
 #[cfg(unix)]
 mod syslog;

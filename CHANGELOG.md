@@ -16,9 +16,12 @@ Format:
 - detail pane not grab auto focus
 - the start-up lines say whether the console of this host may ask the agent to close a socket,
   and name the key that decides it
+- accounts can be changed from the console
 
 ### Fixed
 - double suppresion for one item
+- moving through a list of several hundred rows no longer lags: only the rows on the screen are drawn
+- list lag fixed
 
 ### Changed
 - not default config path is correctly resolve from now
@@ -27,6 +30,7 @@ Format:
 - `vigil.yaml` is read in two passes: the daemon's own keys, then the key each module names as its own
 - reorganized crates
 - hotkeys changed for more UX
+- improved lists perfomance
 
 ### Fixed
 - a socket state between two readings of an unchanged host

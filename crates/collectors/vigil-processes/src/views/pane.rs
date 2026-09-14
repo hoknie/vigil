@@ -1,8 +1,13 @@
+use serde_json::Value;
 use vigil_model::{KillTarget, Snapshot};
-use vigil_view::{Cell, Column, Notice, Offers, Pane, Piece, Room, RowKey, Showing, time_of_day};
+use vigil_view::{
+    Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Showing, haystack,
+    time_of_day,
+};
 
 use super::detail;
 use super::fields::{flag, marked, text};
+use super::footer::{counted, footer};
 use super::running;
 
 const ROOM_FOR_THE_PATH: u16 = 118;
@@ -44,6 +49,26 @@ impl Pane for Running {
 
         rows.sort();
         rows.into_iter().map(|(_, key)| RowKey::of(key)).collect()
+    }
+
+    fn index(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Index> {
+        let mut read: Vec<(bool, &String, &Value)> = reading
+            .items
+            .iter()
+            .map(|(key, item)| (!marked(key), key, item))
+            .collect();
+        read.sort_by(|left, right| (left.0, left.1).cmp(&(right.0, right.1)));
+
+        let mut index = Index::new(0);
+        for (unmarked, key, item) in read {
+            index.push(
+                RowKey::of(key.as_str()),
+                &haystack(key, item),
+                u8::from(unmarked),
+                Vec::new(),
+            );
+        }
+        Some(index)
     }
 
     fn cells(&self, reading: &Snapshot, row: &RowKey, room: Room) -> Vec<Cell> {
@@ -113,6 +138,20 @@ impl Pane for Running {
         }
 
         parts.join(" · ")
+    }
+
+    fn counts(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Counts> {
+        Some(counted(reading))
+    }
+
+    fn tally_listed(
+        &self,
+        reading: &Snapshot,
+        showing: &Showing<'_>,
+        rows: &[RowKey],
+        counts: &Counts,
+    ) -> String {
+        footer(reading, showing, rows, counts)
     }
 
     fn empty(&self, showing: &Showing<'_>) -> Notice {

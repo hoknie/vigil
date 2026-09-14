@@ -1,4 +1,5 @@
-use serde_json::Value;
+use serde_json::{Value, json};
+use vigil_model::Snapshot;
 
 use super::super::key_file::UserKeyFile;
 use super::super::reading::AccountsReading;
@@ -97,6 +98,74 @@ fn a_primary_group_membership_is_a_membership_like_any_other() {
             .expect("a reason")
             .contains("root"),
         "the reason a person is shown has to say why docker is in this list"
+    );
+}
+
+fn groups_walked<'a>(snapshot: &'a Snapshot, name: &str) -> Vec<&'a str> {
+    snapshot
+        .items
+        .iter()
+        .filter(|(key, _)| key.starts_with("group|"))
+        .filter(|(_, group)| {
+            group["members"]
+                .as_array()
+                .is_some_and(|members| members.iter().any(|member| member.as_str() == Some(name)))
+        })
+        .filter_map(|(_, group)| group["name"].as_str())
+        .collect()
+}
+
+#[test]
+fn every_account_lists_the_groups_whose_member_lists_name_it_its_own_primary_group_included() {
+    let mut passwd = parse_passwd_entries(PASSWD);
+    passwd[2].gid = 998;
+    let groups = parse_group(
+        "root:x:0:\nsudo:x:27:deploy,www-data\ndocker:x:998:deploy\ndeploy:x:1000:\nempty:x:5000:\n",
+    );
+    let built = accounts_snapshot(
+        "2026-09-09T12:00:00.000Z",
+        &AccountsReading {
+            passwd: &passwd,
+            groups: &groups,
+            shadow: None,
+            sudo: &[],
+            keys: &[],
+            sessions: &[],
+            session_sources: &[],
+        },
+    );
+
+    for snapshot in [&built, &crate::fixture::users()] {
+        for (key, account) in snapshot
+            .items
+            .iter()
+            .filter(|(key, _)| key.starts_with("account|"))
+        {
+            let name = account["name"].as_str().expect("an account has a name");
+            let listed: Vec<&str> = account["groups"]
+                .as_array()
+                .expect("every account item carries the list of its groups")
+                .iter()
+                .filter_map(Value::as_str)
+                .collect();
+
+            assert_eq!(
+                listed,
+                groups_walked(snapshot, name),
+                "{key}: the console trusts this list instead of walking every group, so it must \
+                 be exactly the groups whose items name the account, in the order of their names"
+            );
+        }
+    }
+    assert_eq!(
+        built.items["account|deploy"]["groups"],
+        json!(["docker", "sudo"]),
+        "a group named on its line and also the account's primary group is listed once"
+    );
+    assert_eq!(
+        built.items["account|www-data"]["groups"],
+        json!(["sudo"]),
+        "a primary gid no group carries adds nothing, and the list is still there"
     );
 }
 

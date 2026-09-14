@@ -76,7 +76,8 @@ impl State {
             findings: Ring::new(RETAINED_FINDINGS),
             silence: Silence::default(),
             footprint: Footprint::default(),
-            raised_by_a_kill: Vec::new(),
+            raised_by_the_console: Vec::new(),
+            readings_asked_for: Default::default(),
         }
     }
 }

@@ -8,9 +8,10 @@ pub use contract::{Envelope, Producer, SCHEMA_VERSION, SchemaVersion};
 pub use finding::{Evidence, Finding, Kind, KnownKind, Severity, State, Subject};
 pub use host::{Host, Os, Peer};
 pub use protocol::{
-    AgentBudget, AgentStatus, BufferStatus, CollectorRefusal, CollectorState, CollectorStatus,
-    Counted, FindingsSummary, KillReport, KillTarget, Killed, Killing, ProtocolError,
-    ReporterStatus, Request, Response, Silence, StoreDropped, StoreStatus,
+    AccountChange, AccountObject, AgentBudget, AgentStatus, BufferStatus, ChangeReport, Changed,
+    Changing, CollectorRefusal, CollectorState, CollectorStatus, Counted, FindingsSummary,
+    KillReport, KillTarget, Killed, Killing, ProtocolError, ReporterStatus, Request, Response,
+    Silence, StoreDropped, StoreStatus,
 };
 pub use snapshot::{Change, Golden, Settled, SettledValue, Shape, ShapeField, Snapshot, class_of};
 

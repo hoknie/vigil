@@ -14,6 +14,69 @@ fn main() {
     reading();
     judging();
     drawing();
+    searching();
+}
+
+fn searching() {
+    use vigil_view::{Section, Showing, Sorting, listed};
+
+    let sorted = Showing::default().sorted(Sorting {
+        by: 2,
+        descending: true,
+    });
+    println!(
+        "items  search    index ms  counts ms  key rows ms  key listed ms  sort rows ms  \
+         sort cold ms  sort warm ms  tally ms  tally listed ms  pane"
+    );
+    for size in SIZES {
+        let reading = host(*size, 0);
+        for search in ["nginx", "1025"] {
+            let keystroke = Showing::searching(search);
+            for pane in vigil_network::Listening.panes() {
+                let pane = pane.as_ref();
+                let (index, indexing) = timed(|| {
+                    pane.index(&reading, &Showing::default())
+                        .expect("the pane answers from an index")
+                });
+                let (counts, counting) = timed(|| {
+                    pane.counts(&reading, &Showing::default())
+                        .expect("the pane counts its reading once")
+                });
+                let (rows, by_rows) = timed(|| pane.rows(&reading, &keystroke));
+                let (_, by_index) = timed(|| listed(pane, &reading, &keystroke, &index, None));
+                let (_, sort_rows) = timed(|| pane.rows(&reading, &sorted));
+                let fresh = pane
+                    .index(&reading, &Showing::default())
+                    .expect("the pane answers from an index");
+                let started = Instant::now();
+                let _ = listed(pane, &reading, &sorted, &fresh, None);
+                let sort_cold = started.elapsed().as_secs_f64() * 1_000.0;
+                let (_, sort_warm) = timed(|| listed(pane, &reading, &sorted, &fresh, None));
+                let (_, tally) = timed(|| pane.tally(&reading, &keystroke, rows.len()));
+                let (_, tally_listed) =
+                    timed(|| pane.tally_listed(&reading, &keystroke, &rows, &counts));
+
+                println!(
+                    "{size:>5}  {search:<6}  {indexing:>8.3}  {counting:>9.3}  {by_rows:>11.3}  \
+                     {by_index:>13.3}  {sort_rows:>12.3}  {sort_cold:>12.3}  {sort_warm:>12.3}  \
+                     {tally:>8.3}  {tally_listed:>15.4}  {}",
+                    pane.name()
+                );
+            }
+        }
+    }
+}
+
+fn timed<T>(mut work: impl FnMut() -> T) -> (T, f64) {
+    let started = Instant::now();
+    let mut last = work();
+    for _ in 1..ROUNDS {
+        last = work();
+    }
+    (
+        last,
+        started.elapsed().as_secs_f64() * 1_000.0 / ROUNDS as f64,
+    )
 }
 
 fn drawing() {

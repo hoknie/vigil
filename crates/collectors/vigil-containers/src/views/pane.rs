@@ -1,11 +1,13 @@
 use vigil_model::Snapshot;
 use vigil_view::{
-    Cell, Column, Notice, Offers, Pane, Piece, Room, RowKey, Showing, Sorting, Width, every_field,
+    Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Showing, Sorting,
+    Width, every_field, haystack,
 };
 
 use super::fields::{
     identity, may_take_the_host, means, mounted, program, runtime, sort_key, what,
 };
+use super::footer;
 use super::notices;
 use super::tally::tally;
 use crate::types::Kind;
@@ -69,6 +71,10 @@ impl Pane for Contained {
         keys.into_iter().map(RowKey::of).collect()
     }
 
+    fn index(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Index> {
+        Some(indexed(reading))
+    }
+
     fn cells(&self, reading: &Snapshot, row: &RowKey, room: Room) -> Vec<Cell> {
         let Some(item) = reading.items.get(&row.key) else {
             return Vec::new();
@@ -121,6 +127,20 @@ impl Pane for Contained {
         tally(reading, showing, shown)
     }
 
+    fn counts(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Counts> {
+        Some(footer::counts(reading))
+    }
+
+    fn tally_listed(
+        &self,
+        reading: &Snapshot,
+        showing: &Showing<'_>,
+        rows: &[RowKey],
+        counts: &Counts,
+    ) -> String {
+        footer::tallied(reading, showing, rows, counts)
+    }
+
     fn empty(&self, showing: &Showing<'_>) -> Notice {
         notices::empty(showing)
     }
@@ -140,6 +160,29 @@ impl Pane for Contained {
     fn offers(&self) -> Offers {
         Offers::default()
     }
+}
+
+fn indexed(reading: &Snapshot) -> Index {
+    let mut read: Vec<((Kind, String), &String, &serde_json::Value)> = reading
+        .items
+        .iter()
+        .filter(|(key, _)| Kind::of(key) == Some(Kind::Container))
+        .map(|(key, item)| (sort_key(key, item), key, item))
+        .collect();
+    read.sort_by(|left, right| left.0.cmp(&right.0).then_with(|| left.1.cmp(right.1)));
+
+    let mut index = Index::new(SORTED_BY.len());
+    for (_, key, item) in read {
+        index.push(
+            RowKey::of(key.clone()),
+            &haystack(key, item),
+            0,
+            (1..=SORTED_BY.len())
+                .map(|by| sorted_on(reading, key, by))
+                .collect(),
+        );
+    }
+    index
 }
 
 fn sort(keys: &mut [String], reading: &Snapshot, sorting: Sorting) {

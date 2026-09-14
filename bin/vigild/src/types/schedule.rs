@@ -55,6 +55,16 @@ impl Schedule {
     pub fn rest(&self, now: Instant) -> Option<Duration> {
         self.due.iter().map(|due| due.waiting(now)).min()
     }
+
+    pub fn index_of(&self, name: &str) -> Option<usize> {
+        self.due.iter().position(|due| due.name() == name)
+    }
+
+    pub fn restart(&mut self, index: usize, now: Instant) {
+        if let Some(due) = self.due.get_mut(index) {
+            due.restart(now);
+        }
+    }
 }
 
 #[cfg(test)]

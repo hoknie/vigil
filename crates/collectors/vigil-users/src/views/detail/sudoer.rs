@@ -2,9 +2,8 @@ use serde_json::Value;
 use vigil_model::Snapshot;
 use vigil_view::Piece;
 
-use super::super::facts::sudo_for;
-use super::super::fields::{objects, rules, text};
-use crate::types::Kind;
+use super::super::facts::reached_by;
+use super::super::fields::{rules, text};
 
 use super::title;
 
@@ -42,14 +41,7 @@ pub(super) fn sudoer(item: &Value, reading: &Snapshot) -> Vec<Piece> {
     said.push(Piece::Blank);
 
     said.push(Piece::heading("WHO IT REACHES"));
-    let reached: Vec<&str> = objects(reading, Kind::Account)
-        .filter_map(|(_, account)| text(account, "name"))
-        .filter(|name| {
-            sudo_for(reading, name)
-                .iter()
-                .any(|(_, grant)| text(grant, "who") == Some(who))
-        })
-        .collect();
+    let reached = reached_by(reading, who);
     if reached.is_empty() {
         said.push(Piece::field("accounts", "nobody in this reading"));
     }

@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 mod ip_tables_names;
 mod nft_json;
 mod reading;

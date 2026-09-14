@@ -6,7 +6,7 @@ mod records;
 #[cfg(test)]
 mod tests;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use vigil_model::{CollectorStatus, Finding, ReporterStatus, Silence, Snapshot};
 
@@ -22,5 +22,6 @@ pub struct State {
     findings: Ring,
     silence: Silence,
     footprint: Footprint,
-    raised_by_a_kill: Vec<Finding>,
+    raised_by_the_console: Vec<Finding>,
+    readings_asked_for: BTreeSet<String>,
 }

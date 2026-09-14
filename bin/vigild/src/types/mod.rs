@@ -5,6 +5,8 @@ mod reading;
 mod said;
 mod schedule;
 mod startup;
+#[cfg(test)]
+mod tests;
 
 pub use delivery::Delivery;
 pub use due::Due;

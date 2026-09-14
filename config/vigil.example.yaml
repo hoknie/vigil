@@ -38,6 +38,9 @@ suppressions: []
 killing:
   from_the_console: false
 
+accounts:
+  from_the_console: false
+
 resources:
   # A step of the wall clock this wide is reported as a finding.
   clock_skew_seconds: 300

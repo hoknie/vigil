@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Rect};
 use ratatui::text::Line;
@@ -112,7 +114,10 @@ pub fn render(
     let hidden = showing.hidden();
     let opened = showing.opened();
     let asked = asked(showing, &hidden, &opened);
-    let rows = pane.rows(snapshot, &asked);
+    let rows = match &showing.listed {
+        Some(listed) => Rc::clone(listed),
+        None => Rc::new(pane.rows(snapshot, &asked)),
+    };
     let marking = pane.offers().marking && look.interactive();
     let (table, footer) = split_bottom(rest, look, rows.len());
 
@@ -141,22 +146,24 @@ pub fn render(
     } else {
         let widths = constraints(&pane.columns(room), marking);
         let fitted = listing::column_widths(look, &widths, table);
+        let draw = |at: usize| {
+            drawn(
+                pane.as_ref(),
+                snapshot,
+                &rows[at],
+                room,
+                &fitted,
+                marking,
+                showing,
+            )
+        };
         listing::render(
             look,
             header(&pane.columns(room), marking),
-            rows.iter()
-                .map(|row| {
-                    drawn(
-                        pane.as_ref(),
-                        snapshot,
-                        row,
-                        room,
-                        &fitted,
-                        marking,
-                        showing,
-                    )
-                })
-                .collect(),
+            listing::Rows {
+                total: rows.len(),
+                drawn: &draw,
+            },
             &widths,
             listing::Where {
                 at: showing.cursor,
@@ -168,7 +175,13 @@ pub fn render(
     }
 
     Paragraph::new(Line::styled(
-        footing(pane.tally(snapshot, &asked, rows.len()), footer.width),
+        footing(
+            match &showing.tally {
+                Some(tally) => tally.clone(),
+                None => pane.tally(snapshot, &asked, rows.len()),
+            },
+            footer.width,
+        ),
         look.palette.quiet(),
     ))
     .render(footer, buffer);

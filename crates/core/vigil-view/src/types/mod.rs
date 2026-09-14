@@ -2,29 +2,23 @@
 mod tests;
 
 mod arrangement;
-mod cell;
-mod column;
-mod emphasis;
+mod editing;
 mod facet;
+mod listing;
 mod notice;
 mod offers;
 mod piece;
-mod room;
-mod row_key;
 mod showing;
-mod sorting;
+mod table;
 mod toggle;
 
 pub use arrangement::Arrangement;
-pub use cell::Cell;
-pub use column::{Column, Width, fitting};
-pub use emphasis::Emphasis;
+pub use editing::{Choice, Entry, Field, Form};
 pub use facet::Facet;
+pub use listing::{Counts, Index};
 pub use notice::Notice;
 pub use offers::Offers;
 pub use piece::Piece;
-pub use room::Room;
-pub use row_key::RowKey;
 pub use showing::Showing;
-pub use sorting::{AS_READ, Sorting};
+pub use table::{AS_READ, Cell, Column, Emphasis, Room, RowKey, Sorting, Width, fitting};
 pub use toggle::Toggle;

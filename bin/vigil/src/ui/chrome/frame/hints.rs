@@ -1,7 +1,12 @@
+use vigil_model::Changing;
+
 use crate::ui::Level;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Hints<'a> {
+    pub editing: bool,
+    pub kills: bool,
+    pub changes: &'static [Changing],
     pub typing: bool,
     pub asking: Option<&'a str>,
     pub level: Level,

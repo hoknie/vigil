@@ -23,6 +23,8 @@ pub fn configuration(taken_at: &str, survey: &[Surveyed], defaults: &Config) -> 
     out.push('\n');
     out.push_str(&killing(defaults));
     out.push('\n');
+    out.push_str(&accounts(defaults));
+    out.push('\n');
     out.push_str(&arguments());
 
     out
@@ -130,7 +132,7 @@ fn killing(defaults: &Config) -> String {
     for line in [
         "Whether a person at the console of this host may ask the agent to close a listening socket.".to_string(),
         String::new(),
-        "Off by default, and this is the only key in this file that lets the agent change anything on a host it did not set up. On, the console can ask for one of three things against the sockets a person marked there: SIGTERM to the process holding one, SIGKILL to it, or closing the socket itself and leaving the process running. The console asks the person to confirm; the agent asks nothing and does what it was told.".into(),
+        "Off by default, and one of the two keys in this file that let the agent change anything on a host it did not set up. On, the console can ask for one of three things against the sockets a person marked there: SIGTERM to the process holding one, SIGKILL to it, or closing the socket itself and leaving the process running. The console asks the person to confirm; the agent asks nothing and does what it was told.".into(),
         String::new(),
         "Everything it does, and everything it refuses to do, is a finding of its own, so what happened is in the journal and at whatever receiver this file names. The agent will not signal pid 1 and will not signal itself.".into(),
         String::new(),
@@ -142,6 +144,27 @@ fn killing(defaults: &Config) -> String {
     out.push_str(&format!(
         "  from_the_console: {}\n",
         defaults.killing.from_the_console
+    ));
+    out
+}
+
+fn accounts(defaults: &Config) -> String {
+    let mut out = String::new();
+    for line in [
+        "Whether a person at the console of this host may ask the agent to change its accounts.".to_string(),
+        String::new(),
+        "Off by default, and separate from killing: a host where a program may be stopped has not thereby agreed that sudo may be granted. On, the console can ask the agent to change an account (shell, home, comment, lock, groups) or delete it, keeping its home directory; create, change or delete a group; change or remove a sudo grant; add, change or remove a key in authorized_keys; and end a session. The agent does it with the system's own tools, useradd's family, gpasswd, visudo and loginctl, by absolute path.".into(),
+        String::new(),
+        "Everything it does, and everything it refuses to do, is a finding of its own. It will not delete or lock uid 0, delete the account it runs as, or delete the group with gid 0. Sudo grants are written only in /etc/sudoers.d, and a file that visudo does not accept never replaces the one in place; a grant in /etc/sudoers itself is left for a person to edit.".into(),
+        String::new(),
+        "Nothing reaches this from the network. The console socket is 0600 and local; turning this on gives whoever can read it the accounts of this host.".into(),
+    ] {
+        out.push_str(&comment(&line));
+    }
+    out.push_str("accounts:\n");
+    out.push_str(&format!(
+        "  from_the_console: {}\n",
+        defaults.accounts.from_the_console
     ));
     out
 }
@@ -161,132 +184,4 @@ fn arguments() -> String {
         Watching::default().record_arguments
     ));
     out
-}
-
-#[cfg(test)]
-mod tests {
-    use vigil_collect::Health;
-
-    use super::*;
-
-    fn surveyed(name: &str, health: Health) -> Surveyed {
-        Surveyed {
-            name: name.to_string(),
-            subject: crate::modules::subject_of(name)
-                .unwrap_or("what it watches")
-                .to_string(),
-            health,
-        }
-    }
-
-    fn survey() -> Vec<Surveyed> {
-        vec![
-            surveyed("ports", Health::Ok),
-            surveyed("users", Health::Ok),
-            surveyed(
-                "launches",
-                Health::Unavailable(
-                    "auditd is not running — program launches are not visible (there is no /var/log/audit/audit.log)".into(),
-                ),
-            ),
-        ]
-    }
-
-    fn flattened(text: &str) -> String {
-        text.lines()
-            .map(|line| line.trim_start().trim_start_matches('#').trim())
-            .collect::<Vec<_>>()
-            .join(" ")
-    }
-
-    fn rendered() -> String {
-        configuration("2026-09-09T13:00:00.000Z", &survey(), &Config::default())
-    }
-
-    #[test]
-    fn what_it_writes_is_a_file_the_daemon_reads() {
-        let path = std::env::temp_dir().join(format!(
-            "vigil-generated-{}-{}.yaml",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|since| since.as_nanos())
-                .unwrap_or(0)
-        ));
-        std::fs::write(&path, rendered()).expect("writes");
-
-        let config = crate::config::load(path.to_str().expect("utf-8"))
-            .expect("the daemon reads what configure wrote");
-
-        assert_eq!(
-            config.collectors,
-            Some(vec!["ports".to_string(), "users".to_string()]),
-            "only what can run here is switched on"
-        );
-        assert_eq!(config.state_dir, Config::default().state_dir);
-        assert!(config.reporters.is_empty());
-        let _ = std::fs::remove_file(&path);
-    }
-
-    #[test]
-    fn a_collector_that_cannot_run_here_is_commented_out_with_the_reason_beside_it() {
-        let text = rendered();
-
-        assert!(text.contains("#  - launches"), "{text}");
-        assert!(flattened(&text).contains("auditd is not running"), "{text}");
-        assert!(flattened(&text).contains("what people run"), "{text}");
-    }
-
-    #[test]
-    fn a_degraded_collector_is_switched_on_and_says_what_it_is_missing() {
-        let survey = vec![surveyed(
-            "launches",
-            Health::Degraded("the audit rule is not loaded; run augenrules --load".into()),
-        )];
-
-        let text = configuration("2026-09-09T13:00:00.000Z", &survey, &Config::default());
-
-        assert!(text.contains("  - launches"), "{text}");
-        assert!(flattened(&text).contains("augenrules --load"), "{text}");
-    }
-
-    #[test]
-    fn the_numbers_in_it_are_the_daemons_own_defaults() {
-        let text = rendered();
-        let defaults = Config::default();
-
-        assert!(text.contains(&format!("retention_days: {}", defaults.retention_days)));
-        assert!(text.contains(&format!("socket_path: {}", defaults.socket_path)));
-        assert!(
-            !text.contains("interval_seconds"),
-            "one number for every collector is not a reading of this host: {text}"
-        );
-    }
-
-    #[test]
-    fn a_host_where_nothing_can_run_still_writes_a_file_that_reads() {
-        let survey = vec![surveyed(
-            "ports",
-            Health::Unavailable("no /proc on this host".into()),
-        )];
-
-        let text = configuration("2026-09-09T13:00:00.000Z", &survey, &Config::default());
-
-        assert!(text.contains("collectors:\n"), "{text}");
-        assert!(text.contains("#  - ports"), "{text}");
-    }
-
-    #[test]
-    fn no_line_of_a_reason_is_broken_in_the_middle_of_a_path() {
-        let long = "auditd is not running — program launches are not visible (there is no /var/log/audit/audit.log, and the audit plugin has left nothing at /var/lib/vigil/audit-spool)";
-        let survey = vec![surveyed("launches", Health::Unavailable(long.into()))];
-
-        let text = configuration("2026-09-09T13:00:00.000Z", &survey, &Config::default());
-
-        assert!(text.contains("/var/log/audit/audit.log,"), "{text}");
-        assert!(text.contains("/var/lib/vigil/audit-spool)"), "{text}");
-        for line in text.lines() {
-            assert!(line.len() <= WIDTH + 6, "{line}");
-        }
-    }
 }

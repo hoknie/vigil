@@ -120,6 +120,8 @@ kinds! {
     AgentSocketKillRefused => "agent.socket.kill_refused",
     AgentProcessKilled => "agent.process.killed",
     AgentProcessKillRefused => "agent.process.kill_refused",
+    AgentAccountChanged => "agent.account.changed",
+    AgentAccountChangeRefused => "agent.account.change_refused",
 }
 
 impl KnownKind {

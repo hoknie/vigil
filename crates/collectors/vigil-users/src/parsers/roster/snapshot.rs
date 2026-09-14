@@ -11,9 +11,10 @@ pub const SOURCE: &str = "users";
 
 pub fn accounts_snapshot(taken_at: &str, reading: &AccountsReading<'_>) -> Snapshot {
     let mut snapshot = Snapshot::new(SOURCE, taken_at.to_string());
+    let members = members_by_group(reading);
 
-    add_accounts(&mut snapshot, reading);
-    add_groups(&mut snapshot, reading);
+    add_accounts(&mut snapshot, reading, &members);
+    add_groups(&mut snapshot, reading, &members);
     add_sudoers(&mut snapshot, reading);
     add_keys(&mut snapshot, reading);
     add_sessions(&mut snapshot, reading);
@@ -31,7 +32,40 @@ const NON_INTERACTIVE_SHELLS: &[&str] = &[
     "",
 ];
 
-fn add_accounts(snapshot: &mut Snapshot, reading: &AccountsReading<'_>) {
+type Members<'a> = BTreeMap<&'a str, BTreeSet<&'a str>>;
+
+fn members_by_group<'a>(reading: &AccountsReading<'a>) -> Members<'a> {
+    let mut by_primary_gid: BTreeMap<u32, Vec<&str>> = BTreeMap::new();
+    for entry in reading.passwd {
+        by_primary_gid
+            .entry(entry.gid)
+            .or_default()
+            .push(&entry.name);
+    }
+
+    let mut members: Members<'a> = BTreeMap::new();
+    for group in reading.groups {
+        let mut named: BTreeSet<&str> = group.members.iter().map(String::as_str).collect();
+        named.extend(
+            by_primary_gid
+                .get(&group.gid)
+                .into_iter()
+                .flatten()
+                .copied(),
+        );
+        members.insert(&group.name, named);
+    }
+    members
+}
+
+fn add_accounts(snapshot: &mut Snapshot, reading: &AccountsReading<'_>, members: &Members<'_>) {
+    let mut groups_of: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
+    for (group, named) in members {
+        for member in named {
+            groups_of.entry(member).or_default().push(group);
+        }
+    }
+
     for entry in reading.passwd {
         let facts = reading
             .shadow
@@ -43,6 +77,7 @@ fn add_accounts(snapshot: &mut Snapshot, reading: &AccountsReading<'_>) {
                 "name": entry.name,
                 "uid": entry.uid,
                 "gid": entry.gid,
+                "groups": groups_of.get(entry.name.as_str()).map(Vec::as_slice).unwrap_or_default(),
                 "home": entry.home,
                 "shell": entry.shell,
                 "interactive": !NON_INTERACTIVE_SHELLS.contains(&entry.shell.as_str()),
@@ -57,14 +92,10 @@ fn add_accounts(snapshot: &mut Snapshot, reading: &AccountsReading<'_>) {
     }
 }
 
-fn add_groups(snapshot: &mut Snapshot, reading: &AccountsReading<'_>) {
+fn add_groups(snapshot: &mut Snapshot, reading: &AccountsReading<'_>, members: &Members<'_>) {
+    let nobody = BTreeSet::new();
     for group in reading.groups {
-        let mut members: BTreeSet<&str> = group.members.iter().map(String::as_str).collect();
-        for entry in reading.passwd {
-            if entry.gid == group.gid {
-                members.insert(&entry.name);
-            }
-        }
+        let members = members.get(group.name.as_str()).unwrap_or(&nobody);
 
         let privilege = privilege_of(&group.name);
         snapshot.items.insert(

@@ -2,7 +2,7 @@ use std::io::{BufRead, ErrorKind, Read, Write};
 
 use vigil_model::{ProtocolError, Request, Response, Rfc3339};
 
-use super::{Shared, answer, kill};
+use super::{Shared, answer, change, kill};
 
 const MAX_REQUEST_BYTES: u64 = 64 * 1024;
 
@@ -53,6 +53,7 @@ pub fn serve(
                 programs,
                 killing,
             }) => kill(&sockets, &programs, killing, shared, now()),
+            Ok(Request::Change { changes }) => change(&changes, shared, now()),
             Ok(request) => shared.with(|state| answer(&request, state, now())),
             Err(error) => Response::Error { error },
         };

@@ -3,6 +3,7 @@ mod tests;
 
 mod detail;
 mod fields;
+mod footer;
 mod pane;
 mod running;
 mod section;

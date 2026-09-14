@@ -1,3 +1,5 @@
+use std::ops::Bound;
+
 use vigil_model::Snapshot;
 
 use super::kind::Kind;
@@ -126,8 +128,122 @@ impl List {
 }
 
 fn holds_something_unknown(reading: &Snapshot) -> bool {
+    let mut spans: Vec<(String, String)> = Kind::NAMED
+        .iter()
+        .flat_map(|name| {
+            [
+                (name.to_string(), format!("{name}\u{0}")),
+                (format!("{name}|"), format!("{name}}}")),
+            ]
+        })
+        .collect();
+    spans.sort();
+
+    let mut from: Option<&str> = None;
+    for (start, end) in &spans {
+        if unknown_between(reading, from, Some(start)) {
+            return true;
+        }
+        from = Some(match from {
+            Some(held) if held > end.as_str() => held,
+            _ => end,
+        });
+    }
+    unknown_between(reading, from, None)
+}
+
+fn unknown_between(reading: &Snapshot, from: Option<&str>, to: Option<&str>) -> bool {
+    if let (Some(from), Some(to)) = (from, to)
+        && from >= to
+    {
+        return false;
+    }
+    let lower = from.map_or(Bound::Unbounded, Bound::Included);
+    let upper = to.map_or(Bound::Unbounded, Bound::Excluded);
     reading
         .items
-        .keys()
-        .any(|key| Kind::of(key) == Kind::Unknown)
+        .range::<str, _>((lower, upper))
+        .any(|(key, _)| Kind::of(key) == Kind::Unknown)
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    const KNOWN: &[&str] = &[
+        "unit",
+        "unit|",
+        "unit|nginx.service",
+        "timer|certbot.timer",
+        "cron|/etc/crontab|root|x",
+        "module",
+        "module|overlay",
+        "modules",
+        "modules|unreadable",
+        "script|/etc/profile",
+        "preload|/etc/ld.so.preload",
+    ];
+
+    const UNKNOWN: &[&str] = &[
+        "",
+        "|x",
+        "a",
+        "unit\u{0}",
+        "unit\u{0}x",
+        "unit!",
+        "unita",
+        "units|x",
+        "unit{",
+        "unit}",
+        "unit}x",
+        "modulea",
+        "modules}",
+        "modulet|x",
+        "crons",
+        "script}",
+        "timer\u{0}|x",
+        "initramfs|/boot/initrd",
+        "zzz",
+        "~",
+        "\u{10FFFF}",
+    ];
+
+    fn reading(keys: &[&str]) -> Snapshot {
+        let mut reading = Snapshot::new("persistence", "2026-09-14T12:00:00.000Z".to_string());
+        for key in keys {
+            reading.items.insert(key.to_string(), json!({}));
+        }
+        reading
+    }
+
+    fn walked(reading: &Snapshot) -> bool {
+        reading
+            .items
+            .keys()
+            .any(|key| Kind::of(key) == Kind::Unknown)
+    }
+
+    #[test]
+    fn the_gaps_between_known_kinds_answer_whether_something_is_unknown_exactly_as_a_walk_does() {
+        let mut readings = vec![reading(&[]), reading(KNOWN)];
+        for probe in KNOWN.iter().chain(UNKNOWN) {
+            readings.push(reading(&[probe]));
+            let mut around = KNOWN.to_vec();
+            around.push(probe);
+            readings.push(reading(&around));
+        }
+        readings.push(reading(UNKNOWN));
+
+        for reading in &readings {
+            assert_eq!(
+                holds_something_unknown(reading),
+                walked(reading),
+                "{:?}: the list of other objects must appear exactly when a walk would show it, \
+                 or a newer agent's object is hidden or an empty list is offered",
+                reading.items.keys().collect::<Vec<_>>()
+            );
+        }
+    }
 }

@@ -1,7 +1,11 @@
+#[cfg(test)]
+mod tests;
+
 mod crontab;
 mod entries;
 mod links;
 mod modules;
+mod pulled;
 mod unit;
 
 pub use crontab::{CronEntry, CronFormat, cron_script, parse_crontab};

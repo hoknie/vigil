@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 pub mod acts;
 pub mod change_lines;
 pub mod diff;

@@ -9,4 +9,5 @@ pub struct Startup {
     pub interval_seconds: u32,
     pub periods: BTreeMap<String, u32>,
     pub killing_from_the_console: bool,
+    pub accounts_from_the_console: bool,
 }

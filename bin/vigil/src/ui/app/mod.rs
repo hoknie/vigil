@@ -2,36 +2,40 @@
 mod tests;
 
 mod answers;
-mod choosing;
-mod detail;
+mod choices;
+mod deeds;
 mod drawing;
-mod jump;
+mod kept;
 mod keys;
-mod killing;
-mod levels;
-mod marking;
-mod motion;
 mod narrowing;
+mod navigation;
 mod page;
 mod pane;
-mod picking;
-mod printing;
 mod rows;
 mod session;
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 
 use ratatui::layout::Rect;
+use vigil_view::{Counts, Index, Piece, RowKey};
 
 use crate::link::Link;
 use std::collections::BTreeMap;
 
+use crate::ui::types::cache::Remembered;
 use crate::ui::{
-    Asking, Chooser, Dismissed, Filter, Gone, Level, Look, Nav, Paper, Picked, Screen, Sorting,
-    View,
+    Asking, Chooser, Dismissed, Editing, Filter, Gone, Level, Look, Nav, Paper, Picked, Screen,
+    Sorting, View,
 };
 
-pub use killing::KILL;
+type RowsAsked = (u64, Screen, usize, String);
+
+type DetailAsked = (u64, Screen, usize, RowKey, usize);
+
+type FoundBefore = (RowsAsked, String, Rc<Vec<usize>>);
+
+pub use deeds::KILL;
 
 pub struct App {
     link: Link,
@@ -42,6 +46,7 @@ pub struct App {
     picked: Picked,
     dismissed: Dismissed,
     asking: Option<Asking>,
+    editing: Option<Editing>,
     named_configuration: Option<String>,
     detail_open: bool,
     level: Level,
@@ -54,6 +59,12 @@ pub struct App {
     helping: bool,
     message: Option<String>,
     body: Cell<Rect>,
+    rows_seen: Remembered<RowsAsked, Rc<Vec<RowKey>>>,
+    index_seen: Remembered<RowsAsked, Option<Rc<Index>>>,
+    found_seen: RefCell<Option<FoundBefore>>,
+    tally_seen: Remembered<RowsAsked, String>,
+    counts_seen: Remembered<RowsAsked, Option<Rc<Counts>>>,
+    detail_seen: Remembered<DetailAsked, Rc<Vec<Piece>>>,
     refresh_wanted: bool,
     leaving: bool,
 }

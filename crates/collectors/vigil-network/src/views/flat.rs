@@ -1,11 +1,12 @@
 use vigil_model::{KillTarget, Snapshot};
 use vigil_view::{
-    Cell, Column, Notice, Offers, Pane, Piece, Room, RowKey, Showing, Sorting, Toggle, Width,
-    basename,
+    Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Showing, Sorting,
+    Toggle, Width, basename, haystack,
 };
 
 use super::detail;
 use super::fields::{command, endpoint, pid, program, protocol, user};
+use super::footer;
 use super::notices;
 use super::tally::tally;
 
@@ -57,6 +58,22 @@ impl Pane for Flat {
         rows
     }
 
+    fn index(&self, reading: &Snapshot, showing: &Showing<'_>) -> Option<Index> {
+        let columns = self.sorted_by().len();
+        let mut index = Index::new(columns);
+        for (key, item) in wanted(reading, showing) {
+            index.push(
+                RowKey::of(key.clone()),
+                &haystack(key, item),
+                0,
+                (1..=columns)
+                    .map(|by| sorted_on(reading, key, by))
+                    .collect(),
+            );
+        }
+        Some(index)
+    }
+
     fn cells(&self, reading: &Snapshot, row: &RowKey, room: Room) -> Vec<Cell> {
         let Some(item) = reading.items.get(&row.key) else {
             return Vec::new();
@@ -83,6 +100,20 @@ impl Pane for Flat {
 
     fn tally(&self, reading: &Snapshot, showing: &Showing<'_>, shown: usize) -> String {
         tally(reading, showing, shown, false)
+    }
+
+    fn counts(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Counts> {
+        Some(footer::counts(reading))
+    }
+
+    fn tally_listed(
+        &self,
+        reading: &Snapshot,
+        showing: &Showing<'_>,
+        rows: &[RowKey],
+        counts: &Counts,
+    ) -> String {
+        footer::tallied(reading, showing, rows, counts, false)
     }
 
     fn empty(&self, showing: &Showing<'_>) -> Notice {
@@ -116,12 +147,19 @@ pub(super) fn passing<'a>(
     reading: &'a Snapshot,
     showing: &Showing<'_>,
 ) -> Vec<(&'a String, &'a serde_json::Value)> {
+    wanted(reading, showing)
+        .filter(|(key, item)| showing.matches(key, item))
+        .collect()
+}
+
+pub(super) fn wanted<'a>(
+    reading: &'a Snapshot,
+    showing: &Showing<'_>,
+) -> impl Iterator<Item = (&'a String, &'a serde_json::Value)> {
     reading
         .items
         .iter()
         .filter(|(key, item)| showing.wants(protocol(item, key)))
-        .filter(|(key, item)| showing.matches(key, item))
-        .collect()
 }
 
 fn sort(rows: &mut [RowKey], reading: &Snapshot, sorting: Sorting) {

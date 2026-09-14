@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
 use serde_json::Value;
-use vigil_view::{Column, Notice, Showing, Sorting, Width, basename, time_of_day};
+use vigil_view::{Column, Facet, Notice, Showing, Sorting, Width, basename, time_of_day};
 
 use super::fields::{marked, number, text};
 
@@ -70,6 +70,13 @@ pub(super) fn runs(item: &Value) -> u64 {
     number(item, "runs").unwrap_or(1)
 }
 
+pub(super) fn facets_of(item: &Value) -> Vec<Facet> {
+    vec![
+        Facet::new(USER, who(item)),
+        Facet::new(PROGRAM, executable(item)),
+    ]
+}
+
 pub(super) fn chosen(key: &str, item: &Value, showing: &Showing<'_>) -> bool {
     if showing.only.is_empty() {
         return true;
@@ -106,7 +113,7 @@ pub(super) fn order(left: (&str, &Value), right: (&str, &Value), sorting: Sortin
         .then_with(|| left_key.cmp(right_key))
 }
 
-fn program(item: &Value) -> (&str, &str) {
+pub(super) fn program(item: &Value) -> (&str, &str) {
     (basename(executable(item)), executable(item))
 }
 

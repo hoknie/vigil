@@ -1,10 +1,13 @@
-use vigil_model::Snapshot;
+use vigil_model::{AccountChange, Changing, Snapshot};
 
 use crate::types::{
-    Arrangement, Cell, Column, Facet, Notice, Offers, Piece, Room, RowKey, Showing, Toggle,
+    Arrangement, Cell, Column, Counts, Facet, Form, Index, Notice, Offers, Piece, Room, RowKey,
+    Showing, Toggle,
 };
 
 const NARROW: u16 = 80;
+
+const READ_NOT_CHANGED: &str = "this list is read, not changed";
 
 pub trait Pane: Send + Sync {
     fn name(&self) -> &str;
@@ -26,6 +29,34 @@ pub trait Pane: Send + Sync {
     fn columns(&self, room: Room) -> Vec<Column>;
 
     fn rows(&self, reading: &Snapshot, showing: &Showing<'_>) -> Vec<RowKey>;
+
+    fn index(&self, _reading: &Snapshot, _showing: &Showing<'_>) -> Option<Index> {
+        None
+    }
+
+    fn assemble(
+        &self,
+        _reading: &Snapshot,
+        _showing: &Showing<'_>,
+        index: &Index,
+        ordered: &[usize],
+    ) -> Vec<RowKey> {
+        ordered.iter().map(|at| index.row(*at).clone()).collect()
+    }
+
+    fn counts(&self, _reading: &Snapshot, _showing: &Showing<'_>) -> Option<Counts> {
+        None
+    }
+
+    fn tally_listed(
+        &self,
+        reading: &Snapshot,
+        showing: &Showing<'_>,
+        rows: &[RowKey],
+        _counts: &Counts,
+    ) -> String {
+        self.tally(reading, showing, rows.len())
+    }
 
     fn cells(&self, reading: &Snapshot, row: &RowKey, room: Room) -> Vec<Cell>;
 
@@ -77,5 +108,24 @@ pub trait Pane: Send + Sync {
 
     fn offers(&self) -> Offers {
         Offers::default()
+    }
+
+    fn form(
+        &self,
+        _reading: &Snapshot,
+        _row: Option<&RowKey>,
+        _changing: Changing,
+    ) -> Result<Form, String> {
+        Err(READ_NOT_CHANGED.to_string())
+    }
+
+    fn change(
+        &self,
+        _reading: &Snapshot,
+        _row: Option<&RowKey>,
+        _changing: Changing,
+        _form: Option<&Form>,
+    ) -> Result<AccountChange, String> {
+        Err(READ_NOT_CHANGED.to_string())
     }
 }

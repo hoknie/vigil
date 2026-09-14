@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 mod listening;
 mod proc_net;
 mod proc_net_unix;

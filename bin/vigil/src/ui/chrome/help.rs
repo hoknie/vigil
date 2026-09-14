@@ -73,7 +73,10 @@ fn rows() -> Vec<(&'static str, &'static str)> {
             "t / d",
             "units as a tree (startup); a section's words (main)",
         ),
-        ("", "ON THE SOCKETS AND THE RUNNING PROGRAMS OF THIS HOST"),
+        (
+            "",
+            "SOCKETS, PROGRAMS, ACCOUNTS · n new, e edit on a form, D delete",
+        ),
         (
             "\u{2192} \u{2192} \u{2192}",
             "a program opens \u{b7} the panel \u{b7} the arrows move in",

@@ -3,7 +3,7 @@ use vigil_model::Snapshot;
 use vigil_view::Piece;
 
 use super::super::fields::text;
-use super::super::timers::schedules;
+use super::super::lists::timers::schedules;
 use super::title;
 
 pub(super) fn timer(key: &str, item: &Value, _reading: &Snapshot) -> Vec<Piece> {
