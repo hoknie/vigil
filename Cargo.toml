@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
     "crates/core/vigil-model",
+    "crates/core/vigil-config",
     "crates/core/vigil-rules",
     "crates/core/vigil-collect",
     "crates/core/vigil-view",

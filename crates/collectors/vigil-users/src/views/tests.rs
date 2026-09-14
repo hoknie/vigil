@@ -22,7 +22,8 @@ fn every_pane_of_this_section_answers_about_its_own_reading_and_answers_whole() 
 #[test]
 fn a_pane_that_would_open_onto_nothing_is_not_offered_at_all() {
     let reading = users();
-    let offered: Vec<&'static str> = panes()
+    let every = panes();
+    let offered: Vec<&str> = every
         .iter()
         .filter(|pane| pane.shown(&reading))
         .map(|pane| pane.name())

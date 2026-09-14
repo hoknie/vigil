@@ -3,7 +3,7 @@ use vigil_model::Severity;
 use super::App;
 
 use crate::ui::screens::findings;
-use crate::ui::{Choosing, Column, Level, Screen, Sorting, holding};
+use crate::ui::{Choosing, Column, Level, Screen, Sorting};
 
 const NOTHING_SORTS: &str =
     "Nothing on this screen sorts: it is one page, not a list of rows to put in an order.";
@@ -20,7 +20,7 @@ impl App {
     pub(super) fn sortable(&self) -> Vec<&'static str> {
         match self.nav.at() {
             Screen::FINDINGS => findings::SORTED_BY.to_vec(),
-            screen if holding(screen.name()).is_some() => self.pane_sortable(),
+            screen if screen.draws_a_reading() => self.pane_sortable(),
             _ => Vec::new(),
         }
     }
@@ -33,7 +33,7 @@ impl App {
     }
 
     pub(super) fn sorting(&mut self) {
-        if holding(self.nav.at().name()).is_some() && self.pane_sortable().is_empty() {
+        if self.nav.at().draws_a_reading() && self.pane_sortable().is_empty() {
             self.message = Some(GROUPS_ARE_THE_ORDER.to_string());
             return;
         }

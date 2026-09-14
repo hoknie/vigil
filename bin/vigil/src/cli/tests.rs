@@ -35,6 +35,7 @@ fn opening_the_console_is_a_subcommand_with_the_flags_it_always_had() {
         ui(&["ui"]).console,
         Console {
             socket: DEFAULT_SOCKET.to_string(),
+            config: None,
             screen: None,
         }
     );
@@ -43,6 +44,7 @@ fn opening_the_console_is_a_subcommand_with_the_flags_it_always_had() {
         ui(&["ui", "--screen", "findings", "--socket", "/tmp/v.sock"]).console,
         Console {
             socket: "/tmp/v.sock".to_string(),
+            config: None,
             screen: Some(plain(Screen::FINDINGS)),
         }
     );
@@ -94,6 +96,7 @@ fn printing_a_page_is_a_command_of_its_own_and_takes_the_same_two_flags() {
         capture(&["capture"]),
         Console {
             socket: DEFAULT_SOCKET.to_string(),
+            config: None,
             screen: None,
         }
     );
@@ -102,6 +105,7 @@ fn printing_a_page_is_a_command_of_its_own_and_takes_the_same_two_flags() {
         capture(&["capture", "--screen", "accounts", "--socket", "/tmp/v.sock"]),
         Console {
             socket: "/tmp/v.sock".to_string(),
+            config: None,
             screen: Some(plain(screen("accounts"))),
         }
     );

@@ -8,6 +8,8 @@ pub fn action(code: KeyCode, modifiers: KeyModifiers, typing: bool) -> Action {
             KeyCode::Char('c') => Action::Leave,
             KeyCode::Char('f') => Action::Move(Motion::PageDown),
             KeyCode::Char('b') => Action::Move(Motion::PageUp),
+            KeyCode::Down => Action::Gather(Motion::Down),
+            KeyCode::Up => Action::Gather(Motion::Up),
             _ => Action::Ignore,
         };
     }
@@ -26,6 +28,16 @@ pub fn action(code: KeyCode, modifiers: KeyModifiers, typing: bool) -> Action {
         };
     }
 
+    if modifiers.contains(KeyModifiers::SHIFT) {
+        match code {
+            KeyCode::Down => return Action::Pick(Motion::Down),
+            KeyCode::Up => return Action::Pick(Motion::Up),
+            KeyCode::PageDown => return Action::Pick(Motion::PageDown),
+            KeyCode::PageUp => return Action::Pick(Motion::PageUp),
+            _ => {}
+        }
+    }
+
     match code {
         KeyCode::Char('q') => Action::Leave,
         KeyCode::Esc | KeyCode::Backspace => Action::Back,
@@ -42,6 +54,8 @@ pub fn action(code: KeyCode, modifiers: KeyModifiers, typing: bool) -> Action {
         KeyCode::Left | KeyCode::Char('h') => Action::Sideways(-1),
         KeyCode::Down | KeyCode::Char('j') => Action::Move(Motion::Down),
         KeyCode::Up | KeyCode::Char('k') => Action::Move(Motion::Up),
+        KeyCode::Char('J') => Action::Pick(Motion::Down),
+        KeyCode::Char('K') => Action::Pick(Motion::Up),
         KeyCode::PageDown | KeyCode::Char(' ') => Action::Move(Motion::PageDown),
         KeyCode::PageUp => Action::Move(Motion::PageUp),
         KeyCode::Home | KeyCode::Char('g') => Action::Move(Motion::First),
@@ -158,6 +172,71 @@ mod tests {
     fn escape_steps_back_and_does_not_leave_on_its_own() {
         assert_eq!(plain(KeyCode::Esc), Action::Back);
         assert_eq!(plain(KeyCode::Backspace), Action::Back);
+    }
+
+    #[test]
+    fn holding_shift_with_an_arrow_picks_a_run_of_rows_instead_of_only_moving() {
+        for (code, motion) in [
+            (KeyCode::Down, Motion::Down),
+            (KeyCode::Up, Motion::Up),
+            (KeyCode::PageDown, Motion::PageDown),
+            (KeyCode::PageUp, Motion::PageUp),
+        ] {
+            assert_eq!(
+                action(code, KeyModifiers::SHIFT, false),
+                Action::Pick(motion)
+            );
+            assert_eq!(
+                plain(code),
+                Action::Move(motion),
+                "{code:?} on its own moves"
+            );
+        }
+    }
+
+    #[test]
+    fn holding_control_with_an_arrow_picks_the_row_it_leaves_and_steps_on() {
+        assert_eq!(
+            action(KeyCode::Down, KeyModifiers::CONTROL, false),
+            Action::Gather(Motion::Down)
+        );
+        assert_eq!(
+            action(KeyCode::Up, KeyModifiers::CONTROL, false),
+            Action::Gather(Motion::Up)
+        );
+    }
+
+    #[test]
+    fn the_hand_that_never_leaves_the_letters_picks_a_run_as_well() {
+        assert_eq!(plain(KeyCode::Char('J')), Action::Pick(Motion::Down));
+        assert_eq!(plain(KeyCode::Char('K')), Action::Pick(Motion::Up));
+        assert_eq!(
+            action(KeyCode::Char('J'), KeyModifiers::SHIFT, false),
+            Action::Pick(Motion::Down),
+            "a terminal that reports the shift beside the capital must not mean something else"
+        );
+    }
+
+    #[test]
+    fn the_capitals_a_reading_answers_to_are_still_letters_and_not_a_run_of_rows() {
+        for letter in ['T', 'U', 'G'] {
+            assert!(
+                !matches!(
+                    action(KeyCode::Char(letter), KeyModifiers::SHIFT, false),
+                    Action::Pick(_)
+                ),
+                "{letter} was taken over by picking"
+            );
+        }
+    }
+
+    #[test]
+    fn shift_and_control_type_nothing_into_a_search_box_that_is_open() {
+        assert_eq!(
+            action(KeyCode::Down, KeyModifiers::SHIFT, true),
+            Action::Move(Motion::Down),
+            "a reader in the middle of typing is moving the list under it, not picking rows"
+        );
     }
 
     #[test]

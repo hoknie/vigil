@@ -23,6 +23,7 @@ pub fn state_that_may_kill() -> State {
 fn told(killing_from_the_console: bool) -> State {
     State::new(
         Startup {
+            configuration_path: "/etc/vigil/vigil.yaml".to_string(),
             host: host(),
             started_at: "2026-09-09T08:00:00.000Z".into(),
             interval_seconds: 30,

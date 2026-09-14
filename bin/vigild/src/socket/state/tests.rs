@@ -30,6 +30,7 @@ fn a_collector_that_could_not_read_is_degraded_and_keeps_its_last_reading() {
 fn with_launches_switched_off() -> State {
     State::new(
         Startup {
+            configuration_path: "/etc/vigil/vigil.yaml".to_string(),
             host: fixture::host(),
             started_at: "2026-09-09T08:00:00.000Z".into(),
             interval_seconds: 30,
@@ -40,6 +41,18 @@ fn with_launches_switched_off() -> State {
         &[],
         &["launches".to_string()],
     )
+}
+
+#[test]
+fn the_answer_names_the_configuration_this_daemon_was_started_with() {
+    let agent = with_launches_switched_off().agent();
+
+    assert_eq!(
+        agent.configuration_path.as_deref(),
+        Some("/etc/vigil/vigil.yaml"),
+        "the console silences a finding by editing that file, and a daemon started with \
+         another one would have the console write where nobody reads"
+    );
 }
 
 #[test]
@@ -86,6 +99,7 @@ fn a_snapshot_is_never_offered_for_a_collector_that_is_off() {
 fn a_degraded_collector_keeps_the_reason_it_was_given_at_start() {
     let mut state = State::new(
         Startup {
+            configuration_path: "/etc/vigil/vigil.yaml".to_string(),
             host: fixture::host(),
             started_at: "2026-09-09T08:00:00.000Z".into(),
             interval_seconds: 30,

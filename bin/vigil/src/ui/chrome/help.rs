@@ -127,6 +127,8 @@ mod tests {
             "o",
             "/",
             "s / f",
+            "shift/ctrl",
+            "d silence them",
             "Esc",
             "r",
             "as a tree",

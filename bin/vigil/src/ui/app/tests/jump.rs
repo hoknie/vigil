@@ -45,7 +45,7 @@ fn a_jump_asks_for_the_reading_that_holds_the_object_because_the_findings_screen
 
     assert_eq!(
         app.reading_needed(&anchor),
-        Some("ports"),
+        Some("ports".to_string()),
         "with no reading held, the jump has to fetch the one that holds the object"
     );
 

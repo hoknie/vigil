@@ -1,10 +1,8 @@
-use std::path::Path;
-
 use vigil_collect::Health;
 
 use super::edit::{self, Edit};
 use super::host::{self, Standing};
-use crate::wizard::{DEFAULT_PATH, Surveyed, take, write};
+use crate::wizard::{DEFAULT_PATH, Surveyed, take};
 use crate::{Config, config};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -23,8 +21,6 @@ impl Default for Options {
         }
     }
 }
-
-const RESTART: &str = "systemctl try-restart vigild.service";
 
 pub fn enable(options: &Options) -> Result<String, String> {
     let name = known(&options.name)?;
@@ -47,9 +43,7 @@ pub fn enable(options: &Options) -> Result<String, String> {
     if let Health::Degraded(why) = &standing.health {
         said.push(format!("{name} will read less than all of it: {why}"));
     }
-    said.push(format!(
-        "the daemon reads its configuration at start: {RESTART}"
-    ));
+    said.push(config::restart_note());
 
     Ok(said.join("\n  "))
 }
@@ -94,9 +88,7 @@ pub fn disable(options: &Options) -> Result<String, String> {
                the file it did not write"
             .to_string(),
     );
-    said.push(format!(
-        "the daemon reads its configuration at start: {RESTART}"
-    ));
+    said.push(config::restart_note());
 
     Ok(said.join("\n  "))
 }
@@ -144,29 +136,7 @@ fn written(options: &Options, name: &str) -> Result<String, String> {
 }
 
 fn put(options: &Options, before: &str, after: &str) -> Result<String, String> {
-    if options.dry_run {
-        println!("{after}");
-        return Ok(format!(
-            "nothing was written to {} (--dry-run)",
-            options.path
-        ));
-    }
-
-    let path = Path::new(&options.path);
-    let written = write(path, after, true)?;
-    config::load(&options.path).map_err(|error| {
-        let _ = std::fs::write(path, before);
-        format!("what this command wrote would not load, so the file was put back: {error}")
-    })?;
-
-    Ok(match &written.previous {
-        Some(previous) => format!(
-            "wrote {} (0600), and what was there is kept as {}",
-            written.path.display(),
-            previous.display()
-        ),
-        None => format!("wrote {} (0600)", written.path.display()),
-    })
+    config::put(&options.path, before, after, options.dry_run)
 }
 
 fn surveyed(name: &str) -> Result<Surveyed, String> {

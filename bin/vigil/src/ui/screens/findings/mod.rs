@@ -2,6 +2,7 @@
 mod tests;
 
 mod columns;
+mod deeds;
 mod notices;
 mod regions;
 mod render;

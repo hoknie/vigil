@@ -10,11 +10,11 @@ const ROOM_FOR_THE_PATH: u16 = 118;
 pub struct Running;
 
 impl Pane for Running {
-    fn name(&self) -> &'static str {
+    fn name(&self) -> &str {
         "running"
     }
 
-    fn caption(&self) -> &'static str {
+    fn caption(&self) -> &str {
         "RUNNING"
     }
 
@@ -22,11 +22,11 @@ impl Pane for Running {
         "THE SELECTED PROGRAM"
     }
 
-    fn about(&self) -> &'static str {
+    fn about(&self) -> &str {
         "one row per program found running, and as whom"
     }
 
-    fn reads(&self) -> &'static str {
+    fn reads(&self) -> &str {
         "processes"
     }
 

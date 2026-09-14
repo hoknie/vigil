@@ -1,7 +1,8 @@
 use super::App;
 
+use crate::ui::screens::unknown::unknown_readings;
 use crate::ui::screens::{findings, home, summary};
-use crate::ui::{Level, Motion, Offset, Screen, holding};
+use crate::ui::{Level, Motion, Offset, Screen};
 
 impl App {
     pub(super) fn move_within(&mut self, motion: Motion) {
@@ -37,7 +38,7 @@ impl App {
                     );
                     self.nav.summary.step(motion, total, page);
                 }
-                screen if holding(screen.name()).is_some() => {
+                screen if screen.draws_a_reading() => {
                     let keys = self.pane_keys();
                     if let Some(panes) = self.panes_mut() {
                         panes
@@ -72,9 +73,7 @@ impl App {
             Screen::HOME => self.nav.sections.at() == 0,
             Screen::SUMMARY => self.nav.summary.top() == 0,
             Screen::FINDINGS => self.nav.findings.at() == 0,
-            screen if holding(screen.name()).is_some() => {
-                self.panes().is_some_and(|panes| panes.at() == 0)
-            }
+            screen if screen.draws_a_reading() => self.panes().is_some_and(|panes| panes.at() == 0),
             _ => true,
         }
     }
@@ -89,7 +88,7 @@ impl App {
                     _ => count.saturating_sub(1),
                 };
                 match self.nav.at() {
-                    screen if holding(screen.name()).is_some() => {
+                    screen if screen.draws_a_reading() => {
                         let shown = self.shown_panes();
                         let at = ends(shown.len());
                         if let Some(index) = shown.get(at).copied()
@@ -112,14 +111,18 @@ impl App {
         let page = body.height as usize;
 
         self.nav.sections.settle(&home::keys(&self.view));
+        let unknown = unknown_readings(&self.view).len();
+        self.nav.lists.ready(Screen::UNKNOWN.name(), unknown);
         let rows = self.pane_keys();
         let in_the_reading = self.pane_keys_of_the_reading();
         if let Some(panes) = self.panes_mut() {
             panes.cursor_mut().settle(&rows);
             panes.forget_marks_not_in(&in_the_reading);
         }
+        self.dismissed.settle(&self.view.found.findings);
         let findings = findings::keys(&self.passing());
         self.nav.findings.settle(&findings);
+        self.picked.settle(&findings);
         self.nav.summary.settle(
             summary::height(
                 &self.view,

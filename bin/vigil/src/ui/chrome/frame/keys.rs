@@ -12,14 +12,23 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
         };
     }
 
-    let long = match hints.level {
-        _ if screen == Screen::HOME => match hints.panel {
+    for line in wanted(hints, screen) {
+        if line.chars().count() <= width as usize {
+            return line;
+        }
+    }
+    LAST_TWO.to_string()
+}
+
+fn wanted(hints: &Hints<'_>, screen: Screen) -> Vec<String> {
+    let mut lines = match hints.level {
+        _ if screen == Screen::HOME => vec![match hints.panel {
             true => " j/k ↑↓ a section · → or Enter open it · d close · 1-9 by number · ? keys"
                 .to_string(),
             false => " j/k ↑↓ a section · → or Enter open it · d details · 1-9 by number · ? keys"
                 .to_string(),
-        },
-        Level::Menu => format!(
+        }],
+        Level::Menu => vec![format!(
             " ←→ which list · ↓ into it · ↑ or Esc {} · ? keys · q quit",
             hints.back.named()
         ),
@@ -293,6 +302,24 @@ mod tests {
         assert!(
             !a_reading.contains("o object"),
             "the panel of a reading is already the object: {a_reading}"
+        );
+    }
+
+    #[test]
+    fn the_key_that_picks_a_run_of_findings_is_offered_where_there_is_a_run_to_pick() {
+        let findings = keys(&hints(Level::List, Back::MainScreen), Screen::FINDINGS, 200);
+        let a_reading = keys(&hints(Level::List, Back::MainScreen), a_section(), 200);
+
+        assert!(findings.contains("⇧↑↓ pick"), "{findings}");
+        assert!(
+            findings.contains("x one"),
+            "the key that picks one row without a modifier is the one a terminal that eats \
+             ctrl and shift leaves a reader with: {findings}"
+        );
+        assert!(
+            !a_reading.contains("pick"),
+            "only the findings can be picked, and a key offered where it does nothing \
+             teaches a reader not to trust the line: {a_reading}"
         );
     }
 

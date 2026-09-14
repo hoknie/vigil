@@ -17,13 +17,27 @@ pub(super) fn split_top(area: Rect, filter: &Filter) -> (Option<Rect>, Rect) {
     )
 }
 
-pub(super) fn split_bottom(area: Rect, look: Look, rows: usize) -> (Rect, Rect) {
+pub(super) fn split_bottom(
+    area: Rect,
+    look: Look,
+    rows: usize,
+    picking: bool,
+) -> (Rect, Rect, Option<Rect>) {
     if area.height < 2 {
-        return (area, Rect { height: 0, ..area });
+        return (area, Rect { height: 0, ..area }, None);
     }
+    let bar = match picking && area.height >= 4 {
+        true => Some(Rect {
+            y: area.y + area.height - 1,
+            height: 1,
+            ..area
+        }),
+        false => None,
+    };
+    let room = area.height - u16::from(bar.is_some());
     let table = match look.interactive() {
-        true => area.height - 1,
-        false => (rows.max(2) as u16).saturating_add(1).min(area.height - 1),
+        true => room - 1,
+        false => (rows.max(2) as u16).saturating_add(1).min(room - 1),
     };
     (
         Rect {
@@ -35,5 +49,6 @@ pub(super) fn split_bottom(area: Rect, look: Look, rows: usize) -> (Rect, Rect) 
             height: 1,
             ..area
         },
+        bar,
     )
 }

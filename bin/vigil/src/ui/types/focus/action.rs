@@ -8,6 +8,8 @@ pub enum Action {
     Go(Screen),
     Sideways(isize),
     Move(Motion),
+    Pick(Motion),
+    Gather(Motion),
     Open,
     ToObject,
     Sort,

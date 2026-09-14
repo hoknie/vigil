@@ -58,7 +58,23 @@ A collector that cannot read here is written out switched off, with the reason b
 
     #[command(about = "Switch one collector on or off in the configuration, and on this host")]
     Collector(Collector),
+
+    #[command(hide = true)]
+    Suppress {
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        rest: Vec<String>,
+    },
 }
+
+pub const SUPPRESS_LIVES_IN_THE_CONSOLE: &str = "\
+vigild: `suppress` lives in the console:
+
+    vigil suppress add \"<object>\" --reason \"...\"
+    vigil suppress list
+    vigil suppress remove \"<object>\"
+
+The object key is read off the finding, and the finding is on the console's screen.
+Both binaries ship in one package.";
 
 #[derive(Debug, Clone, PartialEq, Eq, Parser)]
 #[command(styles = style::HELP)]

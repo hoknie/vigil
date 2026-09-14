@@ -14,11 +14,11 @@ const ROOM_FOR_WHERE_IT_CAME_FROM: u16 = 118;
 pub(super) struct Of(pub(super) Subject);
 
 impl Pane for Of {
-    fn name(&self) -> &'static str {
+    fn name(&self) -> &str {
         self.0.name()
     }
 
-    fn caption(&self) -> &'static str {
+    fn caption(&self) -> &str {
         self.0.caption()
     }
 
@@ -26,7 +26,7 @@ impl Pane for Of {
         self.0.detail()
     }
 
-    fn about(&self) -> &'static str {
+    fn about(&self) -> &str {
         self.0.about()
     }
 
@@ -34,7 +34,7 @@ impl Pane for Of {
         self.0.shown(reading)
     }
 
-    fn reads(&self) -> &'static str {
+    fn reads(&self) -> &str {
         "users"
     }
 

@@ -74,6 +74,7 @@ pub fn losing() -> BufferStatus {
 pub fn every_state() -> State {
     let mut state = State::new(
         Startup {
+            configuration_path: "/etc/vigil/vigil.yaml".to_string(),
             host: host(),
             started_at: "2026-09-09T08:00:00.000Z".into(),
             interval_seconds: 30,
@@ -135,6 +136,7 @@ pub fn every_state() -> State {
 pub fn before_the_first_reading() -> State {
     State::new(
         Startup {
+            configuration_path: "/etc/vigil/vigil.yaml".to_string(),
             host: host(),
             started_at: "2026-09-09T08:00:00.000Z".into(),
             interval_seconds: 30,

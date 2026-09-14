@@ -27,6 +27,13 @@ impl Panes {
         }
     }
 
+    pub fn ready(&mut self, count: usize) {
+        let count = count.max(1);
+        self.cursors.resize(count, Cursor::default());
+        self.searches.resize(count, Search::default());
+        self.at = self.at.min(count - 1);
+    }
+
     pub fn showing(&self) -> usize {
         self.at
     }
@@ -257,5 +264,23 @@ mod tests {
         panes.toggle("tcp");
         panes.show_every_kind();
         assert!(!panes.hiding());
+    }
+
+    #[test]
+    fn a_section_whose_lists_the_agent_decides_keeps_a_cursor_for_each_of_them() {
+        let mut panes = Panes::of(1);
+
+        panes.ready(3);
+        panes.show(2);
+        panes.cursor_mut().point_at("b", &["a".into(), "b".into()]);
+        assert_eq!(panes.at(), 1);
+
+        panes.ready(1);
+        assert_eq!(
+            panes.showing(),
+            0,
+            "an agent that stopped sending a reading must not leave the reader pointing at a \
+             list that is no longer there"
+        );
     }
 }

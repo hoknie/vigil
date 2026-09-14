@@ -5,13 +5,13 @@ use super::App;
 use crate::ui::details::pieces;
 use crate::ui::helpers::finding::diff;
 use crate::ui::helpers::layout::split;
-use crate::ui::{Level, Screen, holding};
+use crate::ui::{Level, Screen};
 
 impl App {
     pub(super) fn has_detail(&self) -> bool {
         match self.nav.at() {
             Screen::FINDINGS => self.selected_finding().is_some(),
-            screen if holding(screen.name()).is_some() => !self.pane_keys().is_empty(),
+            screen if screen.draws_a_reading() => !self.pane_keys().is_empty(),
             _ => false,
         }
     }

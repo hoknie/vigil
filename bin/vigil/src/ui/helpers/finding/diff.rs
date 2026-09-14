@@ -13,8 +13,15 @@ use crate::ui::helpers::layout::field;
 use crate::ui::helpers::layout::section;
 use crate::ui::helpers::layout::wrap;
 use crate::ui::types::content::change;
-use crate::ui::{Look, Notice, Report};
-pub fn render(finding: Option<&Finding>, look: Look, top: usize, area: Rect, buffer: &mut Buffer) {
+use crate::ui::{Deed, Look, Notice, Report};
+pub fn render(
+    finding: Option<&Finding>,
+    look: Look,
+    top: usize,
+    picked: usize,
+    area: Rect,
+    buffer: &mut Buffer,
+) {
     let Some(finding) = finding else {
         Notice::plain("No finding is selected.")
             .saying("Move to a finding and press Enter. Esc closes this.")
@@ -23,7 +30,7 @@ pub fn render(finding: Option<&Finding>, look: Look, top: usize, area: Rect, buf
     };
 
     let gutter = area.width - look.text_width(area.width) as u16;
-    let report = report(finding, look, look.text_width(area.width));
+    let report = report(finding, look, look.text_width(area.width), picked);
     let page = area.height as usize;
     let top = top.min(report.len().saturating_sub(page));
 
@@ -59,21 +66,43 @@ pub fn render(finding: Option<&Finding>, look: Look, top: usize, area: Rect, buf
 }
 pub fn height(finding: Option<&Finding>, look: Look, width: usize) -> usize {
     match finding {
-        Some(finding) => report(finding, look, width).len(),
+        Some(finding) => report(finding, look, width, 0).len(),
         None => 0,
     }
 }
 
-fn report(finding: &Finding, look: Look, width: usize) -> Report {
+fn report(finding: &Finding, look: Look, width: usize, picked: usize) -> Report {
     let mut report = Report::default();
 
     headline(&mut report, finding, look, width);
     changes(&mut report, finding, look, width);
     evidence(&mut report, finding, look, width);
     redacted(&mut report, finding, look, width);
+    actions(&mut report, look, width, picked);
     silencing(&mut report, finding, look, width);
 
     report
+}
+
+fn actions(report: &mut Report, look: Look, width: usize, picked: usize) {
+    if !look.interactive() || Deed::ALL.is_empty() {
+        return;
+    }
+    report.push(section::rule(look, "ACTIONS", width));
+    for deed in Deed::ALL {
+        report.push(Line::from(vec![
+            Span::raw("   "),
+            Span::styled(deed.key().to_string(), look.palette.accent()),
+            Span::raw(format!(
+                "   {}",
+                match picked {
+                    0 => deed.alone().to_string(),
+                    count => format!("{}, all {count} of them", deed.named()),
+                }
+            )),
+        ]));
+    }
+    report.blank();
 }
 
 fn headline(report: &mut Report, finding: &Finding, look: Look, width: usize) {
@@ -186,7 +215,7 @@ fn silencing(report: &mut Report, finding: &Finding, look: Look, width: usize) {
     for line in suppression::snippet(finding) {
         report.push(Line::raw(format!("   {line}")));
     }
-    if finding.finding_key.chars().count() + 21 > width {
+    if suppression::widest(&finding.finding_key, Some(finding.kind.as_str())) + 3 > width {
         report.push(Line::styled(
             "   widen the terminal before copying the key above".to_string(),
             look.palette.alarm(),
@@ -200,16 +229,27 @@ mod tests {
     use vigil_model::{Evidence, Severity};
 
     use super::*;
-    use crate::ui::fixture;
     use crate::ui::helpers::words::text;
+    use crate::ui::{Audience, fixture};
 
     fn drawn(finding: Option<&Finding>) -> String {
         drawn_at(finding, 80)
     }
 
     fn drawn_at(finding: Option<&Finding>, width: u16) -> String {
+        picking(finding, width, 0)
+    }
+
+    fn picking(finding: Option<&Finding>, width: u16, picked: usize) -> String {
         let mut buffer = Buffer::empty(Rect::new(0, 0, width, 60));
-        render(finding, fixture::look(), 0, buffer.area, &mut buffer);
+        render(
+            finding,
+            fixture::look(),
+            0,
+            picked,
+            buffer.area,
+            &mut buffer,
+        );
         text::to_text(&buffer)
     }
 
@@ -299,6 +339,59 @@ mod tests {
         for line in page.lines() {
             assert!(line.chars().count() <= 80, "{line}");
         }
+    }
+
+    #[test]
+    fn the_panel_of_a_finding_offers_the_same_deeds_as_the_bar_over_the_picked_rows() {
+        let finding = fixture::finding("A new listening port", Severity::Critical);
+
+        let page = drawn(Some(&finding));
+
+        assert!(page.contains("ACTIONS"), "{page}");
+        for deed in Deed::ALL {
+            assert!(
+                page.contains(deed.alone()),
+                "{} is not offered: {page}",
+                deed.key()
+            );
+        }
+    }
+
+    #[test]
+    fn with_rows_picked_the_panel_says_the_deed_reaches_them_and_not_only_this_one() {
+        let finding = fixture::finding("A new listening port", Severity::Critical);
+
+        let page = picking(Some(&finding), 80, 3);
+
+        assert!(page.contains("all 3 of them"), "{page}");
+        assert!(
+            !page.contains(Deed::Remove.alone()),
+            "one row and three rows must not read the same: {page}"
+        );
+    }
+
+    #[test]
+    fn a_page_written_to_a_file_offers_no_key_to_press_on_it() {
+        let finding = fixture::finding("A new listening port", Severity::Critical);
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 80, 60));
+        render(
+            Some(&finding),
+            Look::new(fixture::monochrome(), Audience::Script),
+            0,
+            0,
+            buffer.area,
+            &mut buffer,
+        );
+
+        let page = text::to_text(&buffer);
+        assert!(
+            !page.contains("ACTIONS"),
+            "nothing reading a file can press d: {page}"
+        );
+        assert!(
+            page.contains("suppressions:"),
+            "and what it can copy is still there: {page}"
+        );
     }
 
     #[test]

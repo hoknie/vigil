@@ -107,8 +107,15 @@ fn a_collector_this_console_has_no_section_for_is_still_a_row() {
     assert!(
         rows(&view)
             .iter()
-            .any(|row| row.name == "network" && row.opens.is_none()),
-        "a reading with nowhere to open is a row and not a silence"
+            .any(|row| row.name == "network" && row.opens == Screen::UNKNOWN),
+        "a reading this console has no screen for opens as a plain list: accepting what it \
+         does not know beats drawing nothing"
+    );
+    assert!(
+        !rows(&view)
+            .iter()
+            .any(|row| row.name == "network" && row.is_a_section_of_its_own()),
+        "and it is still counted apart from the sections this build has screens for"
     );
 }
 
@@ -207,7 +214,7 @@ fn a_collector_this_console_has_a_section_for_is_never_a_row_with_nothing_behind
 
     assert_eq!(
         firewall.opens,
-        Some(screen("firewall")),
+        screen("firewall"),
         "a reading with a section of its own must open it, not sit among the strangers"
     );
     assert_eq!(firewall.number, Some(5));

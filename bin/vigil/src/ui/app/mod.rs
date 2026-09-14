@@ -14,6 +14,7 @@ mod motion;
 mod narrowing;
 mod page;
 mod pane;
+mod picking;
 mod printing;
 mod rows;
 mod session;
@@ -25,7 +26,7 @@ use ratatui::layout::Rect;
 use crate::link::Link;
 use std::collections::BTreeMap;
 
-use crate::ui::{Chooser, Filter, Gone, Level, Look, Nav, Paper, Screen, Sorting, View};
+use crate::ui::{Chooser, Filter, Gone, Level, Look, Nav, Paper, Screen, Sorting, View, Picked, Dismissed, Asking};
 
 pub use killing::KILL;
 
@@ -35,6 +36,10 @@ pub struct App {
     nav: Nav,
     view: View,
     filter: Filter,
+    picked: Picked,
+    dismissed: Dismissed,
+    asking: Option<Asking>,
+    named_configuration: Option<String>,
     detail_open: bool,
     level: Level,
     gone: Option<Gone>,

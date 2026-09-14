@@ -32,7 +32,8 @@ pub fn keys(view: &View) -> Vec<String> {
 
 fn section(view: &View, screen: Screen) -> Row {
     Row {
-        opens: Some(screen),
+        opens: screen,
+        opens_reading: None,
         number: screen.digit(),
         name: screen.name().to_string(),
         holds: screen.holds().to_string(),
@@ -193,7 +194,8 @@ fn strangers(view: &View) -> Vec<Row> {
         .iter()
         .filter(|collector| Screen::showing(&collector.name).is_none())
         .map(|collector| Row {
-            opens: None,
+            opens: Screen::UNKNOWN,
+            opens_reading: Some(collector.name.clone()),
             number: None,
             name: collector.name.clone(),
             holds: NO_SCREEN.to_string(),

@@ -6,20 +6,20 @@ use crate::link::{Trouble, TroubleKind};
 use crate::ui::{Anchor, Reading, Refusal, Status, View};
 
 impl App {
-    pub(super) fn wanted_reading(&self) -> Option<&'static str> {
-        let collector = self.pane()?.reads();
+    pub(super) fn wanted_reading(&self) -> Option<String> {
+        let collector = self.pane()?.reads().to_string();
 
-        match self.view.switched_off(collector) {
+        match self.view.switched_off(&collector) {
             true => None,
             false => Some(collector),
         }
     }
 
-    pub(super) fn reading_needed(&self, anchor: &Anchor) -> Option<&'static str> {
+    pub(super) fn reading_needed(&self, anchor: &Anchor) -> Option<String> {
         self.section_of(anchor.screen)?
             .panes()
             .iter()
-            .map(|pane| pane.reads())
+            .map(|pane| pane.reads().to_string())
             .find(|collector| matches!(self.view.reading(collector), Reading::Unknown))
     }
 

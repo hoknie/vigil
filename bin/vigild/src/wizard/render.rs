@@ -119,6 +119,9 @@ const SUPPRESSIONS: &str = "\
 #
 #   - finding_key: \"port.listen|tcp|0.0.0.0:8080\"
 #     reason: the staging api, expected on this host
+#
+# `vigil suppress add \"<object>\" --reason \"...\"` writes one of these without editing this
+# file by hand, `vigil suppress list` reads them back, `vigil suppress remove` takes one out.
 suppressions: []
 ";
 

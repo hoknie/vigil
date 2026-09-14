@@ -17,20 +17,20 @@ const SORTED_BY: &[&str] = &["CONTAINER", "PROGRAM", "RUNTIME", "SYS_ADMIN", "HO
 pub(super) struct Contained;
 
 impl Pane for Contained {
-    fn name(&self) -> &'static str {
+    fn name(&self) -> &str {
         "containers"
     }
 
-    fn caption(&self) -> &'static str {
+    fn caption(&self) -> &str {
         "CONTAINERS AND SOCKETS"
     }
 
-    fn about(&self) -> &'static str {
+    fn about(&self) -> &str {
         "one row per container running on this host: what it may do, and what of this host it \
          holds"
     }
 
-    fn reads(&self) -> &'static str {
+    fn reads(&self) -> &str {
         "containers"
     }
 

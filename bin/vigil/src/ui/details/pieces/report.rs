@@ -51,7 +51,7 @@ pub fn report(pieces: &[Piece], acts: Acts, at: Option<usize>, look: Look, width
                 for line in suppression::entry(key, None) {
                     report.push(Line::raw(format!("   {line}")));
                 }
-                if key.chars().count() + 21 > width {
+                if suppression::widest(key, None) + 3 > width {
                     report.push(Line::styled(
                         "   widen the terminal before copying the key above".to_string(),
                         look.palette.alarm(),

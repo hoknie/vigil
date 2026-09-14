@@ -4,7 +4,7 @@ use super::{
     baselines, console, greeting, health, history, outgoing, policy, reporters, schedule, watches,
 };
 use crate::budget::Meter;
-use crate::helpers::{agent_finding, rfc3339};
+use crate::helpers::{absolute, agent_finding, rfc3339};
 use crate::loops::Round;
 use crate::socket::{Shared, State};
 use crate::types::{Delivery, Startup};
@@ -24,6 +24,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let shared = Shared::new(State::new(
         Startup {
             host: host.clone(),
+            configuration_path: absolute::of(config_path),
             started_at: rfc3339::now(),
             interval_seconds: config.every_seconds_by_default(),
             periods: schedule

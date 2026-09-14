@@ -1,4 +1,5 @@
 use super::group::Group;
+use crate::ui::screens::unknown;
 use crate::ui::{holding, sections};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -8,18 +9,26 @@ pub struct Screen {
 
 const NUMBERED: usize = 9;
 
-const OF_THE_CONSOLE: &[(&str, &str, &str)] = &[
+const OF_THE_CONSOLE: &[(&str, &str, &str, Group)] = &[
     (
         "home",
         "What this agent watches",
         "every section of this console",
+        Group::Concludes,
     ),
     (
         "summary",
         "This host and its agent",
         "this host and its agent",
+        Group::Concludes,
     ),
-    ("findings", "What the agent has found", "what it has found"),
+    (
+        "findings",
+        "What the agent has found",
+        "what it has found",
+        Group::Concludes,
+    ),
+    ("unknown", unknown::TITLE, unknown::HOLDS, Group::Reads),
 ];
 
 impl Default for Screen {
@@ -34,6 +43,8 @@ impl Screen {
     pub const SUMMARY: Screen = Screen { name: "summary" };
 
     pub const FINDINGS: Screen = Screen { name: "findings" };
+
+    pub const UNKNOWN: Screen = Screen { name: "unknown" };
 
     pub fn all() -> Vec<Screen> {
         let mut every: Vec<Screen> = sections()
@@ -53,37 +64,41 @@ impl Screen {
 
     pub fn title(self) -> &'static str {
         match self.of_the_console() {
-            Some((title, _)) => title,
+            Some((title, _, _)) => title,
             None => holding(self.name).map_or("", |section| section.title()),
         }
     }
 
     pub fn holds(self) -> &'static str {
         match self.of_the_console() {
-            Some((_, holds)) => holds,
+            Some((_, holds, _)) => holds,
             None => holding(self.name).map_or("", |section| section.holds()),
         }
     }
 
     pub fn group(self) -> Group {
         match self.of_the_console() {
-            Some(_) => Group::Concludes,
+            Some((_, _, group)) => group,
             None => Group::Reads,
         }
     }
 
-    pub fn collectors(self) -> Vec<&'static str> {
+    pub fn collectors(self) -> Vec<String> {
         let Some(section) = holding(self.name) else {
             return Vec::new();
         };
 
-        let mut named: Vec<&'static str> = Vec::new();
+        let mut named: Vec<String> = Vec::new();
         for pane in section.panes() {
-            if !named.contains(&pane.reads()) {
-                named.push(pane.reads());
+            if !named.iter().any(|already| already == pane.reads()) {
+                named.push(pane.reads().to_string());
             }
         }
         named
+    }
+
+    pub fn draws_a_reading(self) -> bool {
+        self.group() == Group::Reads
     }
 
     pub fn shows_what_has_gone(self) -> bool {
@@ -93,12 +108,16 @@ impl Screen {
     pub fn showing(collector: &str) -> Option<Screen> {
         Screen::all()
             .into_iter()
-            .find(|screen| screen.collectors().contains(&collector))
+            .find(|screen| screen.collectors().iter().any(|named| named == collector))
     }
 
     pub fn parse(name: &str) -> Option<Screen> {
-        if name == Screen::HOME.name {
-            return Some(Screen::HOME);
+        if let Some((of_the_console, _, _, _)) =
+            OF_THE_CONSOLE.iter().find(|(named, ..)| *named == name)
+        {
+            return Some(Screen {
+                name: of_the_console,
+            });
         }
         Screen::all()
             .into_iter()
@@ -129,11 +148,11 @@ impl Screen {
             .collect()
     }
 
-    fn of_the_console(self) -> Option<(&'static str, &'static str)> {
+    fn of_the_console(self) -> Option<(&'static str, &'static str, Group)> {
         OF_THE_CONSOLE
             .iter()
-            .find(|(name, _, _)| *name == self.name)
-            .map(|(_, title, holds)| (*title, *holds))
+            .find(|(name, ..)| *name == self.name)
+            .map(|(_, title, holds, group)| (*title, *holds, *group))
     }
 }
 
@@ -239,7 +258,7 @@ mod tests {
         for screen in Screen::all() {
             for collector in screen.collectors() {
                 assert_eq!(
-                    Screen::showing(collector),
+                    Screen::showing(&collector),
                     Some(screen),
                     "{collector} is claimed by two sections"
                 );

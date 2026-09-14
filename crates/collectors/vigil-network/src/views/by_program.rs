@@ -16,11 +16,11 @@ const HEADING: &str = "program|";
 pub(super) struct ByProgram;
 
 impl Pane for ByProgram {
-    fn name(&self) -> &'static str {
+    fn name(&self) -> &str {
         "by program"
     }
 
-    fn caption(&self) -> &'static str {
+    fn caption(&self) -> &str {
         "BY PROGRAM"
     }
 
@@ -28,12 +28,12 @@ impl Pane for ByProgram {
         "THE SELECTED ROW"
     }
 
-    fn about(&self) -> &'static str {
+    fn about(&self) -> &str {
         "one row per program, its sockets folded away under it; sockets with no resolved owner \
          are kept apart"
     }
 
-    fn reads(&self) -> &'static str {
+    fn reads(&self) -> &str {
         "ports"
     }
 

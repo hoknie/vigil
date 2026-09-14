@@ -4,14 +4,24 @@ use vigil_model::Severity;
 
 use crate::ui::helpers::words::text;
 use crate::ui::screens::findings::{Showing, keys, render};
-use crate::ui::{Audience, Filter, Look, Sorting, View, fixture};
+use crate::ui::{Audience, Dismissed, Filter, Look, Picked, Sorting, View, fixture};
+
+static NOTHING_PICKED: Picked = Picked::none();
+
+static NOTHING_DISMISSED: Dismissed = Dismissed::none();
 
 fn showing(filter: &Filter) -> Showing<'_> {
+    picking(filter, &NOTHING_PICKED, &NOTHING_DISMISSED)
+}
+
+fn picking<'a>(filter: &'a Filter, picked: &'a Picked, dismissed: &'a Dismissed) -> Showing<'a> {
     Showing {
         filter,
         cursor: 0,
         focused: true,
         sorting: Sorting::default(),
+        picked,
+        dismissed,
     }
 }
 
@@ -114,6 +124,32 @@ fn while_the_search_box_is_open_it_says_so_and_shows_what_is_in_it() {
     let page = drawn(&fixture::view(), &filter, 80);
 
     assert!(page.contains("search nc"), "{page}");
+}
+
+#[test]
+fn a_screen_emptied_by_what_this_console_silenced_does_not_read_as_a_quiet_host() {
+    let view = fixture::view();
+    let filter = Filter::default();
+    let mut dismissed = Dismissed::default();
+    dismissed.silence(["port.listen|tcp|0.0.0.0:4444".to_string()]);
+    let mut buffer = Buffer::empty(Rect::new(0, 0, 100, 20));
+    render(
+        &view,
+        fixture::look(),
+        &picking(&filter, &NOTHING_PICKED, &dismissed),
+        buffer.area,
+        &mut buffer,
+    );
+
+    let page = text::to_text(&buffer);
+    assert!(
+        !page.contains("Nothing has been raised"),
+        "three findings were raised and this console is hiding them: {page}"
+    );
+    assert!(page.contains("silenced from here"), "{page}");
+    assert!(page.contains("3 row(s) hidden here"), "{page}");
+    assert!(page.contains("Press u"), "{page}");
+    assert!(page.contains("0 shown of 3 held"), "{page}");
 }
 
 #[test]

@@ -11,11 +11,15 @@ impl App {
             cursor: self.nav.findings.at(),
             focused: self.level == crate::ui::Level::List,
             sorting: self.sorted(),
+            picked: &self.picked,
+            dismissed: &self.dismissed,
         }
     }
 
     pub(super) fn passing(&self) -> Vec<&Finding> {
-        let mut passing = self.filter.passing(&self.view.found.findings);
+        let mut passing = self
+            .dismissed
+            .keeping(self.filter.passing(&self.view.found.findings));
         findings::sort(&mut passing, self.sorted());
         passing
     }

@@ -16,18 +16,20 @@ use crate::ui::helpers::layout::split;
 use crate::ui::helpers::words::unreachable;
 use crate::ui::screens::{findings, home, pane, summary};
 use crate::ui::theme::caption;
-use crate::ui::{Arrows, Level, Screen, holding};
+use crate::ui::{Arrows, Level, Screen};
 
 const ROOM_FOR_THE_CURSOR: u16 = 8;
 
 impl App {
     pub fn draw(&self, area: Rect, buffer: &mut Buffer) {
+        let asking = self.asking().map(|asking| asking.line(area.width as usize));
         let body = frame::render(
             self.look,
             self.nav.at(),
             &self.view,
             frame::Hints {
                 typing: self.typing(),
+                asking: asking.as_deref(),
                 level: self.level,
                 message: self.message.as_deref(),
                 back: self.back(),
@@ -224,7 +226,7 @@ impl App {
         if let Some(area) = laid_out.list_caption {
             Paragraph::new(caption::render(
                 self.look,
-                self.list_caption(),
+                &self.list_caption(),
                 "",
                 match self.level {
                     Level::List => caption::Keys::Here,
@@ -263,7 +265,7 @@ impl App {
 
     pub(super) fn draw_list(&self, area: Rect, buffer: &mut Buffer) {
         match self.nav.at() {
-            screen if holding(screen.name()).is_some() => {
+            screen if screen.draws_a_reading() => {
                 if !self.look.interactive() && self.shown_panes().len() > 1 {
                     self.print_every_list(area, buffer);
                     return;
@@ -285,7 +287,7 @@ impl App {
 
     pub(super) fn draw_detail(&self, area: Rect, buffer: &mut Buffer) {
         match self.nav.at() {
-            screen if holding(screen.name()).is_some() => pieces::render(
+            screen if screen.draws_a_reading() => pieces::render(
                 &self.pane_detail(),
                 self.acts(),
                 self.button_at(),
@@ -298,23 +300,24 @@ impl App {
                 self.selected_finding(),
                 self.look,
                 self.nav.difference.top(),
+                self.picked.count(),
                 area,
                 buffer,
             ),
         }
     }
 
-    pub(super) fn list_caption(&self) -> &'static str {
+    pub(super) fn list_caption(&self) -> String {
         match self.nav.at() {
-            Screen::HOME => "SECTIONS",
-            screen if holding(screen.name()).is_some() => self.pane_caption(),
-            _ => "FINDINGS",
+            Screen::HOME => "SECTIONS".to_string(),
+            screen if screen.draws_a_reading() => self.pane_caption(),
+            _ => "FINDINGS".to_string(),
         }
     }
 
     pub(super) fn detail_caption(&self) -> &'static str {
         match self.nav.at() {
-            screen if holding(screen.name()).is_some() => self.pane_detail_caption(),
+            screen if screen.draws_a_reading() => self.pane_detail_caption(),
             _ => "THE SELECTED FINDING",
         }
     }
