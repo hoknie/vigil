@@ -3,7 +3,7 @@ use vigil_model::Severity;
 use super::App;
 
 use crate::ui::screens::findings;
-use crate::ui::{Choosing, Column, Level, Screen, Sorting};
+use crate::ui::{Choosing, Column, Level, Screen, Sorting, holding};
 
 const NOTHING_SORTS: &str =
     "Nothing on this screen sorts: it is one page, not a list of rows to put in an order.";

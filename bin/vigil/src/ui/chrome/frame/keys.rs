@@ -12,23 +12,14 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
         };
     }
 
-    for line in wanted(hints, screen) {
-        if line.chars().count() <= width as usize {
-            return line;
-        }
-    }
-    LAST_TWO.to_string()
-}
-
-fn wanted(hints: &Hints<'_>, screen: Screen) -> Vec<String> {
-    let mut lines = match hints.level {
-        _ if screen == Screen::HOME => vec![match hints.panel {
+    let long = match hints.level {
+        _ if screen == Screen::HOME => match hints.panel {
             true => " j/k ↑↓ a section · → or Enter open it · d close · 1-9 by number · ? keys"
                 .to_string(),
             false => " j/k ↑↓ a section · → or Enter open it · d details · 1-9 by number · ? keys"
                 .to_string(),
-        }],
-        Level::Menu => vec![format!(
+        },
+        Level::Menu => format!(
             " ←→ which list · ↓ into it · ↑ or Esc {} · ? keys · q quit",
             hints.back.named()
         ),
@@ -50,11 +41,16 @@ fn wanted(hints: &Hints<'_>, screen: Screen) -> Vec<String> {
             },
             hints.back.named()
         ),
-        Level::List if hints.panel && hints.marks => listing(hints, Room::Whole, CLOSE_THE_PANEL),
+        Level::List if hints.panel && hints.marks => {
+            listing(hints, Room::Whole, CLOSE_THE_PANEL, Picking::Unsaid)
+        }
         Level::List if hints.panel => {
             " j/k ↑↓ move · → detail · / search · ← or Esc close the panel · ? keys".to_string()
         }
-        Level::List => listing(hints, Room::Whole, hints.back.named()),
+        Level::List if screen == Screen::FINDINGS => {
+            listing(hints, Room::Whole, hints.back.named(), Picking::AndOne)
+        }
+        Level::List => listing(hints, Room::Whole, hints.back.named(), Picking::Unsaid),
     };
     let back = match hints.panel {
         true => CLOSE_THE_PANEL,
@@ -63,9 +59,11 @@ fn wanted(hints: &Hints<'_>, screen: Screen) -> Vec<String> {
 
     let offered = [
         Some(long),
+        picking(hints, screen, Picking::Runs),
+        picking(hints, screen, Picking::Unsaid),
         short(hints, screen),
-        Some(listing(hints, Room::Tight, back)),
-        Some(listing(hints, Room::Cramped, back)),
+        Some(listing(hints, Room::Tight, back, Picking::Unsaid)),
+        Some(listing(hints, Room::Cramped, back, Picking::Unsaid)),
     ];
     for line in offered.into_iter().flatten() {
         if line.chars().count() <= width as usize {
@@ -98,8 +96,29 @@ fn short(hints: &Hints<'_>, screen: Screen) -> Option<String> {
     }
 }
 
-fn listing(hints: &Hints<'_>, room: Room, back: &str) -> String {
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Picking {
+    AndOne,
+    Runs,
+    Unsaid,
+}
+
+fn picking(hints: &Hints<'_>, screen: Screen, picking: Picking) -> Option<String> {
+    match hints.level {
+        Level::List if screen == Screen::FINDINGS && !hints.panel => {
+            Some(listing(hints, Room::Whole, hints.back.named(), picking))
+        }
+        _ => None,
+    }
+}
+
+fn listing(hints: &Hints<'_>, room: Room, back: &str, picking: Picking) -> String {
     let mut line = String::from(" j/k ↑↓ move");
+    line.push_str(match picking {
+        Picking::AndOne => " · ⇧↑↓ pick · x one",
+        Picking::Runs => " · ⇧↑↓ pick",
+        Picking::Unsaid => "",
+    });
     if room != Room::Cramped {
         line.push_str(" · → detail");
     }

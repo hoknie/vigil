@@ -61,7 +61,10 @@ fn rows() -> Vec<(&'static str, &'static str)> {
         ),
         ("/", "search: every value the agent read about a row"),
         ("o", "the object a finding is about; Esc comes back to it"),
-        ("s / f", "put this list in order / narrow it"),
+        (
+            "s / f, shift ↑↓",
+            "sort/narrow; pick x, a all, d silence them, u undo",
+        ),
         (
             "t T u U X, a",
             "show / hide kinds of socket, or all (ports)",
@@ -127,7 +130,7 @@ mod tests {
             "o",
             "/",
             "s / f",
-            "shift/ctrl",
+            "shift",
             "d silence them",
             "Esc",
             "r",

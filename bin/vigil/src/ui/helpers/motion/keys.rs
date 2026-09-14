@@ -54,8 +54,6 @@ pub fn action(code: KeyCode, modifiers: KeyModifiers, typing: bool) -> Action {
         KeyCode::Left | KeyCode::Char('h') => Action::Sideways(-1),
         KeyCode::Down | KeyCode::Char('j') => Action::Move(Motion::Down),
         KeyCode::Up | KeyCode::Char('k') => Action::Move(Motion::Up),
-        KeyCode::Char('J') => Action::Pick(Motion::Down),
-        KeyCode::Char('K') => Action::Pick(Motion::Up),
         KeyCode::PageDown | KeyCode::Char(' ') => Action::Move(Motion::PageDown),
         KeyCode::PageUp => Action::Move(Motion::PageUp),
         KeyCode::Home | KeyCode::Char('g') => Action::Move(Motion::First),
@@ -207,14 +205,14 @@ mod tests {
     }
 
     #[test]
-    fn the_hand_that_never_leaves_the_letters_picks_a_run_as_well() {
-        assert_eq!(plain(KeyCode::Char('J')), Action::Pick(Motion::Down));
-        assert_eq!(plain(KeyCode::Char('K')), Action::Pick(Motion::Up));
-        assert_eq!(
-            action(KeyCode::Char('J'), KeyModifiers::SHIFT, false),
-            Action::Pick(Motion::Down),
-            "a terminal that reports the shift beside the capital must not mean something else"
-        );
+    fn the_capital_that_closes_a_socket_is_not_taken_over_by_picking() {
+        for modifiers in [KeyModifiers::NONE, KeyModifiers::SHIFT] {
+            assert_eq!(
+                action(KeyCode::Char(KILL), modifiers, false),
+                Action::Kill,
+                "a terminal that reports the shift beside the capital must not mean something else"
+            );
+        }
     }
 
     #[test]

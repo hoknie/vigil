@@ -1,6 +1,6 @@
 use super::App;
 
-use crate::ui::{Cursor, Level, Offset, Panes, Screen, Search};
+use crate::ui::{Cursor, Level, Offset, Panes, Screen, Search, holding};
 
 use super::marking::{MARK, SUPPRESS, UNMARK_EVERY};
 
@@ -33,6 +33,7 @@ impl App {
                 self.detail_open = !self.detail_open;
                 true
             }
+            Screen::FINDINGS => self.picking_key(key),
             screen if holding(screen.name()).is_some() => match key {
                 MARK => self.mark_under_the_cursor(),
                 UNMARK_EVERY => self.unmark_everything(),

@@ -5,7 +5,7 @@ use super::App;
 use crate::ui::details::pieces;
 use crate::ui::helpers::finding::diff;
 use crate::ui::helpers::layout::split;
-use crate::ui::{Level, Screen};
+use crate::ui::{Level, Screen, holding};
 
 impl App {
     pub(super) fn has_detail(&self) -> bool {

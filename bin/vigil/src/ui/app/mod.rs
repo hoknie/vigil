@@ -26,7 +26,10 @@ use ratatui::layout::Rect;
 use crate::link::Link;
 use std::collections::BTreeMap;
 
-use crate::ui::{Chooser, Filter, Gone, Level, Look, Nav, Paper, Screen, Sorting, View, Picked, Dismissed, Asking};
+use crate::ui::{
+    Asking, Chooser, Dismissed, Filter, Gone, Level, Look, Nav, Paper, Picked, Screen, Sorting,
+    View,
+};
 
 pub use killing::KILL;
 

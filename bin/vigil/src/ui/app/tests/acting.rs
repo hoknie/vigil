@@ -438,7 +438,7 @@ fn the_findings_screen_is_left_as_it_was_because_nothing_on_it_can_be_closed() {
     let page = drawn_at(&app, 120, 40);
 
     assert!(page.contains("SUPPRESS"), "{page}");
-    for button in ["ACTIONS", "[ x mark ]", "[ K close ]"] {
+    for button in ["[ x mark ]", "[ K close ]"] {
         assert!(
             !page.contains(button),
             "a finding is not a socket: {button} is on a screen it does not belong to: {page}"
