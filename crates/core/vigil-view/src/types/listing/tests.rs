@@ -89,6 +89,18 @@ fn keys(index: &Index, at: &[usize]) -> Vec<String> {
 }
 
 #[test]
+fn an_index_that_recorded_no_facet_narrows_nothing_because_its_list_ignores_them() {
+    let only = vec![Facet::new("user", "root")];
+
+    assert_eq!(
+        index().narrowed(&only),
+        None,
+        "a list without facets shows every row whatever facet is kept for it, so its index must \
+         not narrow them away"
+    );
+}
+
+#[test]
 fn a_search_finds_exactly_the_rows_whose_text_holds_it_whatever_the_case() {
     let index = index();
 

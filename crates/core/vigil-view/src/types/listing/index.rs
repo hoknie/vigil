@@ -12,6 +12,7 @@ pub struct Index {
     columns: usize,
     postings: BTreeMap<char, Vec<usize>>,
     facets: BTreeMap<&'static str, BTreeMap<String, Vec<usize>>>,
+    faceted: bool,
     ranks: Vec<[OnceLock<Vec<usize>>; 2]>,
 }
 
@@ -25,6 +26,7 @@ impl Index {
             columns,
             postings: BTreeMap::new(),
             facets: BTreeMap::new(),
+            faceted: false,
             ranks: (0..columns)
                 .map(|_| [OnceLock::new(), OnceLock::new()])
                 .collect(),
@@ -49,6 +51,7 @@ impl Index {
     }
 
     pub fn faceted(&mut self, facets: Vec<Facet>) {
+        self.faceted = true;
         let Some(at) = self.rows.len().checked_sub(1) else {
             return;
         };
@@ -66,6 +69,9 @@ impl Index {
     }
 
     pub fn narrowed(&self, only: &[Facet]) -> Option<Vec<usize>> {
+        if !self.faceted {
+            return None;
+        }
         let mut chosen: Vec<&[usize]> = only
             .iter()
             .enumerate()

@@ -70,9 +70,10 @@ impl Pane for Launches {
                 group,
                 sorted_on(item),
             );
-            if !marked(key) {
-                index.faceted(launches::facets_of(item));
-            }
+            index.faceted(match marked(key) {
+                true => Vec::new(),
+                false => launches::facets_of(item),
+            });
         }
         Some(index)
     }

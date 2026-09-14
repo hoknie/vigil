@@ -2,6 +2,7 @@ mod answers;
 mod deeds;
 mod drawing;
 mod harness;
+mod lag;
 mod narrowing;
 mod navigation;
 mod readings;
