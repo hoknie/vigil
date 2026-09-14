@@ -1,7 +1,10 @@
+use std::collections::BTreeSet;
+
 use vigil_model::Snapshot;
 use vigil_view::{Showing, time_of_day};
 
-use super::rows::{nested, parents_of, rows};
+use super::rows::{nested, rows};
+use super::tree::tree;
 use crate::types::{Kind, List};
 
 pub(super) fn tally(reading: &Snapshot, list: List, showing: &Showing<'_>) -> String {
@@ -11,8 +14,9 @@ pub(super) fn tally(reading: &Snapshot, list: List, showing: &Showing<'_>) -> St
         .filter(|key| List::holding(key) == list && !Kind::of(key).mark())
         .count();
     let whole = reading.items.len();
-    let shown = rows(reading, list, showing)
-        .into_iter()
+    let listed = rows(reading, list, showing);
+    let shown = listed
+        .iter()
         .filter(|row| !Kind::of(&row.key).mark())
         .count();
 
@@ -29,11 +33,12 @@ pub(super) fn tally(reading: &Snapshot, list: List, showing: &Showing<'_>) -> St
         ),
     }];
 
-    if nested(list, showing)
-        && rows(reading, list, showing)
+    if nested(list, showing) && {
+        let keys: BTreeSet<&str> = listed.iter().map(|row| row.key.as_str()).collect();
+        tree(&reading.items)
             .iter()
-            .any(|row| parents_of(&reading.items, &row.key) > 1)
-    {
+            .any(|placed| placed.parents > 1 && keys.contains(placed.key.as_str()))
+    } {
         parts.push("+N means N more pull it in".to_string());
     }
 

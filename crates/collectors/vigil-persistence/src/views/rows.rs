@@ -4,6 +4,7 @@ use serde_json::Value;
 use vigil_model::Snapshot;
 use vigil_view::{Emphasis, RowKey, Showing};
 
+use super::parents::parents;
 use super::tree::{Placed, tree};
 use crate::types::{Kind, List};
 
@@ -40,11 +41,7 @@ pub(super) fn nested(list: List, showing: &Showing<'_>) -> bool {
 }
 
 pub(super) fn parents_of(items: &BTreeMap<String, Value>, key: &str) -> usize {
-    tree(items)
-        .into_iter()
-        .find(|placed| placed.key == key)
-        .map(|placed| placed.parents)
-        .unwrap_or_default()
+    parents(items, key)
 }
 
 fn row_of(placed: Placed) -> RowKey {

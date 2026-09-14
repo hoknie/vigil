@@ -110,6 +110,44 @@ fn what_the_detail_of_an_account_says_is_what_a_reader_can_act_on() {
 }
 
 #[test]
+fn a_sudo_grant_reaches_the_accounts_whose_own_grants_name_it_and_no_others() {
+    let mut reading = users();
+    reading.items.insert(
+        "sudoer|contractor".into(),
+        serde_json::json!({"who": "contractor", "rules": [
+            {"source": "/etc/sudoers.d/contractor", "spec": "ALL=(root) /usr/bin/id"}
+        ]}),
+    );
+    let sudo = panes()
+        .into_iter()
+        .find(|pane| pane.name() == "sudo")
+        .expect("the sudo pane");
+
+    for row in sudo.rows(&reading, &Showing::default()) {
+        let who = reading.items[&row.key]["who"]
+            .as_str()
+            .expect("a grant names who");
+        let said = format!("{:?}", sudo.detail(&reading, &row, 80));
+        for (key, account) in reading
+            .items
+            .iter()
+            .filter(|(key, _)| key.starts_with("account|"))
+        {
+            let name = account["name"].as_str().expect("an account has a name");
+            let through_its_grants = crate::views::facts::sudo_for(&reading, name)
+                .iter()
+                .any(|(_, grant)| grant["who"].as_str() == Some(who));
+            assert_eq!(
+                said.contains(&format!("name: \"account\", value: \"{name}\" }}")),
+                through_its_grants,
+                "{who} and {key}: the grant is drawn from the group it names, and it must reach \
+                 exactly the accounts whose own row says the grant reaches them: {said}"
+            );
+        }
+    }
+}
+
+#[test]
 fn a_pane_finds_the_row_a_finding_is_about_without_a_table_in_the_console() {
     let reading = users();
     let groups = panes()

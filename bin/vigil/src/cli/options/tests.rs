@@ -1,6 +1,11 @@
 use clap::{CommandFactory, Parser};
 
-use super::options::*;
+use super::cli::Cli;
+use super::command::Command;
+use super::console::{Console, DEFAULT_SOCKET};
+use super::moved::{CAPTURE_MOVED, CONFIGURE_LIVES_IN_THE_DAEMON, UI_MOVED, the_old_shape};
+use super::opening::Opening;
+use super::ui::Ui;
 use crate::ui::Screen;
 use crate::ui::fixture::screen;
 

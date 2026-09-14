@@ -141,22 +141,24 @@ pub fn render(
     } else {
         let widths = constraints(&pane.columns(room), marking);
         let fitted = listing::column_widths(look, &widths, table);
+        let draw = |at: usize| {
+            drawn(
+                pane.as_ref(),
+                snapshot,
+                &rows[at],
+                room,
+                &fitted,
+                marking,
+                showing,
+            )
+        };
         listing::render(
             look,
             header(&pane.columns(room), marking),
-            rows.iter()
-                .map(|row| {
-                    drawn(
-                        pane.as_ref(),
-                        snapshot,
-                        row,
-                        room,
-                        &fitted,
-                        marking,
-                        showing,
-                    )
-                })
-                .collect(),
+            listing::Rows {
+                total: rows.len(),
+                drawn: &draw,
+            },
             &widths,
             listing::Where {
                 at: showing.cursor,

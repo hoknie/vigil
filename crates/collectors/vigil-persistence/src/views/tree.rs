@@ -11,9 +11,9 @@ pub(super) struct Placed {
     pub parents: usize,
 }
 
-const PULLED_IN_BY: &[&str] = &["wanted_by", "required_by", "part_of"];
+pub(super) const PULLED_IN_BY: &[&str] = &["wanted_by", "required_by", "part_of"];
 
-const PULLS_IN: &[&str] = &["wants", "requires"];
+pub(super) const PULLS_IN: &[&str] = &["wants", "requires"];
 
 pub(super) fn tree(items: &BTreeMap<String, Value>) -> Vec<Placed> {
     let units: BTreeSet<&String> = items

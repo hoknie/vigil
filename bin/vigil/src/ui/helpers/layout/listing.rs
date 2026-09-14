@@ -40,10 +40,16 @@ pub struct Where {
     pub focused: bool,
 }
 
+#[derive(Clone, Copy)]
+pub struct Rows<'a> {
+    pub total: usize,
+    pub drawn: &'a dyn Fn(usize) -> Row<'static>,
+}
+
 pub fn render(
     look: Look,
     header: Row<'static>,
-    rows: Vec<Row<'static>>,
+    rows: Rows<'_>,
     widths: &[Constraint],
     cursor: Where,
     area: Rect,
@@ -54,14 +60,16 @@ pub fn render(
     }
 
     let page = area.height.saturating_sub(1) as usize;
-    let total = rows.len();
+    let total = rows.total;
     let gutter = match look.interactive() {
         true => GUTTER.min(area.width),
         false => 0,
     };
     let first = scroll::window(cursor.at, total, page);
+    let on_the_screen: Vec<Row<'static>> =
+        (first..(first + page).min(total)).map(rows.drawn).collect();
 
-    let table = Table::new(rows, widths.to_vec())
+    let table = Table::new(on_the_screen, widths.to_vec())
         .header(header.style(look.palette.quiet()))
         .column_spacing(1)
         .row_highlight_style(match cursor.focused {
@@ -75,9 +83,9 @@ pub fn render(
         .highlight_spacing(HighlightSpacing::Always);
 
     let mut state = TableState::new()
-        .with_offset(first)
+        .with_offset(0)
         .with_selected(match look.interactive() {
-            true => Some(cursor.at),
+            true => Some(cursor.at.saturating_sub(first)),
             false => None,
         });
 
@@ -117,10 +125,50 @@ mod tests {
     use crate::ui::helpers::words::text;
     use crate::ui::{Audience, Look, fixture};
 
-    fn rows(count: usize) -> Vec<Row<'static>> {
-        (0..count)
-            .map(|number| Row::new(vec![format!("row {number}")]))
-            .collect()
+    fn row(number: usize) -> Row<'static> {
+        Row::new(vec![format!("row {number}")])
+    }
+
+    fn rows(count: usize) -> Rows<'static> {
+        Rows {
+            total: count,
+            drawn: &row,
+        }
+    }
+
+    #[test]
+    fn only_the_rows_on_the_screen_are_built_however_long_the_list_is() {
+        let built = std::cell::Cell::new(0usize);
+        let counted = |number: usize| {
+            built.set(built.get() + 1);
+            row(number)
+        };
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 24, 8));
+
+        render(
+            fixture::look(),
+            Row::new(vec!["NAME"]),
+            Rows {
+                total: 10_000,
+                drawn: &counted,
+            },
+            &[Constraint::Fill(1)],
+            Where {
+                at: 9_000,
+                focused: true,
+            },
+            buffer.area,
+            &mut buffer,
+        );
+
+        assert!(
+            built.get() <= 7,
+            "{} rows were built for a screen that shows seven: the cells of a row can cost a \
+             walk over the whole reading, and building every row of a long list on every \
+             keypress is the lag a person feels on a list of four hundred",
+            built.get()
+        );
+        assert!(text::to_text(&buffer).contains("row 9000"));
     }
 
     fn drawn(look: Look, count: usize, cursor: usize, height: u16) -> String {

@@ -6,6 +6,7 @@ mod fields;
 mod lists;
 mod notices;
 mod pane;
+mod parents;
 mod rows;
 mod section;
 mod tally;
