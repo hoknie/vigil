@@ -12,6 +12,7 @@ Format:
 - `findings` now can suppress from ui
 - picking rows on the findings screen
 - sockets can be killed and suppressed
+- programs can be killed
 - detail pane not grab auto focus
 - the start-up lines say whether the console of this host may ask the agent to close a socket,
   and name the key that decides it

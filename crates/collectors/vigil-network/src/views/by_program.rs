@@ -1,5 +1,5 @@
 use serde_json::Value;
-use vigil_model::Snapshot;
+use vigil_model::{KillTarget, Snapshot};
 use vigil_view::basename;
 use vigil_view::{Cell, Column, Notice, Offers, Pane, Piece, Room, RowKey, Showing, Toggle, Width};
 
@@ -137,7 +137,7 @@ impl Pane for ByProgram {
     }
 
     fn offers(&self) -> Offers {
-        Offers::default().sorted(false).marked(true)
+        Offers::default().sorted(false).killed(KillTarget::Socket)
     }
 }
 

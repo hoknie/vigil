@@ -21,7 +21,10 @@ pub fn listen(config: &Config, schedule: &Schedule, shared: &Shared) -> Result<(
 
 fn killing(config: &Config) -> &'static str {
     match config.killing.from_the_console {
-        true => "may ask this agent to close a listening socket (killing.from_the_console)",
+        true => {
+            "may ask this agent to stop a program or close a listening socket \
+             (killing.from_the_console)"
+        }
         false => "reads, and asks for nothing (killing.from_the_console is off)",
     }
 }
@@ -41,7 +44,8 @@ mod tests {
         };
 
         assert!(
-            killing(&armed).contains("close a listening socket"),
+            killing(&armed).contains("close a listening socket")
+                && killing(&armed).contains("stop a program"),
             "an operator reading the start-up of a host where the console can stop a service \
              must be told so there, not in the file they did not open"
         );

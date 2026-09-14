@@ -223,7 +223,9 @@
             "agent.store.damaged",
             "agent.receiver_refused",
             "agent.socket.killed",
-            "agent.socket.kill_refused"
+            "agent.socket.kill_refused",
+            "agent.process.killed",
+            "agent.process.kill_refused"
           ]
         },
         "severity": {

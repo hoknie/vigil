@@ -34,6 +34,30 @@ impl Killing {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum KillTarget {
+    #[default]
+    Socket,
+    Program,
+}
+
+impl KillTarget {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            KillTarget::Socket => "socket",
+            KillTarget::Program => "program",
+        }
+    }
+
+    pub fn ways(self) -> &'static [Killing] {
+        match self {
+            KillTarget::Socket => Killing::ALL,
+            KillTarget::Program => &[Killing::Terminate, Killing::Kill],
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Killed {
     pub key: String,
@@ -77,6 +101,8 @@ impl Killed {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct KillReport {
+    #[serde(default)]
+    pub target: KillTarget,
     pub killing: Killing,
     pub acted_at: Rfc3339,
     pub killed: Vec<Killed>,
@@ -111,6 +137,32 @@ mod tests {
     }
 
     #[test]
+    fn a_program_is_never_offered_a_way_that_only_a_socket_has() {
+        assert_eq!(KillTarget::Socket.ways(), Killing::ALL);
+        assert!(
+            !KillTarget::Program.ways().contains(&Killing::Destroy),
+            "a program has no socket to close, and a way that answers every row with a \
+             refusal is a way that should not be on the band"
+        );
+        assert!(
+            KillTarget::Program
+                .ways()
+                .iter()
+                .all(|killing| killing.touches_the_process())
+        );
+    }
+
+    #[test]
+    fn a_report_from_an_agent_older_than_programs_is_read_as_a_report_about_sockets() {
+        let report: KillReport = serde_json::from_str(
+            "{\"killing\":\"terminate\",\"acted_at\":\"2026-09-14T10:00:00.000Z\",\"killed\":[]}",
+        )
+        .expect("reads");
+
+        assert_eq!(report.target, KillTarget::Socket);
+    }
+
+    #[test]
     fn a_way_of_killing_round_trips_through_the_wire_name_it_is_asked_by() {
         for killing in Killing::ALL {
             let line = serde_json::to_string(killing).expect("serialises");
@@ -124,6 +176,7 @@ mod tests {
     #[test]
     fn a_refusal_carries_the_key_it_refused_and_the_reason_rather_than_being_left_out() {
         let report = KillReport {
+            target: KillTarget::Socket,
             killing: Killing::Destroy,
             acted_at: "2026-09-14T10:00:00.000Z".into(),
             killed: vec![

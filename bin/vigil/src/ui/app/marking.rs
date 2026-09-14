@@ -13,10 +13,10 @@ pub const UNMARK_EVERY: char = 'M';
 pub const SUPPRESS: char = 'S';
 
 const NOTHING_TO_MARK: &str = "Nothing on this list is marked with a key: marking is offered where the console can act \
-     on a row, which today is the sockets of this host.";
+     on a row, which today is the sockets and the running programs of this host.";
 
-const NOTHING_IS_MARKED: &str = "Nothing is marked. Press x on a row, or on a program to take \
-                                 every socket under it.";
+const NOTHING_IS_MARKED: &str = "Nothing is marked. Press x on a row; on a program of the ports \
+                                 screen it takes every socket under it.";
 
 impl App {
     pub(super) fn acts(&self) -> Acts {
@@ -24,7 +24,7 @@ impl App {
             .pane_row_under_the_cursor()
             .is_some_and(|row| row.of_the_reading);
 
-        Acts::of_a_row(self.marking_offered() && on_a_row)
+        Acts::of_a_row(self.kill_target().filter(|_| on_a_row))
     }
 
     pub(super) fn buttons_here(&self) -> usize {

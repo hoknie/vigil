@@ -1,9 +1,26 @@
 use vigil_model::Severity;
+use vigil_view::Facet;
 
 use super::App;
 
 use crate::ui::screens::findings;
-use crate::ui::{Choosing, Column, Level, Screen, Sorting, holding};
+use crate::ui::{Choosing, Column, Level, Reading, Screen, Sorting, holding};
+
+pub(super) enum Narrowing {
+    Everything,
+    Only(Facet),
+    Any(&'static str),
+}
+
+impl Narrowing {
+    pub(super) fn said(&self) -> String {
+        match self {
+            Narrowing::Everything => "everything".to_string(),
+            Narrowing::Only(facet) => format!("only {} {}", facet.name, facet.value),
+            Narrowing::Any(name) => format!("any {name}"),
+        }
+    }
+}
 
 const NOTHING_SORTS: &str =
     "Nothing on this screen sorts: it is one page, not a list of rows to put in an order.";
@@ -66,11 +83,18 @@ impl App {
     fn narrowing_a_list(&mut self) {
         let kinds = self.pane_kinds();
         if kinds.is_empty() {
-            self.message = Some(
-                "This list has one kind of row in it and nothing to narrow it to. Press / to \
-                 search it."
-                    .to_string(),
-            );
+            let facets = self.facets_offered();
+            if facets.is_empty() {
+                self.message = Some(
+                    "This list has one kind of row in it and nothing to narrow it to. Press / \
+                     to search it."
+                        .to_string(),
+                );
+                return;
+            }
+            let offered = facets.iter().map(Narrowing::said).collect();
+            self.chooser.open(Choosing::Filter, offered, 0);
+            self.level = Level::List;
             return;
         }
         let at = kinds
@@ -79,6 +103,42 @@ impl App {
             .unwrap_or(0);
         self.chooser.open(Choosing::Filter, kinds, at);
         self.level = Level::List;
+    }
+
+    pub(super) fn facets_offered(&self) -> Vec<Narrowing> {
+        let (Some(pane), Some(panes)) = (self.pane(), self.panes()) else {
+            return Vec::new();
+        };
+        let Reading::Taken(snapshot) = self.view.reading(pane.reads()) else {
+            return Vec::new();
+        };
+        let under = self
+            .pane_row_under_the_cursor()
+            .map(|row| pane.facets(snapshot, &row))
+            .unwrap_or_default();
+        let chosen = panes.only();
+        if under.is_empty() && chosen.is_empty() {
+            return Vec::new();
+        }
+
+        let mut offered = vec![Narrowing::Everything];
+        offered.extend(under.into_iter().map(Narrowing::Only));
+        offered.extend(chosen.iter().map(|facet| Narrowing::Any(facet.name)));
+        offered
+    }
+
+    fn narrowed_to_a_facet(&mut self, at: usize) {
+        let Some(chosen) = self.facets_offered().into_iter().nth(at) else {
+            return;
+        };
+        let Some(panes) = self.panes_mut() else {
+            return;
+        };
+        match chosen {
+            Narrowing::Everything => panes.narrow_to_nothing(),
+            Narrowing::Only(facet) => panes.narrow_to(facet),
+            Narrowing::Any(name) => panes.widen_facet(name),
+        }
     }
 
     pub(super) fn pane_kinds(&self) -> Vec<String> {
@@ -157,12 +217,15 @@ impl App {
                 self.sorting.insert(screen, Sorting::of(at));
                 self.list_cursor_to_the_top();
             }
-            Choosing::Kill => {
-                self.chose_a_way_of_killing(at);
+            Choosing::Kill(target) => {
+                self.chose_a_way_of_killing(target, at);
                 return;
             }
             Choosing::Filter if holding(self.nav.at().name()).is_some() => {
-                self.narrowed_a_list_to(at);
+                match self.pane_kinds().is_empty() {
+                    true => self.narrowed_to_a_facet(at),
+                    false => self.narrowed_a_list_to(at),
+                }
                 self.list_cursor_to_the_top();
             }
             Choosing::Filter => {

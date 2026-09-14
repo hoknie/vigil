@@ -1,4 +1,4 @@
-use vigil_model::Snapshot;
+use vigil_model::{KillTarget, Snapshot};
 use vigil_view::{
     Cell, Column, Notice, Offers, Pane, Piece, Room, RowKey, Showing, Sorting, Toggle, Width,
     basename,
@@ -98,7 +98,7 @@ impl Pane for Flat {
     }
 
     fn offers(&self) -> Offers {
-        Offers::default().marked(true)
+        Offers::default().killed(KillTarget::Socket)
     }
 }
 

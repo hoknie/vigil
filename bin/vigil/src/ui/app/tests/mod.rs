@@ -9,6 +9,7 @@ mod levels;
 mod motion;
 mod narrowing;
 mod picking;
+mod programs;
 mod readings;
 mod sections;
 mod sorting;

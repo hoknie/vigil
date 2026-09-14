@@ -1,8 +1,10 @@
+use vigil_model::KillTarget;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Choosing {
     Sort,
     Filter,
-    Kill,
+    Kill(KillTarget),
 }
 
 impl Choosing {
@@ -10,12 +12,13 @@ impl Choosing {
         match self {
             Choosing::Sort => "sort by",
             Choosing::Filter => "show only",
-            Choosing::Kill => "close them by",
+            Choosing::Kill(KillTarget::Socket) => "close them by",
+            Choosing::Kill(KillTarget::Program) => "stop them by",
         }
     }
 
     pub fn asks_before_acting(self) -> bool {
-        matches!(self, Choosing::Kill)
+        matches!(self, Choosing::Kill(_))
     }
 }
 
@@ -92,7 +95,7 @@ mod tests {
     fn a_band_opened_by_key_answers_to_the_letters_it_draws_and_to_no_other() {
         let mut chooser = Chooser::default();
         chooser.open_by_key(
-            Choosing::Kill,
+            Choosing::Kill(KillTarget::Socket),
             vec![
                 ('S', "stop the program".into()),
                 ('K', "kill it".into()),
@@ -156,7 +159,8 @@ mod tests {
     #[test]
     fn the_one_band_whose_enter_changes_this_host_is_named_and_the_others_are_not() {
         assert!(
-            Choosing::Kill.asks_before_acting(),
+            Choosing::Kill(KillTarget::Socket).asks_before_acting()
+                && Choosing::Kill(KillTarget::Program).asks_before_acting(),
             "there is no second band after this one: choosing how is choosing to do it, so \
              this band is where the line at the foot has to say what Enter costs"
         );

@@ -43,6 +43,21 @@ fn a_pane_whose_filter_nobody_has_touched_is_shown_whole_rather_than_shown_empty
 }
 
 #[test]
+fn a_list_narrowed_to_a_value_names_the_value_and_counts_as_holding_rows_back() {
+    let only = [Facet::new("user", "alice")];
+    let showing = Showing::default().narrowing(&only);
+
+    assert_eq!(showing.only("user"), Some("alice"));
+    assert_eq!(showing.only("program"), None);
+    assert!(
+        showing.holding_back(),
+        "a footer that says 12 launch(es) over a list of three, because nobody typed a \
+         search, is a footer that lies about what the reader is looking at"
+    );
+    assert!(!Showing::default().holding_back());
+}
+
+#[test]
 fn every_column_is_offered_both_ways_round_and_the_choice_comes_back_the_same() {
     for chosen in 0..7 {
         assert_eq!(Sorting::of(chosen).chosen(), chosen);

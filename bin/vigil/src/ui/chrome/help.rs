@@ -73,7 +73,7 @@ fn rows() -> Vec<(&'static str, &'static str)> {
             "t / d",
             "units as a tree (startup); a section's words (main)",
         ),
-        ("", "ON THE SOCKETS OF THIS HOST"),
+        ("", "ON THE SOCKETS AND THE RUNNING PROGRAMS OF THIS HOST"),
         (
             "\u{2192} \u{2192} \u{2192}",
             "a program opens \u{b7} the panel \u{b7} the arrows move in",
@@ -82,19 +82,25 @@ fn rows() -> Vec<(&'static str, &'static str)> {
             "x / M",
             "mark the row (a program takes all of it) / unmark all",
         ),
-        ("K / S", "close it, or everything marked / its suppressions"),
+        (
+            "K / S",
+            "close or stop it, or all marked / its suppressions",
+        ),
         (
             "",
             "THE LISTS OF A SECTION: \u{2190} \u{2192} along them, \u{2193} into one",
         ),
-        ("", "  ports: sockets \u{b7} by program"),
+        (
+            "",
+            "  ports: sockets \u{b7} by program   \u{b7}   system: the host \u{b7} watched files",
+        ),
         (
             "",
             "  accounts: users \u{b7} groups \u{b7} sudo \u{b7} keys \u{b7} ssh users \u{b7} logged in",
         ),
         (
             "",
-            "  programs: running \u{b7} launches   \u{b7}   system: the host \u{b7} watched files",
+            "  programs: running \u{b7} launches (f: its person or its program)",
         ),
         (
             "",
@@ -152,7 +158,7 @@ mod tests {
         assert!(page.contains("comes back to it"), "{page}");
         assert!(page.contains("any key closes this"), "{page}");
         assert!(
-            page.contains("close it, or everything marked"),
+            page.contains("close or stop it, or all marked"),
             "the one key on this console that changes the host has to say what it takes, \
              where the keys are listed: {page}"
         );
@@ -205,6 +211,12 @@ mod tests {
         let page = text::to_text(&buffer);
         assert!(page.contains("? / q"), "the last group is cut off: {page}");
         assert!(page.contains("startup:"), "{page}");
+        assert!(
+            page.contains("f: its person or its program"),
+            "the launches narrow by the row under the cursor, and a key that does that only \
+             on one list is looked up here or not found at all: {page}"
+        );
+        assert!(page.contains("system: the host"), "{page}");
     }
 
     #[test]

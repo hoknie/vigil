@@ -1,7 +1,7 @@
 use serde_json::json;
 use vigil_model::{
-    Evidence, Finding, KillReport, Killed, Killing, Kind, KnownKind, Rfc3339, Severity, State,
-    Subject,
+    Evidence, Finding, KillReport, KillTarget, Killed, Killing, Kind, KnownKind, Rfc3339, Severity,
+    State, Subject,
 };
 
 use super::targets::Target;
@@ -21,11 +21,8 @@ pub fn findings(report: &KillReport, mint: &mut dyn FnMut() -> String) -> Vec<Fi
 fn told(killed: &Killed, report: &KillReport, event_id: String) -> Finding {
     Finding {
         event_id,
-        finding_key: format!("agent.socket.kill|{}", killed.key),
-        kind: Kind::Known(match killed.done {
-            true => KnownKind::AgentSocketKilled,
-            false => KnownKind::AgentSocketKillRefused,
-        }),
+        finding_key: format!("{}|{}", family(report.target), killed.key),
+        kind: Kind::Known(kind(report.target, killed.done)),
         severity: match killed.done {
             true => Severity::High,
             false => Severity::Low,
@@ -34,9 +31,9 @@ fn told(killed: &Killed, report: &KillReport, event_id: String) -> Finding {
         observed_at: report.acted_at.clone(),
         first_seen_at: report.acted_at.clone(),
         occurrences: 1,
-        title: title(killed, report.killing),
+        title: title(killed, report.target, report.killing),
         subject: Subject {
-            object: "socket".into(),
+            object: report.target.as_str().into(),
             key: json!({ "object": killed.key }),
         },
         before: None,
@@ -48,20 +45,40 @@ fn told(killed: &Killed, report: &KillReport, event_id: String) -> Finding {
     }
 }
 
-fn title(killed: &Killed, killing: Killing) -> String {
+fn family(target: KillTarget) -> &'static str {
+    match target {
+        KillTarget::Socket => "agent.socket.kill",
+        KillTarget::Program => "agent.process.kill",
+    }
+}
+
+fn kind(target: KillTarget, done: bool) -> KnownKind {
+    match (target, done) {
+        (KillTarget::Socket, true) => KnownKind::AgentSocketKilled,
+        (KillTarget::Socket, false) => KnownKind::AgentSocketKillRefused,
+        (KillTarget::Program, true) => KnownKind::AgentProcessKilled,
+        (KillTarget::Program, false) => KnownKind::AgentProcessKillRefused,
+    }
+}
+
+fn title(killed: &Killed, target: KillTarget, killing: Killing) -> String {
     let who = match (&killed.program, killed.pid) {
         (Some(program), Some(pid)) => format!("{program} (pid {pid})"),
         (None, Some(pid)) => format!("pid {pid}"),
         _ => "an unidentified process".to_string(),
     };
+    let (did, asked) = match target {
+        KillTarget::Socket => ("closed", "close"),
+        KillTarget::Program => ("stopped", "stop"),
+    };
     match killed.done {
         true => format!(
-            "An operator closed {} at this console: {} on {who}",
+            "An operator {did} {} at this console: {} on {who}",
             killed.key,
             killing.said()
         ),
         false => format!(
-            "An operator asked this console to close {} and the agent did not: {}",
+            "An operator asked this console to {asked} {} and the agent did not: {}",
             killed.key, killed.said
         ),
     }
@@ -95,7 +112,12 @@ mod tests {
     use super::*;
 
     fn report(killed: Vec<Killed>) -> KillReport {
+        report_about(KillTarget::Socket, killed)
+    }
+
+    fn report_about(target: KillTarget, killed: Vec<Killed>) -> KillReport {
         KillReport {
+            target,
             killing: Killing::Terminate,
             acted_at: "2026-09-14T10:00:00.000Z".into(),
             killed,
@@ -134,6 +156,36 @@ mod tests {
             "a kill asked for and not carried out is the same question at an incident as one \
              that was, and a journal that records only the successes answers it wrongly"
         );
+    }
+
+    #[test]
+    fn a_stopped_program_is_its_own_kind_under_its_own_key_and_not_a_socket_that_was_closed() {
+        let mut mint = mint();
+        let raised = findings(
+            &report_about(
+                KillTarget::Program,
+                vec![
+                    Killed::done(
+                        "exec|/tmp/.x/nc|www-data",
+                        9001,
+                        Some("/tmp/.x/nc".into()),
+                        "SIGTERM sent to 1 process(es): 9001",
+                    ),
+                    Killed::refused("exec|/lib/systemd/systemd|root", "pid 1 runs it"),
+                ],
+            ),
+            &mut mint,
+        );
+
+        assert_eq!(raised[0].kind.as_str(), "agent.process.killed");
+        assert_eq!(raised[1].kind.as_str(), "agent.process.kill_refused");
+        assert_eq!(
+            raised[0].finding_key,
+            "agent.process.kill|exec|/tmp/.x/nc|www-data"
+        );
+        assert_eq!(raised[0].subject.object, "program");
+        assert!(raised[0].title.contains("stopped"), "{}", raised[0].title);
+        assert!(raised[1].title.contains("to stop"), "{}", raised[1].title);
     }
 
     #[test]

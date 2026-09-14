@@ -40,8 +40,11 @@ impl App {
                     .choosing()
                     .is_some_and(crate::ui::Choosing::asks_before_acting),
                 sorts: !self.sortable().is_empty(),
-                filters: self.nav.at() == Screen::FINDINGS || !self.pane_kinds().is_empty(),
+                filters: self.nav.at() == Screen::FINDINGS
+                    || !self.pane_kinds().is_empty()
+                    || !self.facets_offered().is_empty(),
                 marks: self.marking_offered(),
+                stops: self.kill_target() == Some(vigil_model::KillTarget::Program),
                 buttons: self.button_at().is_some(),
                 arranges: self
                     .pane()

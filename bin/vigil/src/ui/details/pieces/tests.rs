@@ -8,7 +8,7 @@ use crate::ui::helpers::finding::acts::Acts;
 use crate::ui::helpers::words::text;
 
 fn drawn(pieces: &[Piece]) -> String {
-    acting(pieces, Acts::of_a_row(false))
+    acting(pieces, Acts::of_a_row(None))
 }
 
 fn acting(pieces: &[Piece], acts: Acts) -> String {
@@ -58,7 +58,7 @@ fn the_key_a_module_hands_over_is_drawn_as_something_an_operator_can_copy() {
 fn the_panel_of_a_row_draws_a_button_for_everything_that_can_be_done_to_it() {
     let acts_on_it = acting(
         &[Piece::key("port.listen|tcp|0.0.0.0:4444")],
-        Acts::of_a_row(true),
+        Acts::of_a_row(Some(vigil_model::KillTarget::Socket)),
     );
 
     assert!(acts_on_it.contains("ACTIONS"), "{acts_on_it}");
@@ -87,5 +87,13 @@ fn nothing_selected_is_a_sentence_rather_than_an_empty_panel() {
     let page = drawn(&[]);
 
     assert!(page.contains("Nothing is selected."), "{page}");
-    assert_eq!(height(&[], Acts::of_a_row(true), fixture::look(), 80), 0);
+    assert_eq!(
+        height(
+            &[],
+            Acts::of_a_row(Some(vigil_model::KillTarget::Socket)),
+            fixture::look(),
+            80
+        ),
+        0
+    );
 }
