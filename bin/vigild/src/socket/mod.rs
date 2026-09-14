@@ -2,6 +2,7 @@
 pub(crate) mod fixture;
 
 mod answer;
+mod bind;
 mod change;
 mod kill;
 mod listener;

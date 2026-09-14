@@ -1,5 +1,5 @@
 use super::facet::Facet;
-use super::sorting::Sorting;
+use super::table::Sorting;
 use crate::helpers::haystack;
 
 use serde_json::Value;

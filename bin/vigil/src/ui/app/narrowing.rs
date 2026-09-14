@@ -2,8 +2,7 @@ use super::App;
 
 use crate::ui::{Cursor, Level, Offset, Panes, Screen, Search, holding};
 
-use super::changing::{DELETE, EDIT, NEW, NOTHING_TO_CHANGE};
-use super::marking::{MARK, SUPPRESS, UNMARK_EVERY};
+use super::deeds::{DELETE, EDIT, MARK, NEW, NOTHING_TO_CHANGE, SUPPRESS, UNMARK_EVERY};
 
 pub const DETAILS: char = 'd';
 

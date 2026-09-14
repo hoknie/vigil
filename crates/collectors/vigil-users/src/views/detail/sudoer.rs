@@ -1,9 +1,10 @@
+use std::collections::BTreeSet;
+
 use serde_json::Value;
 use vigil_model::Snapshot;
 use vigil_view::Piece;
 
-use super::super::facts::sudo_for;
-use super::super::fields::{objects, rules, text};
+use super::super::fields::{members, objects, rules, text};
 use crate::types::Kind;
 
 use super::title;
@@ -42,13 +43,16 @@ pub(super) fn sudoer(item: &Value, reading: &Snapshot) -> Vec<Piece> {
     said.push(Piece::Blank);
 
     said.push(Piece::heading("WHO IT REACHES"));
+    let named: BTreeSet<&str> = match who.strip_prefix('%') {
+        Some(group) => objects(reading, Kind::Group)
+            .filter(|(_, found)| text(found, "name") == Some(group))
+            .flat_map(|(_, found)| members(found))
+            .collect(),
+        None => BTreeSet::from([who]),
+    };
     let reached: Vec<&str> = objects(reading, Kind::Account)
         .filter_map(|(_, account)| text(account, "name"))
-        .filter(|name| {
-            sudo_for(reading, name)
-                .iter()
-                .any(|(_, grant)| text(grant, "who") == Some(who))
-        })
+        .filter(|name| named.contains(name))
         .collect();
     if reached.is_empty() {
         said.push(Piece::field("accounts", "nobody in this reading"));

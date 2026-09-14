@@ -1,9 +1,11 @@
 use vigil_model::Snapshot;
 use vigil_view::{Arrangement, Cell, Column, Notice, Offers, Pane, Piece, Room, RowKey, Showing};
 
+use super::detail;
+use super::lists::{cron, files, modules, other, timers, units};
+use super::notices;
 use super::rows::{TREE, parents_of, rows};
 use super::tally::tally;
-use super::{cron, detail, files, modules, notices, other, timers, units};
 use crate::types::{Kind, List};
 
 const ROOM_FOR_THE_PATH: u16 = 118;

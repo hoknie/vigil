@@ -2,21 +2,14 @@
 mod tests;
 
 mod answers;
-mod changing;
-mod choosing;
-mod detail;
+mod choices;
+mod deeds;
 mod drawing;
-mod jump;
 mod keys;
-mod killing;
-mod levels;
-mod marking;
-mod motion;
 mod narrowing;
+mod navigation;
 mod page;
 mod pane;
-mod picking;
-mod printing;
 mod rows;
 mod session;
 
@@ -32,7 +25,7 @@ use crate::ui::{
     Sorting, View,
 };
 
-pub use killing::KILL;
+pub use deeds::KILL;
 
 pub struct App {
     link: Link,
