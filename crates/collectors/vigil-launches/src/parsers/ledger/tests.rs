@@ -71,18 +71,62 @@ fn a_person_and_a_program_are_one_row_under_a_key_somebody_can_copy_into_a_file(
 }
 
 #[test]
-fn the_same_program_run_a_hundred_times_is_one_row_and_the_row_does_not_move() {
+fn the_same_program_run_a_hundred_times_is_one_row_that_counts_them_and_moves_nothing_else() {
     let once = fresh(&[launch(1000, "/usr/bin/nc", &["nc"])]);
     let hundred = snapshot_of(
         &once.items,
         &vec![launch(1000, "/usr/bin/nc", &["nc", "-l", "4444"]); 100],
     );
 
-    assert_eq!(once.items, hundred.items);
+    assert_eq!(people_and_programs(&hundred).len(), 1);
+    assert_eq!(once.items["run|alice|/usr/bin/nc"]["runs"], json!(1));
+    assert_eq!(hundred.items["run|alice|/usr/bin/nc"]["runs"], json!(101));
+
+    let mut uncounted = hundred.items["run|alice|/usr/bin/nc"].clone();
+    uncounted["runs"] = json!(1);
+    assert_eq!(
+        uncounted, once.items["run|alice|/usr/bin/nc"],
+        "the count is the one field a later run writes: the arguments, the audit id and the \
+         moment it was first seen still belong to the first run, which is the one a reader \
+         looks up in the host's own log"
+    );
 }
 
 #[test]
-fn the_value_of_a_row_that_is_already_there_is_never_rewritten() {
+fn a_row_an_older_agent_wrote_without_a_count_is_counted_from_the_run_it_recorded() {
+    let mut known = fresh(&[launch(1000, "/usr/bin/nc", &["nc"])]).items;
+    if let Some(fields) = known
+        .get_mut("run|alice|/usr/bin/nc")
+        .and_then(Value::as_object_mut)
+    {
+        fields.remove("runs");
+    }
+
+    let later = snapshot_of(&known, &[launch(1000, "/usr/bin/nc", &["nc"])]);
+
+    assert_eq!(later.items["run|alice|/usr/bin/nc"]["runs"], json!(2));
+}
+
+#[test]
+fn a_count_that_moves_raises_no_finding_because_the_rules_answer_only_a_new_row() {
+    let once = fresh(&[launch(1000, "/tmp/.x/dropper", &["dropper"])]);
+    let again = snapshot_of(
+        &once.items,
+        &[launch(1000, "/tmp/.x/dropper", &["dropper"])],
+    );
+
+    let changes = vigil_rules::diff(&once, &again);
+
+    assert_eq!(changes.len(), 1, "{changes:?}");
+    assert!(
+        vigil_rules::findings_for(crate::rules::launch_rules(), &changes).is_empty(),
+        "a dropper run from /tmp raises its finding the first time; the hundredth run of it \
+         is a counter on the row, not a hundred findings"
+    );
+}
+
+#[test]
+fn a_row_that_is_already_there_keeps_what_it_first_recorded_and_only_its_count_moves() {
     let logins = logins();
     let gone = |_path: &str| Presence::Gone;
     let known = fresh(&[launch(1000, "/usr/bin/nc", &["nc"])]).items;
@@ -104,6 +148,7 @@ fn the_value_of_a_row_that_is_already_there_is_never_rewritten() {
     let item = &later.items["run|alice|/usr/bin/nc"];
     assert_eq!(item["exe_present"], json!(true));
     assert_eq!(item["first_seen"], "2026-09-09T12:00:00.000Z");
+    assert_eq!(item["runs"], json!(2));
 }
 
 #[test]

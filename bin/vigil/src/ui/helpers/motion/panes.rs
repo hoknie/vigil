@@ -1,5 +1,7 @@
 use std::collections::BTreeSet;
 
+use vigil_view::Facet;
+
 use crate::ui::{Cursor, Search};
 
 #[derive(Debug, Clone)]
@@ -9,6 +11,7 @@ pub struct Panes {
     searches: Vec<Search>,
     marked: Vec<BTreeSet<String>>,
     opened: Vec<BTreeSet<String>>,
+    only: Vec<Vec<Facet>>,
     hidden: Vec<String>,
     arranged: Option<String>,
 }
@@ -22,6 +25,7 @@ impl Panes {
             searches: vec![Search::default(); count],
             marked: vec![BTreeSet::new(); count],
             opened: vec![BTreeSet::new(); count],
+            only: vec![Vec::new(); count],
             hidden: Vec::new(),
             arranged: None,
         }
@@ -31,6 +35,7 @@ impl Panes {
         let count = count.max(1);
         self.cursors.resize(count, Cursor::default());
         self.searches.resize(count, Search::default());
+        self.only.resize(count, Vec::new());
         self.at = self.at.min(count - 1);
     }
 
@@ -145,6 +150,24 @@ impl Panes {
         self.hidden.clear();
     }
 
+    pub fn only(&self) -> &[Facet] {
+        &self.only[self.at]
+    }
+
+    pub fn narrow_to(&mut self, facet: Facet) {
+        let chosen = &mut self.only[self.at];
+        chosen.retain(|one| one.name != facet.name);
+        chosen.push(facet);
+    }
+
+    pub fn widen_facet(&mut self, name: &str) {
+        self.only[self.at].retain(|one| one.name != name);
+    }
+
+    pub fn narrow_to_nothing(&mut self) {
+        self.only[self.at].clear();
+    }
+
     pub fn narrowed_elsewhere(&self) -> usize {
         self.searches
             .iter()
@@ -162,6 +185,44 @@ impl Panes {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_value_a_list_is_narrowed_to_replaces_the_one_of_its_name_and_stays_with_that_list() {
+        let mut panes = Panes::of(2);
+        panes.narrow_to(Facet::new("user", "alice"));
+        panes.narrow_to(Facet::new("program", "/usr/bin/nc"));
+        panes.narrow_to(Facet::new("user", "root"));
+
+        assert_eq!(
+            panes.only(),
+            &[
+                Facet::new("program", "/usr/bin/nc"),
+                Facet::new("user", "root")
+            ],
+            "a list narrowed to alice and then to root is a list of root's rows, not of \
+             nobody's"
+        );
+
+        panes.show(1);
+        assert!(panes.only().is_empty());
+
+        panes.show(0);
+        panes.widen_facet("user");
+        assert_eq!(panes.only(), &[Facet::new("program", "/usr/bin/nc")]);
+        panes.narrow_to_nothing();
+        assert!(panes.only().is_empty());
+    }
+
+    #[test]
+    fn a_section_that_grows_a_list_can_narrow_the_new_one_without_falling_off_the_end() {
+        let mut panes = Panes::of(1);
+
+        panes.ready(2);
+        panes.show(1);
+        panes.narrow_to(Facet::new("user", "alice"));
+
+        assert_eq!(panes.only().len(), 1);
+    }
 
     #[test]
     fn a_search_belongs_to_the_pane_it_was_typed_into_and_not_to_the_section() {

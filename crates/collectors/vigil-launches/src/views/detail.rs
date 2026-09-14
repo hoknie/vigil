@@ -23,6 +23,13 @@ pub(super) fn launch(item: &Value) -> Vec<Piece> {
         "first seen",
         text(item, "first_seen").unwrap_or("?"),
     ));
+    said.push(Piece::field(
+        "runs",
+        format!(
+            "{} since this agent began reading the audit records",
+            number(item, "runs").unwrap_or(1)
+        ),
+    ));
     said.push(Piece::field("arguments", arguments(item)));
 
     said.push(Piece::field(

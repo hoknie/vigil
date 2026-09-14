@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{Killing, ProtocolError};
+use crate::{KillTarget, Killing, ProtocolError};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "query", rename_all = "snake_case")]
@@ -15,7 +15,10 @@ pub enum Request {
         limit: Option<usize>,
     },
     Kill {
+        #[serde(default)]
         sockets: Vec<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        programs: Vec<String>,
         killing: Killing,
     },
 }
@@ -24,6 +27,21 @@ impl Request {
     pub const NAMES: &'static [&'static str] = &["status", "snapshot", "findings", "kill"];
 
     pub const READING: &'static [&'static str] = &["status", "snapshot", "findings"];
+
+    pub fn kill(target: KillTarget, keys: Vec<String>, killing: Killing) -> Request {
+        match target {
+            KillTarget::Socket => Request::Kill {
+                sockets: keys,
+                programs: Vec::new(),
+                killing,
+            },
+            KillTarget::Program => Request::Kill {
+                sockets: Vec::new(),
+                programs: keys,
+                killing,
+            },
+        }
+    }
 
     pub fn acts_on_the_host(&self) -> bool {
         matches!(self, Request::Kill { .. })
@@ -124,13 +142,49 @@ mod tests {
         .expect("parses");
 
         match &request {
-            Request::Kill { sockets, killing } => {
+            Request::Kill {
+                sockets,
+                programs,
+                killing,
+            } => {
                 assert_eq!(sockets, &vec!["tcp|0.0.0.0:4444".to_string()]);
+                assert!(programs.is_empty());
                 assert_eq!(*killing, Killing::Terminate);
             }
             other => panic!("parsed as {other:?}"),
         }
         assert!(request.acts_on_the_host());
+    }
+
+    #[test]
+    fn a_program_is_stopped_by_the_same_verb_and_not_by_a_second_one() {
+        let request = Request::kill(
+            KillTarget::Program,
+            vec!["exec|/tmp/.x/nc|www-data".into()],
+            Killing::Kill,
+        );
+        let line = request.to_line();
+
+        assert!(line.contains("\"query\":\"kill\""), "{line}");
+        assert!(line.contains("\"programs\""), "{line}");
+        assert_eq!(Request::parse(line.trim_end()).expect("parses"), request);
+    }
+
+    #[test]
+    fn a_kill_written_before_programs_could_be_named_still_reads_as_a_kill_of_sockets() {
+        let request = Request::parse(
+            "{\"query\":\"kill\",\"sockets\":[\"tcp|0.0.0.0:4444\"],\"killing\":\"kill\"}",
+        )
+        .expect("parses");
+
+        assert_eq!(
+            request,
+            Request::kill(
+                KillTarget::Socket,
+                vec!["tcp|0.0.0.0:4444".into()],
+                Killing::Kill
+            )
+        );
     }
 
     #[test]
@@ -152,10 +206,16 @@ mod tests {
             },
             Request::Findings { limit: Some(20) },
             Request::Findings { limit: None },
-            Request::Kill {
-                sockets: vec!["tcp|0.0.0.0:4444".into()],
-                killing: Killing::Destroy,
-            },
+            Request::kill(
+                KillTarget::Socket,
+                vec!["tcp|0.0.0.0:4444".into()],
+                Killing::Destroy,
+            ),
+            Request::kill(
+                KillTarget::Program,
+                vec!["exec|/usr/sbin/nginx|root".into()],
+                Killing::Terminate,
+            ),
         ] {
             let line = request.to_line();
             assert!(line.ends_with('\n'), "{line:?} is not one line");

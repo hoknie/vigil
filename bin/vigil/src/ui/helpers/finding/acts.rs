@@ -1,11 +1,12 @@
 use ratatui::text::{Line, Span};
+use vigil_model::KillTarget;
 
 use crate::ui::Look;
 use crate::ui::helpers::layout::section;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Acts {
-    pub acting: bool,
+    pub acting: Option<KillTarget>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -15,17 +16,20 @@ pub struct Button {
 }
 
 impl Acts {
-    pub fn of_a_row(acting: bool) -> Acts {
+    pub fn of_a_row(acting: Option<KillTarget>) -> Acts {
         Acts { acting }
     }
 
     pub fn buttons(self) -> Vec<Button> {
         match self.acting {
-            false => Vec::new(),
-            true => vec![
+            None => Vec::new(),
+            Some(target) => vec![
                 Button {
                     key: 'K',
-                    name: "close this socket",
+                    name: match target {
+                        KillTarget::Socket => "close this socket",
+                        KillTarget::Program => "stop this program",
+                    },
                 },
                 Button {
                     key: 'S',
@@ -101,7 +105,7 @@ mod tests {
 
     #[test]
     fn the_panel_acts_on_the_one_record_it_is_showing_and_never_on_a_marked_set() {
-        let page = drawn(Acts::of_a_row(true), None, 80);
+        let page = drawn(Acts::of_a_row(Some(KillTarget::Socket)), None, 80);
 
         assert!(page.contains("[ K close this socket ]"), "{page}");
         assert!(page.contains("[ S suppress it ]"), "{page}");
@@ -113,17 +117,26 @@ mod tests {
     }
 
     #[test]
+    fn the_panel_of_a_program_offers_to_stop_it_and_not_to_close_a_socket_it_does_not_have() {
+        let page = drawn(Acts::of_a_row(Some(KillTarget::Program)), None, 80);
+
+        assert!(page.contains("[ K stop this program ]"), "{page}");
+        assert!(page.contains("[ S suppress it ]"), "{page}");
+        assert!(!page.contains("socket"), "{page}");
+    }
+
+    #[test]
     fn a_row_nothing_can_be_done_to_draws_no_buttons_at_all() {
         assert!(
-            lines(Acts::of_a_row(false), None, fixture::look(), 80).is_empty(),
+            lines(Acts::of_a_row(None), None, fixture::look(), 80).is_empty(),
             "a button that answers with a refusal is worse than no button"
         );
     }
 
     #[test]
     fn where_the_arrows_are_is_readable_on_a_terminal_with_no_colour_at_all() {
-        let elsewhere = drawn(Acts::of_a_row(true), None, 80);
-        let on_the_first = drawn(Acts::of_a_row(true), Some(0), 80);
+        let elsewhere = drawn(Acts::of_a_row(Some(KillTarget::Socket)), None, 80);
+        let on_the_first = drawn(Acts::of_a_row(Some(KillTarget::Socket)), Some(0), 80);
 
         assert!(
             !elsewhere.contains('\u{25b8}'),
@@ -148,16 +161,28 @@ mod tests {
 
     #[test]
     fn the_arrows_walk_the_buttons_by_index_and_stop_at_the_ones_that_are_there() {
-        assert_eq!(Acts::of_a_row(true).button(0).expect("a button").key, 'K');
-        assert_eq!(Acts::of_a_row(true).button(1).expect("a button").key, 'S');
-        assert!(Acts::of_a_row(true).button(2).is_none());
-        assert!(Acts::of_a_row(false).button(0).is_none());
+        assert_eq!(
+            Acts::of_a_row(Some(KillTarget::Socket))
+                .button(0)
+                .expect("a button")
+                .key,
+            'K'
+        );
+        assert_eq!(
+            Acts::of_a_row(Some(KillTarget::Socket))
+                .button(1)
+                .expect("a button")
+                .key,
+            'S'
+        );
+        assert!(Acts::of_a_row(Some(KillTarget::Socket)).button(2).is_none());
+        assert!(Acts::of_a_row(None).button(0).is_none());
     }
 
     #[test]
     fn a_button_row_wider_than_the_panel_wraps_instead_of_being_cut_off_mid_word() {
         for width in [24u16, 30, 40, 66, 80] {
-            let page = drawn(Acts::of_a_row(true), None, width);
+            let page = drawn(Acts::of_a_row(Some(KillTarget::Socket)), None, width);
 
             assert!(
                 page.contains("[ S suppress it ]"),

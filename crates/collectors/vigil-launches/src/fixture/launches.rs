@@ -23,6 +23,10 @@ const LOG: &str = concat!(
     "\n",
     r#"type=EXECVE msg=audit(1757419206.700:3424): argc=0"#,
     "\n",
+    r#"type=SYSCALL msg=audit(1757419207.000:3425): arch=c000003e syscall=59 success=yes exit=0 ppid=2143 pid=2500 auid=1000 uid=1000 tty=pts0 ses=3 comm="nc" exe="/usr/bin/nc.openbsd" key="vigil_exec""#,
+    "\n",
+    r#"type=EXECVE msg=audit(1757419207.000:3425): argc=2 a0="nc" a1="-z""#,
+    "\n",
 );
 
 fn where_it_landed(executable: &str) -> Presence {

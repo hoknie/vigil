@@ -19,7 +19,7 @@ pub use collector::{CollectorState, CollectorStatus};
 pub use counted::Counted;
 pub use error::ProtocolError;
 pub use findings::FindingsSummary;
-pub use killing::{KillReport, Killed, Killing};
+pub use killing::{KillReport, KillTarget, Killed, Killing};
 pub use refusal::CollectorRefusal;
 pub use reporter::ReporterStatus;
 pub use request::Request;

@@ -215,6 +215,7 @@ mod tests {
     fn what_the_daemon_did_on_the_host_comes_back_row_by_row_and_not_as_a_count() {
         let line = Response::Killed {
             report: Box::new(crate::KillReport {
+                target: crate::KillTarget::Socket,
                 killing: crate::Killing::Terminate,
                 acted_at: "2026-09-14T10:00:00.000Z".into(),
                 killed: vec![

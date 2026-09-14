@@ -29,6 +29,7 @@
       "exe_present": null,
       "exe_shown": false,
       "first_seen": "2026-09-09T09:00:00.000Z",
+      "runs": 1,
       "user": null,
       "writable_path": false
     },
@@ -42,6 +43,7 @@
       "exe_present": true,
       "exe_shown": true,
       "first_seen": "2026-09-09T09:00:00.000Z",
+      "runs": 2,
       "user": "alice",
       "writable_path": false
     },
@@ -55,6 +57,7 @@
       "exe_present": false,
       "exe_shown": true,
       "first_seen": "2026-09-09T09:00:00.000Z",
+      "runs": 1,
       "user": "root",
       "writable_path": true
     },
@@ -68,6 +71,7 @@
       "exe_present": true,
       "exe_shown": true,
       "first_seen": "2026-09-09T09:00:00.000Z",
+      "runs": 1,
       "user": "root",
       "writable_path": false
     }

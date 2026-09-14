@@ -1,7 +1,7 @@
 use vigil_model::Snapshot;
 
 use crate::types::{
-    Arrangement, Cell, Column, Notice, Offers, Piece, Room, RowKey, Showing, Toggle,
+    Arrangement, Cell, Column, Facet, Notice, Offers, Piece, Room, RowKey, Showing, Toggle,
 };
 
 const NARROW: u16 = 80;
@@ -61,6 +61,10 @@ pub trait Pane: Send + Sync {
     }
 
     fn arrangements(&self) -> Vec<Arrangement> {
+        Vec::new()
+    }
+
+    fn facets(&self, _reading: &Snapshot, _row: &RowKey) -> Vec<Facet> {
         Vec::new()
     }
 

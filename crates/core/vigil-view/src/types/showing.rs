@@ -1,3 +1,4 @@
+use super::facet::Facet;
 use super::sorting::Sorting;
 use crate::helpers::haystack;
 
@@ -12,6 +13,7 @@ pub struct Showing<'a> {
     pub elsewhere: usize,
     pub arranged: Option<&'a str>,
     pub opened: &'a [&'a str],
+    pub only: &'a [Facet],
 }
 
 impl<'a> Showing<'a> {
@@ -49,6 +51,17 @@ impl<'a> Showing<'a> {
         Showing { opened, ..self }
     }
 
+    pub fn narrowing(self, only: &'a [Facet]) -> Showing<'a> {
+        Showing { only, ..self }
+    }
+
+    pub fn only(&self, facet: &str) -> Option<&'a str> {
+        self.only
+            .iter()
+            .find(|chosen| chosen.name == facet)
+            .map(|chosen| chosen.value.as_str())
+    }
+
     pub fn arranged_as(&self, name: &str) -> bool {
         self.arranged == Some(name)
     }
@@ -58,7 +71,7 @@ impl<'a> Showing<'a> {
     }
 
     pub fn holding_back(&self) -> bool {
-        !self.search.is_empty()
+        !self.search.is_empty() || !self.only.is_empty()
     }
 
     pub fn narrowed(&self) -> bool {

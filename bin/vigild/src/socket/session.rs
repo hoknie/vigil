@@ -48,7 +48,11 @@ pub fn serve(
         }
 
         let response = match Request::parse(line.trim_end()) {
-            Ok(Request::Kill { sockets, killing }) => kill(&sockets, killing, shared, now()),
+            Ok(Request::Kill {
+                sockets,
+                programs,
+                killing,
+            }) => kill(&sockets, &programs, killing, shared, now()),
             Ok(request) => shared.with(|state| answer(&request, state, now())),
             Err(error) => Response::Error { error },
         };

@@ -13,6 +13,7 @@ pub struct Hints<'a> {
     pub sorts: bool,
     pub filters: bool,
     pub marks: bool,
+    pub stops: bool,
     pub buttons: bool,
     pub arranges: Option<char>,
     pub to_object: bool,

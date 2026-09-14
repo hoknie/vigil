@@ -38,6 +38,7 @@ fn drawn_with(
             arranged: None,
             marked,
             opened,
+            only: &[],
         },
         buffer.area,
         &mut buffer,

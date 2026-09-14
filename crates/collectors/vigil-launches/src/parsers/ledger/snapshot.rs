@@ -47,7 +47,8 @@ pub fn launches_snapshot(
         let name = login.clone().unwrap_or_else(|| auid.to_string());
         let key = format!("run|{name}|{executable}");
 
-        if snapshot.items.contains_key(&key) {
+        if let Some(known) = snapshot.items.get_mut(&key) {
+            ran_again(known);
             continue;
         }
         if snapshot.items.len() >= LIMIT {
@@ -75,6 +76,7 @@ pub fn launches_snapshot(
                 "exe_shown": seen.shown(),
                 "writable_path": is_writable_path(executable),
                 "first_seen": taken_at,
+                "runs": 1,
                 "audit_id": execution.id,
                 "arguments": arguments,
                 "arguments_redacted": arguments_redacted,
@@ -133,6 +135,14 @@ pub fn launches_snapshot(
     }
 
     snapshot
+}
+
+fn ran_again(known: &mut Value) {
+    let Some(fields) = known.as_object_mut() else {
+        return;
+    };
+    let before = fields.get("runs").and_then(Value::as_u64).unwrap_or(1);
+    fields.insert("runs".to_string(), json!(before.saturating_add(1)));
 }
 
 pub fn any_launch_was_read(items: &BTreeMap<String, Value>) -> bool {

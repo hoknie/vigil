@@ -141,7 +141,7 @@ mod tests {
     fn the_band_that_does_something_to_the_host_does_not_say_apply_like_the_others() {
         let mut chooser = Chooser::default();
         chooser.open_by_key(
-            Choosing::Kill,
+            Choosing::Kill(vigil_model::KillTarget::Socket),
             vec![
                 ('S', "ask the process to stop (SIGTERM)".into()),
                 ('K', "stop the process now (SIGKILL)".into()),

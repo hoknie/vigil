@@ -1,3 +1,5 @@
+use vigil_view::Facet;
+
 use crate::ui::{Arrows, Gone, Search, Sorting};
 
 pub struct Showing<'a> {
@@ -13,6 +15,7 @@ pub struct Showing<'a> {
     pub arranged: Option<&'a str>,
     pub marked: Vec<String>,
     pub opened: Vec<String>,
+    pub only: &'a [Facet],
 }
 
 impl Showing<'_> {
@@ -45,5 +48,6 @@ pub fn asked<'a>(
         elsewhere: showing.elsewhere,
         arranged: showing.arranged,
         opened,
+        only: showing.only,
     }
 }

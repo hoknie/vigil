@@ -1,4 +1,4 @@
-use vigil_model::Snapshot;
+use vigil_model::{KillTarget, Snapshot};
 use vigil_view::{Cell, Column, Notice, Offers, Pane, Piece, Room, RowKey, Showing, time_of_day};
 
 use super::detail;
@@ -128,6 +128,6 @@ impl Pane for Running {
     }
 
     fn offers(&self) -> Offers {
-        Offers::default().sorted(false)
+        Offers::default().sorted(false).killed(KillTarget::Program)
     }
 }

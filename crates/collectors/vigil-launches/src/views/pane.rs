@@ -1,9 +1,9 @@
 use vigil_model::Snapshot;
-use vigil_view::{Cell, Column, Notice, Offers, Pane, Piece, Room, RowKey, Showing, time_of_day};
+use vigil_view::{Cell, Column, Facet, Notice, Pane, Piece, Room, RowKey, Showing, time_of_day};
 
 use super::detail;
 use super::fields::{marked, text};
-use super::launches;
+use super::launches::{self, PROGRAM, USER};
 
 const ROOM_FOR_THE_PATH: u16 = 118;
 
@@ -23,8 +23,8 @@ impl Pane for Launches {
     }
 
     fn about(&self) -> &str {
-        "one row per person and program the kernel's audit records have seen run; rows are \
-         never removed from it"
+        "one row per person and program the kernel's audit records have seen run, and how \
+         many times; rows are never removed from it"
     }
 
     fn reads(&self) -> &str {
@@ -36,15 +36,16 @@ impl Pane for Launches {
     }
 
     fn rows(&self, reading: &Snapshot, showing: &Showing<'_>) -> Vec<RowKey> {
-        let mut rows: Vec<(bool, String)> = reading
+        let mut rows: Vec<(&str, &serde_json::Value)> = reading
             .items
             .iter()
             .filter(|(key, item)| showing.matches(key, item))
-            .map(|(key, _)| (!marked(key), key.clone()))
+            .filter(|(key, item)| launches::chosen(key, item, showing))
+            .map(|(key, item)| (key.as_str(), item))
             .collect();
 
-        rows.sort();
-        rows.into_iter().map(|(_, key)| RowKey::of(key)).collect()
+        rows.sort_by(|left, right| launches::order(*left, *right, showing.sorting));
+        rows.into_iter().map(|(key, _)| RowKey::of(key)).collect()
     }
 
     fn cells(&self, reading: &Snapshot, row: &RowKey, room: Room) -> Vec<Cell> {
@@ -91,6 +92,9 @@ impl Pane for Launches {
             ),
         }];
 
+        if let Some(narrowed) = launches::narrowed_to(showing) {
+            parts.push(format!("only {narrowed}"));
+        }
         let unnamed = reading.items.keys().filter(|key| marked(key)).count();
         if unnamed > 0 {
             parts.push(format!("{unnamed} row(s) about the reading itself"));
@@ -117,7 +121,17 @@ impl Pane for Launches {
         "No launch is listed here: nothing was read."
     }
 
-    fn offers(&self) -> Offers {
-        Offers::default().sorted(false)
+    fn facets(&self, reading: &Snapshot, row: &RowKey) -> Vec<Facet> {
+        let Some(item) = reading.items.get(&row.key) else {
+            return Vec::new();
+        };
+        if marked(&row.key) {
+            return Vec::new();
+        }
+
+        vec![
+            Facet::new(USER, launches::who(item)),
+            Facet::new(PROGRAM, launches::executable(item)),
+        ]
     }
 }

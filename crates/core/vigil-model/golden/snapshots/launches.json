@@ -78,6 +78,12 @@
         ],
         "always": true
       },
+      "runs": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
       "user": {
         "types": [
           "null",

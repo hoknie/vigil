@@ -56,6 +56,7 @@ impl App {
             arranged: None,
             marked,
             opened: branches,
+            only: panes.only(),
         };
         let hidden = showing.hidden();
         let opened = showing.opened();
@@ -137,6 +138,7 @@ impl App {
             arranged: arranged(pane.as_ref(), panes.arranged()),
             marked: panes.marked(),
             opened: panes.opened(),
+            only: panes.only(),
         })
     }
 
@@ -160,6 +162,7 @@ impl App {
             arranged: None,
             marked: Vec::new(),
             opened: panes.opened(),
+            only: panes.only(),
         })
     }
 

@@ -22,7 +22,10 @@ footer.
 - `types/` — what those two answer with: `Column`/`Width`/`Room` for the table's shape,
   `RowKey` and `Cell` for its contents, `Piece` for the detail under a row, `Notice` for an
   empty or unavailable screen, `Toggle`/`Showing`/`Sorting`/`Offers` for what the reader has
-  narrowed it to;
+  narrowed it to, `Facet` for a value of the row under the cursor the list can be narrowed to
+  (asked of the pane, so the console never offers a band of every value on the host), and
+  `Offers::killing` for whether its rows are sockets or programs the agent may be asked to
+  stop — the pane says it, so the console holds no table of which screen kills what;
 - `conformance/` — the suite every pane passes: cells match columns at both widths, the keys
   it offers are the reading's own, no key twice, a detail that says something.
 

@@ -128,7 +128,10 @@ fn listing(hints: &Hints<'_>, room: Room, back: &str, picking: Picking) -> Strin
         line.push_str(&format!(" · {key} view"));
     }
     if hints.marks {
-        line.push_str(" · x mark · K close");
+        line.push_str(match hints.stops {
+            true => " · x mark · K stop",
+            false => " · x mark · K close",
+        });
         if room == Room::Whole {
             line.push_str(" · S suppress");
         }
@@ -392,6 +395,19 @@ mod tests {
                 line.chars().count()
             );
         }
+    }
+
+    #[test]
+    fn a_list_of_programs_says_that_k_stops_them_and_not_that_it_closes_something() {
+        let programs = Hints {
+            stops: true,
+            ..acting(Level::List, Back::MainScreen)
+        };
+
+        let line = keys(&programs, a_section(), 120);
+
+        assert!(line.contains("K stop"), "{line}");
+        assert!(!line.contains("K close"), "{line}");
     }
 
     #[test]
