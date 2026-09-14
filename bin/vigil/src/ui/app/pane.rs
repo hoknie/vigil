@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use vigil_view::{Pane, Piece, RowKey, Section};
 
 use super::App;
@@ -44,6 +46,8 @@ impl App {
         let marked = panes.marked();
         let branches = panes.opened();
         let showing = pane::Showing {
+            listed: None,
+            tally: None,
             at: panes.showing(),
             search: panes.search(),
             hidden: panes.hidden(),
@@ -126,6 +130,8 @@ impl App {
         let pane = self.pane()?;
 
         Some(pane::Showing {
+            listed: None,
+            tally: None,
             at: panes.showing(),
             search: panes.search(),
             hidden: panes.hidden(),
@@ -150,6 +156,8 @@ impl App {
         let panes = self.panes()?;
 
         Some(pane::Showing {
+            listed: None,
+            tally: None,
             at,
             search,
             hidden: panes.hidden(),
@@ -166,27 +174,13 @@ impl App {
         })
     }
 
-    pub(super) fn pane_rows(&self) -> Vec<RowKey> {
-        let (Some(showing), Some(pane)) = (self.showing_pane(), self.pane()) else {
-            return Vec::new();
-        };
-        let hidden = showing.hidden();
-        let opened = showing.opened();
-
-        pane::rows(
-            &self.view,
-            pane.as_ref(),
-            &pane::asked(&showing, &hidden, &opened),
-        )
-    }
-
     pub(super) fn pane_row_under_the_cursor(&self) -> Option<RowKey> {
         let at = self.panes()?.at();
-        self.pane_rows().into_iter().nth(at)
+        self.pane_rows().get(at).cloned()
     }
 
     pub(super) fn pane_keys(&self) -> Vec<String> {
-        self.pane_rows().into_iter().map(|row| row.key).collect()
+        self.pane_rows().iter().map(|row| row.key.clone()).collect()
     }
 
     pub(super) fn pane_keys_of_the_reading(&self) -> Vec<String> {
@@ -200,19 +194,28 @@ impl App {
         snapshot.items.keys().cloned().collect()
     }
 
-    pub(super) fn pane_detail(&self) -> Vec<Piece> {
+    pub(super) fn pane_detail(&self) -> Rc<Vec<Piece>> {
         let (Some(showing), Some(pane)) = (self.showing_pane(), self.pane()) else {
-            return Vec::new();
+            return Rc::default();
         };
         let Reading::Taken(snapshot) = self.view.reading(pane.reads()) else {
-            return Vec::new();
+            return Rc::default();
         };
         let rows = self.pane_rows();
         let Some(row) = rows.get(showing.cursor) else {
-            return Vec::new();
+            return Rc::default();
         };
+        let width = self.look.text_width(self.body.get().width);
+        let question = (
+            self.view.readings.generation(),
+            self.nav.at(),
+            showing.at,
+            row.clone(),
+            width,
+        );
 
-        pane.detail(snapshot, row, self.look.text_width(self.body.get().width))
+        self.detail_seen
+            .get_or(question, || Rc::new(pane.detail(snapshot, row, width)))
     }
 
     pub(super) fn pane_caption(&self) -> String {

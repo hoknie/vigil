@@ -1,8 +1,12 @@
-use vigil_view::Facet;
+use std::rc::Rc;
+
+use vigil_view::{Facet, RowKey};
 
 use crate::ui::{Arrows, Gone, Search, Sorting};
 
 pub struct Showing<'a> {
+    pub listed: Option<Rc<Vec<RowKey>>>,
+    pub tally: Option<String>,
     pub at: usize,
     pub search: &'a Search,
     pub hidden: &'a [String],

@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Rect};
 use ratatui::text::Line;
@@ -112,7 +114,10 @@ pub fn render(
     let hidden = showing.hidden();
     let opened = showing.opened();
     let asked = asked(showing, &hidden, &opened);
-    let rows = pane.rows(snapshot, &asked);
+    let rows = match &showing.listed {
+        Some(listed) => Rc::clone(listed),
+        None => Rc::new(pane.rows(snapshot, &asked)),
+    };
     let marking = pane.offers().marking && look.interactive();
     let (table, footer) = split_bottom(rest, look, rows.len());
 
@@ -170,7 +175,13 @@ pub fn render(
     }
 
     Paragraph::new(Line::styled(
-        footing(pane.tally(snapshot, &asked, rows.len()), footer.width),
+        footing(
+            match &showing.tally {
+                Some(tally) => tally.clone(),
+                None => pane.tally(snapshot, &asked, rows.len()),
+            },
+            footer.width,
+        ),
         look.palette.quiet(),
     ))
     .render(footer, buffer);

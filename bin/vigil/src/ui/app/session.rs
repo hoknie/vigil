@@ -42,6 +42,9 @@ impl App {
             helping: false,
             message: None,
             body: Cell::new(Rect::ZERO),
+            rows_seen: Default::default(),
+            tally_seen: Default::default(),
+            detail_seen: Default::default(),
             refresh_wanted: false,
             leaving: false,
         };

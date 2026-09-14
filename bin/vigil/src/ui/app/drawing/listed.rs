@@ -66,6 +66,11 @@ impl App {
                     return;
                 }
                 if let (Some(section), Some(showing)) = (self.section(), self.showing_pane()) {
+                    let showing = pane::Showing {
+                        listed: Some(self.pane_rows()),
+                        tally: Some(self.pane_tally()),
+                        ..showing
+                    };
                     pane::render(
                         &self.view,
                         self.look,

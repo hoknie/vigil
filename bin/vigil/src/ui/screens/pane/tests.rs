@@ -39,12 +39,56 @@ fn drawn_with(
             marked,
             opened,
             only: &[],
+            listed: None,
+            tally: None,
         },
         buffer.area,
         &mut buffer,
     );
 
     text::to_text(&buffer)
+}
+
+#[test]
+fn rows_and_a_tally_the_console_already_holds_are_drawn_as_given_and_not_worked_out_again() {
+    let view = fixture::view();
+    let section = holding("ports").expect("this build draws the sockets");
+    let search = Search::default();
+    let mut buffer = Buffer::empty(Rect::new(0, 0, 120, 24));
+
+    render(
+        &view,
+        fixture::look(),
+        section.as_ref(),
+        &Showing {
+            at: 0,
+            search: &search,
+            hidden: &[],
+            cursor: 0,
+            arrows: Arrows::List,
+            sorting: Sorting::default(),
+            note: None,
+            elsewhere: 0,
+            gone: None,
+            arranged: None,
+            marked: Vec::new(),
+            opened: Vec::new(),
+            only: &[],
+            listed: Some(std::rc::Rc::new(Vec::new())),
+            tally: Some("the tally the console kept".to_string()),
+        },
+        buffer.area,
+        &mut buffer,
+    );
+    let page = text::to_text(&buffer);
+
+    assert!(
+        !page.contains("0.0.0.0:22"),
+        "the reading holds this socket, and the list was told it holds no rows: a list that \
+         asks the pane again on every keypress is the work the console keeps so it does not \
+         have to: {page}"
+    );
+    assert!(page.contains("the tally the console kept"), "{page}");
 }
 
 #[test]

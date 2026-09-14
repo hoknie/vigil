@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use vigil_model::Snapshot;
 
@@ -11,12 +12,27 @@ pub enum Reading {
     Taken(Snapshot),
 }
 
-#[derive(Default)]
 pub struct Readings {
     taken: BTreeMap<String, Reading>,
+    generation: u64,
 }
 
 static NOT_ASKED: Reading = Reading::Unknown;
+
+static GENERATIONS: AtomicU64 = AtomicU64::new(1);
+
+fn next_generation() -> u64 {
+    GENERATIONS.fetch_add(1, Ordering::Relaxed)
+}
+
+impl Default for Readings {
+    fn default() -> Readings {
+        Readings {
+            taken: BTreeMap::new(),
+            generation: next_generation(),
+        }
+    }
+}
 
 impl Readings {
     pub fn of(&self, collector: &str) -> &Reading {
@@ -25,6 +41,11 @@ impl Readings {
 
     pub fn put(&mut self, collector: impl Into<String>, reading: Reading) {
         self.taken.insert(collector.into(), reading);
+        self.generation = next_generation();
+    }
+
+    pub fn generation(&self) -> u64 {
+        self.generation
     }
 }
 

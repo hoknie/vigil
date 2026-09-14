@@ -21,6 +21,18 @@ impl Kind {
             _ => Kind::Unknown,
         }
     }
+
+    pub fn prefix(self) -> &'static str {
+        match self {
+            Kind::Account => "account|",
+            Kind::Group => "group|",
+            Kind::Sudoer => "sudoer|",
+            Kind::Key => "sshkey|",
+            Kind::Session => "session|",
+            Kind::SessionSource => "session-source|",
+            Kind::Unknown => "",
+        }
+    }
 }
 
 #[cfg(test)]
@@ -35,6 +47,25 @@ mod tests {
             Kind::of("session-source|logind"),
             Kind::Unknown,
             "a row this console does know must not open the view for rows it does not"
+        );
+    }
+
+    #[test]
+    fn every_known_kind_is_found_by_the_front_of_its_key_and_by_nothing_else() {
+        for kind in [
+            Kind::Account,
+            Kind::Group,
+            Kind::Sudoer,
+            Kind::Key,
+            Kind::Session,
+            Kind::SessionSource,
+        ] {
+            assert_eq!(Kind::of(&format!("{}anything", kind.prefix())), kind);
+            assert!(kind.prefix().ends_with('|'));
+        }
+        assert!(
+            !"session-source|logind".starts_with(Kind::Session.prefix()),
+            "a login source must not be picked up as a session because both names start alike"
         );
     }
 }

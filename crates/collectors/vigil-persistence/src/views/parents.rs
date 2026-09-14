@@ -1,10 +1,13 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::ops::Bound;
 
 use serde_json::Value;
 
 use super::fields::strings;
 use super::tree::{PULLED_IN_BY, PULLS_IN};
 use crate::types::Kind;
+
+const UNIT: &str = "unit|";
 
 pub(super) fn parents(items: &BTreeMap<String, Value>, key: &str) -> usize {
     if Kind::of(key) != Kind::Unit {
@@ -13,7 +16,7 @@ pub(super) fn parents(items: &BTreeMap<String, Value>, key: &str) -> usize {
     let Some(item) = items.get(key) else {
         return 0;
     };
-    let own = key.strip_prefix("unit|");
+    let own = key.strip_prefix(UNIT);
 
     let mut found: BTreeSet<&str> = BTreeSet::new();
     for named in PULLED_IN_BY {
@@ -26,7 +29,10 @@ pub(super) fn parents(items: &BTreeMap<String, Value>, key: &str) -> usize {
             }
         }
     }
-    for (other, value) in items {
+    let units = items
+        .range::<str, _>((Bound::Included(UNIT), Bound::Unbounded))
+        .take_while(|(other, _)| other.starts_with(UNIT));
+    for (other, value) in units {
         if other == key || Kind::of(other) != Kind::Unit {
             continue;
         }

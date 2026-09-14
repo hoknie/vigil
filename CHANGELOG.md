@@ -21,6 +21,7 @@ Format:
 ### Fixed
 - double suppresion for one item
 - moving through a list of several hundred rows no longer lags: only the rows on the screen are drawn
+- list lag fixed
 
 ### Changed
 - not default config path is correctly resolve from now
