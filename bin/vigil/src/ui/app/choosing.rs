@@ -221,6 +221,10 @@ impl App {
                 self.chose_a_way_of_killing(target, at);
                 return;
             }
+            Choosing::Delete(_) => {
+                self.chose_to_delete();
+                return;
+            }
             Choosing::Filter if holding(self.nav.at().name()).is_some() => {
                 match self.pane_kinds().is_empty() {
                     true => self.narrowed_to_a_facet(at),

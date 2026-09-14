@@ -1,5 +1,6 @@
 mod acting;
 mod answers;
+mod changing;
 mod detail;
 mod drawing;
 mod harness;

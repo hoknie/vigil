@@ -1,10 +1,11 @@
-use vigil_model::KillTarget;
+use vigil_model::{AccountObject, KillTarget};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Choosing {
     Sort,
     Filter,
     Kill(KillTarget),
+    Delete(AccountObject),
 }
 
 impl Choosing {
@@ -14,11 +15,12 @@ impl Choosing {
             Choosing::Filter => "show only",
             Choosing::Kill(KillTarget::Socket) => "close them by",
             Choosing::Kill(KillTarget::Program) => "stop them by",
+            Choosing::Delete(_) => "delete them:",
         }
     }
 
     pub fn asks_before_acting(self) -> bool {
-        matches!(self, Choosing::Kill(_))
+        matches!(self, Choosing::Kill(_) | Choosing::Delete(_))
     }
 }
 

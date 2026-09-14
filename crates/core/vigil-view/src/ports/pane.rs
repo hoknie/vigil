@@ -1,10 +1,12 @@
-use vigil_model::Snapshot;
+use vigil_model::{AccountChange, Changing, Snapshot};
 
 use crate::types::{
-    Arrangement, Cell, Column, Facet, Notice, Offers, Piece, Room, RowKey, Showing, Toggle,
+    Arrangement, Cell, Column, Facet, Form, Notice, Offers, Piece, Room, RowKey, Showing, Toggle,
 };
 
 const NARROW: u16 = 80;
+
+const READ_NOT_CHANGED: &str = "this list is read, not changed";
 
 pub trait Pane: Send + Sync {
     fn name(&self) -> &str;
@@ -77,5 +79,24 @@ pub trait Pane: Send + Sync {
 
     fn offers(&self) -> Offers {
         Offers::default()
+    }
+
+    fn form(
+        &self,
+        _reading: &Snapshot,
+        _row: Option<&RowKey>,
+        _changing: Changing,
+    ) -> Result<Form, String> {
+        Err(READ_NOT_CHANGED.to_string())
+    }
+
+    fn change(
+        &self,
+        _reading: &Snapshot,
+        _row: Option<&RowKey>,
+        _changing: Changing,
+        _form: Option<&Form>,
+    ) -> Result<AccountChange, String> {
+        Err(READ_NOT_CHANGED.to_string())
     }
 }

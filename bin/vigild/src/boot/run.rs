@@ -33,6 +33,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
                 .map(|(name, every_seconds)| (name.to_string(), every_seconds))
                 .collect(),
             killing_from_the_console: config.killing.from_the_console,
+            accounts_from_the_console: config.accounts.from_the_console,
         },
         &watches::healths(&watches),
         &reporters::names(&reporters),

@@ -23,6 +23,8 @@ pub fn configuration(taken_at: &str, survey: &[Surveyed], defaults: &Config) -> 
     out.push('\n');
     out.push_str(&killing(defaults));
     out.push('\n');
+    out.push_str(&accounts(defaults));
+    out.push('\n');
     out.push_str(&arguments());
 
     out
@@ -130,7 +132,7 @@ fn killing(defaults: &Config) -> String {
     for line in [
         "Whether a person at the console of this host may ask the agent to close a listening socket.".to_string(),
         String::new(),
-        "Off by default, and this is the only key in this file that lets the agent change anything on a host it did not set up. On, the console can ask for one of three things against the sockets a person marked there: SIGTERM to the process holding one, SIGKILL to it, or closing the socket itself and leaving the process running. The console asks the person to confirm; the agent asks nothing and does what it was told.".into(),
+        "Off by default, and one of the two keys in this file that let the agent change anything on a host it did not set up. On, the console can ask for one of three things against the sockets a person marked there: SIGTERM to the process holding one, SIGKILL to it, or closing the socket itself and leaving the process running. The console asks the person to confirm; the agent asks nothing and does what it was told.".into(),
         String::new(),
         "Everything it does, and everything it refuses to do, is a finding of its own, so what happened is in the journal and at whatever receiver this file names. The agent will not signal pid 1 and will not signal itself.".into(),
         String::new(),
@@ -142,6 +144,27 @@ fn killing(defaults: &Config) -> String {
     out.push_str(&format!(
         "  from_the_console: {}\n",
         defaults.killing.from_the_console
+    ));
+    out
+}
+
+fn accounts(defaults: &Config) -> String {
+    let mut out = String::new();
+    for line in [
+        "Whether a person at the console of this host may ask the agent to change its accounts.".to_string(),
+        String::new(),
+        "Off by default, and separate from killing: a host where a program may be stopped has not thereby agreed that sudo may be granted. On, the console can ask the agent to change an account (shell, home, comment, lock, groups) or delete it, keeping its home directory; create, change or delete a group; change or remove a sudo grant; add, change or remove a key in authorized_keys; and end a session. The agent does it with the system's own tools, useradd's family, gpasswd, visudo and loginctl, by absolute path.".into(),
+        String::new(),
+        "Everything it does, and everything it refuses to do, is a finding of its own. It will not delete or lock uid 0, delete the account it runs as, or delete the group with gid 0. Sudo grants are written only in /etc/sudoers.d, and a file that visudo does not accept never replaces the one in place; a grant in /etc/sudoers itself is left for a person to edit.".into(),
+        String::new(),
+        "Nothing reaches this from the network. The console socket is 0600 and local; turning this on gives whoever can read it the accounts of this host.".into(),
+    ] {
+        out.push_str(&comment(&line));
+    }
+    out.push_str("accounts:\n");
+    out.push_str(&format!(
+        "  from_the_console: {}\n",
+        defaults.accounts.from_the_console
     ));
     out
 }

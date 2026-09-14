@@ -19,6 +19,7 @@ pub struct Config {
     pub reporters: Vec<Receiver>,
     pub suppressions: Vec<Suppression>,
     pub killing: Killing,
+    pub accounts: Accounts,
     #[serde(skip)]
     pub of_the_modules: BTreeMap<String, Value>,
 }
@@ -35,6 +36,7 @@ impl Default for Config {
             reporters: Vec::new(),
             suppressions: Vec::new(),
             killing: Killing::default(),
+            accounts: Accounts::default(),
             of_the_modules: BTreeMap::new(),
         }
     }
@@ -63,6 +65,12 @@ impl Config {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Killing {
+    pub from_the_console: bool,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Accounts {
     pub from_the_console: bool,
 }
 
@@ -99,6 +107,26 @@ mod tests {
              suppressions. A default of true would mean every install is one keystroke from a \
              stopped service."
         );
+    }
+
+    #[test]
+    fn a_configuration_nobody_edited_lets_no_account_on_this_host_be_changed() {
+        assert!(
+            !Config::default().accounts.from_the_console,
+            "the console can ask the agent to delete an account, hand out sudo or put a key in \
+             authorized_keys. That is off on a host whose operator has not written the word \
+             down, and it is a key of its own: a host where a program may be stopped has not \
+             thereby agreed that sudo may be granted"
+        );
+    }
+
+    #[test]
+    fn a_file_that_switches_killing_on_has_not_switched_accounts_on() {
+        let config: Config =
+            serde_yaml::from_str("killing:\n  from_the_console: true\n").expect("parses");
+
+        assert!(config.killing.from_the_console);
+        assert!(!config.accounts.from_the_console);
     }
 
     #[test]

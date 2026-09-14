@@ -1,7 +1,16 @@
+use vigil_model::Changing;
+
 use super::hints::Hints;
 use crate::ui::{Level, Screen};
 
 pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
+    if hints.editing {
+        return [FORM, FORM_SHORT, LAST_TWO_OF_A_FORM]
+            .into_iter()
+            .find(|line| line.chars().count() <= width as usize)
+            .unwrap_or(LAST_TWO_OF_A_FORM)
+            .to_string();
+    }
     if hints.typing {
         return " type to search · Enter keep it · Esc put it back".to_string();
     }
@@ -82,6 +91,40 @@ enum Room {
 
 const LAST_TWO: &str = " ? keys · q quit";
 
+const FORM: &str = " ↑↓ Tab a field · Space switch · ←→ a choice · Enter on a button · Esc back";
+
+const FORM_SHORT: &str = " ↑↓ a field · Enter on a button · Esc back";
+
+const LAST_TWO_OF_A_FORM: &str = " Esc back";
+
+fn changes(offered: &[Changing], room: Room) -> String {
+    if offered.is_empty() {
+        return String::new();
+    }
+    let named = |changing: &Changing| match changing {
+        Changing::Create => ('n', "new"),
+        Changing::Update => ('e', "edit"),
+        Changing::Delete => ('D', "delete"),
+    };
+    match room {
+        Room::Cramped => format!(
+            " · {} change",
+            offered
+                .iter()
+                .map(|changing| named(changing).0.to_string())
+                .collect::<Vec<String>>()
+                .join("/")
+        ),
+        _ => offered
+            .iter()
+            .map(|changing| {
+                let (key, word) = named(changing);
+                format!(" · {key} {word}")
+            })
+            .collect(),
+    }
+}
+
 const CLOSE_THE_PANEL: &str = "close the panel";
 
 const BACK_TO_THE_LIST: &str = "back to the list";
@@ -128,10 +171,14 @@ fn listing(hints: &Hints<'_>, room: Room, back: &str, picking: Picking) -> Strin
         line.push_str(&format!(" · {key} view"));
     }
     if hints.marks {
-        line.push_str(match hints.stops {
-            true => " · x mark · K stop",
-            false => " · x mark · K close",
-        });
+        line.push_str(" · x mark");
+        if hints.kills {
+            line.push_str(match hints.stops {
+                true => " · K stop",
+                false => " · K close",
+            });
+        }
+        line.push_str(&changes(hints.changes, room));
         if room == Room::Whole {
             line.push_str(" · S suppress");
         }
@@ -177,7 +224,65 @@ mod tests {
     fn acting(level: Level, back: Back) -> Hints<'static> {
         Hints {
             marks: true,
+            kills: true,
             ..sorting(level, back)
+        }
+    }
+
+    #[test]
+    fn a_list_of_accounts_offers_the_keys_that_change_them_and_not_the_key_that_kills() {
+        for width in [80u16, 120, 200] {
+            let line = keys(
+                &Hints {
+                    marks: true,
+                    changes: &[Changing::Create, Changing::Update, Changing::Delete],
+                    ..hints(Level::List, Back::MainScreen)
+                },
+                a_section(),
+                width,
+            );
+
+            assert!(!line.contains("K "), "{width}: {line}");
+            assert!(
+                line.contains('n') && line.contains('e') && line.contains('D'),
+                "{width}: {line}"
+            );
+            assert!(line.chars().count() <= width as usize, "{width}: {line}");
+            assert_ne!(
+                line, LAST_TWO,
+                "{width}: the keys that change a row were dropped"
+            );
+        }
+        let wide = keys(
+            &Hints {
+                marks: true,
+                changes: &[Changing::Update, Changing::Delete],
+                ..hints(Level::List, Back::MainScreen)
+            },
+            a_section(),
+            200,
+        );
+        assert!(wide.contains("e edit · D delete"), "{wide}");
+        assert!(
+            !wide.contains("n new"),
+            "a list that creates nothing does not offer n: {wide}"
+        );
+    }
+
+    #[test]
+    fn a_form_says_which_keys_walk_it_and_that_esc_goes_back_at_every_width() {
+        for width in [40u16, 80, 120] {
+            let line = keys(
+                &Hints {
+                    editing: true,
+                    ..hints(Level::List, Back::MainScreen)
+                },
+                a_section(),
+                width,
+            );
+
+            assert!(line.contains("Esc back"), "{width}: {line}");
+            assert!(line.chars().count() <= width as usize, "{width}: {line}");
         }
     }
 

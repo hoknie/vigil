@@ -39,7 +39,7 @@ pub fn kill(
     let reading = shared.with(|state| state.snapshot(reading_of(target)).cloned());
     let report = carry_out(target, keys, killing, reading.as_ref(), now);
     let raised = findings(&report, &mut uuid7::mint);
-    shared.with(|state| state.record_a_kill(&raised));
+    shared.with(|state| state.record_what_the_console_did(&raised));
 
     for one in &report.killed {
         eprintln!(
@@ -123,7 +123,7 @@ mod tests {
         }
         assert!(
             shared
-                .with(|state| state.take_what_a_kill_raised())
+                .with(|state| state.take_what_the_console_raised())
                 .is_empty()
         );
     }
@@ -143,7 +143,7 @@ mod tests {
         );
 
         assert!(matches!(answer, Response::Killed { .. }));
-        let raised = shared.with(|state| state.take_what_a_kill_raised());
+        let raised = shared.with(|state| state.take_what_the_console_raised());
         assert_eq!(
             raised.len(),
             2,
@@ -152,7 +152,7 @@ mod tests {
         );
         assert!(
             shared
-                .with(|state| state.take_what_a_kill_raised())
+                .with(|state| state.take_what_the_console_raised())
                 .is_empty(),
             "taking the findings twice would report them twice"
         );
@@ -182,7 +182,7 @@ mod tests {
             }
             other => panic!("it answered {other:?}"),
         }
-        let raised = shared.with(|state| state.take_what_a_kill_raised());
+        let raised = shared.with(|state| state.take_what_the_console_raised());
         assert_eq!(raised.len(), 1);
         assert_eq!(raised[0].kind.as_str(), "agent.process.kill_refused");
     }

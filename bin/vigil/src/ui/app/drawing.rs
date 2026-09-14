@@ -14,7 +14,7 @@ use crate::ui::details::{pieces, section};
 use crate::ui::helpers::finding::diff;
 use crate::ui::helpers::layout::split;
 use crate::ui::helpers::words::unreachable;
-use crate::ui::screens::{findings, home, pane, summary};
+use crate::ui::screens::{findings, form, home, pane, summary};
 use crate::ui::theme::caption;
 use crate::ui::{Arrows, Level, Screen};
 
@@ -28,6 +28,11 @@ impl App {
             self.nav.at(),
             &self.view,
             frame::Hints {
+                editing: self.editing.is_some(),
+                kills: self.kill_target().is_some(),
+                changes: self
+                    .changes_offered()
+                    .map_or(&[], vigil_model::AccountObject::changings),
                 typing: self.typing(),
                 asking: asking.as_deref(),
                 level: self.level,
@@ -55,6 +60,11 @@ impl App {
             buffer,
         );
         self.body.set(body);
+
+        if let Some(editing) = &self.editing {
+            form::render(editing, self.look, body, buffer);
+            return;
+        }
 
         let body = match chooser::height(&self.chooser, self.look, body.width) {
             0 => body,

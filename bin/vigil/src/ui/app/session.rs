@@ -29,6 +29,7 @@ impl App {
             picked: Picked::default(),
             dismissed: Dismissed::default(),
             asking: None,
+            editing: None,
             named_configuration: options.config.clone(),
             detail_open: opening.difference,
             level: Level::default(),

@@ -115,6 +115,7 @@ fn watching(name: &str, health: Health, readings: Vec<Snapshot>) -> Watching {
             interval_seconds: 30,
             periods: [("ports".to_string(), 30)].into_iter().collect(),
             killing_from_the_console: false,
+            accounts_from_the_console: false,
         },
         &[("ports", health)],
         &[],
@@ -194,6 +195,62 @@ fn a_collector_that_reads_again_is_well_on_that_reading_and_not_five_minutes_lat
             .iter()
             .map(|finding| finding.kind.as_str().to_string())
             .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn a_reading_the_console_asked_for_is_taken_at_once_and_the_period_starts_again_from_it() {
+    let mut it = watching(
+        "asked",
+        Health::Ok,
+        vec![snapshot(&[443, 4444]), snapshot(&[443])],
+    );
+    let mut said = Said::about([("ports", "ok".to_string())]);
+    it.round.read(0, &mut said);
+    it.round.schedule.advance(0, Instant::now());
+    it.round
+        .shared
+        .with(|state| state.ask_for_a_reading("ports"));
+
+    it.round.read_what_the_console_asked_for(&mut said);
+
+    assert!(
+        it.round.shared.with(|state| state
+            .snapshot("ports")
+            .is_some_and(|reading| reading.items.contains_key("tcp|0.0.0.0:4444"))),
+        "a person who just changed the host is shown the host as it is now, not as it was \
+         when the period last came round"
+    );
+    assert!(
+        it.round.schedule.waiting(0, Instant::now()) > std::time::Duration::from_secs(29),
+        "and the next reading is a whole period after this one, not the slot that was due anyway"
+    );
+
+    it.round.read_what_the_console_asked_for(&mut said);
+    assert!(
+        it.collector
+            .readings
+            .lock()
+            .expect("not poisoned")
+            .is_empty(),
+        "both readings were taken, and a turn with nothing asked for reads nothing more"
+    );
+}
+
+#[test]
+fn a_reading_asked_for_a_collector_this_agent_does_not_watch_reads_nothing() {
+    let mut it = watching("unwatched", Health::Ok, vec![snapshot(&[443])]);
+    let mut said = Said::about([("ports", "ok".to_string())]);
+    it.round
+        .shared
+        .with(|state| state.ask_for_a_reading("users"));
+
+    it.round.read_what_the_console_asked_for(&mut said);
+
+    assert_eq!(
+        it.collector.readings.lock().expect("not poisoned").len(),
+        1,
+        "users is switched off on this host, and asking for it is not a reason to read ports"
     );
 }
 

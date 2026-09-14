@@ -44,11 +44,11 @@ pub fn answer(request: &Request, state: &State, now: Rfc3339) -> Response {
             capacity: state.findings_capacity(),
         },
 
-        Request::Kill { .. } => Response::Error {
+        Request::Kill { .. } | Request::Change { .. } => Response::Error {
             error: ProtocolError::new(
                 ProtocolError::MALFORMED_REQUEST,
-                "the one request that acts on this host is not answered from the reading \
-                 path: it is carried out where the state is not held under a lock",
+                "a request that acts on this host is not answered from the reading path: it is \
+                 carried out where the state is not held under a lock",
             ),
         },
     }

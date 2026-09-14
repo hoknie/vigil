@@ -1,4 +1,4 @@
-use vigil_model::Snapshot;
+use vigil_model::{AccountObject, Snapshot};
 
 use super::kind::Kind;
 
@@ -24,6 +24,18 @@ impl Subject {
         Subject::LoggedIn,
         Subject::Other,
     ];
+
+    pub fn object(self) -> Option<AccountObject> {
+        match self {
+            Subject::Users => Some(AccountObject::User),
+            Subject::Groups => Some(AccountObject::Group),
+            Subject::Sudo => Some(AccountObject::Sudo),
+            Subject::Keys => Some(AccountObject::Key),
+            Subject::SshUsers => Some(AccountObject::SshUser),
+            Subject::LoggedIn => Some(AccountObject::Session),
+            Subject::Other => None,
+        }
+    }
 
     pub fn shown(self, reading: &Snapshot) -> bool {
         self != Subject::Other || holds_something_unknown(reading)

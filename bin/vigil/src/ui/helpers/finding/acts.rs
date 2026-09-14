@@ -7,6 +7,8 @@ use crate::ui::helpers::layout::section;
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Acts {
     pub acting: Option<KillTarget>,
+    pub editing: bool,
+    pub deleting: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -17,11 +19,42 @@ pub struct Button {
 
 impl Acts {
     pub fn of_a_row(acting: Option<KillTarget>) -> Acts {
-        Acts { acting }
+        Acts {
+            acting,
+            ..Acts::default()
+        }
+    }
+
+    pub fn of_an_account(editing: bool, deleting: bool) -> Acts {
+        Acts {
+            acting: None,
+            editing,
+            deleting,
+        }
     }
 
     pub fn buttons(self) -> Vec<Button> {
         match self.acting {
+            None if self.editing || self.deleting => {
+                let mut buttons = Vec::new();
+                if self.editing {
+                    buttons.push(Button {
+                        key: 'e',
+                        name: "edit",
+                    });
+                }
+                if self.deleting {
+                    buttons.push(Button {
+                        key: 'D',
+                        name: "delete",
+                    });
+                }
+                buttons.push(Button {
+                    key: 'S',
+                    name: "suppress it",
+                });
+                buttons
+            }
             None => Vec::new(),
             Some(target) => vec![
                 Button {
@@ -123,6 +156,35 @@ mod tests {
         assert!(page.contains("[ K stop this program ]"), "{page}");
         assert!(page.contains("[ S suppress it ]"), "{page}");
         assert!(!page.contains("socket"), "{page}");
+    }
+
+    #[test]
+    fn an_account_row_offers_to_edit_and_delete_it_and_only_what_its_list_allows() {
+        let both = drawn(Acts::of_an_account(true, true), None, 80);
+        assert!(both.contains("[ e edit ]"), "{both}");
+        assert!(both.contains("[ D delete ]"), "{both}");
+        assert!(both.contains("[ S suppress it ]"), "{both}");
+        assert!(
+            !both.contains('K'),
+            "an account is changed, not stopped: {both}"
+        );
+
+        let session = drawn(Acts::of_an_account(false, true), None, 80);
+        assert!(!session.contains("edit"), "{session}");
+        assert!(session.contains("[ D delete ]"), "{session}");
+
+        assert_eq!(
+            Acts::of_an_account(true, true)
+                .button(1)
+                .expect("a button")
+                .key,
+            'D'
+        );
+        assert!(
+            Acts::of_an_account(false, false).buttons().is_empty(),
+            "a row that can be neither edited nor deleted is not offered a suppression button \
+             of its own here"
+        );
     }
 
     #[test]

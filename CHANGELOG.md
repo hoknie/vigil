@@ -16,6 +16,7 @@ Format:
 - detail pane not grab auto focus
 - the start-up lines say whether the console of this host may ask the agent to close a socket,
   and name the key that decides it
+- accounts can be changed from the console
 
 ### Fixed
 - double suppresion for one item

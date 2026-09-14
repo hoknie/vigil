@@ -1,6 +1,7 @@
 mod agent;
 mod budget;
 mod buffer;
+mod changing;
 mod collector;
 mod counted;
 mod error;
@@ -15,6 +16,7 @@ mod store;
 pub use agent::{AgentStatus, Silence};
 pub use budget::AgentBudget;
 pub use buffer::BufferStatus;
+pub use changing::{AccountChange, AccountObject, ChangeReport, Changed, Changing};
 pub use collector::{CollectorState, CollectorStatus};
 pub use counted::Counted;
 pub use error::ProtocolError;

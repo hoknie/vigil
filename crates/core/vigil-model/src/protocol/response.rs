@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AgentStatus, CollectorRefusal, Finding, Host, KillReport, Producer, ProtocolError, Rfc3339,
-    SchemaVersion, Snapshot,
+    AgentStatus, ChangeReport, CollectorRefusal, Finding, Host, KillReport, Producer,
+    ProtocolError, Rfc3339, SchemaVersion, Snapshot,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,6 +29,9 @@ pub enum Response {
     },
     Killed {
         report: Box<KillReport>,
+    },
+    Changed {
+        report: Box<ChangeReport>,
     },
     Error {
         error: ProtocolError,

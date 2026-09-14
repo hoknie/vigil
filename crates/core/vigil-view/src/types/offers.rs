@@ -1,4 +1,4 @@
-use vigil_model::KillTarget;
+use vigil_model::{AccountObject, Changing, KillTarget};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Offers {
@@ -7,6 +7,7 @@ pub struct Offers {
     pub detail: bool,
     pub marking: bool,
     pub killing: Option<KillTarget>,
+    pub changing: Option<AccountObject>,
 }
 
 impl Default for Offers {
@@ -17,6 +18,7 @@ impl Default for Offers {
             detail: true,
             marking: false,
             killing: None,
+            changing: None,
         }
     }
 }
@@ -29,6 +31,15 @@ impl Offers {
             detail: false,
             marking: false,
             killing: None,
+            changing: None,
+        }
+    }
+
+    pub fn changed(self, object: AccountObject) -> Offers {
+        Offers {
+            marking: self.marking || object.offers(Changing::Delete),
+            changing: Some(object),
+            ..self
         }
     }
 
@@ -88,5 +99,24 @@ mod tests {
             "a kill is aimed at marked rows, so a list that kills and cannot be marked is a \
              list that kills only what is under the cursor, by accident"
         );
+    }
+
+    #[test]
+    fn a_list_of_accounts_says_what_its_rows_are_and_is_marked_only_where_rows_can_go() {
+        assert_eq!(Offers::default().changing, None);
+
+        let users = Offers::default().changed(AccountObject::User);
+        assert_eq!(users.changing, Some(AccountObject::User));
+        assert!(
+            users.marking,
+            "a delete is aimed at marked rows, as a kill is"
+        );
+        assert_eq!(
+            users.killing, None,
+            "and a list that changes accounts stops nothing"
+        );
+
+        let groups = Offers::default().changed(AccountObject::Group);
+        assert!(groups.marking);
     }
 }

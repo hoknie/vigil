@@ -50,6 +50,10 @@ impl Due {
         }
         self.skipped += slots.saturating_sub(1);
     }
+
+    pub fn restart(&mut self, now: Instant) {
+        self.next = now + Duration::from_secs(u64::from(self.every_seconds));
+    }
 }
 
 #[cfg(test)]
@@ -114,6 +118,24 @@ mod tests {
         assert_eq!(due.next, at(base, 100));
         assert_eq!(due.skipped, 0);
         assert_eq!(due.waiting(base), Duration::from_secs(100));
+    }
+
+    #[test]
+    fn a_reading_taken_out_of_turn_starts_the_period_again_and_counts_no_slot_as_lost() {
+        let base = Instant::now();
+        let mut due = Due::new("users", 300, at(base, 100));
+
+        due.restart(at(base, 40));
+
+        assert_eq!(
+            due.next,
+            at(base, 340),
+            "the host was just read; reading it again sixty seconds later buys nothing"
+        );
+        assert_eq!(
+            due.skipped, 0,
+            "a slot that was not reached is not a slot that went by unread"
+        );
     }
 
     #[test]

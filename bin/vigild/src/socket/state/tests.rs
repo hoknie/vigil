@@ -27,6 +27,24 @@ fn a_collector_that_could_not_read_is_degraded_and_keeps_its_last_reading() {
     );
 }
 
+#[test]
+fn a_reading_asked_for_twice_before_the_loop_looks_is_taken_once_and_then_not_again() {
+    let mut state = fixture::state();
+
+    state.ask_for_a_reading("users");
+    state.ask_for_a_reading("users");
+
+    assert_eq!(
+        state.take_readings_asked_for(),
+        vec!["users".to_string()],
+        "two changes saved in the same second want one reading of the accounts, not two"
+    );
+    assert!(
+        state.take_readings_asked_for().is_empty(),
+        "a reading taken is not asked for again at every turn of the loop"
+    );
+}
+
 fn with_launches_switched_off() -> State {
     State::new(
         Startup {
@@ -36,6 +54,7 @@ fn with_launches_switched_off() -> State {
             interval_seconds: 30,
             periods: [("ports".to_string(), 30u32)].into_iter().collect(),
             killing_from_the_console: false,
+            accounts_from_the_console: false,
         },
         &[("ports", Health::Ok)],
         &[],
@@ -105,6 +124,7 @@ fn a_degraded_collector_keeps_the_reason_it_was_given_at_start() {
             interval_seconds: 30,
             periods: [("ports".to_string(), 30u32)].into_iter().collect(),
             killing_from_the_console: false,
+            accounts_from_the_console: false,
         },
         &[("ports", Health::Degraded("run as root".into()))],
         &[],

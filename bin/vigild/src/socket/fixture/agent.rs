@@ -13,14 +13,18 @@ pub fn period(collector: &str) -> u32 {
 }
 
 pub fn state() -> State {
-    told(false)
+    told(false, false)
 }
 
 pub fn state_that_may_kill() -> State {
-    told(true)
+    told(true, false)
 }
 
-fn told(killing_from_the_console: bool) -> State {
+pub fn state_that_may_change() -> State {
+    told(false, true)
+}
+
+fn told(killing_from_the_console: bool, accounts_from_the_console: bool) -> State {
     State::new(
         Startup {
             configuration_path: "/etc/vigil/vigil.yaml".to_string(),
@@ -31,6 +35,7 @@ fn told(killing_from_the_console: bool) -> State {
                 .into_iter()
                 .collect(),
             killing_from_the_console,
+            accounts_from_the_console,
         },
         &[("ports", Health::Ok)],
         &["ndjson".to_string()],

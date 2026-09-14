@@ -6,9 +6,10 @@ use crate::ui::{Choosing, Level, Paper};
 
 pub const KILL: char = 'K';
 
-const NOTHING_TO_ACT_ON: &str = "This list is read, not acted on. The sockets and the running \
-                                 programs of this host are what this console asks the agent \
-                                 to close or to stop.";
+const NOTHING_TO_ACT_ON: &str = "Nothing on this list is closed or stopped. The sockets and the \
+                                 running programs of this host are what this console asks the \
+                                 agent to close or to stop; the accounts are changed with n, e \
+                                 and D.";
 
 fn nothing_under_the_cursor(target: KillTarget) -> String {
     let (verb, noun) = match target {

@@ -90,6 +90,7 @@ pub fn every_state() -> State {
             .map(|name| (name.to_string(), period(name)))
             .collect(),
             killing_from_the_console: false,
+            accounts_from_the_console: false,
         },
         &[
             ("ports", Health::Ok),
@@ -142,6 +143,7 @@ pub fn before_the_first_reading() -> State {
             interval_seconds: 30,
             periods: BTreeMap::new(),
             killing_from_the_console: false,
+            accounts_from_the_console: false,
         },
         &[],
         &[],

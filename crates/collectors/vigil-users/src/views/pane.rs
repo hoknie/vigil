@@ -1,9 +1,10 @@
-use vigil_model::Snapshot;
-use vigil_view::{Cell, Column, Notice, Offers, Pane, Piece, Room, RowKey, Showing};
+use vigil_model::{AccountChange, Changing, Snapshot};
+use vigil_view::{Cell, Column, Form, Notice, Offers, Pane, Piece, Room, RowKey, Showing};
 
 use super::cells::cells;
 use super::columns::columns;
 use super::detail;
+use super::forms;
 use super::notices;
 use super::rows::rows;
 use super::tally::tally;
@@ -83,6 +84,29 @@ impl Pane for Of {
     }
 
     fn offers(&self) -> Offers {
-        Offers::default().sorted(false)
+        let offers = Offers::default().sorted(false);
+        match self.0.object() {
+            Some(object) => offers.changed(object),
+            None => offers,
+        }
+    }
+
+    fn form(
+        &self,
+        reading: &Snapshot,
+        row: Option<&RowKey>,
+        changing: Changing,
+    ) -> Result<Form, String> {
+        forms::form(self.0, reading, row, changing)
+    }
+
+    fn change(
+        &self,
+        reading: &Snapshot,
+        row: Option<&RowKey>,
+        changing: Changing,
+        form: Option<&Form>,
+    ) -> Result<AccountChange, String> {
+        forms::change(self.0, reading, row, changing, form)
     }
 }

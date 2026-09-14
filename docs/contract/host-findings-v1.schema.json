@@ -225,7 +225,9 @@
             "agent.socket.killed",
             "agent.socket.kill_refused",
             "agent.process.killed",
-            "agent.process.kill_refused"
+            "agent.process.kill_refused",
+            "agent.account.changed",
+            "agent.account.change_refused"
           ]
         },
         "severity": {

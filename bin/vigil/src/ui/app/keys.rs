@@ -8,6 +8,18 @@ use crate::ui::{Action, Level, Motion, Screen};
 
 impl App {
     pub fn on_key(&mut self, code: KeyCode, modifiers: KeyModifiers) {
+        if self.editing.is_some() {
+            if modifiers.contains(KeyModifiers::CONTROL) {
+                if code == KeyCode::Char('c') {
+                    self.leaving = true;
+                }
+                return;
+            }
+            self.message = None;
+            self.walk_the_form(code);
+            return;
+        }
+
         let action = keys::action(code, modifiers, self.typing());
 
         if self.asking().is_some() {

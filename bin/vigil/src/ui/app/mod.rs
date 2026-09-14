@@ -2,6 +2,7 @@
 mod tests;
 
 mod answers;
+mod changing;
 mod choosing;
 mod detail;
 mod drawing;
@@ -27,8 +28,8 @@ use crate::link::Link;
 use std::collections::BTreeMap;
 
 use crate::ui::{
-    Asking, Chooser, Dismissed, Filter, Gone, Level, Look, Nav, Paper, Picked, Screen, Sorting,
-    View,
+    Asking, Chooser, Dismissed, Editing, Filter, Gone, Level, Look, Nav, Paper, Picked, Screen,
+    Sorting, View,
 };
 
 pub use killing::KILL;
@@ -42,6 +43,7 @@ pub struct App {
     picked: Picked,
     dismissed: Dismissed,
     asking: Option<Asking>,
+    editing: Option<Editing>,
     named_configuration: Option<String>,
     detail_open: bool,
     level: Level,

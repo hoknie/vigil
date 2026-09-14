@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{KillTarget, Killing, ProtocolError};
+use crate::{AccountChange, KillTarget, Killing, ProtocolError};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "query", rename_all = "snake_case")]
@@ -21,10 +21,15 @@ pub enum Request {
         programs: Vec<String>,
         killing: Killing,
     },
+    Change {
+        #[serde(default)]
+        changes: Vec<AccountChange>,
+    },
 }
 
 impl Request {
-    pub const NAMES: &'static [&'static str] = &["status", "snapshot", "findings", "kill"];
+    pub const NAMES: &'static [&'static str] =
+        &["status", "snapshot", "findings", "kill", "change"];
 
     pub const READING: &'static [&'static str] = &["status", "snapshot", "findings"];
 
@@ -44,7 +49,7 @@ impl Request {
     }
 
     pub fn acts_on_the_host(&self) -> bool {
-        matches!(self, Request::Kill { .. })
+        matches!(self, Request::Kill { .. } | Request::Change { .. })
     }
 
     pub fn parse(line: &str) -> Result<Request, ProtocolError> {
@@ -103,7 +108,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn exactly_one_request_does_something_on_the_host_and_it_is_named_here() {
+    fn two_requests_do_something_on_the_host_and_both_are_named_here() {
         assert_eq!(Request::READING, &["status", "snapshot", "findings"]);
         for name in Request::READING {
             assert!(
@@ -127,10 +132,35 @@ mod tests {
 
         assert_eq!(
             acting,
-            vec![&"kill"],
+            vec![&"kill", &"change"],
             "this protocol held three questions and no verb until 2026-09-14, when the owner \
-             put one in on purpose. A second verb arriving without that decision being taken \
-             again is the failure this test exists to make loud."
+             put in kill on purpose, and later that day change, for the accounts of this host, \
+             with the decision taken again. A third verb arriving without that decision being \
+             taken a third time is the failure this test exists to make loud."
+        );
+    }
+
+    #[test]
+    fn a_change_names_the_object_and_what_to_do_to_it_and_no_command_line() {
+        let request = Request::parse(
+            "{\"query\":\"change\",\"changes\":[{\"change\":\"delete_user\",\"name\":\"eve\"}]}",
+        )
+        .expect("parses");
+
+        assert!(request.acts_on_the_host());
+        assert_eq!(
+            request,
+            Request::Change {
+                changes: vec![AccountChange::DeleteUser { name: "eve".into() }]
+            }
+        );
+        assert!(
+            Request::parse(
+                "{\"query\":\"change\",\"changes\":[{\"change\":\"run\",\"argv\":[\"/bin/sh\"]}]}"
+            )
+            .is_err(),
+            "the daemon is asked for one of the changes it knows by name; there is no shape \
+             of this request that carries a program to start"
         );
     }
 
