@@ -1,8 +1,97 @@
 use vigil_model::Snapshot;
 
-use crate::{Pane, Room, Showing};
+use crate::{Pane, Room, Showing, Sorting, listed};
 
 const ROOMS: [u16; 2] = [80, 160];
+
+pub fn the_index_lists_every_search_and_sort_as_the_rows_do(pane: &dyn Pane, reading: &Snapshot) {
+    let Some(index) = pane.index(reading, &Showing::default()) else {
+        return;
+    };
+
+    let mut searches: Vec<String> = vec![String::new(), "\u{2603}\u{2603} nothing".to_string()];
+    for at in (0..index.len()).step_by((index.len() / 4).max(1)).take(5) {
+        let text: Vec<char> = index.haystack(at).chars().collect();
+        for (from, length) in [(0, 1), (0, 3), (text.len() / 2, 4)] {
+            let piece: String = text.iter().skip(from).take(length).collect();
+            if !piece.trim().is_empty() {
+                searches.push(piece.to_uppercase());
+                searches.push(piece);
+            }
+        }
+    }
+
+    let mut sortings = vec![Sorting::default()];
+    if pane.offers().sorting {
+        for by in 1..=pane.sorted_by().len() {
+            for descending in [false, true] {
+                sortings.push(Sorting { by, descending });
+            }
+        }
+    }
+
+    for search in &searches {
+        for sorting in &sortings {
+            let showing = Showing::searching(search).sorted(*sorting);
+            let (found, from_the_index) = listed(pane, reading, &showing, &index, None);
+            assert_eq!(
+                from_the_index,
+                pane.rows(reading, &showing),
+                "{} lists different rows from its index than from the reading for the search \
+                 {search:?} sorted {sorting:?}: the console answers every keystroke from the \
+                 index, so a difference here is a list that changes when nothing in the host \
+                 did",
+                pane.name()
+            );
+
+            let longer = format!("{search}e");
+            let narrowed = Showing::searching(&longer).sorted(*sorting);
+            assert_eq!(
+                listed(pane, reading, &narrowed, &index, Some(&found)).1,
+                pane.rows(reading, &narrowed),
+                "{} narrows the search {search:?} to {longer:?} from what the shorter search \
+                 found and lists something the reading does not",
+                pane.name()
+            );
+        }
+    }
+}
+
+pub fn the_tally_from_the_counts_says_what_the_tally_from_the_reading_says(
+    pane: &dyn Pane,
+    reading: &Snapshot,
+) {
+    let Some(counts) = pane.counts(reading, &Showing::default()) else {
+        return;
+    };
+
+    let mut searches: Vec<String> = vec![String::new(), "\u{2603}\u{2603} nothing".to_string()];
+    for row in pane.rows(reading, &Showing::default()).iter().take(4) {
+        let text: Vec<char> = row.key.chars().collect();
+        searches.push(text.iter().take(2).collect());
+        searches.push(text.iter().skip(text.len() / 2).take(3).collect());
+    }
+
+    for search in &searches {
+        for note in [None, Some("part of the reading was refused")] {
+            for elsewhere in [0, 2] {
+                let showing = Showing {
+                    elsewhere,
+                    ..Showing::searching(search).noting(note)
+                };
+                let rows = pane.rows(reading, &showing);
+                assert_eq!(
+                    pane.tally_listed(reading, &showing, &rows, &counts),
+                    pane.tally(reading, &showing, rows.len()),
+                    "{} writes a different footer from what it counted once than from the whole reading \
+                     for the search {search:?}: the console writes the footer from the counts on every \
+                     keystroke",
+                    pane.name()
+                );
+            }
+        }
+    }
+}
 
 pub fn a_pane_reads_the_snapshot_it_says_it_reads(pane: &dyn Pane, reading: &Snapshot) {
     assert_eq!(
@@ -147,6 +236,8 @@ pub fn run_all(pane: &dyn Pane, reading: &Snapshot) {
     nothing_is_shown_twice_under_one_key(pane, reading);
     what_the_pane_shows_of_a_row_is_more_than_the_row_itself(pane, reading);
     a_pane_that_gathers_rows_starts_with_every_one_of_them_put_away(pane, reading);
+    the_index_lists_every_search_and_sort_as_the_rows_do(pane, reading);
+    the_tally_from_the_counts_says_what_the_tally_from_the_reading_says(pane, reading);
 
     assert!(
         !pane.tally(reading, &Showing::default(), 0).is_empty(),

@@ -1,10 +1,11 @@
 use vigil_model::Snapshot;
-use vigil_view::{Cell, Column, Notice, Offers, Pane, Piece, Room, RowKey, Showing};
+use vigil_view::{Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Showing};
 
 use super::columns::{cells, columns};
 use super::detail;
+use super::footer;
 use super::notices;
-use super::rows::{SORTED_BY, rows};
+use super::rows::{SORTED_BY, indexed, rows};
 use super::tally::tally;
 
 const ROOM_FOR_THE_TYPE: u16 = 118;
@@ -36,6 +37,10 @@ impl Pane for TheRuleset {
         rows(reading, showing)
     }
 
+    fn index(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Index> {
+        Some(indexed(reading))
+    }
+
     fn cells(&self, reading: &Snapshot, row: &RowKey, room: Room) -> Vec<Cell> {
         match reading.items.get(&row.key) {
             Some(item) => cells(&row.key, item, room.holds(ROOM_FOR_THE_TYPE)),
@@ -52,6 +57,20 @@ impl Pane for TheRuleset {
 
     fn tally(&self, reading: &Snapshot, showing: &Showing<'_>, shown: usize) -> String {
         tally(reading, showing, shown)
+    }
+
+    fn counts(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Counts> {
+        Some(footer::counts(reading))
+    }
+
+    fn tally_listed(
+        &self,
+        reading: &Snapshot,
+        showing: &Showing<'_>,
+        rows: &[RowKey],
+        counts: &Counts,
+    ) -> String {
+        footer::tallied(reading, showing, rows, counts)
     }
 
     fn empty(&self, showing: &Showing<'_>) -> Notice {

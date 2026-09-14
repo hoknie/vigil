@@ -4,6 +4,7 @@ mod tests;
 mod columns;
 mod detail;
 mod fields;
+mod footer;
 mod notices;
 mod pane;
 mod rows;

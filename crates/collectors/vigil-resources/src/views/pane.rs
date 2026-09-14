@@ -1,12 +1,15 @@
+use serde_json::Value;
 use vigil_model::Snapshot;
 use vigil_view::{
-    Cell, Column, Notice, Offers, Pane, Piece, Room, RowKey, Showing, Sorting, Width, every_field,
+    Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Showing, Sorting,
+    Width, every_field, haystack,
 };
 
 use super::fields::{
     device, free, free_inodes, free_inodes_step, free_step, held, how_it_is_mounted, kind_of_store,
     means, number, sort_key, what,
 };
+use super::footer::footer;
 use super::notices;
 use super::tally::tally;
 use crate::types::Family;
@@ -74,6 +77,26 @@ impl Pane for TheHost {
         keys.into_iter().map(RowKey::of).collect()
     }
 
+    fn index(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Index> {
+        let mut read: Vec<((Family, String), &String, &Value)> = reading
+            .items
+            .iter()
+            .filter_map(|(key, item)| {
+                Family::of(key).map(|family| (sort_key(family, item), key, item))
+            })
+            .collect();
+        read.sort_by(|left, right| (&left.0, left.1).cmp(&(&right.0, right.1)));
+
+        let mut index = Index::new(SORTED_BY.len());
+        for (_, key, item) in read {
+            let keys = (1..=SORTED_BY.len())
+                .map(|by| sorted_on(reading, key, by))
+                .collect();
+            index.push(RowKey::of(key.as_str()), &haystack(key, item), 0, keys);
+        }
+        Some(index)
+    }
+
     fn cells(&self, reading: &Snapshot, row: &RowKey, room: Room) -> Vec<Cell> {
         let (Some(family), Some(item)) = (Family::of(&row.key), reading.items.get(&row.key)) else {
             return Vec::new();
@@ -111,6 +134,20 @@ impl Pane for TheHost {
 
     fn tally(&self, reading: &Snapshot, showing: &Showing<'_>, shown: usize) -> String {
         tally(reading, showing, shown)
+    }
+
+    fn counts(&self, _reading: &Snapshot, _showing: &Showing<'_>) -> Option<Counts> {
+        Some(Counts::default())
+    }
+
+    fn tally_listed(
+        &self,
+        reading: &Snapshot,
+        showing: &Showing<'_>,
+        rows: &[RowKey],
+        _counts: &Counts,
+    ) -> String {
+        footer(reading, showing, rows)
     }
 
     fn empty(&self, showing: &Showing<'_>) -> Notice {

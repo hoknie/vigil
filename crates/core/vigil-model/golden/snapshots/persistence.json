@@ -290,6 +290,12 @@
         ],
         "always": true
       },
+      "pulled_in_by": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
       "readable": {
         "types": [
           "boolean"

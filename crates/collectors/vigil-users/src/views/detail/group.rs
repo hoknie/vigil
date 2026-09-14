@@ -3,9 +3,8 @@ use vigil_model::Snapshot;
 use vigil_view::Piece;
 
 use super::title;
-use crate::types::Kind;
-use crate::views::facts::privileged;
-use crate::views::fields::{members, number, objects, text};
+use crate::views::facts::{grant_to_group, privileged};
+use crate::views::fields::{members, number, text};
 
 pub(super) fn group(item: &Value, reading: &Snapshot) -> Vec<Piece> {
     let name = text(item, "name").unwrap_or("?");
@@ -19,9 +18,7 @@ pub(super) fn group(item: &Value, reading: &Snapshot) -> Vec<Piece> {
         Some(why) => said.push(Piece::warning(why)),
         None => said.push(Piece::text("Nothing administrative in this reading.")),
     }
-    for (_, grant) in objects(reading, Kind::Sudoer)
-        .filter(|(_, grant)| text(grant, "who") == Some(&format!("%{name}")))
-    {
+    if let Some(grant) = grant_to_group(reading, name) {
         said.push(Piece::field(
             "sudo",
             match grant.get("all_commands").and_then(Value::as_bool) == Some(true) {

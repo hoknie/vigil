@@ -4,9 +4,8 @@ use vigil_view::{Choice, Field, Form, RowKey};
 use super::key::unreadable;
 use crate::helpers::{LINE_HINT, key_line, name_accepted, row_of, typed, unchosen};
 use crate::types::Kind;
-use crate::views::facts::readable;
+use crate::views::facts::{keys_of, readable};
 use crate::views::fields::text;
-use crate::views::rows::keys_of;
 
 fn user_of(reading: &Snapshot, row: Option<&RowKey>, changing: Changing) -> Result<String, String> {
     let (key, item) = row_of(reading, row, changing)?;

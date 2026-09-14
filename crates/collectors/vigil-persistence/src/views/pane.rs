@@ -1,7 +1,11 @@
 use vigil_model::Snapshot;
-use vigil_view::{Arrangement, Cell, Column, Notice, Offers, Pane, Piece, Room, RowKey, Showing};
+use vigil_view::{
+    Arrangement, Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Showing,
+};
 
 use super::detail;
+use super::footer::{counted, footer};
+use super::indexed::indexed;
 use super::lists::{cron, files, modules, other, timers, units};
 use super::notices;
 use super::rows::{TREE, parents_of, rows};
@@ -55,6 +59,10 @@ impl Pane for Of {
         rows(reading, self.0, showing)
     }
 
+    fn index(&self, reading: &Snapshot, showing: &Showing<'_>) -> Option<Index> {
+        Some(indexed(reading, self.0, showing))
+    }
+
     fn cells(&self, reading: &Snapshot, row: &RowKey, room: Room) -> Vec<Cell> {
         let Some(item) = reading.items.get(&row.key) else {
             return Vec::new();
@@ -86,6 +94,20 @@ impl Pane for Of {
     fn tally(&self, reading: &Snapshot, showing: &Showing<'_>, shown: usize) -> String {
         let _ = shown;
         tally(reading, self.0, showing)
+    }
+
+    fn counts(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Counts> {
+        Some(counted(reading, self.0))
+    }
+
+    fn tally_listed(
+        &self,
+        reading: &Snapshot,
+        showing: &Showing<'_>,
+        rows: &[RowKey],
+        counts: &Counts,
+    ) -> String {
+        footer(reading, self.0, showing, rows, counts)
     }
 
     fn empty(&self, showing: &Showing<'_>) -> Notice {

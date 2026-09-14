@@ -1,7 +1,7 @@
 use vigil_view::{Pane, Room, Section, Showing, conformance};
 
-use super::WhoCanLogIn;
 use crate::fixture::users;
+use crate::views::WhoCanLogIn;
 
 fn panes() -> Vec<Box<dyn Pane>> {
     WhoCanLogIn.panes()
@@ -134,7 +134,7 @@ fn a_sudo_grant_reaches_the_accounts_whose_own_grants_name_it_and_no_others() {
             .filter(|(key, _)| key.starts_with("account|"))
         {
             let name = account["name"].as_str().expect("an account has a name");
-            let through_its_grants = crate::views::facts::sudo_for(&reading, name)
+            let through_its_grants = crate::views::facts::sudo_for(&reading, account)
                 .iter()
                 .any(|(_, grant)| grant["who"].as_str() == Some(who));
             assert_eq!(

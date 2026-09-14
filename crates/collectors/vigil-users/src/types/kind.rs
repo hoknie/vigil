@@ -10,6 +10,15 @@ pub enum Kind {
 }
 
 impl Kind {
+    pub const KNOWN: &'static [Kind] = &[
+        Kind::Account,
+        Kind::Group,
+        Kind::Sudoer,
+        Kind::Key,
+        Kind::Session,
+        Kind::SessionSource,
+    ];
+
     pub fn of(key: &str) -> Kind {
         match key.split('|').next().unwrap_or_default() {
             "account" => Kind::Account,
@@ -52,14 +61,7 @@ mod tests {
 
     #[test]
     fn every_known_kind_is_found_by_the_front_of_its_key_and_by_nothing_else() {
-        for kind in [
-            Kind::Account,
-            Kind::Group,
-            Kind::Sudoer,
-            Kind::Key,
-            Kind::Session,
-            Kind::SessionSource,
-        ] {
+        for kind in Kind::KNOWN.iter().copied() {
             assert_eq!(Kind::of(&format!("{}anything", kind.prefix())), kind);
             assert!(kind.prefix().ends_with('|'));
         }

@@ -15,6 +15,18 @@
         ],
         "always": true
       },
+      "groups": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "groups/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
       "home": {
         "types": [
           "string"

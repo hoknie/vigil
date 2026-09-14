@@ -1,6 +1,6 @@
 use vigil_view::{Pane, Room, Section, Showing, conformance};
 
-use super::WhatRunsInContainers;
+use super::super::WhatRunsInContainers;
 use crate::fixture::containers;
 
 fn pane() -> Box<dyn Pane> {

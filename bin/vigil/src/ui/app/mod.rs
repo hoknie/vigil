@@ -14,11 +14,11 @@ mod pane;
 mod rows;
 mod session;
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use ratatui::layout::Rect;
-use vigil_view::{Piece, RowKey};
+use vigil_view::{Counts, Index, Piece, RowKey};
 
 use crate::link::Link;
 use std::collections::BTreeMap;
@@ -32,6 +32,8 @@ use crate::ui::{
 type RowsAsked = (u64, Screen, usize, String);
 
 type DetailAsked = (u64, Screen, usize, RowKey, usize);
+
+type FoundBefore = (RowsAsked, String, Rc<Vec<usize>>);
 
 pub use deeds::KILL;
 
@@ -58,7 +60,10 @@ pub struct App {
     message: Option<String>,
     body: Cell<Rect>,
     rows_seen: Remembered<RowsAsked, Rc<Vec<RowKey>>>,
+    index_seen: Remembered<RowsAsked, Option<Rc<Index>>>,
+    found_seen: RefCell<Option<FoundBefore>>,
     tally_seen: Remembered<RowsAsked, String>,
+    counts_seen: Remembered<RowsAsked, Option<Rc<Counts>>>,
     detail_seen: Remembered<DetailAsked, Rc<Vec<Piece>>>,
     refresh_wanted: bool,
     leaving: bool,

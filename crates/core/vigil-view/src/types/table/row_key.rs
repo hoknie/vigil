@@ -9,6 +9,7 @@ pub struct RowKey {
     pub gathers: Option<usize>,
     pub gathered_under: Option<String>,
     pub opened: bool,
+    pub named: Option<String>,
 }
 
 impl RowKey {
@@ -21,6 +22,7 @@ impl RowKey {
             gathers: None,
             gathered_under: None,
             opened: false,
+            named: None,
         }
     }
 
@@ -33,6 +35,13 @@ impl RowKey {
 
     pub fn opened(self, opened: bool) -> RowKey {
         RowKey { opened, ..self }
+    }
+
+    pub fn named(self, name: impl Into<String>) -> RowKey {
+        RowKey {
+            named: Some(name.into()),
+            ..self
+        }
     }
 
     pub fn beneath(self, heading: impl Into<String>) -> RowKey {
@@ -87,6 +96,25 @@ mod tests {
             Some("program|/usr/sbin/nginx"),
             "walking back up by counting depth backwards reads the row above, which is the \
              next socket of the same program, not the heading over both"
+        );
+    }
+
+    #[test]
+    fn a_row_carries_no_name_of_its_own_until_the_pane_that_listed_it_gives_it_one() {
+        assert_eq!(
+            RowKey::of("program|/usr/sbin/nginx").named,
+            None,
+            "a row built anywhere but in rows() knows only its key, and a pane asked to draw it \
+             has to work the name out itself"
+        );
+        assert_eq!(
+            RowKey::of("program|/usr/sbin/nginx")
+                .named("nginx")
+                .named
+                .as_deref(),
+            Some("nginx"),
+            "a name worked out once while listing is what saves every cell from working it out \
+             again"
         );
     }
 }

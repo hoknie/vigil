@@ -102,8 +102,10 @@ impl Panes {
         self.marked[self.at].clear();
     }
 
-    pub fn forget_marks_not_in(&mut self, rows: &[String]) {
-        self.marked[self.at].retain(|key| rows.iter().any(|row| row == key));
+    pub fn forget_marks(&mut self, gone: &[String]) {
+        for key in gone {
+            self.marked[self.at].remove(key);
+        }
     }
 
     pub fn opened(&self) -> Vec<String> {

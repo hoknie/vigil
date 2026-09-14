@@ -114,10 +114,10 @@ impl App {
         let unknown = unknown_readings(&self.view).len();
         self.nav.lists.ready(Screen::UNKNOWN.name(), unknown);
         let rows = self.pane_keys();
-        let in_the_reading = self.pane_keys_of_the_reading();
+        let gone = self.marks_gone_from_the_reading();
         if let Some(panes) = self.panes_mut() {
             panes.cursor_mut().settle(&rows);
-            panes.forget_marks_not_in(&in_the_reading);
+            panes.forget_marks(&gone);
         }
         self.dismissed.settle(&self.view.found.findings);
         let findings = findings::keys(&self.passing());

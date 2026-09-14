@@ -44,11 +44,11 @@ pub(super) fn parents_of(items: &BTreeMap<String, Value>, key: &str) -> usize {
     parents(items, key)
 }
 
-fn row_of(placed: Placed) -> RowKey {
+pub(super) fn row_of(placed: Placed) -> RowKey {
     said(RowKey::of(placed.key).under(placed.depth.min(u8::MAX as usize) as u8))
 }
 
-fn said(row: RowKey) -> RowKey {
+pub(super) fn said(row: RowKey) -> RowKey {
     match Kind::of(&row.key).mark() {
         true => row.said(Emphasis::Marked),
         false => row,

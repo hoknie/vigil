@@ -3,6 +3,8 @@ mod tests;
 
 mod detail;
 mod fields;
+mod footer;
+mod indexed;
 mod lists;
 mod notices;
 mod pane;

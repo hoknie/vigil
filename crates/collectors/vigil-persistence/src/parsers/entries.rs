@@ -3,6 +3,7 @@ use vigil_model::Snapshot;
 
 use super::crontab::CronEntry;
 use super::modules::KernelModule;
+use super::pulled::pulled_in_by;
 use super::unit::UnitFacts;
 
 pub const SOURCE: &str = "persistence";
@@ -82,6 +83,7 @@ pub fn persistence_snapshot(taken_at: &str, reading: &PersistenceReading<'_>) ->
 }
 
 fn add_units(snapshot: &mut Snapshot, reading: &PersistenceReading<'_>) {
+    let pulled = pulled_in_by(reading.units);
     for unit in reading.units {
         let (prefix, value) = match unit.kind() {
             "timer" => (
@@ -115,6 +117,13 @@ fn add_units(snapshot: &mut Snapshot, reading: &PersistenceReading<'_>) {
                         value[setting] = json!(named);
                     }
                 }
+                let by: Vec<&str> = pulled
+                    .get(unit.name.as_str())
+                    .into_iter()
+                    .flatten()
+                    .copied()
+                    .collect();
+                value["pulled_in_by"] = json!(by);
                 ("unit", value)
             }
         };

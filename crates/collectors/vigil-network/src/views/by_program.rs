@@ -1,17 +1,16 @@
-use serde_json::Value;
 use vigil_model::{KillTarget, Snapshot};
-use vigil_view::basename;
-use vigil_view::{Cell, Column, Notice, Offers, Pane, Piece, Room, RowKey, Showing, Toggle, Width};
+use vigil_view::{
+    Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Showing, Toggle, Width,
+};
 
 use super::detail;
-use super::fields::{endpoint, holder, pid, protocol, user};
-use super::flat::{ROOM_FOR_THE_COMMAND, kinds, passing};
+use super::fields::{endpoint, pid, protocol, user};
+use super::flat::{ROOM_FOR_THE_COMMAND, kinds};
+use super::footer;
+use super::gathering::{assembled, indexed};
 use super::notices;
+use super::programs::{HEADING, Programs, UNRESOLVED, counted, gathered, named_from_the_reading};
 use super::tally::tally;
-
-const UNRESOLVED: &str = "unresolved";
-
-const HEADING: &str = "program|";
 
 pub(super) struct ByProgram;
 
@@ -51,16 +50,19 @@ impl Pane for ByProgram {
     }
 
     fn rows(&self, reading: &Snapshot, showing: &Showing<'_>) -> Vec<RowKey> {
-        let (programs, unresolved) = gathered(reading, showing);
+        let listed = gathered(reading, showing);
+        let names = Programs::of(reading, showing, &listed);
+        let (programs, unresolved) = &listed;
 
         let mut rows = Vec::new();
-        for (path, sockets) in &programs {
+        for (path, sockets) in programs {
             let heading = format!("{HEADING}{path}");
             let open = showing.opened_up(&heading);
             rows.push(
                 RowKey::of(heading.clone())
                     .of_its_own()
                     .gathering(sockets.len())
+                    .named(names.name(path))
                     .opened(open),
             );
             if !open {
@@ -79,11 +81,25 @@ impl Pane for ByProgram {
             );
             if showing.opened_up(UNRESOLVED) {
                 for key in unresolved {
-                    rows.push(RowKey::of(key.clone()).under(1).beneath(UNRESOLVED));
+                    rows.push(RowKey::of((*key).clone()).under(1).beneath(UNRESOLVED));
                 }
             }
         }
         rows
+    }
+
+    fn index(&self, reading: &Snapshot, showing: &Showing<'_>) -> Option<Index> {
+        Some(indexed(reading, showing, self.sorted_by().len()))
+    }
+
+    fn assemble(
+        &self,
+        _reading: &Snapshot,
+        showing: &Showing<'_>,
+        index: &Index,
+        ordered: &[usize],
+    ) -> Vec<RowKey> {
+        assembled(showing, index, ordered)
     }
 
     fn cells(&self, reading: &Snapshot, row: &RowKey, room: Room) -> Vec<Cell> {
@@ -112,16 +128,30 @@ impl Pane for ByProgram {
             return detail::socket(&row.key, item);
         }
         if row.key == UNRESOLVED {
-            return detail::unresolved(counted(reading, row));
+            return detail::unresolved(sockets(reading, row));
         }
         match row.key.strip_prefix(HEADING) {
-            Some(path) => detail::program(path, counted(reading, row)),
+            Some(path) => detail::program(path, sockets(reading, row)),
             None => Vec::new(),
         }
     }
 
     fn tally(&self, reading: &Snapshot, showing: &Showing<'_>, shown: usize) -> String {
         tally(reading, showing, shown, true)
+    }
+
+    fn counts(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Counts> {
+        Some(footer::counts(reading))
+    }
+
+    fn tally_listed(
+        &self,
+        reading: &Snapshot,
+        showing: &Showing<'_>,
+        rows: &[RowKey],
+        counts: &Counts,
+    ) -> String {
+        footer::tallied(reading, showing, rows, counts, true)
     }
 
     fn empty(&self, showing: &Showing<'_>) -> Notice {
@@ -141,38 +171,20 @@ impl Pane for ByProgram {
     }
 }
 
-type Gathered<'a> = (Vec<(String, Vec<&'a String>)>, Vec<&'a String>);
-
-fn gathered<'a>(reading: &'a Snapshot, showing: &Showing<'_>) -> Gathered<'a> {
-    let mut programs: Vec<(String, Vec<&'a String>)> = Vec::new();
-    let mut unresolved: Vec<&'a String> = Vec::new();
-
-    for (key, item) in passing(reading, showing) {
-        match holder(item) {
-            None => unresolved.push(key),
-            Some(path) => match programs.iter_mut().find(|(known, _)| known == path) {
-                Some((_, sockets)) => sockets.push(key),
-                None => programs.push((path.to_string(), vec![key])),
-            },
-        }
-    }
-    programs.sort_by(|left, right| left.0.cmp(&right.0));
-
-    (programs, unresolved)
-}
-
 fn heading(reading: &Snapshot, row: &RowKey, wide: bool) -> Vec<Cell> {
-    let count = row.gathers.unwrap_or_else(|| counted(reading, row));
+    let count = sockets(reading, row);
     let folded = match row.opened {
         true => "▾ ",
         false => "▸ ",
     };
     let mut cells = match row.key.strip_prefix(HEADING) {
         Some(path) => vec![
-            Cell::plain(match ambiguous(reading, path) {
-                true => format!("{folded}{path} ({count})"),
-                false => format!("{folded}{} ({count})", basename(path)),
-            }),
+            Cell::plain(format!(
+                "{folded}{} ({count})",
+                row.named
+                    .clone()
+                    .unwrap_or_else(|| named_from_the_reading(reading, path))
+            )),
             Cell::plain(""),
             Cell::plain(""),
             Cell::plain(""),
@@ -193,34 +205,6 @@ fn heading(reading: &Snapshot, row: &RowKey, wide: bool) -> Vec<Cell> {
     cells
 }
 
-fn counted(reading: &Snapshot, row: &RowKey) -> usize {
-    match row.key.strip_prefix(HEADING) {
-        Some(path) => reading
-            .items
-            .values()
-            .filter(|item| holder(item) == Some(path))
-            .count(),
-        None => reading
-            .items
-            .values()
-            .filter(|item| is_a_socket(item) && holder(item).is_none())
-            .count(),
-    }
-}
-
-fn ambiguous(reading: &Snapshot, path: &str) -> bool {
-    let name = basename(path);
-    let mut seen: Vec<&str> = reading
-        .items
-        .values()
-        .filter_map(holder)
-        .filter(|other| basename(other) == name)
-        .collect();
-    seen.sort_unstable();
-    seen.dedup();
-    seen.len() > 1
-}
-
-fn is_a_socket(item: &Value) -> bool {
-    crate::types::SocketView::new(item).is_socket()
+fn sockets(reading: &Snapshot, row: &RowKey) -> usize {
+    row.gathers.unwrap_or_else(|| counted(reading, &row.key))
 }

@@ -2,7 +2,7 @@ use serde_json::Value;
 use vigil_model::Snapshot;
 use vigil_view::{RowKey, Showing, haystack};
 
-use super::facts::{attended, could_log_in, privileged, readable, remote};
+use super::facts::{attended, could_log_in, keys_of, privileged, readable, remote};
 use super::fields::{objects, text};
 use crate::types::{Kind, Subject};
 
@@ -10,24 +10,20 @@ pub(super) fn rows(reading: &Snapshot, subject: Subject, showing: &Showing<'_>) 
     if subject == Subject::SshUsers {
         return ssh_users(reading, showing);
     }
-    let kinds = subject.kinds();
-    if kinds.is_empty() {
-        return Vec::new();
-    }
 
-    let mut rows: Vec<(u8, String)> = reading
-        .items
+    let mut rows: Vec<(u8, String)> = subject
+        .kinds()
         .iter()
-        .filter(|(key, _)| kinds.contains(&Kind::of(key)))
-        .filter(|(key, item)| showing.matches(key, item))
-        .map(|(key, item)| (rank(Kind::of(key), item), key.clone()))
+        .flat_map(|kind| objects(reading, *kind).map(move |(key, item)| (*kind, key, item)))
+        .filter(|(_, key, item)| showing.matches(key, item))
+        .map(|(kind, key, item)| (rank(kind, item), key.to_string()))
         .collect();
 
     rows.sort();
     rows.into_iter().map(|(_, key)| RowKey::of(key)).collect()
 }
 
-fn rank(kind: Kind, item: &Value) -> u8 {
+pub(super) fn rank(kind: Kind, item: &Value) -> u8 {
     match kind {
         Kind::Account => u8::from(!could_log_in(item)),
         Kind::Group => u8::from(!privileged(item)),
@@ -52,8 +48,10 @@ fn ssh_users(reading: &Snapshot, showing: &Showing<'_>) -> Vec<RowKey> {
     let mut rows: Vec<(bool, String, String)> = names
         .into_iter()
         .filter_map(|name| {
-            let account = objects(reading, Kind::Account)
-                .find(|(_, item)| text(item, "name") == Some(name))
+            let account = reading
+                .items
+                .get_key_value(&format!("{}{name}", Kind::Account.prefix()))
+                .filter(|(_, item)| text(item, "name") == Some(name))
                 .map(|(key, _)| key.to_string());
             let key = account.or_else(|| {
                 keys_of(reading, name)
@@ -86,12 +84,4 @@ fn ssh_users(reading: &Snapshot, showing: &Showing<'_>) -> Vec<RowKey> {
     rows.into_iter()
         .map(|(_, _, key)| RowKey::of(key))
         .collect()
-}
-
-pub(super) fn keys_of<'a>(
-    reading: &'a Snapshot,
-    user: &str,
-) -> impl Iterator<Item = (&'a str, &'a Value)> {
-    let user = user.to_string();
-    objects(reading, Kind::Key).filter(move |(_, item)| text(item, "user") == Some(user.as_str()))
 }

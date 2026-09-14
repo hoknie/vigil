@@ -25,6 +25,15 @@ impl Kind {
         }
     }
 
+    pub fn word(self) -> &'static str {
+        match self {
+            Kind::Ruleset => RULESET,
+            Kind::Backend => BACKEND,
+            Kind::Table => TABLE,
+            Kind::Chain => CHAIN,
+        }
+    }
+
     pub fn name(self) -> &'static str {
         match self {
             Kind::Ruleset => "ruleset",

@@ -132,6 +132,35 @@ fn things_going_away_in_this_family_are_carried_in_the_snapshot_and_reported_by_
 }
 
 #[test]
+fn a_unit_that_changed_only_in_which_other_units_pull_it_in_raises_nothing() {
+    let older = fixture::unit("nginx.service", "/usr/sbin/nginx", "root");
+    let mut carried = older.clone();
+    carried["pulled_in_by"] = json!([]);
+    let mut grown = carried.clone();
+    grown["pulled_in_by"] = json!(["multi-user.target"]);
+
+    for (what, before, after) in [
+        (
+            "the first reading after an upgrade writes the list for every unit",
+            older,
+            carried.clone(),
+        ),
+        ("another unit file started wanting this one", carried, grown),
+    ] {
+        let fired = persistence(&Change::Changed {
+            key: "unit|nginx.service".into(),
+            before,
+            after,
+        });
+        assert!(
+            fired.is_empty(),
+            "{what}: this unit's own file did not change, and the other file is its own \
+             finding, so this one would be noise: {fired:?}"
+        );
+    }
+}
+
+#[test]
 fn the_row_saying_the_kernel_module_list_could_not_be_read_reaches_no_rule_at_all() {
     let change = Change::Added {
         key: "modules|unreadable".into(),

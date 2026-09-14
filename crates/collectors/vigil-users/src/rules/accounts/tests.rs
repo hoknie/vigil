@@ -1,8 +1,78 @@
 use serde_json::json;
 use vigil_model::Change;
+use vigil_rules::{diff, findings_for};
 
+use super::set::account_rules;
 use super::verdict::accounts;
 use crate::fixture;
+
+#[test]
+fn the_first_reading_after_the_agent_starts_listing_the_groups_of_every_account_raises_nothing() {
+    let upgraded = fixture::users();
+    let mut older = fixture::users();
+    for (key, item) in older.items.iter_mut() {
+        if key.starts_with("account|") {
+            item.as_object_mut()
+                .expect("an account item is an object")
+                .remove("groups");
+        }
+    }
+
+    let changes = diff(&older, &upgraded);
+
+    assert!(
+        !changes.is_empty()
+            && changes.iter().all(|change| matches!(
+                change,
+                Change::Changed { key, .. } if key.starts_with("account|")
+            )),
+        "the upgrade changes every account item and nothing else: {changes:?}"
+    );
+    assert_eq!(
+        findings_for(account_rules(), &changes),
+        Vec::<(String, String)>::new(),
+        "every account item changes once after an upgrade, and an account rule that read the \
+         whole item instead of its own fields would alert on every account of every host"
+    );
+}
+
+#[test]
+fn joining_a_privileged_group_changes_the_account_too_and_only_the_group_speaks_about_it() {
+    let after = fixture::users();
+    let mut before = fixture::users();
+    for (key, field, gone) in [
+        ("group|wheel", "members", "deploy"),
+        ("account|deploy", "groups", "wheel"),
+    ] {
+        before
+            .items
+            .get_mut(key)
+            .and_then(|item| item[field].as_array_mut())
+            .expect("the sample has deploy in wheel")
+            .retain(|name| *name != gone);
+    }
+
+    let changes = diff(&before, &after);
+    let changed: Vec<&str> = changes
+        .iter()
+        .map(|change| match change {
+            Change::Added { key, .. }
+            | Change::Changed { key, .. }
+            | Change::Removed { key, .. } => key.as_str(),
+        })
+        .collect();
+
+    assert_eq!(changed, vec!["account|deploy", "group|wheel"]);
+    assert_eq!(
+        findings_for(account_rules(), &changes),
+        vec![(
+            "privileged_group_member_added".to_string(),
+            "user.group.privileged_member_added".to_string()
+        )],
+        "the account now carries its groups, so one usermod changes two items, and a person \
+         joining a group is still one finding"
+    );
+}
 
 #[test]
 fn exactly_one_account_rule_fires_for_each_change_a_host_can_produce() {

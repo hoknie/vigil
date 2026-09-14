@@ -141,6 +141,52 @@ fn a_unit_carries_what_the_file_says_pulls_it_in_and_what_it_pulls() {
     );
 }
 
+fn unit_file(name: &str, text: &str) -> UnitFile {
+    UnitFile {
+        name: name.into(),
+        path: format!("/etc/systemd/system/{name}"),
+        readable: true,
+        facts: parse_unit(text),
+    }
+}
+
+#[test]
+fn a_unit_carries_the_units_of_the_same_reading_that_want_or_require_it() {
+    let units = vec![
+        unit_file("a.service", "[Unit]\nWants=b.service self.service\n"),
+        unit_file("d.service", "[Unit]\nRequires=b.service b.service\n"),
+        unit_file("b.service", "[Unit]\nWants=gone.service\n"),
+        unit_file("self.service", "[Unit]\nWants=self.service\n"),
+        unit_file("backup.timer", "[Unit]\nWants=b.service\n"),
+    ];
+
+    let preload = preload_absent();
+    let snapshot =
+        persistence_snapshot("2026-09-09T12:00:00.000Z", &reading(&units, &[], &preload));
+
+    assert_eq!(
+        snapshot.items["unit|b.service"]["pulled_in_by"],
+        json!(["a.service", "d.service"]),
+        "sorted, each unit once, and a timer is not a unit row so it pulls nothing in"
+    );
+    assert_eq!(
+        snapshot.items["unit|self.service"]["pulled_in_by"],
+        json!(["a.service"]),
+        "a unit naming itself is not its own parent"
+    );
+    assert_eq!(
+        snapshot.items["unit|a.service"]["pulled_in_by"],
+        json!([]),
+        "an empty list is written, so a reader can tell nothing pulls it in from an agent \
+         that never said"
+    );
+    assert_eq!(
+        snapshot.items["timer|backup.timer"].get("pulled_in_by"),
+        None,
+        "a timer row carries no unit links"
+    );
+}
+
 #[test]
 fn a_cron_key_is_the_file_the_user_and_the_command() {
     let jobs = parse_crontab(

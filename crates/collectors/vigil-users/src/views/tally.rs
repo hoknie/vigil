@@ -92,7 +92,7 @@ pub(super) fn tally(
     parts.join(" · ")
 }
 
-fn standing(source: &Value) -> String {
+pub(super) fn standing(source: &Value) -> String {
     let name = text(source, "source").unwrap_or("?");
     match (
         source.get("present").and_then(Value::as_bool),

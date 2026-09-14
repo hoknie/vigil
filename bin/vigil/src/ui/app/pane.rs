@@ -183,15 +183,19 @@ impl App {
         self.pane_rows().iter().map(|row| row.key.clone()).collect()
     }
 
-    pub(super) fn pane_keys_of_the_reading(&self) -> Vec<String> {
+    pub(super) fn marks_gone_from_the_reading(&self) -> Vec<String> {
+        let marked = self.marked();
         let Some(pane) = self.pane() else {
-            return Vec::new();
+            return marked;
         };
         let Reading::Taken(snapshot) = self.view.reading(pane.reads()) else {
-            return Vec::new();
+            return marked;
         };
 
-        snapshot.items.keys().cloned().collect()
+        marked
+            .into_iter()
+            .filter(|key| !snapshot.items.contains_key(key))
+            .collect()
     }
 
     pub(super) fn pane_detail(&self) -> Rc<Vec<Piece>> {

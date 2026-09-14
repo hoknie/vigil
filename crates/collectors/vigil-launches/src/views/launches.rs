@@ -106,7 +106,7 @@ pub(super) fn order(left: (&str, &Value), right: (&str, &Value), sorting: Sortin
         .then_with(|| left_key.cmp(right_key))
 }
 
-fn program(item: &Value) -> (&str, &str) {
+pub(super) fn program(item: &Value) -> (&str, &str) {
     (basename(executable(item)), executable(item))
 }
 

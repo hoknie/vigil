@@ -1,6 +1,8 @@
+use std::ops::Bound;
+
 use serde_json::Value;
 use vigil_model::Snapshot;
-use vigil_view::{RowKey, Showing, Sorting};
+use vigil_view::{Index, RowKey, Showing, Sorting, haystack};
 
 use super::fields::{self, sort_key};
 use crate::types::Kind;
@@ -21,10 +23,35 @@ pub(super) fn rows(reading: &Snapshot, showing: &Showing<'_>) -> Vec<RowKey> {
     keys.into_iter().map(RowKey::of).collect()
 }
 
-pub(super) fn summary(reading: &Snapshot) -> Option<&Value> {
-    reading
+pub(super) fn indexed(reading: &Snapshot) -> Index {
+    let mut read: Vec<((Kind, String, String), &String, &Value)> = reading
         .items
         .iter()
+        .filter(|(key, _)| Kind::of(key).is_some())
+        .map(|(key, item)| (sort_key(key, item), key, item))
+        .collect();
+    read.sort_by(|left, right| left.0.cmp(&right.0).then_with(|| left.1.cmp(right.1)));
+
+    let mut index = Index::new(SORTED_BY.len());
+    for (_, key, item) in read {
+        index.push(
+            RowKey::of(key.clone()),
+            &haystack(key, item),
+            0,
+            (1..=SORTED_BY.len())
+                .map(|by| sorted_on(reading, key, by))
+                .collect(),
+        );
+    }
+    index
+}
+
+pub(super) fn summary(reading: &Snapshot) -> Option<&Value> {
+    let word = Kind::Ruleset.word();
+    reading
+        .items
+        .range::<str, _>((Bound::Included(word), Bound::Unbounded))
+        .take_while(|(key, _)| key.starts_with(word))
         .find(|(key, _)| Kind::of(key) == Some(Kind::Ruleset))
         .map(|(_, item)| item)
 }

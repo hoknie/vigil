@@ -1,10 +1,14 @@
 use vigil_model::{AccountChange, Changing, Snapshot};
-use vigil_view::{Cell, Column, Form, Notice, Offers, Pane, Piece, Room, RowKey, Showing};
+use vigil_view::{
+    Cell, Column, Counts, Form, Index, Notice, Offers, Pane, Piece, Room, RowKey, Showing,
+};
 
 use super::cells::cells;
 use super::columns::columns;
+use super::counts::{counts, tally_listed};
 use super::detail;
 use super::forms;
+use super::index::index;
 use super::notices;
 use super::rows::rows;
 use super::tally::tally;
@@ -45,6 +49,24 @@ impl Pane for Of {
 
     fn rows(&self, reading: &Snapshot, showing: &Showing<'_>) -> Vec<RowKey> {
         rows(reading, self.0, showing)
+    }
+
+    fn index(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Index> {
+        Some(index(reading, self.0))
+    }
+
+    fn counts(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Counts> {
+        Some(counts(reading, self.0))
+    }
+
+    fn tally_listed(
+        &self,
+        reading: &Snapshot,
+        showing: &Showing<'_>,
+        rows: &[RowKey],
+        counts: &Counts,
+    ) -> String {
+        tally_listed(reading, self.0, showing, rows, counts)
     }
 
     fn cells(&self, reading: &Snapshot, row: &RowKey, room: Room) -> Vec<Cell> {

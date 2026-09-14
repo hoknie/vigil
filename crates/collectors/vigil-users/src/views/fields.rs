@@ -6,14 +6,17 @@ use vigil_model::Snapshot;
 
 use crate::types::Kind;
 
-pub fn objects(reading: &Snapshot, kind: Kind) -> impl Iterator<Item = (&str, &Value)> {
-    let prefix = kind.prefix();
+pub fn under<P: AsRef<str>>(reading: &Snapshot, prefix: P) -> impl Iterator<Item = (&str, &Value)> {
     reading
         .items
-        .range::<str, _>((Bound::Included(prefix), Bound::Unbounded))
-        .take_while(move |(key, _)| key.starts_with(prefix))
-        .filter(move |(key, _)| Kind::of(key) == kind)
+        .range::<str, _>((Bound::Included(prefix.as_ref()), Bound::Unbounded))
+        .take_while(move |(key, _)| key.starts_with(prefix.as_ref()))
         .map(|(key, item)| (key.as_str(), item))
+}
+
+pub fn objects(reading: &Snapshot, kind: Kind) -> impl Iterator<Item = (&str, &Value)> {
+    under(reading, kind.prefix().trim_end_matches('|'))
+        .filter(move |(key, _)| Kind::of(key) == kind)
 }
 
 pub fn text<'a>(item: &'a Value, field: &str) -> Option<&'a str> {
@@ -67,6 +70,12 @@ mod tests {
         reading
             .items
             .insert("accounting|x".into(), json!({"looks like": "account"}));
+        reading
+            .items
+            .insert("account".into(), json!({"name": "account"}));
+        reading
+            .items
+            .insert("session".into(), json!({"user": "a bare session"}));
 
         for kind in [
             Kind::Account,

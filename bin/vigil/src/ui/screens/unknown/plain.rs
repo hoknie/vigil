@@ -1,8 +1,8 @@
 use serde_json::Value;
 use vigil_model::{Snapshot, class_of};
 use vigil_view::{
-    Cell, Column, Notice, Offers, Pane, Piece, Room, RowKey, Showing, Sorting, Width, every_field,
-    time_of_day,
+    Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Showing, Sorting,
+    Width, every_field, haystack, time_of_day,
 };
 
 const ROOM_FOR_THE_VALUES: u16 = 100;
@@ -10,6 +10,8 @@ const ROOM_FOR_THE_VALUES: u16 = 100;
 const VALUES: usize = 4;
 
 const SORTED_BY: &[&str] = &["CLASS", "OBJECT"];
+
+const CLASSES: &str = "classes";
 
 pub(super) struct Plain {
     reads: String,
@@ -71,6 +73,19 @@ impl Pane for Plain {
         keys.into_iter().map(RowKey::of).collect()
     }
 
+    fn index(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Index> {
+        let mut index = Index::new(SORTED_BY.len());
+        for (key, item) in &reading.items {
+            index.push(
+                RowKey::of(key.clone()),
+                &haystack(key, item),
+                0,
+                (1..=SORTED_BY.len()).map(|by| sorted_on(key, by)).collect(),
+            );
+        }
+        Some(index)
+    }
+
     fn cells(&self, reading: &Snapshot, row: &RowKey, room: Room) -> Vec<Cell> {
         let Some(item) = reading.items.get(&row.key) else {
             return Vec::new();
@@ -94,35 +109,34 @@ impl Pane for Plain {
         every_field(class_of(&row.key), &named(&row.key), &row.key, item, &[])
     }
 
-    fn tally(&self, reading: &Snapshot, showing: &Showing<'_>, shown: usize) -> String {
-        let whole = reading.items.len();
-        let mut parts = vec![match showing.holding_back() {
-            false => format!("{shown} row(s), read at {}", time_of_day(&reading.taken_at)),
-            true => format!(
-                "{shown} of {whole} row(s), read at {}",
-                time_of_day(&reading.taken_at)
-            ),
-        }];
-
+    fn counts(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Counts> {
         let mut classes: Vec<&str> = reading.items.keys().map(|key| class_of(key)).collect();
         classes.sort_unstable();
         classes.dedup();
-        parts.push(format!("{} kind(s) of row", classes.len()));
-        parts.push(format!(
-            "no screen of this build draws {}",
-            self.reads.as_str()
-        ));
-        if let Some(reason) = showing.note {
-            parts.push(format!("incomplete: {reason}"));
-        }
-        if showing.elsewhere > 0 {
-            parts.push(format!(
-                "{} other list(s) narrowed by a search of their own",
-                showing.elsewhere
-            ));
-        }
+        Some(Counts::default().counted(CLASSES, classes.len()))
+    }
 
-        parts.join(" · ")
+    fn tally_listed(
+        &self,
+        reading: &Snapshot,
+        showing: &Showing<'_>,
+        rows: &[RowKey],
+        counts: &Counts,
+    ) -> String {
+        footer(
+            self.reads.as_str(),
+            reading,
+            showing,
+            rows.len(),
+            counts.number(CLASSES),
+        )
+    }
+
+    fn tally(&self, reading: &Snapshot, showing: &Showing<'_>, shown: usize) -> String {
+        let mut classes: Vec<&str> = reading.items.keys().map(|key| class_of(key)).collect();
+        classes.sort_unstable();
+        classes.dedup();
+        footer(self.reads.as_str(), reading, showing, shown, classes.len())
     }
 
     fn empty(&self, showing: &Showing<'_>) -> Notice {
@@ -153,6 +167,37 @@ impl Pane for Plain {
     fn offers(&self) -> Offers {
         Offers::default()
     }
+}
+
+fn footer(
+    reads: &str,
+    reading: &Snapshot,
+    showing: &Showing<'_>,
+    shown: usize,
+    classes: usize,
+) -> String {
+    let whole = reading.items.len();
+    let mut parts = vec![match showing.holding_back() {
+        false => format!("{shown} row(s), read at {}", time_of_day(&reading.taken_at)),
+        true => format!(
+            "{shown} of {whole} row(s), read at {}",
+            time_of_day(&reading.taken_at)
+        ),
+    }];
+
+    parts.push(format!("{classes} kind(s) of row"));
+    parts.push(format!("no screen of this build draws {reads}"));
+    if let Some(reason) = showing.note {
+        parts.push(format!("incomplete: {reason}"));
+    }
+    if showing.elsewhere > 0 {
+        parts.push(format!(
+            "{} other list(s) narrowed by a search of their own",
+            showing.elsewhere
+        ));
+    }
+
+    parts.join(" · ")
 }
 
 fn named(key: &str) -> String {

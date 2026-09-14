@@ -1,7 +1,7 @@
 use vigil_view::{Pane, Room, Section, Showing, Sorting, conformance};
 
-use super::TheHostAndItsFiles;
 use crate::fixture::resources;
+use crate::views::TheHostAndItsFiles;
 
 fn pane() -> Box<dyn Pane> {
     TheHostAndItsFiles.panes().remove(0)

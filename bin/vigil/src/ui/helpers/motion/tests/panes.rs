@@ -109,7 +109,7 @@ fn a_mark_on_a_socket_that_is_no_longer_in_the_reading_is_dropped_rather_than_ke
     panes.mark("tcp|0.0.0.0:4444", true);
     panes.mark("tcp|0.0.0.0:22", true);
 
-    panes.forget_marks_not_in(&["tcp|0.0.0.0:22".to_string()]);
+    panes.forget_marks(&["tcp|0.0.0.0:4444".to_string()]);
 
     assert_eq!(
         panes.marked(),

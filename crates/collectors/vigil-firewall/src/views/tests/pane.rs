@@ -1,7 +1,11 @@
+use serde_json::{Value, json};
+use vigil_model::Snapshot;
 use vigil_view::{Pane, Room, Section, Showing, conformance};
 
-use super::WhatTheHostLetsIn;
+use super::super::WhatTheHostLetsIn;
+use super::super::rows::summary;
 use crate::fixture::firewall;
+use crate::types::Kind;
 
 fn pane() -> Box<dyn Pane> {
     WhatTheHostLetsIn.panes().remove(0)
@@ -73,4 +77,43 @@ fn a_row_that_left_this_reading_is_still_worth_landing_on() {
          o, and that is the whole of what happened: the section opens and says when the row \
          was last seen rather than refusing to move"
     );
+}
+
+fn walked(reading: &Snapshot) -> Option<&Value> {
+    reading
+        .items
+        .iter()
+        .find(|(key, _)| Kind::of(key) == Some(Kind::Ruleset))
+        .map(|(_, item)| item)
+}
+
+#[test]
+fn the_summary_found_by_its_key_is_the_row_a_walk_over_the_whole_reading_finds() {
+    let mut decoyed = firewall();
+    for key in [
+        "fw-summary-old|nftables",
+        "fw-summaryz|nftables",
+        "fw-summar|nftables",
+    ] {
+        decoyed
+            .items
+            .insert(key.to_string(), json!({"hooked_on_input": 7}));
+    }
+    let mut without = decoyed.clone();
+    without
+        .items
+        .retain(|key, _| Kind::of(key) != Some(Kind::Ruleset));
+    let mut bare = without.clone();
+    bare.items
+        .insert("fw-summary".to_string(), json!({"hooked_on_input": 2}));
+
+    assert!(walked(&decoyed).is_some() && walked(&bare).is_some());
+    for reading in [firewall(), decoyed, without, bare] {
+        assert_eq!(
+            summary(&reading),
+            walked(&reading),
+            "a key that only begins like the summary's is not the summary, and a lookup that \
+             stops at the first near miss tells the tally the host hooks nothing on input"
+        );
+    }
 }

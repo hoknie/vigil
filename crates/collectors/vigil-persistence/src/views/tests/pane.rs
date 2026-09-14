@@ -1,7 +1,7 @@
 use vigil_view::{Pane, Room, Section, Showing, conformance};
 
-use super::WhatStartsByItself;
 use crate::fixture::persistence;
+use crate::views::WhatStartsByItself;
 
 fn panes() -> Vec<Box<dyn Pane>> {
     WhatStartsByItself.panes()

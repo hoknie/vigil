@@ -1,7 +1,8 @@
-use vigil_view::{Pane, Room, Section, Showing, conformance};
+use vigil_model::Snapshot;
+use vigil_view::{Pane, Room, RowKey, Section, Showing, conformance};
 
-use super::Listening;
-use crate::fixture::ports;
+use super::super::Listening;
+use crate::fixture::{ports, socket, socket_without_owner};
 
 fn panes() -> Vec<Box<dyn Pane>> {
     Listening.panes()
@@ -163,5 +164,114 @@ fn what_the_detail_of_a_socket_says_is_what_a_reader_can_act_on() {
     assert!(
         said.contains("port.listen|tcp|0.0.0.0:22"),
         "the key an operator puts in suppressions is the finding key, not the row key: {said}"
+    );
+}
+
+fn two_programs_named_alike() -> Snapshot {
+    let mut reading = Snapshot::new("ports", "2026-09-14T09:00:00.000Z".to_string());
+    for (key, item) in [
+        (
+            "tcp|0.0.0.0:80",
+            socket("0.0.0.0", 80, "/usr/sbin/nginx", "www-data"),
+        ),
+        (
+            "tcp|0.0.0.0:443",
+            socket("0.0.0.0", 443, "/usr/sbin/nginx", "www-data"),
+        ),
+        (
+            "tcp|0.0.0.0:8080",
+            socket("0.0.0.0", 8080, "/opt/build/nginx", "deploy"),
+        ),
+        (
+            "tcp|0.0.0.0:22",
+            socket("0.0.0.0", 22, "/usr/sbin/sshd", "root"),
+        ),
+        ("tcp|0.0.0.0:9000", socket_without_owner("0.0.0.0", 9000)),
+        (
+            "tcp|127.0.0.1:9001",
+            socket_without_owner("127.0.0.1", 9001),
+        ),
+    ] {
+        reading.items.insert(key.to_string(), item);
+    }
+    reading
+}
+
+#[test]
+fn a_heading_from_the_listing_draws_and_explains_itself_as_one_worked_out_from_the_reading() {
+    let pane = &panes()[1];
+    let opened = ["program|/usr/sbin/nginx", "unresolved"];
+
+    for reading in [two_programs_named_alike(), ports()] {
+        let rows = pane.rows(&reading, &Showing::default().opening(&opened));
+        let headings: Vec<&RowKey> = rows.iter().filter(|row| !row.of_the_reading).collect();
+
+        assert!(headings.iter().any(|row| row.opened) && headings.iter().any(|row| !row.opened));
+        for row in headings {
+            assert!(
+                row.gathers.is_some() && (row.key == "unresolved" || row.named.is_some()),
+                "a heading from the listing that carries nothing makes this comparison one \
+                 between the walk and itself: {row:?}"
+            );
+            let worked_out = RowKey::of(row.key.clone()).of_its_own().opened(row.opened);
+            for room in [Room::of(80), Room::of(160)] {
+                assert_eq!(
+                    pane.cells(&reading, row, room),
+                    pane.cells(&reading, &worked_out, room),
+                    "what the listing knew about {} once is what every cell would have read \
+                     the whole reading to learn",
+                    row.key
+                );
+            }
+            assert_eq!(
+                pane.detail(&reading, row, 80),
+                pane.detail(&reading, &worked_out, 80),
+                "the detail of {} counts the sockets the heading above it counted",
+                row.key
+            );
+        }
+    }
+}
+
+#[test]
+fn two_programs_sharing_a_name_are_each_shown_by_path_and_a_program_alone_by_its_name() {
+    let reading = two_programs_named_alike();
+    let pane = &panes()[1];
+
+    let shown: Vec<String> = pane
+        .rows(&reading, &Showing::default())
+        .iter()
+        .map(|row| pane.cells(&reading, row, Room::of(80))[0].text.clone())
+        .collect();
+
+    assert_eq!(
+        shown,
+        vec![
+            "▸ /opt/build/nginx (1)",
+            "▸ /usr/sbin/nginx (2)",
+            "▸ sshd (1)",
+            "▸ owner not resolved (2)",
+        ],
+        "two headings both reading nginx send the reader to open each one to learn which is \
+         the copy nobody installed"
+    );
+}
+
+#[test]
+fn a_search_hiding_one_of_two_programs_sharing_a_name_leaves_the_other_shown_by_its_path() {
+    let reading = two_programs_named_alike();
+    let pane = &panes()[1];
+
+    let rows = pane.rows(&reading, &Showing::searching("/opt/build"));
+    let heading = rows
+        .iter()
+        .find(|row| row.key == "program|/opt/build/nginx")
+        .expect("the search keeps the program it names");
+
+    assert_eq!(
+        pane.cells(&reading, heading, Room::of(80))[0].text,
+        "▸ /opt/build/nginx (1)",
+        "the whole path tells two programs on this host apart, and a search that hides one \
+         of them has not taken it off the host"
     );
 }

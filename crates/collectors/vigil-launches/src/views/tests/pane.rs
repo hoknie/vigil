@@ -1,7 +1,7 @@
 use vigil_view::{Facet, Pane, Room, Section, Showing, Sorting, conformance};
 
-use super::WhatHasRunHere;
 use crate::fixture::launches;
+use crate::views::WhatHasRunHere;
 
 fn pane() -> Box<dyn Pane> {
     WhatHasRunHere.panes().remove(0)
