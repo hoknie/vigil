@@ -8,7 +8,7 @@ use vigil_view::{
 use super::detail;
 use super::fields::{marked, text};
 use super::footer::{counted, footer};
-use super::launches::{self, PROGRAM, USER};
+use super::launches;
 use super::sorted::sorted_on;
 
 const ROOM_FOR_THE_PATH: u16 = 118;
@@ -54,11 +54,10 @@ impl Pane for Launches {
         rows.into_iter().map(|(key, _)| RowKey::of(key)).collect()
     }
 
-    fn index(&self, reading: &Snapshot, showing: &Showing<'_>) -> Option<Index> {
+    fn index(&self, reading: &Snapshot, _showing: &Showing<'_>) -> Option<Index> {
         let mut read: Vec<(u8, &String, &Value)> = reading
             .items
             .iter()
-            .filter(|(key, item)| launches::chosen(key, item, showing))
             .map(|(key, item)| (u8::from(!marked(key)), key, item))
             .collect();
         read.sort_by(|left, right| (left.0, left.1).cmp(&(right.0, right.1)));
@@ -71,6 +70,9 @@ impl Pane for Launches {
                 group,
                 sorted_on(item),
             );
+            if !marked(key) {
+                index.faceted(launches::facets_of(item));
+            }
         }
         Some(index)
     }
@@ -170,9 +172,6 @@ impl Pane for Launches {
             return Vec::new();
         }
 
-        vec![
-            Facet::new(USER, launches::who(item)),
-            Facet::new(PROGRAM, launches::executable(item)),
-        ]
+        launches::facets_of(item)
     }
 }

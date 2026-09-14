@@ -1,5 +1,69 @@
 use super::Index;
+use crate::Facet;
 use crate::types::{RowKey, Sorting};
+
+fn faceted() -> Index {
+    let mut index = Index::new(1);
+    for (key, haystack, facets) in [
+        ("m", "the reading is not complete", vec![]),
+        (
+            "a",
+            "root /usr/bin/id",
+            vec![("user", "root"), ("program", "/usr/bin/id")],
+        ),
+        (
+            "b",
+            "alice /usr/bin/id",
+            vec![("user", "alice"), ("program", "/usr/bin/id")],
+        ),
+        (
+            "c",
+            "root /usr/bin/nc",
+            vec![("user", "root"), ("program", "/usr/bin/nc")],
+        ),
+    ] {
+        index.push(RowKey::of(key), haystack, 1, vec![key.to_string()]);
+        index.faceted(
+            facets
+                .into_iter()
+                .map(|(name, value)| Facet::new(name, value))
+                .collect(),
+        );
+    }
+    index
+}
+
+#[test]
+fn a_facet_narrows_to_the_rows_that_recorded_it_and_two_facets_to_the_rows_that_recorded_both() {
+    let index = faceted();
+
+    for (only, expected) in [
+        (vec![], None),
+        (vec![("user", "root")], Some(vec!["a", "c"])),
+        (vec![("program", "/usr/bin/id")], Some(vec!["a", "b"])),
+        (
+            vec![("user", "root"), ("program", "/usr/bin/id")],
+            Some(vec!["a"]),
+        ),
+        (
+            vec![("user", "root"), ("user", "alice")],
+            Some(vec!["a", "c"]),
+        ),
+        (vec![("user", "nobody")], Some(vec![])),
+    ] {
+        let only: Vec<Facet> = only
+            .into_iter()
+            .map(|(name, value)| Facet::new(name, value))
+            .collect();
+
+        assert_eq!(
+            index.narrowed(&only).map(|at| keys(&index, &at)),
+            expected.map(|keys| keys.into_iter().map(String::from).collect::<Vec<String>>()),
+            "{only:?}: a row that recorded no facet is never narrowed to, nothing chosen narrows \
+             nothing, and of two values of one name the first is chosen, as a view reads it"
+        );
+    }
+}
 
 fn index() -> Index {
     let mut index = Index::new(2);

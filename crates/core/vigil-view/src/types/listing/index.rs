@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
+use crate::Facet;
 use crate::types::{RowKey, Sorting};
 
 pub struct Index {
@@ -10,6 +11,7 @@ pub struct Index {
     keys: Vec<Vec<String>>,
     columns: usize,
     postings: BTreeMap<char, Vec<usize>>,
+    facets: BTreeMap<&'static str, BTreeMap<String, Vec<usize>>>,
     ranks: Vec<[OnceLock<Vec<usize>>; 2]>,
 }
 
@@ -22,6 +24,7 @@ impl Index {
             keys: Vec::new(),
             columns,
             postings: BTreeMap::new(),
+            facets: BTreeMap::new(),
             ranks: (0..columns)
                 .map(|_| [OnceLock::new(), OnceLock::new()])
                 .collect(),
@@ -43,6 +46,51 @@ impl Index {
         self.haystacks.push(lowered);
         self.groups.push(group);
         self.keys.push(keys);
+    }
+
+    pub fn faceted(&mut self, facets: Vec<Facet>) {
+        let Some(at) = self.rows.len().checked_sub(1) else {
+            return;
+        };
+        for facet in facets {
+            let postings = self
+                .facets
+                .entry(facet.name)
+                .or_default()
+                .entry(facet.value)
+                .or_default();
+            if postings.last() != Some(&at) {
+                postings.push(at);
+            }
+        }
+    }
+
+    pub fn narrowed(&self, only: &[Facet]) -> Option<Vec<usize>> {
+        let mut chosen: Vec<&[usize]> = only
+            .iter()
+            .enumerate()
+            .filter(|(place, facet)| {
+                !only[..*place]
+                    .iter()
+                    .any(|before| before.name == facet.name)
+            })
+            .map(|(_, facet)| {
+                self.facets
+                    .get(facet.name)
+                    .and_then(|values| values.get(&facet.value))
+                    .map_or(&[][..], Vec::as_slice)
+            })
+            .collect();
+        chosen.sort_by_key(|postings| postings.len());
+        let (fewest, others) = chosen.split_first()?;
+
+        Some(
+            fewest
+                .iter()
+                .copied()
+                .filter(|at| others.iter().all(|other| other.binary_search(at).is_ok()))
+                .collect(),
+        )
     }
 
     pub fn len(&self) -> usize {

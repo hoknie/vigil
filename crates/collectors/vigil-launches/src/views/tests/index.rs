@@ -1,5 +1,5 @@
 use vigil_view::conformance::the_index_lists_every_search_and_sort_as_the_rows_do_in;
-use vigil_view::{Facet, Pane, RowKey, Section, Showing};
+use vigil_view::{Facet, Index, Pane, RowKey, Section, Showing, listed};
 
 use super::scaled::many_launches;
 use crate::views::WhatHasRunHere;
@@ -52,25 +52,36 @@ fn every_search_and_every_sort_of_many_launches_lists_from_the_index_what_the_re
     }
 }
 
+fn indexed(index: &Index) -> Vec<RowKey> {
+    (0..index.len()).map(|at| index.row(at).clone()).collect()
+}
+
 #[test]
-fn a_list_narrowed_to_a_person_or_a_program_is_narrowed_while_the_index_is_built() {
+fn a_list_narrowed_to_a_person_or_a_program_is_answered_from_the_one_index_built_without_it() {
     let reading = many_launches(8);
     let pane = pane();
+    let index = pane
+        .index(&reading, &Showing::default())
+        .expect("this pane builds an index");
 
     for only in narrowings() {
         let showing = Showing::default().narrowing(&only);
-        let index = pane
+        let built_narrowed = pane
             .index(&reading, &showing)
             .expect("this pane builds an index");
 
-        let indexed: Vec<RowKey> = (0..index.len()).map(|at| index.row(at).clone()).collect();
-
         assert_eq!(
-            indexed,
+            indexed(&built_narrowed),
+            indexed(&index),
+            "{only:?}: the console builds the index once per reading and keeps it whatever is \
+             chosen, so an index that changed with the facet would answer the next facet from \
+             the last one"
+        );
+        assert_eq!(
+            listed(pane.as_ref(), &reading, &showing, &index, None).1,
             pane.rows(&reading, &showing),
-            "{only:?}: the console builds the index once per narrowing and answers only the \
-             search and the sort from it, so a facet the index ignored would be ignored on \
-             every keystroke"
+            "{only:?}: a facet is answered from what each row recorded in the index, without a \
+             pass over the reading"
         );
     }
 }

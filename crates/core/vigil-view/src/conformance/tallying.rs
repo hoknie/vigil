@@ -40,6 +40,7 @@ pub fn the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_also(
     let bare = Showing {
         search: "",
         sorting: Sorting::default(),
+        only: &[],
         ..around
     };
     let Some(counts) = pane.counts(reading, &bare) else {

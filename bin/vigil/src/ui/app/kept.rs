@@ -22,16 +22,24 @@ impl App {
             let Reading::Taken(snapshot) = self.view.reading(pane.reads()) else {
                 return Rc::new(pane::rows(&self.view, pane.as_ref(), &asked));
             };
-            let bare = vigil_view::Showing {
+            let narrowed = vigil_view::Showing {
                 search: "",
                 sorting: Sorting::default(),
                 ..asked
             };
+            let bare = vigil_view::Showing {
+                only: &[],
+                ..narrowed
+            };
             let indexed = self.rows_question(&showing, &bare);
-            match self.pane_index(indexed.clone(), pane.as_ref(), snapshot, &bare) {
-                Some(index) => {
-                    Rc::new(self.listed_from(indexed, pane.as_ref(), snapshot, &asked, &index))
-                }
+            match self.pane_index(indexed, pane.as_ref(), snapshot, &bare) {
+                Some(index) => Rc::new(self.listed_from(
+                    self.rows_question(&showing, &narrowed),
+                    pane.as_ref(),
+                    snapshot,
+                    &asked,
+                    &index,
+                )),
                 None => Rc::new(pane::rows(&self.view, pane.as_ref(), &asked)),
             }
         })
@@ -50,7 +58,7 @@ impl App {
 
     fn listed_from(
         &self,
-        indexed: super::RowsAsked,
+        narrowed: super::RowsAsked,
         pane: &dyn Pane,
         snapshot: &Snapshot,
         asked: &vigil_view::Showing<'_>,
@@ -59,7 +67,7 @@ impl App {
         let search = asked.search.to_lowercase();
         let within: Option<Rc<Vec<usize>>> = match self.found_seen.borrow().as_ref() {
             Some((same, before, found))
-                if *same == indexed && !before.is_empty() && search.contains(before.as_str()) =>
+                if *same == narrowed && !before.is_empty() && search.contains(before.as_str()) =>
             {
                 Some(Rc::clone(found))
             }
@@ -73,7 +81,7 @@ impl App {
             index,
             within.as_deref().map(Vec::as_slice),
         );
-        *self.found_seen.borrow_mut() = Some((indexed, search, Rc::new(found)));
+        *self.found_seen.borrow_mut() = Some((narrowed, search, Rc::new(found)));
         rows
     }
 
@@ -94,6 +102,7 @@ impl App {
             let bare = vigil_view::Showing {
                 search: "",
                 sorting: Sorting::default(),
+                only: &[],
                 ..asked
             };
             let counted = self.rows_question(&showing, &bare);

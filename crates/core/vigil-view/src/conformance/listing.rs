@@ -35,6 +35,7 @@ pub fn the_index_lists_every_search_and_sort_as_the_rows_do_also(
     let bare = Showing {
         search: "",
         sorting: Sorting::default(),
+        only: &[],
         ..around
     };
     let Some(index) = pane.index(reading, &bare) else {
