@@ -14,6 +14,8 @@ impl ProtocolError {
     pub const UNKNOWN_COLLECTOR: &'static str = "unknown_collector";
     pub const REQUEST_TOO_LONG: &'static str = "request_too_long";
     pub const TOO_MANY_SESSIONS: &'static str = "too_many_sessions";
+    pub const NOT_ALLOWED: &'static str = "not_allowed";
+    pub const NOTHING_TO_ACT_ON: &'static str = "nothing_to_act_on";
 
     pub fn new(code: &str, message: impl Into<String>) -> Self {
         ProtocolError {

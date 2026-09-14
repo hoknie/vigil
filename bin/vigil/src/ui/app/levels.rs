@@ -39,12 +39,21 @@ impl App {
     }
 
     pub(super) fn go_back(&mut self) {
+        self.go_back_from(true);
+    }
+
+    pub(super) fn leave_the_row(&mut self) {
+        self.go_back_from(false);
+    }
+
+    fn go_back_from(&mut self, folding: bool) {
         if self.level != Level::Detail && self.narrowed() {
             self.widen();
             return;
         }
         if self.level == Level::Detail {
             self.level = Level::List;
+            self.rest_the_buttons();
             if split::beside(self.body.get()).is_none() {
                 self.detail_open = false;
             }
@@ -52,6 +61,9 @@ impl App {
         }
         if self.detail_open {
             self.detail_open = false;
+            return;
+        }
+        if folding && self.level == Level::List && self.close_the_branch() {
             return;
         }
         if self.level == Level::List && self.nav.came_from().is_some() {
@@ -100,12 +112,35 @@ impl App {
             self.open_section();
             return;
         }
+        if self.press_the_button() {
+            return;
+        }
+        if self.level == Level::List && self.open_the_branch() {
+            return;
+        }
+        if self.level == Level::List && self.show_the_panel() {
+            return;
+        }
         let deeper = self.level.deeper(self.rungs());
         if deeper == Level::Detail && self.level != Level::Detail {
             self.nav.difference = Offset::default();
             self.detail_open = true;
+            self.rest_the_buttons();
         }
         self.level = deeper;
+    }
+
+    fn show_the_panel(&mut self) -> bool {
+        if self.detail_open || !self.rungs().detail {
+            return false;
+        }
+        if split::beside(self.body.get()).is_none() {
+            return false;
+        }
+
+        self.nav.difference = Offset::default();
+        self.detail_open = true;
+        true
     }
 
     fn open_section(&mut self) {
@@ -118,7 +153,60 @@ impl App {
         }
     }
 
+    fn open_the_branch(&mut self) -> bool {
+        let Some(row) = self.pane_row_under_the_cursor() else {
+            return false;
+        };
+        if !row.opens() || row.opened {
+            return false;
+        }
+        if let Some(panes) = self.panes_mut() {
+            panes.open(&row.key, true);
+        }
+        self.settle();
+        true
+    }
+
+    pub(super) fn close_the_branch(&mut self) -> bool {
+        let Some(row) = self.pane_row_under_the_cursor() else {
+            return false;
+        };
+        if row.opens() && row.opened {
+            if let Some(panes) = self.panes_mut() {
+                panes.open(&row.key, false);
+            }
+            self.settle();
+            return true;
+        }
+
+        let Some(heading) = row.gathered_under.clone() else {
+            return false;
+        };
+        if let Some(panes) = self.panes_mut() {
+            panes.open(&heading, false);
+        }
+        self.point_the_cursor_at(&heading);
+        true
+    }
+
+    fn point_the_cursor_at(&mut self, key: &str) {
+        let rows = self.pane_keys();
+        if let Some(panes) = self.panes_mut() {
+            panes.cursor_mut().point_at(key, &rows);
+        }
+        self.settle();
+    }
+
     pub(super) fn sideways(&mut self, by: isize) {
+        if self.level == Level::Detail {
+            let moved = match by > 0 {
+                true => self.deeper_into_the_buttons(),
+                false => self.back_out_of_the_buttons(),
+            };
+            if moved {
+                return;
+            }
+        }
         if !self.level.is_a_row_of_names() {
             return match by > 0 {
                 true => self.open(),

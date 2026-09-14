@@ -21,6 +21,8 @@ pub fn configuration(taken_at: &str, survey: &[Surveyed], defaults: &Config) -> 
     out.push('\n');
     out.push_str(SUPPRESSIONS);
     out.push('\n');
+    out.push_str(&killing(defaults));
+    out.push('\n');
     out.push_str(&arguments());
 
     out
@@ -119,6 +121,27 @@ const SUPPRESSIONS: &str = "\
 #     reason: the staging api, expected on this host
 suppressions: []
 ";
+
+fn killing(defaults: &Config) -> String {
+    let mut out = String::new();
+    for line in [
+        "Whether a person at the console of this host may ask the agent to close a listening socket.".to_string(),
+        String::new(),
+        "Off by default, and this is the only key in this file that lets the agent change anything on a host it did not set up. On, the console can ask for one of three things against the sockets a person marked there: SIGTERM to the process holding one, SIGKILL to it, or closing the socket itself and leaving the process running. The console asks the person to confirm; the agent asks nothing and does what it was told.".into(),
+        String::new(),
+        "Everything it does, and everything it refuses to do, is a finding of its own, so what happened is in the journal and at whatever receiver this file names. The agent will not signal pid 1 and will not signal itself.".into(),
+        String::new(),
+        "Nothing reaches this from the network. The console socket is 0600 and local; whoever can read it can already read every process on this host. Turning this on gives that account one more thing: it can stop them.".into(),
+    ] {
+        out.push_str(&comment(&line));
+    }
+    out.push_str("killing:\n");
+    out.push_str(&format!(
+        "  from_the_console: {}\n",
+        defaults.killing.from_the_console
+    ));
+    out
+}
 
 fn arguments() -> String {
     let mut out = String::new();

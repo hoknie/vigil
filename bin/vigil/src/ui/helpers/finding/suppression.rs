@@ -4,6 +4,20 @@ pub fn snippet(finding: &Finding) -> Vec<String> {
     entry(&finding.finding_key, Some(finding.kind.as_str()))
 }
 
+pub fn entries(keys: &[String]) -> Vec<String> {
+    let mut lines = vec!["suppressions:".to_string()];
+    for key in keys {
+        lines.push(format!("  - finding_key: {}", quoted(key)));
+        lines.push("    reason: \"\"".to_string());
+    }
+    lines
+        .push("  # the reason is required on every entry: say why, in your own words.".to_string());
+    lines.push("  # optional on an entry, either or both:".to_string());
+    lines.push("  #   kind: port.listen.new".to_string());
+    lines.push("  #   until: \"2026-12-31T00:00:00.000Z\"".to_string());
+    lines
+}
+
 pub fn entry(key: &str, kind: Option<&str>) -> Vec<String> {
     let mut lines = vec![
         "suppressions:".to_string(),
@@ -76,6 +90,34 @@ mod tests {
             }
             assert!(line.chars().count() <= 77 - 3, "{line}");
         }
+    }
+
+    #[test]
+    fn a_block_for_several_marked_rows_is_one_suppressions_key_and_not_one_per_row() {
+        let lines = entries(&[
+            "port.listen|tcp|0.0.0.0:22".into(),
+            "port.listen|udp|0.0.0.0:53".into(),
+        ]);
+
+        assert_eq!(
+            lines.iter().filter(|line| *line == "suppressions:").count(),
+            1,
+            "yaml takes one key once, and a block with it twice is a block the daemon \
+             refuses to load after the operator has already pasted it"
+        );
+        assert_eq!(
+            lines
+                .iter()
+                .filter(|line| line.contains("finding_key:"))
+                .count(),
+            2
+        );
+        assert_eq!(
+            lines.iter().filter(|line| line.contains("reason:")).count(),
+            2,
+            "the daemon will not start without a reason on each, so each has to arrive with \
+             the empty one to fill in"
+        );
     }
 
     #[test]

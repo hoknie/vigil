@@ -2,6 +2,8 @@ use super::App;
 
 use crate::ui::{Cursor, Level, Offset, Panes, Screen, Search, holding};
 
+use super::marking::{MARK, SUPPRESS, UNMARK_EVERY};
+
 pub const DETAILS: char = 'd';
 
 impl App {
@@ -31,7 +33,12 @@ impl App {
                 self.detail_open = !self.detail_open;
                 true
             }
-            screen if holding(screen.name()).is_some() => self.switch_a_kind(key),
+            screen if holding(screen.name()).is_some() => match key {
+                MARK => self.mark_under_the_cursor(),
+                UNMARK_EVERY => self.unmark_everything(),
+                SUPPRESS => self.show_the_suppressions(),
+                _ => self.switch_a_kind(key),
+            },
             _ => false,
         };
         if moved {

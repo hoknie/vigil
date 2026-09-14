@@ -8,6 +8,7 @@ pub fn snapshot() -> Snapshot {
             json!({
                 "protocol": "tcp", "address": "0.0.0.0", "port": 443, "uid": 0, "user": "root",
                 "process": {
+                    "pid": 1042,
                     "exe": "/usr/sbin/nginx", "exe_deleted": false,
                     "cmdline": "nginx -g daemon off;", "cmdline_redacted": false,
                 },
@@ -20,6 +21,7 @@ pub fn snapshot() -> Snapshot {
                 "protocol": "tcp", "address": "0.0.0.0", "port": 4444, "uid": 33,
                 "user": "www-data",
                 "process": {
+                    "pid": 30211,
                     "exe": "/tmp/.x/nc", "exe_deleted": true,
                     "cmdline": "nc -l -p 4444", "cmdline_redacted": false,
                 },
@@ -32,6 +34,7 @@ pub fn snapshot() -> Snapshot {
                 "protocol": "tcp", "address": "0.0.0.0", "port": 9000, "uid": 33,
                 "user": "www-data",
                 "process": {
+                    "pid": 2291,
                     "exe": null, "exe_deleted": false,
                     "cmdline": null, "cmdline_redacted": false,
                 },
@@ -50,6 +53,7 @@ pub fn snapshot() -> Snapshot {
             json!({
                 "protocol": "tcp6", "address": "::", "port": 443, "uid": 0, "user": "root",
                 "process": {
+                    "pid": 1042,
                     "exe": "/usr/sbin/nginx", "exe_deleted": false,
                     "cmdline": "nginx -g daemon off;", "cmdline_redacted": false,
                 },
@@ -69,6 +73,7 @@ pub fn snapshot() -> Snapshot {
                 "protocol": "udp", "address": "0.0.0.0", "port": 53, "uid": 101,
                 "user": "systemd-resolve",
                 "process": {
+                    "pid": 640,
                     "exe": "/lib/systemd/systemd-resolved", "exe_deleted": false,
                     "cmdline": "/lib/systemd/systemd-resolved", "cmdline_redacted": false,
                 },
@@ -87,6 +92,7 @@ pub fn snapshot() -> Snapshot {
             json!({
                 "protocol": "udp6", "address": "::", "port": 546, "uid": 0, "user": "root",
                 "process": {
+                    "pid": 701,
                     "exe": "/usr/sbin/dhclient", "exe_deleted": false,
                     "cmdline": "dhclient -6 --password [redacted]", "cmdline_redacted": true,
                 },
@@ -106,6 +112,7 @@ pub fn snapshot() -> Snapshot {
                 "protocol": "unix", "type": "stream", "path": "/run/docker.sock",
                 "abstract": false, "uid": 0, "user": "root",
                 "process": {
+                    "pid": 980,
                     "exe": "/usr/bin/dockerd", "exe_deleted": false,
                     "cmdline": "dockerd --host unix:///run/docker.sock",
                     "cmdline_redacted": false,

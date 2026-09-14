@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::ProtocolError;
+use crate::{Killing, ProtocolError};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "query", rename_all = "snake_case")]
@@ -14,10 +14,20 @@ pub enum Request {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         limit: Option<usize>,
     },
+    Kill {
+        sockets: Vec<String>,
+        killing: Killing,
+    },
 }
 
 impl Request {
-    pub const NAMES: &'static [&'static str] = &["status", "snapshot", "findings"];
+    pub const NAMES: &'static [&'static str] = &["status", "snapshot", "findings", "kill"];
+
+    pub const READING: &'static [&'static str] = &["status", "snapshot", "findings"];
+
+    pub fn acts_on_the_host(&self) -> bool {
+        matches!(self, Request::Kill { .. })
+    }
 
     pub fn parse(line: &str) -> Result<Request, ProtocolError> {
         let value: Value = serde_json::from_str(line).map_err(|error| {
@@ -75,15 +85,62 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_request_names_something_to_read_and_nothing_to_do() {
-        assert_eq!(Request::NAMES, &["status", "snapshot", "findings"]);
-        for name in Request::NAMES {
+    fn exactly_one_request_does_something_on_the_host_and_it_is_named_here() {
+        assert_eq!(Request::READING, &["status", "snapshot", "findings"]);
+        for name in Request::READING {
             assert!(
                 Request::parse(&format!("{{\"query\":\"{name}\",\"collector\":\"ports\"}}"))
                     .is_ok(),
                 "{name} is listed but does not parse"
             );
+            let request =
+                Request::parse(&format!("{{\"query\":\"{name}\",\"collector\":\"ports\"}}"))
+                    .expect("parses");
+            assert!(
+                !request.acts_on_the_host(),
+                "{name} answers a question and must never grow a side effect"
+            );
         }
+
+        let acting: Vec<&&str> = Request::NAMES
+            .iter()
+            .filter(|name| !Request::READING.contains(name))
+            .collect();
+
+        assert_eq!(
+            acting,
+            vec![&"kill"],
+            "this protocol held three questions and no verb until 2026-09-14, when the owner \
+             put one in on purpose. A second verb arriving without that decision being taken \
+             again is the failure this test exists to make loud."
+        );
+    }
+
+    #[test]
+    fn the_one_verb_names_what_it_kills_and_how_and_carries_nothing_a_daemon_would_run() {
+        let request = Request::parse(
+            "{\"query\":\"kill\",\"sockets\":[\"tcp|0.0.0.0:4444\"],\"killing\":\"terminate\"}",
+        )
+        .expect("parses");
+
+        match &request {
+            Request::Kill { sockets, killing } => {
+                assert_eq!(sockets, &vec!["tcp|0.0.0.0:4444".to_string()]);
+                assert_eq!(*killing, Killing::Terminate);
+            }
+            other => panic!("parsed as {other:?}"),
+        }
+        assert!(request.acts_on_the_host());
+    }
+
+    #[test]
+    fn a_way_of_killing_this_build_has_not_heard_of_is_refused_rather_than_guessed_at() {
+        let error = Request::parse(
+            "{\"query\":\"kill\",\"sockets\":[\"tcp|0.0.0.0:80\"],\"killing\":\"reboot\"}",
+        )
+        .expect_err("must not be accepted");
+
+        assert_eq!(error.code, ProtocolError::MALFORMED_REQUEST);
     }
 
     #[test]
@@ -95,6 +152,10 @@ mod tests {
             },
             Request::Findings { limit: Some(20) },
             Request::Findings { limit: None },
+            Request::Kill {
+                sockets: vec!["tcp|0.0.0.0:4444".into()],
+                killing: Killing::Destroy,
+            },
         ] {
             let line = request.to_line();
             assert!(line.ends_with('\n'), "{line:?} is not one line");

@@ -2,6 +2,7 @@
 pub(crate) mod fixture;
 
 mod answer;
+mod kill;
 mod listener;
 mod ring;
 mod session;
@@ -10,6 +11,7 @@ mod state;
 mod switched_off;
 
 pub use answer::answer;
+pub use kill::kill;
 pub use listener::listen;
 pub use ring::Ring;
 pub use session::serve;

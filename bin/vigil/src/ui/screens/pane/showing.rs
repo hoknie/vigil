@@ -11,15 +11,29 @@ pub struct Showing<'a> {
     pub elsewhere: usize,
     pub gone: Option<&'a Gone>,
     pub arranged: Option<&'a str>,
+    pub marked: Vec<String>,
+    pub opened: Vec<String>,
 }
 
 impl Showing<'_> {
     pub fn hidden(&self) -> Vec<&str> {
         self.hidden.iter().map(String::as_str).collect()
     }
+
+    pub fn opened(&self) -> Vec<&str> {
+        self.opened.iter().map(String::as_str).collect()
+    }
+
+    pub fn is_marked(&self, key: &str) -> bool {
+        self.marked.iter().any(|marked| marked == key)
+    }
 }
 
-pub fn asked<'a>(showing: &'a Showing<'a>, hidden: &'a [&'a str]) -> vigil_view::Showing<'a> {
+pub fn asked<'a>(
+    showing: &'a Showing<'a>,
+    hidden: &'a [&'a str],
+    opened: &'a [&'a str],
+) -> vigil_view::Showing<'a> {
     vigil_view::Showing {
         search: showing.search.query(),
         hidden,
@@ -30,5 +44,6 @@ pub fn asked<'a>(showing: &'a Showing<'a>, hidden: &'a [&'a str]) -> vigil_view:
         note: showing.note,
         elsewhere: showing.elsewhere,
         arranged: showing.arranged,
+        opened,
     }
 }

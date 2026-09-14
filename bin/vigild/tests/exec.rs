@@ -5,6 +5,8 @@ const STARTS_A_PROGRAM: [&str; 3] = ["Command::new", "process::Command", "exec("
 
 const THE_ONE_PLACE: &str = "bin/vigild/src/collector/host.rs";
 
+const THE_OTHER_PLACE: &str = "bin/vigild/src/killing/destruction.rs";
+
 fn sources() -> Vec<(String, String)> {
     let mut read = Vec::new();
     for tree in [
@@ -41,7 +43,7 @@ fn walk(at: &Path, into: &mut Vec<(String, String)>) {
 }
 
 #[test]
-fn nothing_the_watching_loop_reaches_can_start_a_program() {
+fn the_two_places_that_start_a_program_are_the_operators_command_and_the_kill_it_asked_for() {
     let mut starts: Vec<String> = Vec::new();
 
     for (named, text) in sources() {
@@ -49,15 +51,40 @@ fn nothing_the_watching_loop_reaches_can_start_a_program() {
             starts.push(named);
         }
     }
+    starts.sort();
+
+    let mut expected = vec![THE_ONE_PLACE.to_string(), THE_OTHER_PLACE.to_string()];
+    expected.sort();
 
     assert_eq!(
-        starts,
-        vec![THE_ONE_PLACE.to_string()],
-        "this daemon watches a host it does not touch, and the one place it starts a program \
-         is the operator's own command. A second place is a path from a reading, a socket \
-         message or a rule to execution on the host — which is the failure the contract has \
-         no reverse channel for"
+        starts, expected,
+        "this daemon watches a host it does not touch, and it starts a program in two \
+         places, both of them an operator's own instruction arriving at the front door: \
+         `vigild collector <name> enable`, and the kill a person confirmed at the console \
+         after switching killing on in vigil.yaml. The second was added on 2026-09-14 with \
+         the trade-off stated: see docs/designs/2026-09-14-DESIGN-console-kill.md. A third \
+         place is a path from a reading, a rule or an unasked-for message to execution on \
+         the host, and that is the failure the contract has no reverse channel for"
     );
+}
+
+#[test]
+fn the_watching_loop_and_the_rules_reach_neither_of_them() {
+    for (named, text) in sources() {
+        let watches = named.starts_with("bin/vigild/src/loops")
+            || named.starts_with("crates/core/vigil-rules")
+            || named.starts_with("bin/vigild/src/collector/edit.rs");
+        if !watches {
+            continue;
+        }
+        for how in ["killing::carry_out", "destruction::", "host::enable"] {
+            assert!(
+                !text.contains(how),
+                "{named} reaches something that acts on this host. A reading that ends in a \
+                 kill is a rule that kills, and nobody asked for that"
+            );
+        }
+    }
 }
 
 #[test]

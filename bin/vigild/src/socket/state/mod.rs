@@ -8,7 +8,7 @@ mod tests;
 
 use std::collections::BTreeMap;
 
-use vigil_model::{CollectorStatus, ReporterStatus, Silence, Snapshot};
+use vigil_model::{CollectorStatus, Finding, ReporterStatus, Silence, Snapshot};
 
 use self::footprint::Footprint;
 use super::Ring;
@@ -22,4 +22,5 @@ pub struct State {
     findings: Ring,
     silence: Silence,
     footprint: Footprint,
+    raised_by_a_kill: Vec<Finding>,
 }

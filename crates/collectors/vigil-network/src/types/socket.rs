@@ -53,6 +53,13 @@ impl<'a> SocketView<'a> {
         self.0["user"].as_str()
     }
 
+    pub fn pid(&self) -> Option<u32> {
+        self.0["process"]["pid"]
+            .as_u64()
+            .filter(|pid| *pid > 0)
+            .and_then(|pid| u32::try_from(pid).ok())
+    }
+
     pub fn executable(&self) -> Option<&'a str> {
         self.0["process"]["exe"].as_str()
     }
@@ -124,6 +131,18 @@ mod tests {
             "it has no address, and asking the address alone answers yes"
         );
         assert_eq!(view.endpoint(), "/run/docker.sock");
+    }
+
+    #[test]
+    fn a_socket_whose_process_was_out_of_reach_offers_no_pid_to_type_into_kill() {
+        let value = fixture::socket_without_owner("0.0.0.0", 22);
+
+        assert_eq!(
+            SocketView::new(&value).pid(),
+            None,
+            "the console offers to kill what is under the cursor, and a row with no pid has \
+             to refuse by name rather than aim at whatever zero reaches"
+        );
     }
 
     #[test]

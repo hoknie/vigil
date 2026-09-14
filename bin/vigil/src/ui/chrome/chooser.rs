@@ -22,6 +22,16 @@ pub fn render(chooser: &Chooser, look: Look, area: Rect, buffer: &mut Buffer) {
     Paragraph::new(lines(chooser, look, area.width)).render(area, buffer);
 }
 
+fn footing(what: crate::ui::Choosing, by_key: bool) -> &'static str {
+    match (what.asks_before_acting(), by_key) {
+        (true, true) => "a letter above does it, on this host, now · C or Esc walks away",
+        (true, false) => {
+            "← → choose · Enter does it, on this host, now · Esc leaves the host alone"
+        }
+        (false, _) => "← → choose · Enter apply · Esc leave it as it was",
+    }
+}
+
 fn lines(chooser: &Chooser, look: Look, width: u16) -> Vec<Line<'static>> {
     let Some(what) = chooser.choosing() else {
         return Vec::new();
@@ -36,9 +46,13 @@ fn lines(chooser: &Chooser, look: Look, width: u16) -> Vec<Line<'static>> {
     let room = (width as usize).saturating_sub(MARGIN);
 
     for (at, option) in chooser.offered().iter().enumerate() {
+        let named = match chooser.keys().get(at) {
+            Some(key) => format!("{key} {option}"),
+            None => option.clone(),
+        };
         let drawn = match at == chooser.at() {
-            true => format!("[{option}]"),
-            false => format!(" {option} "),
+            true => format!("[{named}]"),
+            false => format!(" {named} "),
         };
         if used + drawn.chars().count() + 1 > room && !spans.is_empty() {
             lines.push(Line::from(std::mem::take(&mut spans)));
@@ -57,7 +71,7 @@ fn lines(chooser: &Chooser, look: Look, width: u16) -> Vec<Line<'static>> {
     }
 
     for part in wrap::wrap(
-        "← → choose · Enter apply · Esc leave it as it was",
+        footing(what, !chooser.keys().is_empty()),
         room.saturating_sub(1),
     ) {
         lines.push(Line::styled(format!("   {part}"), look.palette.quiet()));
@@ -121,6 +135,34 @@ mod tests {
                 assert!(!line.contains('…'), "{width}: {line}");
             }
         }
+    }
+
+    #[test]
+    fn the_band_that_does_something_to_the_host_does_not_say_apply_like_the_others() {
+        let mut chooser = Chooser::default();
+        chooser.open_by_key(
+            Choosing::Kill,
+            vec![
+                ('S', "ask the process to stop (SIGTERM)".into()),
+                ('K', "stop the process now (SIGKILL)".into()),
+            ],
+        );
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 80, 6));
+        render(&chooser, fixture::look(), buffer.area, &mut buffer);
+        let page = text::to_text(&buffer);
+
+        assert!(page.contains("on this host, now"), "{page}");
+        assert!(
+            page.contains("C or Esc walks away"),
+            "a reader looking for the way out of a destructive band must find it written \
+             there, not remember it from the sort band: {page}"
+        );
+        assert!(
+            page.contains("[S ask the process to stop (SIGTERM)]"),
+            "it opens on the gentlest of them, and each option carries the letter that \
+             picks it: {page}"
+        );
+        assert!(page.contains("K stop the process now"), "{page}");
     }
 
     #[test]

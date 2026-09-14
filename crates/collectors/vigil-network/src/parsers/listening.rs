@@ -8,6 +8,7 @@ use super::proc_net_unix::UnixSocketRow;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ProcessOwner {
+    pub pid: Option<u32>,
     pub executable: Option<String>,
     pub executable_deleted: bool,
     pub command_line: Option<String>,
@@ -91,6 +92,7 @@ fn add_unix(snapshot: &mut Snapshot, reading: &SocketsReading<'_>) {
 fn describe(owner: Option<&ProcessOwner>) -> Value {
     match owner {
         Some(owner) => json!({
+            "pid": owner.pid,
             "exe": owner.executable,
             "exe_deleted": owner.executable_deleted,
             "cmdline": owner.command_line,
@@ -183,6 +185,7 @@ mod tests {
         let owners = BTreeMap::from([(
             700,
             ProcessOwner {
+                pid: Some(812),
                 executable: Some("/usr/bin/dockerd".into()),
                 uid: Some(0),
                 ..ProcessOwner::default()
@@ -271,6 +274,7 @@ mod tests {
         let owners = BTreeMap::from([(
             20481,
             ProcessOwner {
+                pid: Some(30211),
                 executable: Some("/tmp/.x/nc".into()),
                 executable_deleted: true,
                 command_line: Some("nc -l -p 4444 -e [redacted]".into()),
@@ -287,10 +291,31 @@ mod tests {
 
         let item = &snapshot.items["tcp|0.0.0.0:4444"];
         assert_eq!(item["user"], "www-data");
+        assert_eq!(item["process"]["pid"], 30211);
         assert_eq!(item["process"]["exe"], "/tmp/.x/nc");
         assert_eq!(item["process"]["exe_deleted"], true);
         assert_eq!(item["process"]["cmdline_redacted"], true);
         assert_eq!(item["owner_resolved"], true);
+    }
+
+    #[test]
+    fn the_pid_of_a_socket_nobody_could_look_behind_is_absent_rather_than_zero() {
+        let snapshot = listening_snapshot(
+            "2026-09-08T12:00:00.000Z",
+            &reading(
+                &[row("0.0.0.0", 22, 0, 20481)],
+                &[],
+                &BTreeMap::new(),
+                &BTreeMap::new(),
+            ),
+        );
+
+        assert_eq!(
+            snapshot.items["tcp|0.0.0.0:22"]["process"],
+            Value::Null,
+            "pid 0 is the kernel scheduler, and an operator reading it off this screen and \
+             typing it into kill has been handed a lie by the console"
+        );
     }
 
     #[test]

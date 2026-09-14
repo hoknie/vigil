@@ -11,6 +11,7 @@ pub struct Showing<'a> {
     pub note: Option<&'a str>,
     pub elsewhere: usize,
     pub arranged: Option<&'a str>,
+    pub opened: &'a [&'a str],
 }
 
 impl<'a> Showing<'a> {
@@ -38,6 +39,14 @@ impl<'a> Showing<'a> {
             arranged: Some(arranged),
             ..self
         }
+    }
+
+    pub fn opened_up(&self, heading: &str) -> bool {
+        self.opened.contains(&heading)
+    }
+
+    pub fn opening(self, opened: &'a [&'a str]) -> Showing<'a> {
+        Showing { opened, ..self }
     }
 
     pub fn arranged_as(&self, name: &str) -> bool {

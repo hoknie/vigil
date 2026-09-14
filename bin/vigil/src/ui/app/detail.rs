@@ -31,7 +31,7 @@ impl App {
         let width = self.look.text_width(area.width);
         match self.nav.at() {
             screen if holding(screen.name()).is_some() => {
-                pieces::height(&self.pane_detail(), self.look, width)
+                pieces::height(&self.pane_detail(), self.acts(), self.look, width)
             }
             _ => diff::height(self.selected_finding(), self.look, width),
         }

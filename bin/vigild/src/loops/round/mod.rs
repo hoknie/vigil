@@ -1,6 +1,7 @@
 mod budget;
 mod health;
 mod kept;
+mod killings;
 mod memory;
 mod outgoing;
 mod reading;
@@ -22,6 +23,8 @@ use super::Watch;
 const HEALTH_EVERY_SECONDS: u32 = 300;
 const HEALTH: &str = "health";
 const NEVER_SPIN: Duration = Duration::from_millis(10);
+
+const WHILE_THE_CONSOLE_MAY_ACT: Duration = Duration::from_secs(2);
 
 pub struct Round {
     pub watches: Vec<Watch>,
@@ -70,6 +73,8 @@ impl Round {
                 announce = true;
             }
 
+            self.take_what_the_console_did();
+
             match self.schedule.due_now(Instant::now()) {
                 Some(index) => {
                     self.schedule.advance(index, Instant::now());
@@ -85,6 +90,10 @@ impl Round {
         let until = match self.schedule.rest(now) {
             Some(soonest) => soonest.min(health.waiting(now)),
             None => health.waiting(now),
+        };
+        let until = match self.shared.with(|state| state.killing_from_the_console()) {
+            true => until.min(WHILE_THE_CONSOLE_MAY_ACT),
+            false => until,
         };
 
         std::thread::sleep(until.max(NEVER_SPIN));

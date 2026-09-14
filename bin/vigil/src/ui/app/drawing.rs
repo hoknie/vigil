@@ -9,6 +9,7 @@ use crate::ui::chrome::chooser;
 use crate::ui::chrome::frame;
 use crate::ui::chrome::frame::hints::Back;
 use crate::ui::chrome::help;
+use crate::ui::chrome::paper;
 use crate::ui::details::{pieces, section};
 use crate::ui::helpers::finding::diff;
 use crate::ui::helpers::layout::split;
@@ -32,7 +33,14 @@ impl App {
                 back: self.back(),
                 panel: self.detail_showing(self.body.get()) || self.showing_why(),
                 choosing: self.choosing(),
+                choosing_acts: self
+                    .chooser
+                    .choosing()
+                    .is_some_and(crate::ui::Choosing::asks_before_acting),
                 sorts: !self.sortable().is_empty(),
+                filters: self.nav.at() == Screen::FINDINGS || !self.pane_kinds().is_empty(),
+                marks: self.marking_offered(),
+                buttons: self.button_at().is_some(),
                 arranges: self
                     .pane()
                     .and_then(|pane| pane.arrangements().first().map(|one| one.key)),
@@ -70,6 +78,9 @@ impl App {
             self.draw_screen(body, buffer);
         }
 
+        if let Some(sheet) = &self.paper {
+            paper::render(sheet, self.look, area, buffer);
+        }
         if self.helping {
             help::render(self.look, area, buffer);
         }
@@ -238,10 +249,10 @@ impl App {
                 self.look,
                 self.detail_caption(),
                 &caption::scrolled(self.nav.difference.top(), area.height as usize, total),
-                match (laid_out.list.is_some(), self.level) {
-                    (false, _) => caption::Keys::Sole,
-                    (true, Level::Detail) => caption::Keys::Here,
-                    (true, _) => caption::Keys::Elsewhere,
+                match (laid_out.list.is_some(), self.level, self.button_at()) {
+                    (false, _, _) => caption::Keys::Sole,
+                    (true, Level::Detail, None) => caption::Keys::Here,
+                    (true, _, _) => caption::Keys::Elsewhere,
                 },
                 over.width as usize,
             ))
@@ -276,6 +287,8 @@ impl App {
         match self.nav.at() {
             screen if holding(screen.name()).is_some() => pieces::render(
                 &self.pane_detail(),
+                self.acts(),
+                self.button_at(),
                 self.look,
                 self.nav.difference.top(),
                 area,

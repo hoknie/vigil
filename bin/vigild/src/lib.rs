@@ -5,6 +5,7 @@ mod collector;
 mod config;
 mod helpers;
 mod identity;
+mod killing;
 mod loops;
 mod modules;
 mod socket;

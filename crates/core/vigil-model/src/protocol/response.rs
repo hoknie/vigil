@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AgentStatus, CollectorRefusal, Finding, Host, Producer, ProtocolError, Rfc3339, SchemaVersion,
-    Snapshot,
+    AgentStatus, CollectorRefusal, Finding, Host, KillReport, Producer, ProtocolError, Rfc3339,
+    SchemaVersion, Snapshot,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,6 +26,9 @@ pub enum Response {
         findings: Vec<Finding>,
         dropped: u64,
         capacity: usize,
+    },
+    Killed {
+        report: Box<KillReport>,
     },
     Error {
         error: ProtocolError,
@@ -205,6 +208,40 @@ mod tests {
             ),
             other => panic!("came back as {other:?}"),
         }
+    }
+
+    #[test]
+    fn what_the_daemon_did_on_the_host_comes_back_row_by_row_and_not_as_a_count() {
+        let line = Response::Killed {
+            report: Box::new(crate::KillReport {
+                killing: crate::Killing::Terminate,
+                acted_at: "2026-09-14T10:00:00.000Z".into(),
+                killed: vec![
+                    crate::Killed::done("tcp|0.0.0.0:4444", 30211, None, "signalled"),
+                    crate::Killed::refused("tcp|0.0.0.0:80", "no process holds it any more"),
+                ],
+            }),
+        }
+        .to_line();
+
+        match Response::parse(line.trim_end()).expect("parses") {
+            Response::Killed { report } => {
+                assert_eq!(report.done(), 1);
+                assert_eq!(report.killed[1].said, "no process holds it any more");
+            }
+            other => panic!("came back as {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_console_older_than_the_verb_reads_the_answer_to_it_as_an_answer_it_does_not_know() {
+        let unknown = r#"{"reply": "something_a_later_daemon_does", "what": 1}"#;
+
+        assert!(
+            Response::parse(unknown).is_err(),
+            "an answer whose shape this build cannot name is a refusal to guess, not a \
+             silently empty screen"
+        );
     }
 
     #[test]

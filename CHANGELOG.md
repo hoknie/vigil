@@ -7,9 +7,19 @@ Format:
 
 ## [1.0.6] - 09/--/2026
 
+### Added
+- sockets can be killed and suppressed
+- detail pane not grab auto focus
+- the start-up lines say whether the console of this host may ask the agent to close a socket,
+  and name the key that decides it
+
 ### Changed
 - `vigil.yaml` is read in two passes: the daemon's own keys, then the key each module names as its own
 - reorganized crates
+- hotkeys changed for more UX
+
+### Fixed
+- a socket state between two readings of an unchanged host
 
 ## [1.0.5] - 09/12/2026
 

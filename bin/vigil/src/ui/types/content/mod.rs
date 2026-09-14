@@ -3,6 +3,7 @@ pub mod change;
 pub mod found;
 pub mod gone;
 pub mod group;
+pub mod paper;
 pub mod readings;
 pub mod refusal;
 pub mod report;

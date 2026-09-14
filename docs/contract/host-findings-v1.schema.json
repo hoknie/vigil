@@ -221,7 +221,9 @@
             "agent.budget.recovered",
             "agent.clone_suspected",
             "agent.store.damaged",
-            "agent.receiver_refused"
+            "agent.receiver_refused",
+            "agent.socket.killed",
+            "agent.socket.kill_refused"
           ]
         },
         "severity": {

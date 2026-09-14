@@ -88,6 +88,7 @@ pub fn every_state() -> State {
             .into_iter()
             .map(|name| (name.to_string(), period(name)))
             .collect(),
+            killing_from_the_console: false,
         },
         &[
             ("ports", Health::Ok),
@@ -138,6 +139,7 @@ pub fn before_the_first_reading() -> State {
             started_at: "2026-09-09T08:00:00.000Z".into(),
             interval_seconds: 30,
             periods: BTreeMap::new(),
+            killing_from_the_console: false,
         },
         &[],
         &[],

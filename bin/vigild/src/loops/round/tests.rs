@@ -113,6 +113,7 @@ fn watching(name: &str, health: Health, readings: Vec<Snapshot>) -> Watching {
             started_at: "2026-09-11T09:00:00.000Z".into(),
             interval_seconds: 30,
             periods: [("ports".to_string(), 30)].into_iter().collect(),
+            killing_from_the_console: false,
         },
         &[("ports", health)],
         &[],

@@ -42,6 +42,13 @@ pub(super) fn user(item: &Value) -> String {
     }
 }
 
+pub(super) fn pid(item: &Value) -> String {
+    match SocketView::new(item).pid() {
+        Some(pid) => pid.to_string(),
+        None => String::new(),
+    }
+}
+
 pub(super) fn program(item: &Value) -> String {
     let view = SocketView::new(item);
     if !view.owner_resolved() {

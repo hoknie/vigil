@@ -8,7 +8,11 @@ pub struct Hints<'a> {
     pub back: Back,
     pub panel: bool,
     pub choosing: bool,
+    pub choosing_acts: bool,
     pub sorts: bool,
+    pub filters: bool,
+    pub marks: bool,
+    pub buttons: bool,
     pub arranges: Option<char>,
     pub to_object: bool,
 }

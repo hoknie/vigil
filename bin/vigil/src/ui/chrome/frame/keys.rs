@@ -6,7 +6,10 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
         return " type to search · Enter keep it · Esc put it back".to_string();
     }
     if hints.choosing {
-        return " ← → choose · Enter apply · Esc leave it as it was".to_string();
+        return match hints.choosing_acts {
+            true => " a letter above does it, on this host, now · C or Esc walks away".to_string(),
+            false => " ← → choose · Enter apply · Esc leave it as it was".to_string(),
+        };
     }
 
     let long = match hints.level {
@@ -19,6 +22,10 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
         Level::Menu => format!(
             " ←→ which list · ↓ into it · ↑ or Esc {} · ? keys · q quit",
             hints.back.named()
+        ),
+        Level::Detail if hints.buttons => format!(
+            " j/k ↑↓ scroll · → a button · Enter press it · ← or Esc {} · ? keys",
+            BACK_TO_THE_LIST
         ),
         Level::Detail if hints.to_object => {
             " j/k ↑↓ PgUp/PgDn scroll · ← or Esc back to the list · o object · ? keys".to_string()
@@ -34,55 +41,81 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
             },
             hints.back.named()
         ),
+        Level::List if hints.panel && hints.marks => listing(hints, Room::Whole, CLOSE_THE_PANEL),
         Level::List if hints.panel => {
             " j/k ↑↓ move · → detail · / search · ← or Esc close the panel · ? keys".to_string()
         }
-        Level::List if screen == Screen::FINDINGS => format!(
-            " j/k ↑↓ move · → detail · / search · s sort · f filter · ← {} · ? keys",
-            hints.back.named()
-        ),
-        Level::List => listing(hints),
+        Level::List => listing(hints, Room::Whole, hints.back.named()),
+    };
+    let back = match hints.panel {
+        true => CLOSE_THE_PANEL,
+        false => hints.back.named(),
     };
 
-    if long.chars().count() <= width as usize {
-        return long;
+    let offered = [
+        Some(long),
+        short(hints, screen),
+        Some(listing(hints, Room::Tight, back)),
+        Some(listing(hints, Room::Cramped, back)),
+    ];
+    for line in offered.into_iter().flatten() {
+        if line.chars().count() <= width as usize {
+            return line;
+        }
     }
-    let short = short(hints, screen);
-    match short.chars().count() <= width as usize {
-        true => short,
-        false => LAST_TWO.to_string(),
-    }
+    LAST_TWO.to_string()
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Room {
+    Whole,
+    Tight,
+    Cramped,
 }
 
 const LAST_TWO: &str = " ? keys · q quit";
 
-fn listing(hints: &Hints<'_>) -> String {
-    let mut line = String::from(" j/k ↑↓ move · → detail");
-    if let Some(key) = hints.arranges {
-        line.push_str(&format!(" · {key} view"));
-    }
-    if hints.sorts {
-        line.push_str(" · s sort");
-    }
-    line.push_str(&format!(
-        " · / search · ← or Esc {} · ? keys",
-        hints.back.named()
-    ));
-    line
-}
+const CLOSE_THE_PANEL: &str = "close the panel";
 
-fn short(hints: &Hints<'_>, screen: Screen) -> String {
+const BACK_TO_THE_LIST: &str = "back to the list";
+
+fn short(hints: &Hints<'_>, screen: Screen) -> Option<String> {
     match hints.level {
-        Level::List if screen == Screen::FINDINGS => format!(
+        Level::List if screen == Screen::FINDINGS && !hints.panel => Some(format!(
             " j/k ↑↓ move · → detail · s sort · f filter · ← {} · ? keys",
             hints.back.named()
-        ),
-        Level::List if hints.sorts => format!(
-            " j/k ↑↓ move · → detail · s sort · / search · ← {} · ? keys",
-            hints.back.named()
-        ),
-        _ => LAST_TWO.to_string(),
+        )),
+        _ => None,
     }
+}
+
+fn listing(hints: &Hints<'_>, room: Room, back: &str) -> String {
+    let mut line = String::from(" j/k ↑↓ move");
+    if room != Room::Cramped {
+        line.push_str(" · → detail");
+    }
+    if let Some(key) = hints.arranges
+        && room == Room::Whole
+    {
+        line.push_str(&format!(" · {key} view"));
+    }
+    if hints.marks {
+        line.push_str(" · x mark · K close");
+        if room == Room::Whole {
+            line.push_str(" · S suppress");
+        }
+    }
+    if hints.sorts && room != Room::Cramped {
+        line.push_str(" · s sort");
+    }
+    if hints.filters {
+        line.push_str(" · f filter");
+    }
+    if room == Room::Whole {
+        line.push_str(" · / search");
+    }
+    line.push_str(&format!(" · ← {back} · ? keys"));
+    line
 }
 
 #[cfg(test)]
@@ -105,7 +138,15 @@ mod tests {
     fn sorting(level: Level, back: Back) -> Hints<'static> {
         Hints {
             sorts: true,
+            filters: true,
             ..hints(level, back)
+        }
+    }
+
+    fn acting(level: Level, back: Back) -> Hints<'static> {
+        Hints {
+            marks: true,
+            ..sorting(level, back)
         }
     }
 
@@ -151,6 +192,25 @@ mod tests {
             );
             assert!(line.contains("1-9"), "{line}");
         }
+    }
+
+    #[test]
+    fn a_panel_with_buttons_in_it_says_which_keys_walk_them_and_which_presses_one() {
+        let line = keys(
+            &Hints {
+                buttons: true,
+                ..hints(Level::Detail, Back::MainScreen)
+            },
+            a_section(),
+            120,
+        );
+
+        assert!(line.contains("→ a button"), "{line}");
+        assert!(line.contains("Enter press it"), "{line}");
+        assert!(
+            line.contains("← or Esc back to the list"),
+            "and the two keys that go back still go back: {line}"
+        );
     }
 
     #[test]
@@ -245,13 +305,21 @@ mod tests {
 
     #[test]
     fn the_two_keys_that_order_and_narrow_a_list_are_on_the_line_and_it_fits_eighty() {
-        let findings = keys(&hints(Level::List, Back::MainScreen), Screen::FINDINGS, 80);
+        let findings = keys(
+            &sorting(Level::List, Back::MainScreen),
+            Screen::FINDINGS,
+            80,
+        );
         let ports = keys(&sorting(Level::List, Back::MainScreen), a_section(), 80);
 
-        assert!(findings.contains("s sort"), "{findings}");
-        assert!(findings.contains("f filter"), "{findings}");
-        assert!(ports.contains("s sort"), "{ports}");
+        assert_eq!(
+            findings, ports,
+            "the findings and a list of a reading are the same kind of thing, and a reader \
+             who learned the keys on one has learned them on the other"
+        );
         for line in [&findings, &ports] {
+            assert!(line.contains("s sort"), "{line}");
+            assert!(line.contains("f filter"), "{line}");
             assert!(
                 line.chars().count() <= 80,
                 "{} columns and the whole hint is dropped for the two keys that matter: {line}",
@@ -263,6 +331,33 @@ mod tests {
             "the severity floor moved into f, and a hint still offering it on s sends a \
              reader to a key that does something else now: {findings}"
         );
+    }
+
+    #[test]
+    fn a_list_a_reader_can_act_on_says_so_at_the_bottom_even_at_eighty_columns() {
+        for width in [80u16, 100, 140, 200] {
+            let line = keys(&acting(Level::List, Back::MainScreen), a_section(), width);
+
+            assert!(line.contains("x mark"), "{width}: {line}");
+            assert!(line.contains("K close"), "{width}: {line}");
+            assert!(
+                line.chars().count() <= width as usize,
+                "{width}: {} columns: {line}",
+                line.chars().count()
+            );
+        }
+    }
+
+    #[test]
+    fn a_list_nothing_can_be_done_to_offers_none_of_the_keys_that_do_it() {
+        let line = keys(&sorting(Level::List, Back::MainScreen), a_section(), 200);
+
+        for key in ["x mark", "K close", "S suppress"] {
+            assert!(
+                !line.contains(key),
+                "a key the list answers with a refusal is a key the line must not offer: {line}"
+            );
+        }
     }
 
     #[test]

@@ -20,6 +20,8 @@ pub fn resolve_owners(inodes: &BTreeSet<u64>) -> OwnerScan {
         processes_denied: 0,
     };
 
+    let mut holders: BTreeMap<u64, u32> = BTreeMap::new();
+
     let Ok(entries) = fs::read_dir("/proc") else {
         return scan;
     };
@@ -48,11 +50,18 @@ pub fn resolve_owners(inodes: &BTreeSet<u64>) -> OwnerScan {
             let Some(inode) = socket_inode(&target.to_string_lossy()) else {
                 continue;
             };
-            if !inodes.contains(&inode) || scan.by_inode.contains_key(&inode) {
+            if !inodes.contains(&inode) {
                 continue;
             }
-            scan.by_inode.insert(inode, describe(pid));
+            holders
+                .entry(inode)
+                .and_modify(|lowest| *lowest = (*lowest).min(pid))
+                .or_insert(pid);
         }
+    }
+
+    for (inode, pid) in holders {
+        scan.by_inode.insert(inode, describe(pid));
     }
 
     scan
@@ -67,7 +76,10 @@ fn socket_inode(target: &str) -> Option<u64> {
 }
 
 fn describe(pid: u32) -> ProcessOwner {
-    let mut owner = ProcessOwner::default();
+    let mut owner = ProcessOwner {
+        pid: Some(pid),
+        ..ProcessOwner::default()
+    };
 
     if let Ok(metadata) = fs::metadata(format!("/proc/{pid}")) {
         owner.uid = Some(metadata.uid());
@@ -103,6 +115,26 @@ fn describe(pid: u32) -> ProcessOwner {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_socket_several_processes_share_is_attributed_to_the_lowest_pid_holding_it() {
+        let mut holders: BTreeMap<u64, u32> = BTreeMap::new();
+        for pid in [2291u32, 1042, 2288, 2290] {
+            holders
+                .entry(20481)
+                .and_modify(|lowest| *lowest = (*lowest).min(pid))
+                .or_insert(pid);
+        }
+
+        assert_eq!(
+            holders[&20481], 1042,
+            "a listening socket is held by a master and every worker forked from it, and \
+             /proc hands them back in no promised order. Keeping whichever arrived first \
+             made the user and the pid of one row flap between readings, which the differ \
+             reads as the host changing. The lowest pid is the master, and it is the same \
+             on the next reading."
+        );
+    }
 
     #[test]
     fn recognises_a_socket_link_and_ignores_everything_else() {

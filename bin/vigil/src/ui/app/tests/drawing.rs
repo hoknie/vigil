@@ -23,6 +23,18 @@ fn where_the_arrows_are_is_on_the_screen_and_readable_with_no_colour() {
     assert!(on_the_list.contains("│ > 09:00:00"), "{on_the_list}");
 
     press(&mut app, KeyCode::Enter);
+    let beside_the_list = drawn_at(&app, 200, 24);
+    assert!(
+        beside_the_list.contains("▸ FINDINGS"),
+        "the first press opened the panel and the arrows are still on the list, so the \
+         caret has not moved: {beside_the_list}"
+    );
+    assert!(
+        beside_the_list.contains("│ > 09:00:00"),
+        "{beside_the_list}"
+    );
+
+    press(&mut app, KeyCode::Enter);
     let in_the_detail = drawn_at(&app, 200, 24);
     assert!(
         in_the_detail.contains("▸ THE SELECTED FINDING"),

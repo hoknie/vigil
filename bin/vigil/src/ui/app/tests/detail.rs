@@ -10,6 +10,7 @@ fn back_on_the_list_the_detail_follows_the_cursor_down_it() {
     let mut app = app();
     into(&mut app, Screen::FINDINGS, 200, 30);
     press(&mut app, KeyCode::Enter);
+    press(&mut app, KeyCode::Enter);
     press(&mut app, KeyCode::Esc);
 
     press(&mut app, KeyCode::Down);
@@ -41,6 +42,7 @@ fn every_motion_key_reaches_the_end_of_a_long_detail() {
             "user": "www-data",
         }));
         into(&mut app, Screen::FINDINGS, 200, 14);
+        press(&mut app, KeyCode::Enter);
         press(&mut app, KeyCode::Enter);
 
         let area = app.detail_area().expect("the detail is open");
@@ -102,10 +104,17 @@ fn the_ports_screen_has_a_detail_of_its_own() {
     into(&mut app, screen("ports"), 200, 24);
 
     press(&mut app, KeyCode::Right);
+    press(&mut app, KeyCode::Right);
 
     assert_eq!(app.level, Level::Detail);
     let page = drawn_at(&app, 200, 24);
     assert!(page.contains("THE SELECTED SOCKET"), "{page}");
     assert!(page.contains("/usr/sbin/nginx"), "the whole path: {page}");
-    assert!(page.contains("suppressions:"), "{page}");
+
+    press(&mut app, KeyCode::Char('G'));
+    assert!(
+        drawn_at(&app, 200, 24).contains("suppressions:"),
+        "{}",
+        drawn_at(&app, 200, 24)
+    );
 }

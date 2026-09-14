@@ -1,5 +1,6 @@
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
+use crate::ui::app::KILL;
 use crate::ui::{Action, Motion, Screen};
 pub fn action(code: KeyCode, modifiers: KeyModifiers, typing: bool) -> Action {
     if modifiers.contains(KeyModifiers::CONTROL) {
@@ -49,6 +50,7 @@ pub fn action(code: KeyCode, modifiers: KeyModifiers, typing: bool) -> Action {
         KeyCode::Enter => Action::Open,
         KeyCode::Char('o') => Action::ToObject,
         KeyCode::Char('s') => Action::Sort,
+        KeyCode::Char(KILL) => Action::Kill,
         KeyCode::Char('f') => Action::Narrow,
         KeyCode::Char('/') => Action::Search,
         KeyCode::Char(letter) => Action::Letter(letter),
