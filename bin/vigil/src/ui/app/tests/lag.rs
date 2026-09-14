@@ -11,7 +11,9 @@ fn many_launches(copies: usize) -> vigil_model::Snapshot {
     let read = reading.items.clone();
     for copy in 1..copies {
         for (key, item) in &read {
-            reading.items.insert(format!("{key}~{copy:04}"), item.clone());
+            reading
+                .items
+                .insert(format!("{key}~{copy:04}"), item.clone());
         }
     }
     reading
