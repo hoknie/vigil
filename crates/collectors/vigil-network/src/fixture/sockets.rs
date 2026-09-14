@@ -8,6 +8,7 @@ pub fn socket(address: &str, port: u64, executable: &str, user: &str) -> Value {
         "uid": 33,
         "user": user,
         "process": {
+            "pid": 1000 + port,
             "exe": executable,
             "exe_deleted": false,
             "cmdline": format!("{executable} -g daemon off;"),
@@ -32,6 +33,7 @@ pub fn unix_socket(path: &str, executable: &str, user: &str) -> Value {
         "uid": 0,
         "user": user,
         "process": {
+            "pid": 812,
             "exe": executable,
             "exe_deleted": false,
             "cmdline": executable,

@@ -18,6 +18,7 @@ pub struct Config {
     pub collectors: Option<Vec<String>>,
     pub reporters: Vec<Receiver>,
     pub suppressions: Vec<Suppression>,
+    pub killing: Killing,
     #[serde(skip)]
     pub of_the_modules: BTreeMap<String, Value>,
 }
@@ -33,6 +34,7 @@ impl Default for Config {
             collectors: None,
             reporters: Vec::new(),
             suppressions: Vec::new(),
+            killing: Killing::default(),
             of_the_modules: BTreeMap::new(),
         }
     }
@@ -58,6 +60,12 @@ impl Config {
     }
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Killing {
+    pub from_the_console: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Receiver {
@@ -80,6 +88,18 @@ pub enum Receiver {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_configuration_nobody_edited_lets_nothing_on_this_host_be_killed() {
+        assert!(
+            !Config::default().killing.from_the_console,
+            "the console can ask the agent to close a socket, and that is the one thing this \
+             product does to a host it did not create. It is off on a host whose operator has \
+             not written the word down, in the file they review and version, beside \
+             suppressions. A default of true would mean every install is one keystroke from a \
+             stopped service."
+        );
+    }
 
     #[test]
     fn a_file_that_names_one_interval_and_nothing_else_puts_every_collector_on_it() {

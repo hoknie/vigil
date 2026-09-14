@@ -10,7 +10,8 @@
         "cmdline": "nginx: master process /usr/sbin/nginx",
         "cmdline_redacted": false,
         "exe": "/usr/sbin/nginx",
-        "exe_deleted": false
+        "exe_deleted": false,
+        "pid": 1042
       },
       "protocol": "tcp6",
       "uid": 0,
@@ -33,7 +34,8 @@
         "cmdline": "sshd: /usr/sbin/sshd -D [listener]",
         "cmdline_redacted": false,
         "exe": "/usr/sbin/sshd",
-        "exe_deleted": false
+        "exe_deleted": false,
+        "pid": 812
       },
       "protocol": "tcp",
       "uid": 0,
@@ -47,7 +49,8 @@
         "cmdline": null,
         "cmdline_redacted": false,
         "exe": null,
-        "exe_deleted": false
+        "exe_deleted": false,
+        "pid": 2291
       },
       "protocol": "tcp",
       "uid": 33,
@@ -79,7 +82,8 @@
         "cmdline": "dhclient -6 --password [redacted]",
         "cmdline_redacted": true,
         "exe": "/usr/sbin/dhclient",
-        "exe_deleted": false
+        "exe_deleted": false,
+        "pid": 701
       },
       "protocol": "udp6",
       "uid": 0,
@@ -93,7 +97,8 @@
         "cmdline": "/lib/systemd/systemd-resolved",
         "cmdline_redacted": false,
         "exe": "/lib/systemd/systemd-resolved",
-        "exe_deleted": false
+        "exe_deleted": false,
+        "pid": 640
       },
       "protocol": "udp",
       "uid": 101,
@@ -116,7 +121,8 @@
         "cmdline": "dockerd --host unix:///run/docker.sock",
         "cmdline_redacted": false,
         "exe": "/usr/bin/dockerd",
-        "exe_deleted": false
+        "exe_deleted": false,
+        "pid": 980
       },
       "protocol": "unix",
       "type": "stream",

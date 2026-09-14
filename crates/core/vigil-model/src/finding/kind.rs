@@ -116,6 +116,8 @@ kinds! {
     AgentCloneSuspected => "agent.clone_suspected",
     AgentStoreDamaged => "agent.store.damaged",
     AgentReceiverRefused => "agent.receiver_refused",
+    AgentSocketKilled => "agent.socket.killed",
+    AgentSocketKillRefused => "agent.socket.kill_refused",
 }
 
 impl KnownKind {
@@ -257,6 +259,22 @@ mod tests {
         let parsed: Kind = from_the_future.to_string().into();
         assert_eq!(parsed, Kind::Unknown(from_the_future.to_string()));
         assert_eq!(String::from(parsed), from_the_future);
+    }
+
+    #[test]
+    fn the_one_thing_the_agent_does_to_the_host_has_a_kind_of_its_own_in_both_outcomes() {
+        assert!(
+            KnownKind::parse("agent.socket.killed").is_some()
+                && KnownKind::parse("agent.socket.kill_refused").is_some(),
+            "an agent that closed somebody's socket and reported nothing is an agent whose \
+             journal disagrees with the host; the refusal is a finding too, because a kill \
+             asked for and not carried out is the same question at an incident"
+        );
+        assert_eq!(
+            KnownKind::AgentSocketKilled.resolves(),
+            None,
+            "a socket that came back is a new listening port, which has its own kind"
+        );
     }
 
     #[test]

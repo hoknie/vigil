@@ -2,7 +2,7 @@ use std::io::{BufRead, ErrorKind, Read, Write};
 
 use vigil_model::{ProtocolError, Request, Response, Rfc3339};
 
-use super::{Shared, answer};
+use super::{Shared, answer, kill};
 
 const MAX_REQUEST_BYTES: u64 = 64 * 1024;
 
@@ -48,6 +48,7 @@ pub fn serve(
         }
 
         let response = match Request::parse(line.trim_end()) {
+            Ok(Request::Kill { sockets, killing }) => kill(&sockets, killing, shared, now()),
             Ok(request) => shared.with(|state| answer(&request, state, now())),
             Err(error) => Response::Error { error },
         };

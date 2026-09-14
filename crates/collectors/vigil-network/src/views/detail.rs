@@ -38,6 +38,9 @@ pub(super) fn socket(key: &str, item: &Value) -> Vec<Piece> {
             pieces.push(Piece::Blank);
         }
         true => {
+            if let Some(pid) = view.pid() {
+                pieces.push(Piece::field("pid", pid.to_string()));
+            }
             pieces.push(Piece::field(
                 "program",
                 view.executable().unwrap_or("unknown"),
@@ -72,8 +75,8 @@ pub(super) fn program(path: &str, sockets: usize) -> Vec<Piece> {
         Piece::field("sockets", sockets.to_string()),
         Piece::Blank,
         Piece::text(
-            "The sockets are listed under this heading. Press Esc for the list, then move to \
-             one of them for its detail.",
+            "Press \u{2192} on this heading for the sockets under it, and \u{2192} again for \
+             the detail of the one under the cursor.",
         ),
     ]
 }

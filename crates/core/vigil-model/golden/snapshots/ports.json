@@ -53,6 +53,12 @@
         ],
         "always": false
       },
+      "process/pid": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
       "protocol": {
         "types": [
           "string"
@@ -120,6 +126,12 @@
       "process/exe_deleted": {
         "types": [
           "boolean"
+        ],
+        "always": false
+      },
+      "process/pid": {
+        "types": [
+          "number"
         ],
         "always": false
       },
@@ -193,6 +205,12 @@
         ],
         "always": false
       },
+      "process/pid": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
       "protocol": {
         "types": [
           "string"
@@ -260,6 +278,12 @@
       "process/exe_deleted": {
         "types": [
           "boolean"
+        ],
+        "always": false
+      },
+      "process/pid": {
+        "types": [
+          "number"
         ],
         "always": false
       },
@@ -336,6 +360,12 @@
       "process/exe_deleted": {
         "types": [
           "boolean"
+        ],
+        "always": false
+      },
+      "process/pid": {
+        "types": [
+          "number"
         ],
         "always": false
       },

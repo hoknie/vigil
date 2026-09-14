@@ -38,8 +38,9 @@ Num       RefCount Protocol Flags    Type St Inode Path
 0000: 00000002 00000000 00010000 0001 01 24877
 ";
 
-fn owner(executable: Option<&str>, command_line: Option<&str>, uid: u32) -> ProcessOwner {
+fn owner(pid: u32, executable: Option<&str>, command_line: Option<&str>, uid: u32) -> ProcessOwner {
     ProcessOwner {
+        pid: Some(pid),
         executable: executable.map(str::to_string),
         executable_deleted: executable.is_some_and(|path| path.starts_with("/tmp/")),
         command_line: command_line.map(str::to_string),
@@ -53,15 +54,17 @@ fn owners() -> BTreeMap<u64, ProcessOwner> {
         (
             20480,
             owner(
+                812,
                 Some("/usr/sbin/sshd"),
                 Some("sshd: /usr/sbin/sshd -D [listener]"),
                 0,
             ),
         ),
-        (23902, owner(None, None, 33)),
+        (23902, owner(2291, None, None, 33)),
         (
             20500,
             owner(
+                1042,
                 Some("/usr/sbin/nginx"),
                 Some("nginx: master process /usr/sbin/nginx"),
                 0,
@@ -70,6 +73,7 @@ fn owners() -> BTreeMap<u64, ProcessOwner> {
         (
             21000,
             owner(
+                640,
                 Some("/lib/systemd/systemd-resolved"),
                 Some("/lib/systemd/systemd-resolved"),
                 101,
@@ -78,6 +82,7 @@ fn owners() -> BTreeMap<u64, ProcessOwner> {
         (
             21001,
             owner(
+                701,
                 Some("/usr/sbin/dhclient"),
                 Some("dhclient -6 --password [redacted]"),
                 0,
@@ -86,6 +91,7 @@ fn owners() -> BTreeMap<u64, ProcessOwner> {
         (
             24875,
             owner(
+                980,
                 Some("/usr/bin/dockerd"),
                 Some("dockerd --host unix:///run/docker.sock"),
                 0,

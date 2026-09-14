@@ -5,6 +5,9 @@ interval_seconds: 10
 
 retention_days: 90
 
+killing:
+  from_the_console: true
+
 reporters:
   - kind: ndjson
     path: /var/log/vigil/findings.ndjson

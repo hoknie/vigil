@@ -14,6 +14,8 @@ use crate::ui::{Arrows, Look, Reading, View};
 
 const LINES_OF_DEFINITION: usize = 2;
 
+const MARKED: &str = "x";
+
 pub fn render(
     view: &View,
     look: Look,
@@ -108,8 +110,10 @@ pub fn render(
     let toggles = pane.toggles();
     let (chooser_area, searching, rest) = split_top(rest, showing.search);
     let hidden = showing.hidden();
-    let asked = asked(showing, &hidden);
+    let opened = showing.opened();
+    let asked = asked(showing, &hidden, &opened);
     let rows = pane.rows(snapshot, &asked);
+    let marking = pane.offers().marking && look.interactive();
     let (table, footer) = split_bottom(rest, look, rows.len());
 
     if let Some(area) = chooser_area
@@ -135,13 +139,23 @@ pub fn render(
             false => said(pane.empty(&asked)).render(look, table, buffer),
         }
     } else {
-        let widths = constraints(&pane.columns(room));
+        let widths = constraints(&pane.columns(room), marking);
         let fitted = listing::column_widths(look, &widths, table);
         listing::render(
             look,
-            header(&pane.columns(room)),
+            header(&pane.columns(room), marking),
             rows.iter()
-                .map(|row| drawn(pane.as_ref(), snapshot, row, room, &fitted))
+                .map(|row| {
+                    drawn(
+                        pane.as_ref(),
+                        snapshot,
+                        row,
+                        room,
+                        &fitted,
+                        marking,
+                        showing,
+                    )
+                })
                 .collect(),
             &widths,
             listing::Where {
@@ -172,7 +186,8 @@ pub fn printed_height(
         return 0;
     };
     let hidden = showing.hidden();
-    let asked = asked(showing, &hidden);
+    let opened = showing.opened();
+    let asked = asked(showing, &hidden, &opened);
     let rows = match view.reading(pane.reads()) {
         Reading::Taken(snapshot) => pane.rows(snapshot, &asked).len(),
         _ => 0,
@@ -192,38 +207,50 @@ fn drawn(
     row: &vigil_view::RowKey,
     room: Room,
     fitted: &[usize],
+    marking: bool,
+    showing: &Showing<'_>,
 ) -> TableRow<'static> {
-    let cells: Vec<String> = pane
-        .cells(snapshot, row, room)
-        .into_iter()
-        .enumerate()
-        .map(|(index, cell)| match fitted.get(index) {
-            Some(width) => column::fit(&cell.text, *width),
-            None => cell.text,
-        })
-        .collect();
+    let ahead = usize::from(marking);
+    let mut cells: Vec<String> = Vec::with_capacity(ahead + 1);
+    if marking {
+        cells.push(match showing.is_marked(&row.key) && row.of_the_reading {
+            true => MARKED.to_string(),
+            false => " ".to_string(),
+        });
+    }
+    cells.extend(
+        pane.cells(snapshot, row, room)
+            .into_iter()
+            .enumerate()
+            .map(|(index, cell)| match fitted.get(index + ahead) {
+                Some(width) => column::fit(&cell.text, *width),
+                None => cell.text,
+            }),
+    );
 
     TableRow::new(cells)
 }
 
-fn header(columns: &[Column]) -> TableRow<'static> {
-    TableRow::new(
-        columns
-            .iter()
-            .map(|column| column.header)
-            .collect::<Vec<&'static str>>(),
-    )
+fn header(columns: &[Column], marking: bool) -> TableRow<'static> {
+    let mut headers: Vec<&'static str> = Vec::with_capacity(columns.len() + 1);
+    if marking {
+        headers.push(" ");
+    }
+    headers.extend(columns.iter().map(|column| column.header));
+    TableRow::new(headers)
 }
 
-fn constraints(columns: &[Column]) -> Vec<Constraint> {
-    columns
-        .iter()
-        .map(|column| match column.width {
-            Width::Fixed(room) => Constraint::Length(room),
-            Width::Least(room) => Constraint::Min(room),
-            Width::Share(part) => Constraint::Fill(part),
-        })
-        .collect()
+fn constraints(columns: &[Column], marking: bool) -> Vec<Constraint> {
+    let mut widths: Vec<Constraint> = Vec::with_capacity(columns.len() + 1);
+    if marking {
+        widths.push(Constraint::Length(1));
+    }
+    widths.extend(columns.iter().map(|column| match column.width {
+        Width::Fixed(room) => Constraint::Length(room),
+        Width::Least(room) => Constraint::Min(room),
+        Width::Share(part) => Constraint::Fill(part),
+    }));
+    widths
 }
 
 fn footing(tally: String, width: u16) -> String {

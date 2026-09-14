@@ -5,7 +5,7 @@ use vigil_view::{
 };
 
 use super::detail;
-use super::fields::{command, endpoint, program, protocol, user};
+use super::fields::{command, endpoint, pid, program, protocol, user};
 use super::notices;
 use super::tally::tally;
 
@@ -39,6 +39,7 @@ impl Pane for Flat {
             Column::new("PROTO", Width::Fixed(5)),
             Column::new("ADDRESS", Width::Least(22)),
             Column::new("USER", Width::Fixed(10)),
+            Column::new("PID", Width::Fixed(7)),
             Column::new("PROGRAM", Width::Share(1)),
         ];
         if room.holds(ROOM_FOR_THE_COMMAND) {
@@ -64,6 +65,7 @@ impl Pane for Flat {
             Cell::plain(protocol(item, &row.key)),
             Cell::plain(endpoint(item, &row.key)),
             Cell::plain(user(item)),
+            Cell::plain(pid(item)),
             Cell::plain(program(item)),
         ];
         if room.holds(ROOM_FOR_THE_COMMAND) {
@@ -96,7 +98,7 @@ impl Pane for Flat {
     }
 
     fn offers(&self) -> Offers {
-        Offers::default()
+        Offers::default().marked(true)
     }
 }
 
@@ -106,7 +108,7 @@ pub(super) fn kinds() -> Vec<Toggle> {
         Toggle::new('T', "tcp6"),
         Toggle::new('u', "udp"),
         Toggle::new('U', "udp6"),
-        Toggle::new('x', "unix"),
+        Toggle::new('X', "unix"),
     ]
 }
 
@@ -144,7 +146,11 @@ fn sorted_on(reading: &Snapshot, key: &str, by: usize) -> String {
         1 => protocol(item, key).to_string(),
         2 => endpoint(item, key),
         3 => user(item),
-        4 => crate::types::SocketView::new(item)
+        4 => format!(
+            "{:>9}",
+            crate::types::SocketView::new(item).pid().unwrap_or(0)
+        ),
+        5 => crate::types::SocketView::new(item)
             .executable()
             .map(basename)
             .unwrap_or_default()

@@ -72,10 +72,15 @@ fn a_search_on_one_ports_view_does_not_narrow_the_other() {
         !app.panes().expect("a section").search().holding_back(),
         "the other view is showing everything"
     );
+    let page = drawn_at(&app, 120, 24);
     assert!(
-        drawn_at(&app, 120, 24).contains("0.0.0.0:4444"),
-        "{}",
-        drawn_at(&app, 120, 24)
+        page.contains("sshd") && page.contains("dockerd"),
+        "the search belonged to the list it was typed into, so this one still stands over \
+         every program the agent read: {page}"
+    );
+    assert!(
+        page.contains("owner not resolved (7)"),
+        "and over the sockets it could not name, counted rather than dropped: {page}"
     );
 }
 
@@ -204,7 +209,7 @@ fn the_main_screen_has_no_search_and_says_where_the_search_lives() {
 }
 
 #[test]
-fn a_screen_with_nothing_to_filter_says_so_rather_than_opening_an_empty_choice() {
+fn the_same_key_narrows_a_list_of_findings_and_a_list_of_a_reading() {
     let mut app = app();
     into(&mut app, screen("ports"), 120, 24);
 
@@ -212,11 +217,24 @@ fn a_screen_with_nothing_to_filter_says_so_rather_than_opening_an_empty_choice()
 
     assert_eq!(app.nav.at(), screen("ports"));
     let page = drawn_at(&app, 120, 24);
-    assert!(page.contains("Nothing to filter here"), "{page}");
-    assert!(page.contains("findings"), "and where it does live: {page}");
-    assert!(page.contains("Press / to search"), "{page}");
     assert!(
-        !page.contains("show only"),
+        page.contains("[every kind]") && page.contains("only tcp"),
+        "f opened nothing here, and a key that works on one list and refuses on the next is \
+         a key a reader stops trusting: {page}"
+    );
+}
+
+#[test]
+fn a_screen_that_is_one_page_has_nothing_to_narrow_and_says_so() {
+    let mut app = app();
+    into(&mut app, Screen::SUMMARY, 120, 24);
+
+    press(&mut app, KeyCode::Char('f'));
+
+    let page = drawn_at(&app, 120, 24);
+    assert!(page.contains("Nothing to filter on this screen"), "{page}");
+    assert!(
+        !page.contains("every kind"),
         "no empty choice was opened: {page}"
     );
 }

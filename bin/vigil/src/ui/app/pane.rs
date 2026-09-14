@@ -41,6 +41,8 @@ impl App {
         let Some(pane) = every.get(panes.showing().min(every.len().saturating_sub(1))) else {
             return Vec::new();
         };
+        let marked = panes.marked();
+        let branches = panes.opened();
         let showing = pane::Showing {
             at: panes.showing(),
             search: panes.search(),
@@ -52,13 +54,20 @@ impl App {
             elsewhere: 0,
             gone: None,
             arranged: None,
+            marked,
+            opened: branches,
         };
         let hidden = showing.hidden();
+        let opened = showing.opened();
 
-        pane::rows(&self.view, pane.as_ref(), &pane::asked(&showing, &hidden))
-            .into_iter()
-            .map(|row| row.key)
-            .collect()
+        pane::rows(
+            &self.view,
+            pane.as_ref(),
+            &pane::asked(&showing, &hidden, &opened),
+        )
+        .into_iter()
+        .map(|row| row.key)
+        .collect()
     }
 
     pub(super) fn row_named(&self, screen: Screen, named: &str) -> Option<String> {
@@ -126,6 +135,8 @@ impl App {
             elsewhere: panes.narrowed_elsewhere(),
             gone: self.gone.as_ref(),
             arranged: arranged(pane.as_ref(), panes.arranged()),
+            marked: panes.marked(),
+            opened: panes.opened(),
         })
     }
 
@@ -147,6 +158,8 @@ impl App {
             elsewhere: 0,
             gone: None,
             arranged: None,
+            marked: Vec::new(),
+            opened: panes.opened(),
         })
     }
 
@@ -155,12 +168,33 @@ impl App {
             return Vec::new();
         };
         let hidden = showing.hidden();
+        let opened = showing.opened();
 
-        pane::rows(&self.view, pane.as_ref(), &pane::asked(&showing, &hidden))
+        pane::rows(
+            &self.view,
+            pane.as_ref(),
+            &pane::asked(&showing, &hidden, &opened),
+        )
+    }
+
+    pub(super) fn pane_row_under_the_cursor(&self) -> Option<RowKey> {
+        let at = self.panes()?.at();
+        self.pane_rows().into_iter().nth(at)
     }
 
     pub(super) fn pane_keys(&self) -> Vec<String> {
         self.pane_rows().into_iter().map(|row| row.key).collect()
+    }
+
+    pub(super) fn pane_keys_of_the_reading(&self) -> Vec<String> {
+        let Some(pane) = self.pane() else {
+            return Vec::new();
+        };
+        let Reading::Taken(snapshot) = self.view.reading(pane.reads()) else {
+            return Vec::new();
+        };
+
+        snapshot.items.keys().cloned().collect()
     }
 
     pub(super) fn pane_detail(&self) -> Vec<Piece> {

@@ -13,6 +13,7 @@ pub enum Action {
     Open,
     ToObject,
     Sort,
+    Kill,
     Narrow,
     Search,
     Letter(char),

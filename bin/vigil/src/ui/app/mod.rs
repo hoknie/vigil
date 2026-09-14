@@ -7,7 +7,9 @@ mod detail;
 mod drawing;
 mod jump;
 mod keys;
+mod killing;
 mod levels;
+mod marking;
 mod motion;
 mod narrowing;
 mod page;
@@ -25,8 +27,11 @@ use crate::link::Link;
 use std::collections::BTreeMap;
 
 use crate::ui::{
-    Asking, Chooser, Dismissed, Filter, Gone, Level, Look, Nav, Picked, Screen, Sorting, View,
+    Asking, Chooser, Dismissed, Filter, Gone, Level, Look, Nav, Paper, Picked, Screen, Sorting,
+    View,
 };
+
+pub use killing::KILL;
 
 pub struct App {
     link: Link,
@@ -43,6 +48,9 @@ pub struct App {
     gone: Option<Gone>,
     chooser: Chooser,
     sorting: BTreeMap<Screen, Sorting>,
+    paper: Option<Paper>,
+    button: usize,
+    in_the_buttons: bool,
     helping: bool,
     message: Option<String>,
     body: Cell<Rect>,

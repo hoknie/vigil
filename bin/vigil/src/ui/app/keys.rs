@@ -19,8 +19,23 @@ impl App {
 
         if self.choosing() {
             self.message = None;
+            if let KeyCode::Char(letter) = code
+                && !modifiers.contains(KeyModifiers::CONTROL)
+                && self.pressed_in_the_band(letter)
+            {
+                self.settle();
+                return;
+            }
             self.walk_the_choice(action);
             self.settle();
+            return;
+        }
+
+        if self.paper.is_some() {
+            self.paper = None;
+            if modifiers.contains(KeyModifiers::CONTROL) && code == KeyCode::Char('c') {
+                self.leaving = true;
+            }
             return;
         }
 
@@ -56,6 +71,7 @@ impl App {
             Action::Open => self.open(),
             Action::ToObject => self.jump_to_object(),
             Action::Sort => self.sorting(),
+            Action::Kill => self.killing(),
             Action::Narrow => self.narrowing(),
             Action::Search => self.searching(),
             Action::Letter(key) => self.letter(key),
@@ -86,6 +102,23 @@ impl App {
 
     pub(super) fn choosing(&self) -> bool {
         self.chooser.choosing().is_some()
+    }
+
+    fn pressed_in_the_band(&mut self, letter: char) -> bool {
+        if self.chooser.keys().is_empty() {
+            return false;
+        }
+        if letter == crate::ui::CANCEL {
+            self.chooser.close();
+            return true;
+        }
+        let Some(at) = self.chooser.pressed(letter) else {
+            return false;
+        };
+
+        self.chooser.step(at as isize - self.chooser.at() as isize);
+        self.chose();
+        true
     }
 
     fn walk_the_reason(&mut self, action: Action) {

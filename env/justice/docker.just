@@ -25,6 +25,11 @@ docker-logs:
 docker-smoke:
     {{ RUN }} ./env/docker/smoke.sh
 
+# Build, open a port, have the console ask the agent to close it, and read what it recorded
+[group('docker')]
+docker-kill-smoke:
+    {{ RUN }} ./env/docker/kill-smoke.sh
+
 # The whole gate, on musl, inside the container
 [group('docker')]
 docker-check:

@@ -4,12 +4,14 @@ use vigil_view::basename;
 use vigil_view::{Cell, Column, Notice, Offers, Pane, Piece, Room, RowKey, Showing, Toggle, Width};
 
 use super::detail;
-use super::fields::{endpoint, holder, protocol, user};
+use super::fields::{endpoint, holder, pid, protocol, user};
 use super::flat::{ROOM_FOR_THE_COMMAND, kinds, passing};
 use super::notices;
 use super::tally::tally;
 
 const UNRESOLVED: &str = "unresolved";
+
+const HEADING: &str = "program|";
 
 pub(super) struct ByProgram;
 
@@ -27,8 +29,8 @@ impl Pane for ByProgram {
     }
 
     fn about(&self) -> &str {
-        "one row per program, with its sockets under it; sockets with no resolved owner are \
-         kept apart"
+        "one row per program, its sockets folded away under it; sockets with no resolved owner \
+         are kept apart"
     }
 
     fn reads(&self) -> &str {
@@ -40,6 +42,7 @@ impl Pane for ByProgram {
             Column::new("PROGRAM", Width::Least(20)),
             Column::new("ADDRESS", Width::Least(22)),
             Column::new("USER", Width::Fixed(10)),
+            Column::new("PID", Width::Fixed(7)),
         ];
         if room.holds(ROOM_FOR_THE_COMMAND) {
             columns.push(Column::new("WHERE IT IS", Width::Share(1)));
@@ -48,31 +51,36 @@ impl Pane for ByProgram {
     }
 
     fn rows(&self, reading: &Snapshot, showing: &Showing<'_>) -> Vec<RowKey> {
-        let mut programs: Vec<(String, Vec<&String>)> = Vec::new();
-        let mut unresolved: Vec<&String> = Vec::new();
-
-        for (key, item) in passing(reading, showing) {
-            match holder(item) {
-                None => unresolved.push(key),
-                Some(path) => match programs.iter_mut().find(|(known, _)| known == path) {
-                    Some((_, sockets)) => sockets.push(key),
-                    None => programs.push((path.to_string(), vec![key])),
-                },
-            }
-        }
-        programs.sort_by(|left, right| left.0.cmp(&right.0));
+        let (programs, unresolved) = gathered(reading, showing);
 
         let mut rows = Vec::new();
         for (path, sockets) in &programs {
-            rows.push(RowKey::of(format!("program|{path}")).of_its_own());
+            let heading = format!("{HEADING}{path}");
+            let open = showing.opened_up(&heading);
+            rows.push(
+                RowKey::of(heading.clone())
+                    .of_its_own()
+                    .gathering(sockets.len())
+                    .opened(open),
+            );
+            if !open {
+                continue;
+            }
             for key in sockets {
-                rows.push(RowKey::of((*key).clone()).under(1));
+                rows.push(RowKey::of((*key).clone()).under(1).beneath(heading.clone()));
             }
         }
         if !unresolved.is_empty() {
-            rows.push(RowKey::of(UNRESOLVED).of_its_own());
-            for key in unresolved {
-                rows.push(RowKey::of(key.clone()).under(1));
+            rows.push(
+                RowKey::of(UNRESOLVED)
+                    .of_its_own()
+                    .gathering(unresolved.len())
+                    .opened(showing.opened_up(UNRESOLVED)),
+            );
+            if showing.opened_up(UNRESOLVED) {
+                for key in unresolved {
+                    rows.push(RowKey::of(key.clone()).under(1).beneath(UNRESOLVED));
+                }
             }
         }
         rows
@@ -86,6 +94,7 @@ impl Pane for ByProgram {
                     Cell::plain(format!("  {}", protocol(item, &row.key))),
                     Cell::plain(endpoint(item, &row.key)),
                     Cell::plain(user(item)),
+                    Cell::plain(pid(item)),
                 ];
                 if wide {
                     cells.push(Cell::plain(""));
@@ -105,7 +114,7 @@ impl Pane for ByProgram {
         if row.key == UNRESOLVED {
             return detail::unresolved(counted(reading, row));
         }
-        match row.key.strip_prefix("program|") {
+        match row.key.strip_prefix(HEADING) {
             Some(path) => detail::program(path, counted(reading, row)),
             None => Vec::new(),
         }
@@ -128,29 +137,55 @@ impl Pane for ByProgram {
     }
 
     fn offers(&self) -> Offers {
-        Offers::default().sorted(false)
+        Offers::default().sorted(false).marked(true)
     }
 }
 
+type Gathered<'a> = (Vec<(String, Vec<&'a String>)>, Vec<&'a String>);
+
+fn gathered<'a>(reading: &'a Snapshot, showing: &Showing<'_>) -> Gathered<'a> {
+    let mut programs: Vec<(String, Vec<&'a String>)> = Vec::new();
+    let mut unresolved: Vec<&'a String> = Vec::new();
+
+    for (key, item) in passing(reading, showing) {
+        match holder(item) {
+            None => unresolved.push(key),
+            Some(path) => match programs.iter_mut().find(|(known, _)| known == path) {
+                Some((_, sockets)) => sockets.push(key),
+                None => programs.push((path.to_string(), vec![key])),
+            },
+        }
+    }
+    programs.sort_by(|left, right| left.0.cmp(&right.0));
+
+    (programs, unresolved)
+}
+
 fn heading(reading: &Snapshot, row: &RowKey, wide: bool) -> Vec<Cell> {
-    let count = counted(reading, row);
-    let mut cells = match row.key.strip_prefix("program|") {
+    let count = row.gathers.unwrap_or_else(|| counted(reading, row));
+    let folded = match row.opened {
+        true => "▾ ",
+        false => "▸ ",
+    };
+    let mut cells = match row.key.strip_prefix(HEADING) {
         Some(path) => vec![
             Cell::plain(match ambiguous(reading, path) {
-                true => format!("{path} ({count})"),
-                false => format!("{} ({count})", basename(path)),
+                true => format!("{folded}{path} ({count})"),
+                false => format!("{folded}{} ({count})", basename(path)),
             }),
+            Cell::plain(""),
             Cell::plain(""),
             Cell::plain(""),
         ],
         None => vec![
-            Cell::plain(format!("owner not resolved ({count})")),
+            Cell::plain(format!("{folded}owner not resolved ({count})")),
             Cell::plain("permission denied"),
+            Cell::plain(""),
             Cell::plain(""),
         ],
     };
     if wide {
-        cells.push(Cell::plain(match row.key.strip_prefix("program|") {
+        cells.push(Cell::plain(match row.key.strip_prefix(HEADING) {
             Some(path) => path.to_string(),
             None => String::new(),
         }));
@@ -159,7 +194,7 @@ fn heading(reading: &Snapshot, row: &RowKey, wide: bool) -> Vec<Cell> {
 }
 
 fn counted(reading: &Snapshot, row: &RowKey) -> usize {
-    match row.key.strip_prefix("program|") {
+    match row.key.strip_prefix(HEADING) {
         Some(path) => reading
             .items
             .values()

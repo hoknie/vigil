@@ -46,41 +46,62 @@ fn rows() -> Vec<(&'static str, &'static str)> {
     vec![
         (
             "",
-            "EVERY RUNG: → in, ← out; ▸ in a heading has the arrows now",
+            "EVERY RUNG: the arrows move what carries \u{25b8}; \u{2192} in, \u{2190} out",
         ),
         ("1 - 9", "open one; the numbers are on the main screen"),
         ("", "IN A LIST OR A REPORT"),
-        ("j / k, ↑ ↓", "a row at a time"),
-        ("PgUp / PgDn", "a screenful"),
+        (
+            "j / k, \u{2191} \u{2193}",
+            "a row at a time; PgUp / PgDn a screenful",
+        ),
         ("g / G, Home/End", "the top / the end"),
-        ("→ or Enter", "the detail of the row (not on the summary)"),
+        (
+            "\u{2192} or Enter",
+            "the detail of the row (not on the summary)",
+        ),
         ("/", "search: every value the agent read about a row"),
         ("o", "the object a finding is about; Esc comes back to it"),
-        ("s / f", "sort this list / narrow the findings"),
         (
-            "shift/ctrl ↑↓",
-            "pick findings; x here, a all, d silence them, u undo",
+            "s / f, shift ↑↓",
+            "sort/narrow; pick x, a all, d silence them, u undo",
         ),
         (
-            "t T u U x, a",
+            "t T u U X, a",
             "show / hide kinds of socket, or all (ports)",
         ),
         (
             "t / d",
             "units as a tree (startup); a section's words (main)",
         ),
-        ("", "THE LISTS OF A SECTION: ← → along them, ↓ into one"),
-        ("", "  ports: sockets · by program"),
+        ("", "ON THE SOCKETS OF THIS HOST"),
+        (
+            "\u{2192} \u{2192} \u{2192}",
+            "a program opens \u{b7} the panel \u{b7} the arrows move in",
+        ),
+        (
+            "x / M",
+            "mark the row (a program takes all of it) / unmark all",
+        ),
+        ("K / S", "close it, or everything marked / its suppressions"),
         (
             "",
-            "  accounts: users · groups · sudo · keys · ssh users · logged in",
+            "THE LISTS OF A SECTION: \u{2190} \u{2192} along them, \u{2193} into one",
         ),
-        ("", "  programs: running · launches"),
-        ("", "  startup: units · timers · cron · modules · files"),
-        ("", "  system: the host · watched files"),
-        ("", "EVERYWHERE"),
+        ("", "  ports: sockets \u{b7} by program"),
         (
-            "← or Esc",
+            "",
+            "  accounts: users \u{b7} groups \u{b7} sudo \u{b7} keys \u{b7} ssh users \u{b7} logged in",
+        ),
+        (
+            "",
+            "  programs: running \u{b7} launches   \u{b7}   system: the host \u{b7} watched files",
+        ),
+        (
+            "",
+            "  startup: units \u{b7} timers \u{b7} cron \u{b7} modules \u{b7} files",
+        ),
+        (
+            "\u{2190} or Esc",
             "a search, the detail, the panel, a rung, the main screen",
         ),
         ("r / ? / q", "ask now / this list / leave"),
@@ -109,12 +130,14 @@ mod tests {
             "o",
             "/",
             "s / f",
-            "shift/ctrl",
+            "shift",
             "d silence them",
             "Esc",
             "r",
             "as a tree",
             "a section's words",
+            "x / M",
+            "K / S",
         ] {
             assert!(page.contains(key), "{key} is not on the list: {page}");
         }
@@ -128,6 +151,11 @@ mod tests {
         );
         assert!(page.contains("comes back to it"), "{page}");
         assert!(page.contains("any key closes this"), "{page}");
+        assert!(
+            page.contains("close it, or everything marked"),
+            "the one key on this console that changes the host has to say what it takes, \
+             where the keys are listed: {page}"
+        );
     }
 
     #[test]

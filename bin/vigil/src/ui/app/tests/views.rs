@@ -105,6 +105,7 @@ fn a_suppression_is_written_against_the_same_key_in_either_view() {
     onto(&mut app, "nginx.service");
     press(&mut app, KeyCode::Char('t'));
     press(&mut app, KeyCode::Right);
+    press(&mut app, KeyCode::Right);
     press(&mut app, KeyCode::Char('G'));
 
     let page = drawn_at(&app, WIDE, 40);

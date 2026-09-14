@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use crate::ui::{Cursor, Search};
 
 #[derive(Debug, Clone)]
@@ -5,6 +7,8 @@ pub struct Panes {
     at: usize,
     cursors: Vec<Cursor>,
     searches: Vec<Search>,
+    marked: Vec<BTreeSet<String>>,
+    opened: Vec<BTreeSet<String>>,
     hidden: Vec<String>,
     arranged: Option<String>,
 }
@@ -16,6 +20,8 @@ impl Panes {
             at: 0,
             cursors: vec![Cursor::default(); count],
             searches: vec![Search::default(); count],
+            marked: vec![BTreeSet::new(); count],
+            opened: vec![BTreeSet::new(); count],
             hidden: Vec::new(),
             arranged: None,
         }
@@ -66,6 +72,48 @@ impl Panes {
 
     pub fn search_mut(&mut self) -> &mut Search {
         &mut self.searches[self.at]
+    }
+
+    pub fn marked(&self) -> Vec<String> {
+        self.marked[self.at].iter().cloned().collect()
+    }
+
+    pub fn is_marked(&self, key: &str) -> bool {
+        self.marked[self.at].contains(key)
+    }
+
+    pub fn mark(&mut self, key: &str, wanted: bool) {
+        match wanted {
+            true => {
+                self.marked[self.at].insert(key.to_string());
+            }
+            false => {
+                self.marked[self.at].remove(key);
+            }
+        }
+    }
+
+    pub fn unmark_everything(&mut self) {
+        self.marked[self.at].clear();
+    }
+
+    pub fn forget_marks_not_in(&mut self, rows: &[String]) {
+        self.marked[self.at].retain(|key| rows.iter().any(|row| row == key));
+    }
+
+    pub fn opened(&self) -> Vec<String> {
+        self.opened[self.at].iter().cloned().collect()
+    }
+
+    pub fn open(&mut self, key: &str, wanted: bool) {
+        match wanted {
+            true => {
+                self.opened[self.at].insert(key.to_string());
+            }
+            false => {
+                self.opened[self.at].remove(key);
+            }
+        }
     }
 
     pub fn hidden(&self) -> &[String] {
@@ -157,6 +205,51 @@ mod tests {
             2,
             "a section whose last pane has nothing in it must not strand the reader on it"
         );
+    }
+
+    #[test]
+    fn what_is_marked_belongs_to_the_list_it_was_marked_in() {
+        let mut panes = Panes::of(2);
+        panes.mark("tcp|0.0.0.0:4444", true);
+
+        panes.show(1);
+        assert_eq!(
+            panes.marked().len(),
+            0,
+            "the two lists show the same sockets under different keys, and carrying a mark \
+             across would aim the kill at a row the reader never saw"
+        );
+
+        panes.show(0);
+        assert!(panes.is_marked("tcp|0.0.0.0:4444"));
+        panes.mark("tcp|0.0.0.0:4444", false);
+        assert!(panes.marked().is_empty());
+    }
+
+    #[test]
+    fn a_mark_on_a_socket_that_is_no_longer_in_the_reading_is_dropped_rather_than_kept() {
+        let mut panes = Panes::of(1);
+        panes.mark("tcp|0.0.0.0:4444", true);
+        panes.mark("tcp|0.0.0.0:22", true);
+
+        panes.forget_marks_not_in(&["tcp|0.0.0.0:22".to_string()]);
+
+        assert_eq!(
+            panes.marked(),
+            vec!["tcp|0.0.0.0:22".to_string()],
+            "the port closed under the reader while it was marked; carrying the mark to the \
+             next reading is how a kill lands on whatever takes that port next"
+        );
+    }
+
+    #[test]
+    fn a_branch_opened_in_one_list_is_not_opened_in_the_other() {
+        let mut panes = Panes::of(2);
+        panes.open("program|/usr/sbin/nginx", true);
+
+        assert_eq!(panes.opened(), vec!["program|/usr/sbin/nginx".to_string()]);
+        panes.show(1);
+        assert!(panes.opened().is_empty());
     }
 
     #[test]

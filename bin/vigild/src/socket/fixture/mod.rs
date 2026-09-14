@@ -8,7 +8,7 @@ mod host;
 mod settled;
 mod sockets;
 
-pub use agent::{reading, reading_of, state};
+pub use agent::{reading, reading_of, state, state_that_may_kill};
 pub use answers::{buffers, refusals, statuses, stores};
 pub use findings::{finding, finding_of};
 pub use host::host;

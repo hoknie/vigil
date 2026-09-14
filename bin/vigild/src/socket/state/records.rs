@@ -80,6 +80,19 @@ impl State {
         }
     }
 
+    pub fn killing_from_the_console(&self) -> bool {
+        self.startup.killing_from_the_console
+    }
+
+    pub fn record_a_kill(&mut self, findings: &[Finding]) {
+        self.record_findings(findings);
+        self.raised_by_a_kill.extend(findings.iter().cloned());
+    }
+
+    pub fn take_what_a_kill_raised(&mut self) -> Vec<Finding> {
+        std::mem::take(&mut self.raised_by_a_kill)
+    }
+
     pub fn recall_findings(&mut self, history: Vec<Finding>, held: u64) {
         self.findings.recall(history, held);
     }

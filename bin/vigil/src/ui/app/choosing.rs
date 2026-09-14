@@ -3,7 +3,7 @@ use vigil_model::Severity;
 use super::App;
 
 use crate::ui::screens::findings;
-use crate::ui::{Choosing, Column, Level, Screen, Sorting};
+use crate::ui::{Choosing, Column, Level, Screen, Sorting, holding};
 
 const NOTHING_SORTS: &str =
     "Nothing on this screen sorts: it is one page, not a list of rows to put in an order.";
@@ -11,8 +11,10 @@ const NOTHING_SORTS: &str =
 const GROUPS_ARE_THE_ORDER: &str =
     "The grouped view is an order already: press \u{2190} for the sockets view, which sorts.";
 
-const NOTHING_FILTERS: &str = "Nothing to filter here: the severity floor and the column search \
-                               live on the findings. Press / to search this list.";
+const NOTHING_FILTERS: &str = "Nothing to filter on this screen: it is one page, not a list of \
+                               rows to narrow.";
+
+const EVERY_KIND: &str = "every kind";
 
 impl App {
     pub(super) fn sortable(&self) -> Vec<&'static str> {
@@ -47,16 +49,92 @@ impl App {
     }
 
     pub(super) fn narrowing(&mut self) {
-        if self.nav.at() != Screen::FINDINGS {
-            self.message = Some(NOTHING_FILTERS.to_string());
+        match self.nav.at() {
+            Screen::FINDINGS => {
+                let at = offered()
+                    .iter()
+                    .position(|option| option == &self.filtered())
+                    .unwrap_or(0);
+                self.chooser.open(Choosing::Filter, offered(), at);
+                self.level = Level::List;
+            }
+            screen if holding(screen.name()).is_some() => self.narrowing_a_list(),
+            _ => self.message = Some(NOTHING_FILTERS.to_string()),
+        }
+    }
+
+    fn narrowing_a_list(&mut self) {
+        let kinds = self.pane_kinds();
+        if kinds.is_empty() {
+            self.message = Some(
+                "This list has one kind of row in it and nothing to narrow it to. Press / to \
+                 search it."
+                    .to_string(),
+            );
             return;
         }
-        let at = offered()
+        let at = kinds
             .iter()
-            .position(|option| option == &self.filtered())
+            .position(|option| option == &self.narrowed_to())
             .unwrap_or(0);
-        self.chooser.open(Choosing::Filter, offered(), at);
+        self.chooser.open(Choosing::Filter, kinds, at);
         self.level = Level::List;
+    }
+
+    pub(super) fn pane_kinds(&self) -> Vec<String> {
+        let Some(pane) = self.pane() else {
+            return Vec::new();
+        };
+        let toggles = pane.toggles();
+        if toggles.is_empty() {
+            return Vec::new();
+        }
+
+        let mut offered = vec![EVERY_KIND.to_string()];
+        offered.extend(toggles.iter().map(|toggle| showing_only(toggle.name)));
+        offered
+    }
+
+    pub(super) fn narrowed_to(&self) -> String {
+        let Some(panes) = self.panes() else {
+            return EVERY_KIND.to_string();
+        };
+        let Some(pane) = self.pane() else {
+            return EVERY_KIND.to_string();
+        };
+        let shown: Vec<&str> = pane
+            .toggles()
+            .into_iter()
+            .map(|toggle| toggle.name)
+            .filter(|name| !panes.hidden().iter().any(|hidden| hidden == name))
+            .collect();
+
+        match shown.as_slice() {
+            [only] => showing_only(only),
+            _ => EVERY_KIND.to_string(),
+        }
+    }
+
+    fn narrowed_a_list_to(&mut self, at: usize) {
+        let Some(pane) = self.pane() else {
+            return;
+        };
+        let toggles: Vec<&'static str> = pane.toggles().into_iter().map(|one| one.name).collect();
+        let hidden: Vec<String> = match at.checked_sub(1).and_then(|at| toggles.get(at)) {
+            None => Vec::new(),
+            Some(only) => toggles
+                .iter()
+                .filter(|name| *name != only)
+                .map(|name| (*name).to_string())
+                .collect(),
+        };
+
+        if let Some(panes) = self.panes_mut() {
+            panes.show_every_kind();
+            for name in hidden {
+                panes.toggle(&name);
+            }
+        }
     }
 
     pub(super) fn filtered(&self) -> String {
@@ -77,6 +155,14 @@ impl App {
             Choosing::Sort => {
                 let screen = self.nav.at();
                 self.sorting.insert(screen, Sorting::of(at));
+                self.list_cursor_to_the_top();
+            }
+            Choosing::Kill => {
+                self.chose_a_way_of_killing(at);
+                return;
+            }
+            Choosing::Filter if holding(self.nav.at().name()).is_some() => {
+                self.narrowed_a_list_to(at);
                 self.list_cursor_to_the_top();
             }
             Choosing::Filter => {
@@ -123,6 +209,10 @@ fn floor_named(severity: &Severity) -> String {
 
 fn looking_in(column: Column) -> String {
     format!("search in {}", column.name())
+}
+
+fn showing_only(kind: &str) -> String {
+    format!("only {kind}")
 }
 
 #[cfg(test)]

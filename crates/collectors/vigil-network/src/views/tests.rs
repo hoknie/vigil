@@ -29,7 +29,12 @@ fn a_socket_is_shown_as_the_reading_recorded_it_and_not_as_a_key_taken_apart() {
     assert_eq!(cells[0].text, "tcp");
     assert_eq!(cells[1].text, "0.0.0.0:22");
     assert_eq!(cells[2].text, "root");
-    assert!(cells[3].text.contains("sshd"), "{:?}", cells[3]);
+    assert_eq!(
+        cells[3].text, "812",
+        "the pid is the one value on this row an operator acts on, and a screen that shows \
+         the program without it sends them to ps to find the same socket again"
+    );
+    assert!(cells[4].text.contains("sshd"), "{:?}", cells[4]);
 }
 
 #[test]
@@ -39,9 +44,14 @@ fn a_narrow_terminal_drops_the_command_and_never_a_column_the_reader_needs() {
     let narrow = pane.columns(Room::of(80));
     let wide = pane.columns(Room::of(160));
 
-    assert_eq!(narrow.len(), 4);
-    assert_eq!(wide.len(), 5);
-    assert_eq!(wide[4].header, "COMMAND");
+    assert_eq!(narrow.len(), 5);
+    assert_eq!(wide.len(), 6);
+    assert_eq!(wide[5].header, "COMMAND");
+    assert!(
+        narrow.iter().any(|column| column.header == "PID"),
+        "the command line is what an eighty-column terminal gives up; the pid is not, \
+         because it is what the keys on this screen aim at"
+    );
 }
 
 #[test]
@@ -77,24 +87,62 @@ fn a_word_the_reader_typed_narrows_by_everything_recorded_about_a_socket() {
 }
 
 #[test]
-fn grouping_by_program_puts_a_heading_of_its_own_over_the_sockets_of_one_program() {
+fn grouping_by_program_opens_on_the_programs_alone_and_not_on_every_socket_of_each() {
     let reading = ports();
     let pane = &panes()[1];
 
-    let rows = pane.rows(&reading, &Showing::default());
-    let heading = rows
+    let closed = pane.rows(&reading, &Showing::default());
+    let heading = closed
         .iter()
         .find(|row| !row.of_the_reading)
         .expect("a program heading");
 
     assert!(heading.key.starts_with("program|") || heading.key == "unresolved");
     assert!(
-        rows.iter().any(|row| row.depth == 1),
-        "the sockets of a program are drawn under it"
+        closed.iter().all(|row| row.depth == 0),
+        "this screen is a tree, and a tree that arrives with every branch open is the flat \
+         list with headings shuffled into it"
+    );
+    assert!(
+        closed.iter().all(|row| row.gathers.is_some()),
+        "every row of a closed tree is a heading, and each one carries how many sockets it \
+         is holding back"
     );
     assert!(
         !pane.detail(&reading, heading, 80).is_empty(),
         "a heading says what it is a heading of"
+    );
+}
+
+#[test]
+fn a_program_the_reader_opened_shows_its_sockets_and_the_ones_beside_it_stay_shut() {
+    let reading = ports();
+    let pane = &panes()[1];
+
+    let closed = pane.rows(&reading, &Showing::default());
+    let first = closed[0].key.clone();
+    let opened = [first.as_str()];
+    let rows = pane.rows(&reading, &Showing::default().opening(&opened));
+
+    let under: Vec<&vigil_view::RowKey> = rows
+        .iter()
+        .filter(|row| row.gathered_under.as_deref() == Some(first.as_str()))
+        .collect();
+
+    assert_eq!(under.len(), closed[0].gathers.expect("a heading counts"));
+    assert!(under.iter().all(|row| row.of_the_reading && row.depth == 1));
+    assert_eq!(
+        rows.iter().filter(|row| row.depth == 1).count(),
+        under.len(),
+        "opening one program must not open the next one: a reader who pressed the arrow once \
+         has said one thing, not two"
+    );
+    assert!(
+        rows.iter()
+            .find(|row| row.key == first)
+            .expect("still there")
+            .opened,
+        "the heading has to draw itself open, or the arrow that did it left no trace"
     );
 }
 

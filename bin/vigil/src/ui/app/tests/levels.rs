@@ -85,6 +85,7 @@ fn a_number_opens_its_section_from_every_rung_and_lands_on_that_section_s_top_on
     let mut app = app();
     into(&mut app, Screen::FINDINGS, 200, 24);
     press(&mut app, KeyCode::Enter);
+    press(&mut app, KeyCode::Enter);
     assert_eq!(app.level, Level::Detail);
 
     press(&mut app, number(screen("accounts")));
@@ -130,6 +131,15 @@ fn one_level_in_per_press_and_one_level_out_per_press() {
     assert_eq!(app.level, Level::List);
 
     press(&mut app, KeyCode::Enter);
+    assert_eq!(
+        app.level,
+        Level::List,
+        "the first press opens the panel and leaves the arrows on the list: a reader who \
+         wanted to see a row has not been moved into a page of prose to get back out of"
+    );
+    assert!(app.detail_open);
+
+    press(&mut app, KeyCode::Enter);
     assert_eq!(app.level, Level::Detail);
     assert!(app.detail_open);
 
@@ -157,6 +167,7 @@ fn the_first_press_back_out_of_a_detail_leaves_the_panel_open_beside_the_list() 
     let mut app = app();
     into(&mut app, Screen::FINDINGS, 140, 24);
     press(&mut app, KeyCode::Right);
+    press(&mut app, KeyCode::Right);
     assert_eq!(app.level, Level::Detail);
 
     press(&mut app, KeyCode::Left);
@@ -174,6 +185,7 @@ fn the_first_press_back_out_of_a_detail_leaves_the_panel_open_beside_the_list() 
 fn the_second_press_back_puts_the_panel_away_and_gives_the_list_the_whole_width() {
     let mut app = app();
     into(&mut app, Screen::FINDINGS, 140, 24);
+    press(&mut app, KeyCode::Right);
     press(&mut app, KeyCode::Right);
 
     press(&mut app, KeyCode::Left);
@@ -194,6 +206,7 @@ fn the_second_press_back_puts_the_panel_away_and_gives_the_list_the_whole_width(
 fn the_third_press_back_is_the_one_that_leaves_the_section() {
     let mut app = app();
     into(&mut app, Screen::FINDINGS, 140, 24);
+    press(&mut app, KeyCode::Right);
     press(&mut app, KeyCode::Right);
 
     for _ in 0..3 {
@@ -256,7 +269,6 @@ fn walking_the_list_with_the_panel_open_keeps_it_open_because_the_two_are_read_a
     let mut app = app();
     into(&mut app, Screen::FINDINGS, 140, 24);
     press(&mut app, KeyCode::Right);
-    press(&mut app, KeyCode::Esc);
     assert_eq!(app.level, Level::List);
     assert!(app.detail_open, "Escape left it beside the list");
 
@@ -284,6 +296,7 @@ fn the_left_arrow_on_the_row_of_lists_walks_along_it_and_never_out_of_the_sectio
     ] {
         let mut app = app();
         into(&mut app, screen, 140, 24);
+        press(&mut app, KeyCode::Right);
         press(&mut app, KeyCode::Right);
 
         press(&mut app, KeyCode::Left);
@@ -315,6 +328,7 @@ fn the_arrows_move_whatever_has_them_and_nothing_else() {
     assert_eq!(app.nav.findings.at(), 1);
     assert_eq!(app.nav.difference.top(), 0);
 
+    press(&mut app, KeyCode::Enter);
     press(&mut app, KeyCode::Enter);
     press(&mut app, KeyCode::Down);
     assert_eq!(app.nav.findings.at(), 1, "the cursor stayed where it was");
@@ -495,5 +509,53 @@ fn the_main_screen_is_the_top_and_the_arrow_up_on_its_first_row_goes_nowhere() {
     assert!(
         !app.leaving,
         "the way out of the console is q, not the arrows"
+    );
+}
+
+#[test]
+fn no_screen_hands_the_arrows_to_the_panel_on_the_first_press() {
+    for screen in [
+        Screen::FINDINGS,
+        screen("ports"),
+        screen("accounts"),
+        screen("programs"),
+        screen("startup"),
+    ] {
+        let mut app = app();
+        into(&mut app, screen, 160, 30);
+
+        press(&mut app, KeyCode::Right);
+
+        assert_eq!(
+            app.level,
+            Level::List,
+            "{}: the panel opens and the arrows stay where the reader put them. One rule on \
+             every screen, or a reader learns one screen and is surprised by the next",
+            screen.name()
+        );
+        assert!(app.detail_open, "{}: and the panel did open", screen.name());
+
+        press(&mut app, KeyCode::Right);
+        assert_eq!(
+            app.level,
+            Level::Detail,
+            "{}: the second press hands them over",
+            screen.name()
+        );
+    }
+}
+
+#[test]
+fn a_terminal_with_no_room_beside_the_list_keeps_the_one_press_it_always_had() {
+    let mut app = app();
+    into(&mut app, Screen::FINDINGS, 80, 24);
+
+    press(&mut app, KeyCode::Right);
+
+    assert_eq!(
+        app.level,
+        Level::Detail,
+        "there is nowhere to put a panel beside the list here, so a rung that shows nothing \
+         would be a press that does nothing"
     );
 }

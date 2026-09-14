@@ -101,6 +101,44 @@ pub fn a_pane_says_what_to_write_over_it_and_over_the_row_it_opens(pane: &dyn Pa
     );
 }
 
+pub fn a_pane_that_gathers_rows_starts_with_every_one_of_them_put_away(
+    pane: &dyn Pane,
+    reading: &Snapshot,
+) {
+    let closed = pane.rows(reading, &Showing::default());
+    if !closed.iter().any(|row| row.opens()) {
+        return;
+    }
+
+    assert!(
+        closed.iter().all(|row| row.gathered_under.is_none()),
+        "{} draws a row gathered under a heading before anybody opened that heading: a tree \
+         that arrives open is a tree whose first screen is the flat list with extra lines in \
+         it",
+        pane.name()
+    );
+
+    for heading in closed.iter().filter(|row| row.opens()) {
+        let open = [heading.key.as_str()];
+        let rows = pane.rows(reading, &Showing::default().opening(&open));
+        let under = rows
+            .iter()
+            .filter(|row| row.gathered_under.as_deref() == Some(heading.key.as_str()))
+            .count();
+
+        assert_eq!(
+            under,
+            heading.gathers.unwrap_or_default(),
+            "{} writes {:?} on the heading {} and puts {under} row(s) under it when it is \
+             opened: the number on a closed heading is the only thing a reader has to decide \
+             whether opening it is worth the keystroke",
+            pane.name(),
+            heading.gathers,
+            heading.key
+        );
+    }
+}
+
 pub fn run_all(pane: &dyn Pane, reading: &Snapshot) {
     a_pane_says_what_to_write_over_it_and_over_the_row_it_opens(pane);
     a_pane_reads_the_snapshot_it_says_it_reads(pane, reading);
@@ -108,6 +146,7 @@ pub fn run_all(pane: &dyn Pane, reading: &Snapshot) {
     every_row_the_pane_offers_is_in_the_reading(pane, reading);
     nothing_is_shown_twice_under_one_key(pane, reading);
     what_the_pane_shows_of_a_row_is_more_than_the_row_itself(pane, reading);
+    a_pane_that_gathers_rows_starts_with_every_one_of_them_put_away(pane, reading);
 
     assert!(
         !pane.tally(reading, &Showing::default(), 0).is_empty(),

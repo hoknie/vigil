@@ -13,7 +13,7 @@ impl App {
 
         match self.level {
             Level::Menu => self.along_the_row(motion),
-            Level::Detail if self.climbing_out_of_the_detail(motion) => self.go_back(),
+            Level::Detail if self.climbing_out_of_the_detail(motion) => self.leave_the_row(),
             Level::Detail => {
                 if let Some(area) = self.detail_area() {
                     let total = self.detail_height(area);
@@ -22,7 +22,7 @@ impl App {
                         .step(motion, total, area.height as usize);
                 }
             }
-            Level::List if self.climbing(motion) => self.go_back(),
+            Level::List if self.climbing(motion) => self.leave_the_row(),
             Level::List => match self.nav.at() {
                 Screen::HOME => {
                     let keys = home::keys(&self.view);
@@ -46,6 +46,7 @@ impl App {
                             .step(motion, &keys, rows.saturating_sub(1));
                     }
                     self.nav.difference = Offset::default();
+                    self.rest_the_buttons();
                 }
                 Screen::FINDINGS => {
                     let keys = findings::keys(&self.passing());
@@ -80,7 +81,7 @@ impl App {
     fn along_the_row(&mut self, motion: Motion) {
         match motion {
             Motion::Down | Motion::PageDown => self.level = Level::List,
-            Motion::Up | Motion::PageUp => self.go_back(),
+            Motion::Up | Motion::PageUp => self.leave_the_row(),
             Motion::First | Motion::Last => {
                 let ends = |count: usize| match motion {
                     Motion::First => 0,
@@ -113,8 +114,10 @@ impl App {
         let unknown = unknown_readings(&self.view).len();
         self.nav.lists.ready(Screen::UNKNOWN.name(), unknown);
         let rows = self.pane_keys();
+        let in_the_reading = self.pane_keys_of_the_reading();
         if let Some(panes) = self.panes_mut() {
             panes.cursor_mut().settle(&rows);
+            panes.forget_marks_not_in(&in_the_reading);
         }
         self.dismissed.settle(&self.view.found.findings);
         let findings = findings::keys(&self.passing());

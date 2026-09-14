@@ -6,4 +6,6 @@ mod split;
 
 pub use load::{ConfigError, load};
 pub use put::{put, restart_note};
+#[cfg(test)]
+pub use settings::Killing;
 pub use settings::{Config, Receiver};

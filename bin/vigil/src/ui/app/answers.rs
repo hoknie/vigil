@@ -105,13 +105,14 @@ impl App {
                 view.found.dropped = dropped;
                 view.found.capacity = capacity;
             }
+            Response::Killed { .. } => {}
             Response::Error { error } => match request {
                 Request::Snapshot { collector } => view.readings.put(
                     collector.clone(),
                     Reading::Refused(Refusal::answered(error.message)),
                 ),
                 Request::Findings { .. } => view.found.refused = Some(error.message),
-                Request::Status => {
+                Request::Status | Request::Kill { .. } => {
                     view.trouble = Some(Trouble::new(
                         self.link.path(),
                         TroubleKind::Unreadable,
