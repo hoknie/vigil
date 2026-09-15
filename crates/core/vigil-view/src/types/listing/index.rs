@@ -4,6 +4,8 @@ use std::sync::OnceLock;
 use crate::Facet;
 use crate::types::{RowKey, Sorting};
 
+const UNGATHERED: usize = usize::MAX;
+
 pub struct Index {
     rows: Vec<RowKey>,
     haystacks: Vec<String>,
@@ -14,6 +16,7 @@ pub struct Index {
     facets: BTreeMap<&'static str, BTreeMap<String, Vec<usize>>>,
     faceted: bool,
     by_key: OnceLock<Vec<usize>>,
+    headings: Vec<usize>,
     ranks: Vec<[OnceLock<Vec<usize>>; 2]>,
 }
 
@@ -29,6 +32,7 @@ impl Index {
             facets: BTreeMap::new(),
             faceted: false,
             by_key: OnceLock::new(),
+            headings: Vec::new(),
             ranks: (0..columns)
                 .map(|_| [OnceLock::new(), OnceLock::new()])
                 .collect(),
@@ -50,6 +54,7 @@ impl Index {
         self.haystacks.push(lowered);
         self.groups.push(group);
         self.keys.push(keys);
+        self.headings.push(UNGATHERED);
     }
 
     pub fn faceted(&mut self, facets: Vec<Facet>) {
@@ -99,6 +104,19 @@ impl Index {
                 .filter(|at| others.iter().all(|other| other.binary_search(at).is_ok()))
                 .collect(),
         )
+    }
+
+    pub fn gathered(&mut self, heading: usize) {
+        if let Some(last) = self.headings.last_mut() {
+            *last = heading;
+        }
+    }
+
+    pub fn heading_of(&self, at: usize) -> Option<usize> {
+        self.headings
+            .get(at)
+            .copied()
+            .filter(|heading| *heading != UNGATHERED)
     }
 
     pub fn len(&self) -> usize {

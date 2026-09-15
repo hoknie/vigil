@@ -1,4 +1,7 @@
-use super::{Assembled, Index, Rows};
+use std::borrow::Cow;
+use std::sync::Arc;
+
+use super::{Assembled, Index, Placed, Rows};
 use crate::Facet;
 use crate::types::{RowKey, Sorting};
 
@@ -10,20 +13,75 @@ fn rows_named_by_their_numbers_read_as_the_rows_they_name() {
 
     assert_eq!(rows.len(), 3);
     assert_eq!(
-        rows.iter()
-            .map(|row| row.key.as_str())
+        (0..rows.len())
+            .filter_map(|place| rows.key(place))
             .collect::<Vec<&str>>(),
         vec!["d", "b", "c"],
         "a list the index answered keeps the numbers of its rows, and reads each row from the \
          index when it is asked for"
     );
-    assert_eq!(rows.get(1).map(|row| row.key.as_str()), Some("b"));
+    assert_eq!(rows.key(1), Some("b"));
+    assert!(
+        matches!(rows.get(1), Some(Cow::Borrowed(row)) if row.key == "b"),
+        "a row of the list is lent from the index and never copied"
+    );
     assert!(rows.get(3).is_none());
     assert_eq!(
         Rows::built(&rows.to_vec()).to_vec(),
         rows.to_vec(),
         "a footer is written from either, and must read the same rows from both"
     );
+}
+
+#[test]
+fn a_tree_of_row_numbers_builds_its_headings_from_the_rows_under_them_and_copies_no_row() {
+    let mut index = Index::new(0);
+    for (key, heading, name) in [
+        ("tcp|:80", "program|/usr/sbin/nginx", Some("nginx")),
+        ("tcp|:443", "program|/usr/sbin/nginx", Some("nginx")),
+        ("udp|:53", "unresolved", None),
+    ] {
+        let mut row = RowKey::of(key).under(1).beneath(heading);
+        row.named = name.map(Arc::from);
+        index.push(row, key, 0, Vec::new());
+    }
+    let assembled = Assembled::Gathered(vec![
+        Placed::Heading {
+            first: 0,
+            gathers: 2,
+            opened: true,
+        },
+        Placed::Row(0),
+        Placed::Row(1),
+        Placed::Heading {
+            first: 2,
+            gathers: 1,
+            opened: false,
+        },
+    ]);
+    let rows = Rows::of(&index, &assembled);
+
+    let mut nginx = RowKey::of("program|/usr/sbin/nginx")
+        .of_its_own()
+        .gathering(2)
+        .opened(true);
+    nginx.named = Some(Arc::from("nginx"));
+    assert_eq!(
+        rows.to_vec(),
+        vec![
+            nginx,
+            index.row(0).clone(),
+            index.row(1).clone(),
+            RowKey::of("unresolved").of_its_own().gathering(1),
+        ],
+        "a heading is made from the first row under it when it is asked for: its key is the \
+         heading that row names, its name is that row's name"
+    );
+    assert!(
+        matches!(rows.get(1), Some(Cow::Borrowed(_))),
+        "a row under a heading is lent from the index and never copied"
+    );
+    assert_eq!(rows.key(3), Some("unresolved"));
 }
 
 #[test]

@@ -26,8 +26,8 @@ pub(super) fn footer(reading: &Snapshot, showing: &Showing<'_>, rows: &Rows<'_>)
         .filter_map(|row| {
             reading
                 .items
-                .get(&row.key)
-                .map(|item| (row.key.as_str(), item))
+                .get_key_value(&row.key)
+                .map(|(key, item)| (key.as_str(), item))
         })
         .collect();
 

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use super::emphasis::Emphasis;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -7,9 +9,9 @@ pub struct RowKey {
     pub depth: u8,
     pub of_the_reading: bool,
     pub gathers: Option<usize>,
-    pub gathered_under: Option<String>,
+    pub gathered_under: Option<Arc<str>>,
     pub opened: bool,
-    pub named: Option<String>,
+    pub named: Option<Arc<str>>,
 }
 
 impl RowKey {
@@ -37,14 +39,14 @@ impl RowKey {
         RowKey { opened, ..self }
     }
 
-    pub fn named(self, name: impl Into<String>) -> RowKey {
+    pub fn named(self, name: impl Into<Arc<str>>) -> RowKey {
         RowKey {
             named: Some(name.into()),
             ..self
         }
     }
 
-    pub fn beneath(self, heading: impl Into<String>) -> RowKey {
+    pub fn beneath(self, heading: impl Into<Arc<str>>) -> RowKey {
         RowKey {
             gathered_under: Some(heading.into()),
             ..self

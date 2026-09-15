@@ -1,7 +1,7 @@
 use serde_json::{Value, json};
 use vigil_model::Snapshot;
 use vigil_view::conformance::the_index_lists_every_search_and_sort_as_the_rows_do_in;
-use vigil_view::{Pane, Section, Showing, listed};
+use vigil_view::{Assembled, Pane, Section, Showing, listed, listing};
 
 use super::super::Listening;
 use crate::fixture::ports;
@@ -155,4 +155,110 @@ fn a_larger_reading_with_ties_and_programs_sharing_a_name_lists_from_the_index_a
              {search:?} {rows:?}"
         );
     }
+}
+
+#[test]
+fn the_tree_keeps_the_numbers_of_its_sockets_and_copies_no_row_of_the_reading() {
+    let tree = &panes()[1];
+    let reading = scaled(4);
+    let every: Vec<String> = tree
+        .rows(&reading, &Showing::default())
+        .into_iter()
+        .map(|row| row.key)
+        .collect();
+    let opened: Vec<&str> = every.iter().map(String::as_str).collect();
+    let showing = Showing::default().opening(&opened);
+    let index = tree
+        .index(&reading, &showing)
+        .expect("the tree answers from an index");
+
+    let (_, assembled) = listing(tree.as_ref(), &reading, &showing, &index, None);
+
+    assert!(
+        matches!(assembled, Assembled::Gathered(_)),
+        "the console lets go of the last list on every keystroke, and a tree of row numbers is \
+         let go of at once where copies of its sockets are freed one by one"
+    );
+}
+
+#[test]
+fn every_socket_is_indexed_under_the_number_of_its_program_and_the_unresolved_come_last() {
+    let tree = &panes()[1];
+    let reading = scaled(4);
+    let index = tree
+        .index(&reading, &Showing::default())
+        .expect("the tree answers from an index");
+
+    let mut numbered: Vec<(Option<usize>, &str)> = (0..index.len())
+        .map(|at| {
+            (
+                index.heading_of(at),
+                index.row(at).gathered_under.as_deref().unwrap_or(""),
+            )
+        })
+        .collect();
+    numbered.sort_unstable();
+    numbered.dedup();
+
+    assert!(
+        numbered.iter().all(|(number, _)| number.is_some()),
+        "the tree lays its sockets out by the number of their program, and a socket without one \
+         would be laid out under no heading: {numbered:?}"
+    );
+    assert!(
+        numbered.windows(2).all(|pair| pair[0].0 != pair[1].0),
+        "one number stands for one heading, or two programs would be folded into one: \
+         {numbered:?}"
+    );
+    let headings: Vec<&str> = numbered.iter().map(|(_, heading)| *heading).collect();
+    assert_eq!(
+        headings.last(),
+        Some(&"unresolved"),
+        "sockets with no owner are listed after every program"
+    );
+    assert!(
+        headings[..headings.len() - 1]
+            .windows(2)
+            .all(|pair| pair[0] < pair[1]),
+        "the numbers follow the headings in order, so laying the tree out by number lists the \
+         programs in the order they are read: {headings:?}"
+    );
+}
+
+#[test]
+fn sockets_of_one_program_share_one_heading_and_one_name_and_do_not_carry_their_own() {
+    let tree = &panes()[1];
+    let reading = scaled(4);
+    let index = tree
+        .index(&reading, &Showing::default())
+        .expect("the tree answers from an index");
+
+    let mut compared = 0;
+    for at in 1..index.len() {
+        let (before, here) = (index.row(at - 1), index.row(at));
+        if index.heading_of(at - 1) != index.heading_of(at) {
+            continue;
+        }
+        let (Some(was), Some(is)) = (&before.gathered_under, &here.gathered_under) else {
+            continue;
+        };
+        compared += 1;
+        assert!(
+            std::sync::Arc::ptr_eq(was, is),
+            "{} and {} stand under one program, and the index writes that heading once for the \
+             program and not once for every socket",
+            before.key,
+            here.key
+        );
+        if let (Some(was), Some(is)) = (&before.named, &here.named) {
+            assert!(
+                std::sync::Arc::ptr_eq(was, is),
+                "the name of a program is worked out once for the program and shared by its sockets"
+            );
+        }
+    }
+    assert!(
+        compared > 0,
+        "the reading has to put two sockets of one program next to each other, or nothing is compared"
+    );
 }

@@ -176,7 +176,10 @@ impl App {
 
     pub(super) fn pane_row_under_the_cursor(&self) -> Option<RowKey> {
         let at = self.panes()?.at();
-        self.pane_rows().rows().get(at).cloned()
+        self.pane_rows()
+            .rows()
+            .get(at)
+            .map(std::borrow::Cow::into_owned)
     }
 
     #[cfg(test)]
@@ -220,12 +223,12 @@ impl App {
             self.view.readings.generation(),
             self.nav.at(),
             showing.at,
-            row.clone(),
+            row.as_ref().clone(),
             width,
         );
 
         self.detail_seen
-            .get_or(question, || Rc::new(pane.detail(snapshot, row, width)))
+            .get_or(question, || Rc::new(pane.detail(snapshot, &row, width)))
     }
 
     pub(super) fn pane_caption(&self) -> String {

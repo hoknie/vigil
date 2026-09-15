@@ -70,7 +70,12 @@ impl Pane for ByProgram {
                 continue;
             }
             for key in sockets {
-                rows.push(RowKey::of((*key).clone()).under(1).beneath(heading.clone()));
+                rows.push(
+                    RowKey::of((*key).clone())
+                        .under(1)
+                        .beneath(heading.clone())
+                        .named(names.name(path)),
+                );
             }
         }
         if !unresolved.is_empty() {
@@ -100,7 +105,7 @@ impl Pane for ByProgram {
         index: &Index,
         ordered: Vec<usize>,
     ) -> Assembled {
-        Assembled::Built(assembled(showing, index, &ordered))
+        Assembled::Gathered(assembled(showing, index, ordered))
     }
 
     fn cells(&self, reading: &Snapshot, row: &RowKey, room: Room) -> Vec<Cell> {
@@ -183,8 +188,8 @@ fn heading(reading: &Snapshot, row: &RowKey, wide: bool) -> Vec<Cell> {
             Cell::plain(format!(
                 "{folded}{} ({count})",
                 row.named
-                    .clone()
-                    .unwrap_or_else(|| named_from_the_reading(reading, path))
+                    .as_deref()
+                    .map_or_else(|| named_from_the_reading(reading, path), str::to_string)
             )),
             Cell::plain(""),
             Cell::plain(""),

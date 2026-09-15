@@ -26,14 +26,15 @@ impl Shown {
         match (&self.index, &self.assembled) {
             (Some(index), assembled) => Rows::of(index, assembled),
             (None, Assembled::Built(rows)) => Rows::built(rows),
-            (None, Assembled::Ordered(_)) => Rows::built(&[]),
+            (None, _) => Rows::built(&[]),
         }
     }
 
-    pub fn numbered(&self) -> Option<(&Index, &[usize])> {
-        match (&self.index, &self.assembled) {
-            (Some(index), Assembled::Ordered(at)) => Some((index, at)),
-            _ => None,
-        }
+    pub fn index(&self) -> Option<&Index> {
+        self.index.as_deref()
+    }
+
+    pub fn assembled(&self) -> &Assembled {
+        &self.assembled
     }
 }

@@ -152,7 +152,7 @@ pub fn render(
             drawn(
                 pane.as_ref(),
                 snapshot,
-                rows.get(at).expect("a row the list counted"),
+                &rows.get(at).expect("a row the list counted"),
                 room,
                 &fitted,
                 marking,
