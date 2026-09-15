@@ -11,7 +11,7 @@ impl App {
     pub(in crate::ui::app) fn has_detail(&self) -> bool {
         match self.nav.at() {
             Screen::FINDINGS => self.selected_finding().is_some(),
-            screen if screen.draws_a_reading() => !self.pane_keys().is_empty(),
+            screen if screen.draws_a_reading() => !self.pane_rows().is_empty(),
             _ => false,
         }
     }

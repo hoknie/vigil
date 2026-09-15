@@ -39,11 +39,11 @@ impl App {
                     self.nav.summary.step(motion, total, page);
                 }
                 screen if screen.draws_a_reading() => {
-                    let keys = self.pane_keys();
+                    let keys = self.pane_listed();
                     if let Some(panes) = self.panes_mut() {
                         panes
                             .cursor_mut()
-                            .step(motion, &keys, rows.saturating_sub(1));
+                            .step(motion, keys.as_ref(), rows.saturating_sub(1));
                     }
                     self.nav.difference = Offset::default();
                     self.rest_the_buttons();
@@ -113,10 +113,10 @@ impl App {
         self.nav.sections.settle(&home::keys(&self.view));
         let unknown = unknown_readings(&self.view).len();
         self.nav.lists.ready(Screen::UNKNOWN.name(), unknown);
-        let rows = self.pane_keys();
+        let rows = self.pane_listed();
         let gone = self.marks_gone_from_the_reading();
         if let Some(panes) = self.panes_mut() {
-            panes.cursor_mut().settle(&rows);
+            panes.cursor_mut().settle(rows.as_ref());
             panes.forget_marks(&gone);
         }
         self.dismissed.settle(&self.view.found.findings);

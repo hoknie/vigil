@@ -149,7 +149,9 @@ fn a_section_whose_lists_the_agent_decides_keeps_a_cursor_for_each_of_them() {
 
     panes.ready(3);
     panes.show(2);
-    panes.cursor_mut().point_at("b", &["a".into(), "b".into()]);
+    panes
+        .cursor_mut()
+        .point_at("b", &vec!["a".to_string(), "b".to_string()]);
     assert_eq!(panes.at(), 1);
 
     panes.ready(1);

@@ -43,6 +43,7 @@ impl App {
             message: None,
             body: Cell::new(Rect::ZERO),
             rows_seen: Default::default(),
+            listed_seen: Default::default(),
             index_seen: Default::default(),
             found_seen: Default::default(),
             tally_seen: Default::default(),

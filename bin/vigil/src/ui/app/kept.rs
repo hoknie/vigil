@@ -7,8 +7,22 @@ use super::App;
 
 use crate::ui::Reading;
 use crate::ui::screens::pane;
+use crate::ui::types::cache::Listed;
 
 impl App {
+    pub(super) fn pane_listed(&self) -> Rc<Listed> {
+        let Some(showing) = self.showing_pane() else {
+            return Rc::new(Listed::of(Rc::default()));
+        };
+        let hidden = showing.hidden();
+        let opened = showing.opened();
+        let asked = pane::asked(&showing, &hidden, &opened);
+        let question = self.rows_question(&showing, &asked);
+
+        self.listed_seen
+            .get_or(question, || Rc::new(Listed::of(self.pane_rows())))
+    }
+
     pub(super) fn pane_rows(&self) -> Rc<Vec<RowKey>> {
         let (Some(showing), Some(pane)) = (self.showing_pane(), self.pane()) else {
             return Rc::default();

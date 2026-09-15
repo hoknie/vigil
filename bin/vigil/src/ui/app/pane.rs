@@ -179,6 +179,7 @@ impl App {
         self.pane_rows().get(at).cloned()
     }
 
+    #[cfg(test)]
     pub(super) fn pane_keys(&self) -> Vec<String> {
         self.pane_rows().iter().map(|row| row.key.clone()).collect()
     }
