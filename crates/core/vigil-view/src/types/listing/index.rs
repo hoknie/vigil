@@ -13,6 +13,7 @@ pub struct Index {
     postings: BTreeMap<char, Vec<usize>>,
     facets: BTreeMap<&'static str, BTreeMap<String, Vec<usize>>>,
     faceted: bool,
+    by_key: OnceLock<Vec<usize>>,
     ranks: Vec<[OnceLock<Vec<usize>>; 2]>,
 }
 
@@ -27,6 +28,7 @@ impl Index {
             postings: BTreeMap::new(),
             facets: BTreeMap::new(),
             faceted: false,
+            by_key: OnceLock::new(),
             ranks: (0..columns)
                 .map(|_| [OnceLock::new(), OnceLock::new()])
                 .collect(),
@@ -113,6 +115,22 @@ impl Index {
 
     pub fn haystack(&self, at: usize) -> &str {
         &self.haystacks[at]
+    }
+
+    pub fn keyed(&self, key: &str) -> &[usize] {
+        let by_key = self.by_key.get_or_init(|| {
+            let mut order: Vec<usize> = (0..self.rows.len()).collect();
+            order.sort_by(|left, right| {
+                self.rows[*left]
+                    .key
+                    .cmp(&self.rows[*right].key)
+                    .then(left.cmp(right))
+            });
+            order
+        });
+        let from = by_key.partition_point(|at| self.rows[*at].key.as_str() < key);
+        let to = by_key.partition_point(|at| self.rows[*at].key.as_str() <= key);
+        &by_key[from..to]
     }
 
     pub fn found(&self, search: &str, within: Option<&[usize]>) -> Vec<usize> {

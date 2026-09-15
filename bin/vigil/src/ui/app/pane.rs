@@ -176,12 +176,16 @@ impl App {
 
     pub(super) fn pane_row_under_the_cursor(&self) -> Option<RowKey> {
         let at = self.panes()?.at();
-        self.pane_rows().get(at).cloned()
+        self.pane_rows().rows().get(at).cloned()
     }
 
     #[cfg(test)]
     pub(super) fn pane_keys(&self) -> Vec<String> {
-        self.pane_rows().iter().map(|row| row.key.clone()).collect()
+        self.pane_rows()
+            .rows()
+            .iter()
+            .map(|row| row.key.clone())
+            .collect()
     }
 
     pub(super) fn marks_gone_from_the_reading(&self) -> Vec<String> {
@@ -206,7 +210,8 @@ impl App {
         let Reading::Taken(snapshot) = self.view.reading(pane.reads()) else {
             return Rc::default();
         };
-        let rows = self.pane_rows();
+        let shown = self.pane_rows();
+        let rows = shown.rows();
         let Some(row) = rows.get(showing.cursor) else {
             return Rc::default();
         };

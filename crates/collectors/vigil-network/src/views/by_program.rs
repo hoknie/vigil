@@ -1,6 +1,7 @@
 use vigil_model::{KillTarget, Snapshot};
 use vigil_view::{
-    Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Showing, Toggle, Width,
+    Assembled, Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Rows,
+    Showing, Toggle, Width,
 };
 
 use super::detail;
@@ -97,9 +98,9 @@ impl Pane for ByProgram {
         _reading: &Snapshot,
         showing: &Showing<'_>,
         index: &Index,
-        ordered: &[usize],
-    ) -> Vec<RowKey> {
-        assembled(showing, index, ordered)
+        ordered: Vec<usize>,
+    ) -> Assembled {
+        Assembled::Built(assembled(showing, index, &ordered))
     }
 
     fn cells(&self, reading: &Snapshot, row: &RowKey, room: Room) -> Vec<Cell> {
@@ -148,7 +149,7 @@ impl Pane for ByProgram {
         &self,
         reading: &Snapshot,
         showing: &Showing<'_>,
-        rows: &[RowKey],
+        rows: &Rows<'_>,
         counts: &Counts,
     ) -> String {
         footer::tallied(reading, showing, rows, counts, true)

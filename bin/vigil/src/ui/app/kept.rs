@@ -1,18 +1,18 @@
 use std::rc::Rc;
 
 use vigil_model::Snapshot;
-use vigil_view::{Index, Pane, RowKey, Sorting, listed};
+use vigil_view::{Assembled, Index, Pane, Sorting, listing};
 
 use super::App;
 
 use crate::ui::Reading;
 use crate::ui::screens::pane;
-use crate::ui::types::cache::Listed;
+use crate::ui::types::cache::{Listed, Shown};
 
 impl App {
     pub(super) fn pane_listed(&self) -> Rc<Listed> {
         let Some(showing) = self.showing_pane() else {
-            return Rc::new(Listed::of(Rc::default()));
+            return Rc::new(Listed::of(Rc::new(Shown::built(Vec::new()))));
         };
         let hidden = showing.hidden();
         let opened = showing.opened();
@@ -23,9 +23,9 @@ impl App {
             .get_or(question, || Rc::new(Listed::of(self.pane_rows())))
     }
 
-    pub(super) fn pane_rows(&self) -> Rc<Vec<RowKey>> {
+    pub(super) fn pane_rows(&self) -> Rc<Shown> {
         let (Some(showing), Some(pane)) = (self.showing_pane(), self.pane()) else {
-            return Rc::default();
+            return Rc::new(Shown::built(Vec::new()));
         };
         let hidden = showing.hidden();
         let opened = showing.opened();
@@ -34,7 +34,7 @@ impl App {
 
         self.rows_seen.get_or(question, || {
             let Reading::Taken(snapshot) = self.view.reading(pane.reads()) else {
-                return Rc::new(pane::rows(&self.view, pane.as_ref(), &asked));
+                return Rc::new(Shown::built(pane::rows(&self.view, pane.as_ref(), &asked)));
             };
             let narrowed = vigil_view::Showing {
                 search: "",
@@ -47,14 +47,17 @@ impl App {
             };
             let indexed = self.rows_question(&showing, &bare);
             match self.pane_index(indexed, pane.as_ref(), snapshot, &bare) {
-                Some(index) => Rc::new(self.listed_from(
-                    self.rows_question(&showing, &narrowed),
-                    pane.as_ref(),
-                    snapshot,
-                    &asked,
-                    &index,
-                )),
-                None => Rc::new(pane::rows(&self.view, pane.as_ref(), &asked)),
+                Some(index) => {
+                    let assembled = self.listed_from(
+                        self.rows_question(&showing, &narrowed),
+                        pane.as_ref(),
+                        snapshot,
+                        &asked,
+                        &index,
+                    );
+                    Rc::new(Shown::indexed(index, assembled))
+                }
+                None => Rc::new(Shown::built(pane::rows(&self.view, pane.as_ref(), &asked))),
             }
         })
     }
@@ -77,7 +80,7 @@ impl App {
         snapshot: &Snapshot,
         asked: &vigil_view::Showing<'_>,
         index: &Index,
-    ) -> Vec<RowKey> {
+    ) -> Assembled {
         let search = asked.search.to_lowercase();
         let within: Option<Rc<Vec<usize>>> = match self.found_seen.borrow().as_ref() {
             Some((same, before, found))
@@ -88,7 +91,7 @@ impl App {
             _ => None,
         };
 
-        let (found, rows) = listed(
+        let (found, assembled) = listing(
             pane,
             snapshot,
             asked,
@@ -96,7 +99,7 @@ impl App {
             within.as_deref().map(Vec::as_slice),
         );
         *self.found_seen.borrow_mut() = Some((narrowed, search, Rc::new(found)));
-        rows
+        assembled
     }
 
     pub(super) fn pane_tally(&self) -> String {
@@ -110,7 +113,7 @@ impl App {
         let opened = showing.opened();
         let asked = pane::asked(&showing, &hidden, &opened);
         let question = self.rows_question(&showing, &asked);
-        let rows = self.pane_rows();
+        let shown = self.pane_rows();
 
         self.tally_seen.get_or(question, || {
             let bare = vigil_view::Showing {
@@ -124,8 +127,8 @@ impl App {
                 .counts_seen
                 .get_or(counted, || pane.counts(snapshot, &bare).map(Rc::new))
             {
-                Some(counts) => pane.tally_listed(snapshot, &asked, &rows, &counts),
-                None => pane.tally(snapshot, &asked, rows.len()),
+                Some(counts) => pane.tally_listed(snapshot, &asked, &shown.rows(), &counts),
+                None => pane.tally(snapshot, &asked, shown.rows().len()),
             }
         })
     }

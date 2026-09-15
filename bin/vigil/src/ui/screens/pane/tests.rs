@@ -74,7 +74,9 @@ fn rows_and_a_tally_the_console_already_holds_are_drawn_as_given_and_not_worked_
             marked: Vec::new(),
             opened: Vec::new(),
             only: &[],
-            listed: Some(std::rc::Rc::new(Vec::new())),
+            listed: Some(std::rc::Rc::new(crate::ui::types::cache::Shown::built(
+                Vec::new(),
+            ))),
             tally: Some("the tally the console kept".to_string()),
         },
         buffer.area,

@@ -1,5 +1,5 @@
 use vigil_model::Snapshot;
-use vigil_view::{Counts, RowKey, Showing, time_of_day};
+use vigil_view::{Counts, Rows, Showing, time_of_day};
 
 use super::rows::{nested, parents_of};
 use crate::types::{Kind, List};
@@ -26,7 +26,7 @@ pub(super) fn footer(
     reading: &Snapshot,
     list: List,
     showing: &Showing<'_>,
-    rows: &[RowKey],
+    rows: &Rows<'_>,
     counts: &Counts,
 ) -> String {
     let held = counts.number(HELD);

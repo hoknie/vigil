@@ -1,6 +1,46 @@
-use super::Index;
+use super::{Assembled, Index, Rows};
 use crate::Facet;
 use crate::types::{RowKey, Sorting};
+
+#[test]
+fn rows_named_by_their_numbers_read_as_the_rows_they_name() {
+    let index = index();
+    let assembled = Assembled::Ordered(vec![4, 0, 2]);
+    let rows = Rows::of(&index, &assembled);
+
+    assert_eq!(rows.len(), 3);
+    assert_eq!(
+        rows.iter()
+            .map(|row| row.key.as_str())
+            .collect::<Vec<&str>>(),
+        vec!["d", "b", "c"],
+        "a list the index answered keeps the numbers of its rows, and reads each row from the \
+         index when it is asked for"
+    );
+    assert_eq!(rows.get(1).map(|row| row.key.as_str()), Some("b"));
+    assert!(rows.get(3).is_none());
+    assert_eq!(
+        Rows::built(&rows.to_vec()).to_vec(),
+        rows.to_vec(),
+        "a footer is written from either, and must read the same rows from both"
+    );
+}
+
+#[test]
+fn every_row_under_one_key_is_found_by_that_key() {
+    let mut index = Index::new(0);
+    for key in ["b", "a", "b", "c"] {
+        index.push(RowKey::of(key), key, 1, Vec::new());
+    }
+
+    assert_eq!(
+        index.keyed("b"),
+        &[0, 2],
+        "one unit can stand under two parents, so one key can name two rows"
+    );
+    assert_eq!(index.keyed("a"), &[1]);
+    assert!(index.keyed("z").is_empty());
+}
 
 fn faceted() -> Index {
     let mut index = Index::new(1);

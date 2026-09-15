@@ -1,6 +1,6 @@
 use vigil_model::{AccountChange, Changing, Snapshot};
 use vigil_view::{
-    Cell, Column, Counts, Form, Index, Notice, Offers, Pane, Piece, Room, RowKey, Showing,
+    Cell, Column, Counts, Form, Index, Notice, Offers, Pane, Piece, Room, RowKey, Rows, Showing,
 };
 
 use super::cells::cells;
@@ -63,7 +63,7 @@ impl Pane for Of {
         &self,
         reading: &Snapshot,
         showing: &Showing<'_>,
-        rows: &[RowKey],
+        rows: &Rows<'_>,
         counts: &Counts,
     ) -> String {
         tally_listed(reading, self.0, showing, rows, counts)

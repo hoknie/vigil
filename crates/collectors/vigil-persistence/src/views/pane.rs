@@ -1,6 +1,7 @@
 use vigil_model::Snapshot;
 use vigil_view::{
-    Arrangement, Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Showing,
+    Arrangement, Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Rows,
+    Showing,
 };
 
 use super::detail;
@@ -104,7 +105,7 @@ impl Pane for Of {
         &self,
         reading: &Snapshot,
         showing: &Showing<'_>,
-        rows: &[RowKey],
+        rows: &Rows<'_>,
         counts: &Counts,
     ) -> String {
         footer(reading, self.0, showing, rows, counts)

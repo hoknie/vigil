@@ -1,7 +1,7 @@
 use serde_json::Value;
 use vigil_model::Snapshot;
 use vigil_view::{
-    Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Showing, Sorting,
+    Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Rows, Showing, Sorting,
     Width, every_field, haystack,
 };
 
@@ -144,7 +144,7 @@ impl Pane for TheHost {
         &self,
         reading: &Snapshot,
         showing: &Showing<'_>,
-        rows: &[RowKey],
+        rows: &Rows<'_>,
         _counts: &Counts,
     ) -> String {
         footer(reading, showing, rows)

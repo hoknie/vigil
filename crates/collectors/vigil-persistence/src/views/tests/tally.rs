@@ -40,7 +40,7 @@ fn the_tree_footer_explains_the_plus_sign_only_while_a_listed_unit_carries_one()
 
     let every = Showing::default().arranged(TREE);
     let rows = units.rows(&reading, &every);
-    let footer = units.tally_listed(&reading, &every, &rows, &counts);
+    let footer = units.tally_listed(&reading, &every, &vigil_view::Rows::built(&rows), &counts);
 
     assert!(
         footer.contains("+N means"),
@@ -49,7 +49,7 @@ fn the_tree_footer_explains_the_plus_sign_only_while_a_listed_unit_carries_one()
     );
 
     let nothing = Showing::searching("nothing of the sort").arranged(TREE);
-    let footer = units.tally_listed(&reading, &nothing, &[], &counts);
+    let footer = units.tally_listed(&reading, &nothing, &vigil_view::Rows::built(&[]), &counts);
     assert!(
         !footer.contains("+N means"),
         "with no unit listed there is no plus sign to explain: {footer}"

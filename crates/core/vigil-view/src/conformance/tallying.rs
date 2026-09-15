@@ -1,7 +1,7 @@
 use vigil_model::Snapshot;
 
 use super::listing::searches;
-use crate::{Pane, Showing, Sorting};
+use crate::{Pane, Rows, Showing, Sorting, listing};
 
 const NOTES: [Option<&str>; 2] = [None, Some("part of the reading was refused")];
 
@@ -46,8 +46,9 @@ pub fn the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_also(
     let Some(counts) = pane.counts(reading, &bare) else {
         return;
     };
-    let searched = match pane.index(reading, &bare) {
-        Some(index) => searches(&index, also),
+    let index = pane.index(reading, &bare);
+    let searched = match &index {
+        Some(index) => searches(index, also),
         None => ["", "e", "S", "qqqzzz nothing of the sort"]
             .iter()
             .chain(also)
@@ -58,32 +59,47 @@ pub fn the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_also(
     for search in &searched {
         for sorting in sortings(pane) {
             for note in NOTES {
-                let rows = pane.rows(
-                    reading,
-                    &Showing {
-                        search,
-                        sorting,
-                        note,
-                        ..around
-                    },
-                );
+                let listed = Showing {
+                    search,
+                    sorting,
+                    note,
+                    ..around
+                };
+                let rows = pane.rows(reading, &listed);
+                let assembled = index
+                    .as_ref()
+                    .map(|index| (index, listing(pane, reading, &listed, index, None).1));
                 for elsewhere in ELSEWHERE {
                     let showing = Showing {
-                        search,
-                        sorting,
-                        note,
                         elsewhere,
-                        ..around
+                        ..listed
                     };
+                    let from_the_reading = pane.tally(reading, &showing, rows.len());
                     assert_eq!(
-                        pane.tally_listed(reading, &showing, &rows, &counts),
-                        pane.tally(reading, &showing, rows.len()),
+                        pane.tally_listed(reading, &showing, &Rows::built(&rows), &counts),
+                        from_the_reading,
                         "{} writes a different footer from what it counted once than from the \
                          whole reading for the search {search:?} sorted {sorting:?} around \
                          {around:?}: the console writes the footer from the counts on every \
                          keystroke",
                         pane.name()
                     );
+                    if let Some((index, assembled)) = &assembled {
+                        assert_eq!(
+                            pane.tally_listed(
+                                reading,
+                                &showing,
+                                &Rows::of(index, assembled),
+                                &counts
+                            ),
+                            from_the_reading,
+                            "{} writes a different footer from the row numbers its index listed \
+                             than from the rows of the reading for the search {search:?} sorted \
+                             {sorting:?} around {around:?}: the console keeps the row numbers \
+                             and not copies of the rows",
+                            pane.name()
+                        );
+                    }
                 }
             }
         }

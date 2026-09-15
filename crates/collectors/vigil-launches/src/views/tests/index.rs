@@ -1,5 +1,5 @@
 use vigil_view::conformance::the_index_lists_every_search_and_sort_as_the_rows_do_in;
-use vigil_view::{Facet, Index, Pane, RowKey, Section, Showing, listed};
+use vigil_view::{Assembled, Facet, Index, Pane, RowKey, Section, Showing, listed, listing};
 
 use super::scaled::many_launches;
 use crate::views::WhatHasRunHere;
@@ -48,6 +48,26 @@ fn every_search_and_every_sort_of_many_launches_lists_from_the_index_what_the_re
             pane.as_ref(),
             &reading,
             Showing::default().narrowing(&only),
+        );
+    }
+}
+
+#[test]
+fn a_list_answered_from_the_index_holds_the_numbers_of_its_rows_and_not_copies_of_them() {
+    let reading = many_launches(8);
+    let pane = pane();
+    let index = pane
+        .index(&reading, &Showing::default())
+        .expect("this pane builds an index");
+
+    for only in narrowings() {
+        let showing = Showing::default().narrowing(&only);
+        let (_, assembled) = listing(pane.as_ref(), &reading, &showing, &index, None);
+
+        assert!(
+            matches!(assembled, Assembled::Ordered(_)),
+            "{only:?}: the console lets go of the last list on every facet chosen, and a list of \
+             row numbers is let go of at once where copies of rows are freed one by one"
         );
     }
 }

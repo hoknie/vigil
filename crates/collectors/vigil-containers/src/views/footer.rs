@@ -1,5 +1,5 @@
 use vigil_model::Snapshot;
-use vigil_view::{Counts, RowKey, Showing, time_of_day};
+use vigil_view::{Counts, Rows, Showing, time_of_day};
 
 use super::fields::{SYS_ADMIN, capabilities, mounts_readable, text, truncated};
 use crate::types::Kind;
@@ -42,7 +42,7 @@ pub(super) fn counts(reading: &Snapshot) -> Counts {
 pub(super) fn tallied(
     reading: &Snapshot,
     showing: &Showing<'_>,
-    rows: &[RowKey],
+    rows: &Rows<'_>,
     counts: &Counts,
 ) -> String {
     let shown = rows.len();

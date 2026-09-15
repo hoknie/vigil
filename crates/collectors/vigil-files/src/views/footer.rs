@@ -1,11 +1,11 @@
 use serde_json::Value;
 use vigil_model::Snapshot;
-use vigil_view::{RowKey, Showing, time_of_day};
+use vigil_view::{Rows, Showing, time_of_day};
 
 use super::fields::{marks, present};
 use crate::types::Family;
 
-pub(super) fn footer(reading: &Snapshot, showing: &Showing<'_>, rows: &[RowKey]) -> String {
+pub(super) fn footer(reading: &Snapshot, showing: &Showing<'_>, rows: &Rows<'_>) -> String {
     let shown = rows.len();
     let whole = reading.items.len();
 

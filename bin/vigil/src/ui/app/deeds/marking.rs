@@ -148,6 +148,7 @@ impl App {
 
     fn rows_gathered_under(&self, heading: &str) -> Vec<String> {
         self.pane_rows()
+            .rows()
             .iter()
             .filter(|row| row.of_the_reading && row.gathered_under.as_deref() == Some(heading))
             .map(|row| row.key.clone())

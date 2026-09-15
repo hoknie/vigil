@@ -1,8 +1,8 @@
 use vigil_model::{AccountChange, Changing, Snapshot};
 
 use crate::types::{
-    Arrangement, Cell, Column, Counts, Facet, Form, Index, Notice, Offers, Piece, Room, RowKey,
-    Showing, Toggle,
+    Arrangement, Assembled, Cell, Column, Counts, Facet, Form, Index, Notice, Offers, Piece, Room,
+    RowKey, Rows, Showing, Toggle,
 };
 
 const NARROW: u16 = 80;
@@ -38,10 +38,10 @@ pub trait Pane: Send + Sync {
         &self,
         _reading: &Snapshot,
         _showing: &Showing<'_>,
-        index: &Index,
-        ordered: &[usize],
-    ) -> Vec<RowKey> {
-        ordered.iter().map(|at| index.row(*at).clone()).collect()
+        _index: &Index,
+        ordered: Vec<usize>,
+    ) -> Assembled {
+        Assembled::Ordered(ordered)
     }
 
     fn counts(&self, _reading: &Snapshot, _showing: &Showing<'_>) -> Option<Counts> {
@@ -52,7 +52,7 @@ pub trait Pane: Send + Sync {
         &self,
         reading: &Snapshot,
         showing: &Showing<'_>,
-        rows: &[RowKey],
+        rows: &Rows<'_>,
         _counts: &Counts,
     ) -> String {
         self.tally(reading, showing, rows.len())

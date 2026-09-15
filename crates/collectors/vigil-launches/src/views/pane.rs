@@ -1,7 +1,7 @@
 use serde_json::Value;
 use vigil_model::Snapshot;
 use vigil_view::{
-    Cell, Column, Counts, Facet, Index, Notice, Pane, Piece, Room, RowKey, Showing, haystack,
+    Cell, Column, Counts, Facet, Index, Notice, Pane, Piece, Room, RowKey, Rows, Showing, haystack,
     time_of_day,
 };
 
@@ -151,7 +151,7 @@ impl Pane for Launches {
         &self,
         reading: &Snapshot,
         showing: &Showing<'_>,
-        rows: &[RowKey],
+        rows: &Rows<'_>,
         counts: &Counts,
     ) -> String {
         footer(reading, showing, rows, counts)

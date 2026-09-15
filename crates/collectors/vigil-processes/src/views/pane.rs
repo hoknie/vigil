@@ -1,8 +1,8 @@
 use serde_json::Value;
 use vigil_model::{KillTarget, Snapshot};
 use vigil_view::{
-    Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Showing, haystack,
-    time_of_day,
+    Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Rows, Showing,
+    haystack, time_of_day,
 };
 
 use super::detail;
@@ -148,7 +148,7 @@ impl Pane for Running {
         &self,
         reading: &Snapshot,
         showing: &Showing<'_>,
-        rows: &[RowKey],
+        rows: &Rows<'_>,
         counts: &Counts,
     ) -> String {
         footer(reading, showing, rows, counts)

@@ -26,9 +26,19 @@ fn the_filesystem_named_as_the_fullest_does_not_change_when_the_reader_turns_the
         .expect("this pane counts");
     let mut rows: Vec<RowKey> = pane.rows(&reading, &Showing::default());
 
-    let read_in_order = pane.tally_listed(&reading, &Showing::default(), &rows, &counts);
+    let read_in_order = pane.tally_listed(
+        &reading,
+        &Showing::default(),
+        &vigil_view::Rows::built(&rows),
+        &counts,
+    );
     rows.reverse();
-    let turned_round = pane.tally_listed(&reading, &Showing::default(), &rows, &counts);
+    let turned_round = pane.tally_listed(
+        &reading,
+        &Showing::default(),
+        &vigil_view::Rows::built(&rows),
+        &counts,
+    );
 
     assert_eq!(
         read_in_order, turned_round,
