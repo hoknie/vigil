@@ -1,13 +1,14 @@
 use serde_json::Value;
 use vigil_model::Snapshot;
 use vigil_view::{
-    Cell, Column, Counts, Facet, Index, Notice, Pane, Piece, Room, RowKey, Showing, haystack,
-    time_of_day,
+    Cell, Column, Counts, Facet, Index, Notice, Offers, Pane, Piece, Room, RowKey, Rows, Showing,
+    haystack, time_of_day,
 };
 
 use super::detail;
 use super::fields::{marked, text};
 use super::footer::{counted, footer};
+use super::history;
 use super::launches;
 use super::sorted::sorted_on;
 
@@ -151,7 +152,7 @@ impl Pane for Launches {
         &self,
         reading: &Snapshot,
         showing: &Showing<'_>,
-        rows: &[RowKey],
+        rows: &Rows<'_>,
         counts: &Counts,
     ) -> String {
         footer(reading, showing, rows, counts)
@@ -174,5 +175,16 @@ impl Pane for Launches {
         }
 
         launches::facets_of(item)
+    }
+
+    fn offers(&self) -> Offers {
+        Offers::default().historied(true)
+    }
+
+    fn history(&self, reading: &Snapshot, row: &RowKey) -> Vec<Piece> {
+        match reading.items.get(&row.key) {
+            Some(item) => history::history(&row.key, item),
+            None => Vec::new(),
+        }
     }
 }

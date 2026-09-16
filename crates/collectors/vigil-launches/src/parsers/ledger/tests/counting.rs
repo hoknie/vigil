@@ -19,7 +19,7 @@ fn a_person_and_a_program_are_one_row_under_a_key_somebody_can_copy_into_a_file(
 }
 
 #[test]
-fn the_same_program_run_a_hundred_times_is_one_row_that_counts_them_and_moves_nothing_else() {
+fn the_same_program_run_a_hundred_times_is_one_row_that_counts_them_and_moves_only_its_last_runs() {
     let once = fresh(&[launch(1000, "/usr/bin/nc", &["nc"])]);
     let runs: Vec<Execution> = (0..100)
         .map(|serial| later(1000, "/usr/bin/nc", &["nc", "-l", "4444"], serial))
@@ -37,11 +37,12 @@ fn the_same_program_run_a_hundred_times_is_one_row_that_counts_them_and_moves_no
     let mut uncounted = hundred.items["run|alice|/usr/bin/nc"].clone();
     uncounted["runs"] = json!(1);
     uncounted["last_audit_id"] = once.items["run|alice|/usr/bin/nc"]["last_audit_id"].clone();
+    uncounted["recent_runs"] = once.items["run|alice|/usr/bin/nc"]["recent_runs"].clone();
     assert_eq!(
         uncounted, once.items["run|alice|/usr/bin/nc"],
-        "the count is the one field a later run writes: the arguments, the audit id and the \
-         moment it was first seen still belong to the first run, which is the one a reader \
-         looks up in the host's own log"
+        "the count and the last runs are the only fields a later run writes: the arguments, \
+         the audit id and the moment it was first seen still belong to the first run, which is \
+         the one a reader looks up in the host's own log"
     );
 }
 

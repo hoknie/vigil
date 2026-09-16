@@ -1,18 +1,29 @@
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
+use memchr::memmem::Finder;
+
 use crate::Facet;
 use crate::types::{RowKey, Sorting};
 
+const UNGATHERED: usize = usize::MAX;
+
+const BETWEEN_ROWS: char = '\0';
+
+const CHARACTERS_KEPT: usize = 128;
+
 pub struct Index {
     rows: Vec<RowKey>,
-    haystacks: Vec<String>,
+    text: String,
+    ends: Vec<usize>,
     groups: Vec<u8>,
     keys: Vec<Vec<String>>,
     columns: usize,
-    postings: BTreeMap<char, Vec<usize>>,
     facets: BTreeMap<&'static str, BTreeMap<String, Vec<usize>>>,
     faceted: bool,
+    by_key: OnceLock<Vec<usize>>,
+    singles: [OnceLock<Vec<usize>>; CHARACTERS_KEPT],
+    headings: Vec<usize>,
     ranks: Vec<[OnceLock<Vec<usize>>; 2]>,
 }
 
@@ -20,13 +31,16 @@ impl Index {
     pub fn new(columns: usize) -> Index {
         Index {
             rows: Vec::new(),
-            haystacks: Vec::new(),
+            text: String::new(),
+            ends: Vec::new(),
             groups: Vec::new(),
             keys: Vec::new(),
             columns,
-            postings: BTreeMap::new(),
             facets: BTreeMap::new(),
             faceted: false,
+            by_key: OnceLock::new(),
+            singles: std::array::from_fn(|_| OnceLock::new()),
+            headings: Vec::new(),
             ranks: (0..columns)
                 .map(|_| [OnceLock::new(), OnceLock::new()])
                 .collect(),
@@ -34,20 +48,22 @@ impl Index {
     }
 
     pub fn push(&mut self, row: RowKey, haystack: &str, group: u8, mut keys: Vec<String>) {
-        let at = self.rows.len();
-        let lowered = haystack.to_lowercase();
-        let mut characters: Vec<char> = lowered.chars().collect();
-        characters.sort_unstable();
-        characters.dedup();
-        for character in characters {
-            self.postings.entry(character).or_default().push(at);
+        let start = self.text.len();
+        match haystack.is_ascii() {
+            true => {
+                self.text.push_str(haystack);
+                self.text[start..].make_ascii_lowercase();
+            }
+            false => self.text.push_str(&haystack.to_lowercase()),
         }
+        self.ends.push(self.text.len());
+        self.text.push(BETWEEN_ROWS);
         keys.resize(self.columns, String::new());
 
         self.rows.push(row);
-        self.haystacks.push(lowered);
         self.groups.push(group);
         self.keys.push(keys);
+        self.headings.push(UNGATHERED);
     }
 
     pub fn faceted(&mut self, facets: Vec<Facet>) {
@@ -99,6 +115,19 @@ impl Index {
         )
     }
 
+    pub fn gathered(&mut self, heading: usize) {
+        if let Some(last) = self.headings.last_mut() {
+            *last = heading;
+        }
+    }
+
+    pub fn heading_of(&self, at: usize) -> Option<usize> {
+        self.headings
+            .get(at)
+            .copied()
+            .filter(|heading| *heading != UNGATHERED)
+    }
+
     pub fn len(&self) -> usize {
         self.rows.len()
     }
@@ -112,7 +141,27 @@ impl Index {
     }
 
     pub fn haystack(&self, at: usize) -> &str {
-        &self.haystacks[at]
+        let start = match at.checked_sub(1) {
+            Some(before) => self.ends[before] + BETWEEN_ROWS.len_utf8(),
+            None => 0,
+        };
+        &self.text[start..self.ends[at]]
+    }
+
+    pub fn keyed(&self, key: &str) -> &[usize] {
+        let by_key = self.by_key.get_or_init(|| {
+            let mut order: Vec<usize> = (0..self.rows.len()).collect();
+            order.sort_by(|left, right| {
+                self.rows[*left]
+                    .key
+                    .cmp(&self.rows[*right].key)
+                    .then(left.cmp(right))
+            });
+            order
+        });
+        let from = by_key.partition_point(|at| self.rows[*at].key.as_str() < key);
+        let to = by_key.partition_point(|at| self.rows[*at].key.as_str() <= key);
+        &by_key[from..to]
     }
 
     pub fn found(&self, search: &str, within: Option<&[usize]>) -> Vec<usize> {
@@ -120,21 +169,64 @@ impl Index {
             return (0..self.rows.len()).collect();
         }
         let query = search.to_lowercase();
-        let rarest: &[usize] = query
-            .chars()
-            .map(|character| self.postings.get(&character).map_or(&[][..], Vec::as_slice))
-            .min_by_key(|posting| posting.len())
-            .unwrap_or(&[]);
-        let candidates = match within {
-            Some(within) if within.len() < rarest.len() => within,
-            _ => rarest,
-        };
+        let finder = Finder::new(query.as_bytes());
+        let holds = |at: &usize| finder.find(self.haystack(*at).as_bytes()).is_some();
+        if let Some(within) = within {
+            return within.iter().copied().filter(holds).collect();
+        }
+        if query.contains(BETWEEN_ROWS) {
+            return (0..self.rows.len()).filter(holds).collect();
+        }
+        if let [byte] = query.as_bytes()
+            && let Some(kept) = self.singles.get(usize::from(*byte))
+        {
+            return kept.get_or_init(|| self.scanned(&finder)).clone();
+        }
+        match self.among(&query) {
+            Some(among) => among.iter().copied().filter(holds).collect(),
+            None => self.scanned(&finder),
+        }
+    }
 
-        candidates
-            .iter()
-            .copied()
-            .filter(|at| self.haystacks[*at].contains(&query))
-            .collect()
+    fn among(&self, query: &str) -> Option<&[usize]> {
+        let fewest = query
+            .bytes()
+            .filter_map(|byte| self.singles.get(usize::from(byte)))
+            .filter_map(OnceLock::get)
+            .min_by_key(|rows| rows.len());
+        if let Some(fewest) = fewest {
+            return Some(fewest);
+        }
+        let (byte, kept) = query
+            .bytes()
+            .find_map(|byte| Some((byte, self.singles.get(usize::from(byte))?)))?;
+        Some(kept.get_or_init(|| self.scanned(&Finder::new(std::slice::from_ref(&byte)))))
+    }
+
+    fn scanned(&self, finder: &Finder<'_>) -> Vec<usize> {
+        let text = self.text.as_bytes();
+        let length = finder.needle().len();
+        let mut found = Vec::new();
+        let mut from = 0;
+        while let Some(offset) = finder.find(&text[from..]) {
+            let at = self
+                .ends
+                .partition_point(|end| *end < from + offset + length);
+            found.push(at);
+            match self.ends.get(at) {
+                Some(end) => from = end + BETWEEN_ROWS.len_utf8(),
+                None => break,
+            }
+        }
+        found
+    }
+
+    #[cfg(test)]
+    pub(super) fn keeps(&self, character: char) -> bool {
+        u8::try_from(character)
+            .ok()
+            .and_then(|byte| self.singles.get(usize::from(byte)))
+            .is_some_and(|kept| kept.get().is_some())
     }
 
     pub fn ordered(&self, mut found: Vec<usize>, sorting: Sorting) -> Vec<usize> {

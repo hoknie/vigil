@@ -12,6 +12,7 @@ use super::notices::{gone, missing, nothing_here, said};
 use super::regions::{split_about, split_bottom, split_menu, split_top};
 use super::showing::{Showing, asked};
 use crate::ui::helpers::layout::{column, listing, panes, wrap};
+use crate::ui::types::cache::Shown;
 use crate::ui::{Arrows, Look, Reading, View};
 
 const LINES_OF_DEFINITION: usize = 2;
@@ -114,10 +115,11 @@ pub fn render(
     let hidden = showing.hidden();
     let opened = showing.opened();
     let asked = asked(showing, &hidden, &opened);
-    let rows = match &showing.listed {
+    let shown = match &showing.listed {
         Some(listed) => Rc::clone(listed),
-        None => Rc::new(pane.rows(snapshot, &asked)),
+        None => Rc::new(Shown::built(pane.rows(snapshot, &asked))),
     };
+    let rows = shown.rows();
     let marking = pane.offers().marking && look.interactive();
     let (table, footer) = split_bottom(rest, look, rows.len());
 
@@ -150,7 +152,7 @@ pub fn render(
             drawn(
                 pane.as_ref(),
                 snapshot,
-                &rows[at],
+                &rows.get(at).expect("a row the list counted"),
                 room,
                 &fitted,
                 marking,

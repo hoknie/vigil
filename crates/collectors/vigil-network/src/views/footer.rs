@@ -1,6 +1,6 @@
 use serde_json::Value;
 use vigil_model::Snapshot;
-use vigil_view::{Counts, RowKey, Showing, time_of_day};
+use vigil_view::{Counts, Rows, Showing, time_of_day};
 
 const NOT_VISIBLE: &str = "sockets whose process is not visible";
 
@@ -16,7 +16,7 @@ pub(super) fn counts(reading: &Snapshot) -> Counts {
 pub(super) fn tallied(
     reading: &Snapshot,
     showing: &Showing<'_>,
-    rows: &[RowKey],
+    rows: &Rows<'_>,
     counts: &Counts,
     grouped: bool,
 ) -> String {

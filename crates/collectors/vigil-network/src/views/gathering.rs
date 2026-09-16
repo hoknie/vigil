@@ -1,67 +1,101 @@
-use std::collections::BTreeMap;
+use std::sync::Arc;
 
+use serde_json::Value;
 use vigil_model::Snapshot;
-use vigil_view::{Index, RowKey, Showing, haystack};
+use vigil_view::{Index, Placed, RowKey, Showing, haystack};
 
 use super::fields::holder;
 use super::flat::wanted;
 use super::programs::{HEADING, Programs, UNRESOLVED};
 
+const NO_SOCKET: usize = usize::MAX;
+
 pub(super) fn indexed(reading: &Snapshot, showing: &Showing<'_>, columns: usize) -> Index {
     let names = Programs::whole(reading);
+    let sockets: Vec<(&String, &Value, Option<&str>)> = wanted(reading, showing)
+        .map(|(key, item)| (key, item, holder(item)))
+        .collect();
+    let mut programs: Vec<&str> = sockets.iter().filter_map(|(_, _, path)| *path).collect();
+    programs.sort_unstable();
+    programs.dedup();
+
+    let shared: Vec<(Arc<str>, Arc<str>)> = programs
+        .iter()
+        .map(|path| {
+            (
+                Arc::from(format!("{HEADING}{path}")),
+                Arc::from(names.name(path)),
+            )
+        })
+        .collect();
+    let unresolved: Arc<str> = Arc::from(UNRESOLVED);
+
     let mut index = Index::new(columns);
-    for (key, item) in wanted(reading, showing) {
+    for (key, item, path) in sockets {
         let socket = RowKey::of(key.clone()).under(1);
-        let socket = match holder(item) {
-            Some(path) => socket
-                .beneath(format!("{HEADING}{path}"))
-                .named(names.name(path)),
-            None => socket.beneath(UNRESOLVED),
+        let heading = path
+            .and_then(|path| programs.binary_search(&path).ok())
+            .unwrap_or(programs.len());
+        let socket = match shared.get(heading) {
+            Some((beneath, name)) => socket.beneath(Arc::clone(beneath)).named(Arc::clone(name)),
+            None => socket.beneath(Arc::clone(&unresolved)),
         };
         index.push(socket, &haystack(key, item), 0, Vec::new());
+        index.gathered(heading);
     }
     index
 }
 
-pub(super) fn assembled(showing: &Showing<'_>, index: &Index, ordered: &[usize]) -> Vec<RowKey> {
-    let mut programs: BTreeMap<&str, Vec<&RowKey>> = BTreeMap::new();
-    let mut unresolved: Vec<&RowKey> = Vec::new();
-    for at in ordered {
-        let socket = index.row(*at);
-        match socket.gathered_under.as_deref() {
-            Some(heading) if heading != UNRESOLVED => {
-                programs.entry(heading).or_default().push(socket)
+pub(super) fn assembled(showing: &Showing<'_>, index: &Index, ordered: Vec<usize>) -> Vec<Placed> {
+    let mut headings: Vec<(usize, usize)> = Vec::new();
+    for at in &ordered {
+        if let Some(heading) = index.heading_of(*at) {
+            if heading >= headings.len() {
+                headings.resize(heading + 1, (0, NO_SOCKET));
             }
-            _ => unresolved.push(socket),
+            let (gathers, first) = &mut headings[heading];
+            *gathers += 1;
+            if *first == NO_SOCKET {
+                *first = *at;
+            }
         }
     }
 
-    let mut rows = Vec::new();
-    for (heading, sockets) in programs {
-        let mut row = RowKey::of(heading)
-            .of_its_own()
-            .gathering(sockets.len())
-            .opened(showing.opened_up(heading));
-        row.named = sockets.first().and_then(|socket| socket.named.clone());
-        folded(&mut rows, row, &sockets);
+    let mut placed = Vec::new();
+    for (gathers, first) in &mut headings {
+        if *gathers == 0 {
+            continue;
+        }
+        let opened = showing.opened_up(
+            index
+                .row(*first)
+                .gathered_under
+                .as_deref()
+                .unwrap_or(UNRESOLVED),
+        );
+        placed.push(Placed::Heading {
+            first: *first,
+            gathers: *gathers,
+            opened,
+        });
+        *first = match opened {
+            true => {
+                let slot = placed.len();
+                placed.resize(slot + *gathers, Placed::Row(NO_SOCKET));
+                slot
+            }
+            false => NO_SOCKET,
+        };
     }
-    if !unresolved.is_empty() {
-        let row = RowKey::of(UNRESOLVED)
-            .of_its_own()
-            .gathering(unresolved.len())
-            .opened(showing.opened_up(UNRESOLVED));
-        folded(&mut rows, row, &unresolved);
-    }
-    rows
-}
 
-fn folded(rows: &mut Vec<RowKey>, heading: RowKey, sockets: &[&RowKey]) {
-    let open = heading.opened;
-    rows.push(heading);
-    if open {
-        rows.extend(sockets.iter().map(|socket| RowKey {
-            named: None,
-            ..(*socket).clone()
-        }));
+    for at in ordered {
+        if let Some(heading) = index.heading_of(at)
+            && let Some((_, slot)) = headings.get_mut(heading)
+            && *slot != NO_SOCKET
+        {
+            placed[*slot] = Placed::Row(at);
+            *slot += 1;
+        }
     }
+    placed
 }

@@ -2,6 +2,7 @@ use serde_json::Value;
 use vigil_view::Piece;
 
 use super::fields::{flag, number, text};
+use super::launches::{last_run, when};
 
 pub(super) fn launch(item: &Value) -> Vec<Piece> {
     let mut said: Vec<Piece> = Vec::new();
@@ -22,6 +23,13 @@ pub(super) fn launch(item: &Value) -> Vec<Piece> {
     said.push(Piece::field(
         "first seen",
         text(item, "first_seen").unwrap_or("?"),
+    ));
+    said.push(Piece::field(
+        "last run",
+        match last_run(item) {
+            Some(last) => when(last),
+            None => "?".to_string(),
+        },
     ));
     said.push(Piece::field(
         "runs",

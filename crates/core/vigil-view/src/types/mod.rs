@@ -15,7 +15,7 @@ mod toggle;
 pub use arrangement::Arrangement;
 pub use editing::{Choice, Entry, Field, Form};
 pub use facet::Facet;
-pub use listing::{Counts, Index};
+pub use listing::{Assembled, Counts, Index, Placed, Rows};
 pub use notice::Notice;
 pub use offers::Offers;
 pub use piece::Piece;

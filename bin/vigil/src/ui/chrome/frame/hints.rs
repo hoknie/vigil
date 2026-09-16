@@ -5,6 +5,8 @@ use crate::ui::Level;
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Hints<'a> {
     pub editing: bool,
+    pub history: bool,
+    pub histories: bool,
     pub kills: bool,
     pub changes: &'static [Changing],
     pub typing: bool,

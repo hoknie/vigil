@@ -1,5 +1,5 @@
 use vigil_model::Snapshot;
-use vigil_view::{Counts, RowKey, Showing, time_of_day};
+use vigil_view::{Counts, Rows, Showing, time_of_day};
 
 use super::fields::{ACCEPT, DROP, hooked_on_input, policy};
 use super::rows::summary;
@@ -18,7 +18,7 @@ pub(super) fn counts(reading: &Snapshot) -> Counts {
 pub(super) fn tallied(
     reading: &Snapshot,
     showing: &Showing<'_>,
-    rows: &[RowKey],
+    rows: &Rows<'_>,
     counts: &Counts,
 ) -> String {
     let shown = rows.len();
@@ -42,7 +42,7 @@ pub(super) fn tallied(
     parts.join(" · ")
 }
 
-fn by_policy(reading: &Snapshot, rows: &[RowKey]) -> Option<String> {
+fn by_policy(reading: &Snapshot, rows: &Rows<'_>) -> Option<String> {
     let mut dropping = 0;
     let mut accepting = 0;
 

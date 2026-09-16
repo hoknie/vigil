@@ -19,6 +19,11 @@ impl App {
             self.walk_the_form(code);
             return;
         }
+        if self.history.is_some() {
+            self.message = None;
+            self.walk_the_history(code, modifiers);
+            return;
+        }
 
         let action = keys::action(code, modifiers, self.typing());
 

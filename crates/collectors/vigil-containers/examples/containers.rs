@@ -50,8 +50,14 @@ fn searching() {
             let sort_cold = started.elapsed().as_secs_f64() * 1_000.0;
             let (_, sort_warm) = timed(|| listed(pane, &reading, &sorted, &fresh, None));
             let (_, tally) = timed(|| pane.tally(&reading, &keystroke, rows.len()));
-            let (_, tally_listed) =
-                timed(|| pane.tally_listed(&reading, &keystroke, &rows, &counts));
+            let (_, tally_listed) = timed(|| {
+                pane.tally_listed(
+                    &reading,
+                    &keystroke,
+                    &vigil_view::Rows::built(&rows),
+                    &counts,
+                )
+            });
 
             println!(
                 "{:>5}  {indexing:>8.4}  {counting:>9.4}  {by_rows:>11.4}  {by_index:>13.4}  \

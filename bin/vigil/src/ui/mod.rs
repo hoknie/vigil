@@ -36,6 +36,7 @@ pub use types::focus::chooser::{CANCEL, Chooser, Choosing};
 pub use types::focus::form::editing::Editing;
 pub use types::focus::form::pressed::Pressed;
 pub use types::focus::form::spot::Spot;
+pub use types::focus::history::History;
 pub use types::focus::picking::asking::Asking;
 pub use types::focus::picking::deed::Deed;
 pub use types::focus::picking::picked::Picked;

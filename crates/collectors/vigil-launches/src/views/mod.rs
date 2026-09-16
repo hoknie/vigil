@@ -4,6 +4,7 @@ mod tests;
 mod detail;
 mod fields;
 mod footer;
+mod history;
 mod launches;
 mod pane;
 mod section;

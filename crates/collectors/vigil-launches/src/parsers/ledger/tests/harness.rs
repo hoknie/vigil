@@ -35,6 +35,22 @@ pub(super) fn everything_is_there(_path: &str) -> Presence {
 }
 
 pub(super) fn snapshot_of(known: &BTreeMap<String, Value>, executions: &[Execution]) -> Snapshot {
+    read(known, executions, false)
+}
+
+pub(super) fn kept_on(known: &BTreeMap<String, Value>, executions: &[Execution]) -> Snapshot {
+    read(known, executions, true)
+}
+
+pub(super) fn with_arguments(executions: &[Execution]) -> Snapshot {
+    kept_on(&BTreeMap::new(), executions)
+}
+
+fn read(
+    known: &BTreeMap<String, Value>,
+    executions: &[Execution],
+    keep_arguments: bool,
+) -> Snapshot {
     let logins = logins();
     launches_snapshot(
         "2026-09-09T12:00:00.000Z",
@@ -43,7 +59,7 @@ pub(super) fn snapshot_of(known: &BTreeMap<String, Value>, executions: &[Executi
             executions,
             logins: &logins,
             any_unnamed: false,
-            keep_arguments: false,
+            keep_arguments,
             on_disk: &everything_is_there,
             from_plugin: true,
             dropped: false,

@@ -1,6 +1,6 @@
 use serde_json::Value;
 use vigil_model::Snapshot;
-use vigil_view::{Counts, RowKey, Showing, time_of_day};
+use vigil_view::{Counts, RowKey, Rows, Showing, time_of_day};
 
 use super::facts::{attended, could_log_in, privileged, readable};
 use super::fields::objects;
@@ -76,7 +76,7 @@ pub(super) fn tally_listed(
     reading: &Snapshot,
     subject: Subject,
     showing: &Showing<'_>,
-    listed: &[RowKey],
+    listed: &Rows<'_>,
     counts: &Counts,
 ) -> String {
     let held = counts.number(HELD);

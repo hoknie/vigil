@@ -5,6 +5,7 @@ mod answers;
 mod choices;
 mod deeds;
 mod drawing;
+mod history;
 mod kept;
 mod keys;
 mod narrowing;
@@ -23,10 +24,10 @@ use vigil_view::{Counts, Index, Piece, RowKey};
 use crate::link::Link;
 use std::collections::BTreeMap;
 
-use crate::ui::types::cache::Remembered;
+use crate::ui::types::cache::{Listed, Remembered, Shown};
 use crate::ui::{
-    Asking, Chooser, Dismissed, Editing, Filter, Gone, Level, Look, Nav, Paper, Picked, Screen,
-    Sorting, View,
+    Asking, Chooser, Dismissed, Editing, Filter, Gone, History, Level, Look, Nav, Paper, Picked,
+    Screen, Sorting, View,
 };
 
 type RowsAsked = (u64, Screen, usize, String);
@@ -47,6 +48,7 @@ pub struct App {
     dismissed: Dismissed,
     asking: Option<Asking>,
     editing: Option<Editing>,
+    history: Option<History>,
     named_configuration: Option<String>,
     detail_open: bool,
     level: Level,
@@ -59,7 +61,8 @@ pub struct App {
     helping: bool,
     message: Option<String>,
     body: Cell<Rect>,
-    rows_seen: Remembered<RowsAsked, Rc<Vec<RowKey>>>,
+    rows_seen: Remembered<RowsAsked, Rc<Shown>>,
+    listed_seen: Remembered<RowsAsked, Rc<Listed>>,
     index_seen: Remembered<RowsAsked, Option<Rc<Index>>>,
     found_seen: RefCell<Option<FoundBefore>>,
     tally_seen: Remembered<RowsAsked, String>,

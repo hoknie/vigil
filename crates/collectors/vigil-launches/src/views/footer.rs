@@ -1,5 +1,5 @@
 use vigil_model::Snapshot;
-use vigil_view::{Counts, RowKey, Showing, time_of_day};
+use vigil_view::{Counts, Rows, Showing, time_of_day};
 
 use super::fields::marked;
 use super::launches;
@@ -18,7 +18,7 @@ pub(super) fn counted(reading: &Snapshot) -> Counts {
 pub(super) fn footer(
     reading: &Snapshot,
     showing: &Showing<'_>,
-    rows: &[RowKey],
+    rows: &Rows<'_>,
     counts: &Counts,
 ) -> String {
     let held = counts.number(HELD);

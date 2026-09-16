@@ -9,6 +9,7 @@ pub struct Acts {
     pub acting: Option<KillTarget>,
     pub editing: bool,
     pub deleting: bool,
+    pub history: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30,13 +31,25 @@ impl Acts {
             acting: None,
             editing,
             deleting,
+            history: false,
         }
     }
 
+    pub fn historied(self, history: bool) -> Acts {
+        Acts { history, ..self }
+    }
+
     pub fn buttons(self) -> Vec<Button> {
+        let mut buttons = Vec::new();
         match self.acting {
-            None if self.editing || self.deleting => {
-                let mut buttons = Vec::new();
+            Some(target) => buttons.push(Button {
+                key: 'K',
+                name: match target {
+                    KillTarget::Socket => "close this socket",
+                    KillTarget::Program => "stop this program",
+                },
+            }),
+            None => {
                 if self.editing {
                     buttons.push(Button {
                         key: 'e',
@@ -49,27 +62,21 @@ impl Acts {
                         name: "delete",
                     });
                 }
-                buttons.push(Button {
-                    key: 'S',
-                    name: "suppress it",
-                });
-                buttons
             }
-            None => Vec::new(),
-            Some(target) => vec![
-                Button {
-                    key: 'K',
-                    name: match target {
-                        KillTarget::Socket => "close this socket",
-                        KillTarget::Program => "stop this program",
-                    },
-                },
-                Button {
-                    key: 'S',
-                    name: "suppress it",
-                },
-            ],
         }
+        if !buttons.is_empty() {
+            buttons.push(Button {
+                key: 'S',
+                name: "suppress it",
+            });
+        }
+        if self.history {
+            buttons.push(Button {
+                key: 'H',
+                name: "history",
+            });
+        }
+        buttons
     }
 
     pub fn button(self, at: usize) -> Option<Button> {
@@ -184,6 +191,28 @@ mod tests {
             Acts::of_an_account(false, false).buttons().is_empty(),
             "a row that can be neither edited nor deleted is not offered a suppression button \
              of its own here"
+        );
+    }
+
+    #[test]
+    fn a_row_that_keeps_a_history_offers_it_as_a_button_and_after_what_acts_on_the_host() {
+        let read_only = drawn(Acts::default().historied(true), None, 80);
+        assert!(read_only.contains("[ H history ]"), "{read_only}");
+        assert!(
+            !read_only.contains("suppress"),
+            "a row nothing can be done to is offered no suppression button here, and reading \
+             its runs changes nothing: {read_only}"
+        );
+
+        let killable = Acts::of_a_row(Some(KillTarget::Program)).historied(true);
+        assert_eq!(
+            killable
+                .buttons()
+                .iter()
+                .map(|button| button.key)
+                .collect::<Vec<char>>(),
+            vec!['K', 'S', 'H'],
+            "what acts on the host comes first, because the arrows land on the first button"
         );
     }
 

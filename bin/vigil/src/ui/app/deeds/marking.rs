@@ -2,6 +2,7 @@ use vigil_view::{Piece, RowKey};
 
 use crate::ui::app::App;
 
+use crate::ui::app::history::HISTORY;
 use crate::ui::helpers::finding::acts::Acts;
 use crate::ui::helpers::finding::suppression;
 use crate::ui::{Paper, Reading, holding};
@@ -24,11 +25,12 @@ impl App {
             .pane_row_under_the_cursor()
             .is_some_and(|row| row.of_the_reading);
 
-        match self.kill_target() {
+        let acts = match self.kill_target() {
             Some(target) => Acts::of_a_row(on_a_row.then_some(target)),
             None if on_a_row => self.account_acts(),
             None => Acts::default(),
-        }
+        };
+        acts.historied(on_a_row && self.pane().is_some_and(|pane| pane.offers().history))
     }
 
     pub(in crate::ui::app) fn buttons_here(&self) -> usize {
@@ -85,6 +87,9 @@ impl App {
             return false;
         };
         match button.key {
+            HISTORY => {
+                self.open_the_history();
+            }
             SUPPRESS => {
                 self.show_the_suppressions();
             }
@@ -148,6 +153,7 @@ impl App {
 
     fn rows_gathered_under(&self, heading: &str) -> Vec<String> {
         self.pane_rows()
+            .rows()
             .iter()
             .filter(|row| row.of_the_reading && row.gathered_under.as_deref() == Some(heading))
             .map(|row| row.key.clone())

@@ -136,7 +136,8 @@ fn drawing() {
         for _ in 0..ROUNDS {
             for end in 1..=TYPED.len() {
                 let showing = Showing::searching(&TYPED[..end]);
-                let _ = pane.tally_listed(&reading, &showing, &rows, &counts);
+                let _ =
+                    pane.tally_listed(&reading, &showing, &vigil_view::Rows::built(&rows), &counts);
             }
         }
         let footer_by_counts = started.elapsed().as_secs_f64() * 1_000.0 / keystrokes;

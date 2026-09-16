@@ -1,5 +1,7 @@
 use vigil_model::Snapshot;
-use vigil_view::{Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Showing};
+use vigil_view::{
+    Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Rows, Showing,
+};
 
 use super::columns::{cells, columns};
 use super::detail;
@@ -67,7 +69,7 @@ impl Pane for TheRuleset {
         &self,
         reading: &Snapshot,
         showing: &Showing<'_>,
-        rows: &[RowKey],
+        rows: &Rows<'_>,
         counts: &Counts,
     ) -> String {
         footer::tallied(reading, showing, rows, counts)

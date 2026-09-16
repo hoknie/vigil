@@ -8,6 +8,7 @@ pub struct Offers {
     pub marking: bool,
     pub killing: Option<KillTarget>,
     pub changing: Option<AccountObject>,
+    pub history: bool,
 }
 
 impl Default for Offers {
@@ -19,6 +20,7 @@ impl Default for Offers {
             marking: false,
             killing: None,
             changing: None,
+            history: false,
         }
     }
 }
@@ -32,7 +34,12 @@ impl Offers {
             marking: false,
             killing: None,
             changing: None,
+            history: false,
         }
+    }
+
+    pub fn historied(self, history: bool) -> Offers {
+        Offers { history, ..self }
     }
 
     pub fn changed(self, object: AccountObject) -> Offers {
@@ -80,6 +87,17 @@ mod tests {
              grows the keys for it without asking is a list that grew a verb by accident"
         );
         assert!(Offers::default().marked(true).marking);
+    }
+
+    #[test]
+    fn a_list_offers_no_history_of_its_rows_until_it_says_so() {
+        assert!(
+            !Offers::default().history && !Offers::nothing().history,
+            "a history is kept by the collector that reads the rows, and a key that opens an \
+             empty panel on every other list is a key a reader learns to ignore"
+        );
+        assert!(Offers::default().historied(true).history);
+        assert!(Offers::default().historied(true).sorting);
     }
 
     #[test]

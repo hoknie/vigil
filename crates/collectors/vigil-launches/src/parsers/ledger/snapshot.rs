@@ -4,6 +4,8 @@ use serde_json::{Value, json};
 use vigil_model::Snapshot;
 
 use super::reading::LaunchReading;
+use crate::helpers::moment;
+use crate::parsers::audit::Execution;
 use vigil_collect::redact;
 
 pub const SOURCE: &str = "launches";
@@ -19,6 +21,14 @@ pub const DROPPING: &str = "launches|dropping";
 const RUN: &str = "run|";
 
 pub const LIMIT: usize = 20_000;
+
+pub const RECENT_RUNS: usize = 8;
+
+pub const RECENT: &str = "recent_runs";
+
+pub const RAN_AT: &str = "id";
+
+const ARGUMENTS_KEPT: usize = 120;
 
 pub(super) const AUID_UNSET: u32 = u32::MAX;
 
@@ -48,7 +58,7 @@ pub fn launches_snapshot(
         let key = format!("run|{name}|{executable}");
 
         if let Some(known) = snapshot.items.get_mut(&key) {
-            ran_again(known, &execution.id);
+            ran_again(known, execution, reading.keep_arguments);
             continue;
         }
         if snapshot.items.len() >= LIMIT {
@@ -56,13 +66,7 @@ pub fn launches_snapshot(
             continue;
         }
 
-        let (arguments, arguments_redacted) = match reading.keep_arguments {
-            true if !execution.arguments.is_empty() => {
-                let clean = redact(&execution.arguments);
-                (Value::String(clean.text), clean.redacted)
-            }
-            _ => (Value::Null, false),
-        };
+        let (arguments, arguments_redacted) = recorded(execution, reading.keep_arguments);
 
         let seen = (reading.on_disk)(executable);
         snapshot.items.insert(
@@ -79,6 +83,7 @@ pub fn launches_snapshot(
                 "runs": 1,
                 "last_audit_id": execution.id,
                 "audit_id": execution.id,
+                RECENT: [ran(&execution.id, &arguments, arguments_redacted)],
                 "arguments": arguments,
                 "arguments_redacted": arguments_redacted,
             }),
@@ -138,15 +143,50 @@ pub fn launches_snapshot(
     snapshot
 }
 
-fn ran_again(known: &mut Value, id: &str) {
+fn recorded(execution: &Execution, keep_arguments: bool) -> (Value, bool) {
+    match keep_arguments {
+        true if !execution.arguments.is_empty() => {
+            let clean = redact(&execution.arguments);
+            (Value::String(clean.text), clean.redacted)
+        }
+        _ => (Value::Null, false),
+    }
+}
+
+fn ran(id: &str, arguments: &Value, redacted: bool) -> Value {
+    json!({
+        RAN_AT: id,
+        "arguments": shortened(arguments),
+        "arguments_redacted": redacted,
+    })
+}
+
+fn shortened(arguments: &Value) -> Value {
+    let Some(said) = arguments.as_str() else {
+        return Value::Null;
+    };
+    match said.chars().count() > ARGUMENTS_KEPT {
+        true => Value::String(
+            said.chars()
+                .take(ARGUMENTS_KEPT)
+                .chain(std::iter::once('\u{2026}'))
+                .collect(),
+        ),
+        false => Value::String(said.to_string()),
+    }
+}
+
+fn ran_again(known: &mut Value, execution: &Execution, keep_arguments: bool) {
     let Some(fields) = known.as_object_mut() else {
         return;
     };
-    let counted = fields
+    let id = execution.id.as_str();
+    let counted_id = fields
         .get("last_audit_id")
         .or_else(|| fields.get("audit_id"))
         .and_then(Value::as_str)
-        .and_then(moment);
+        .map(str::to_string);
+    let counted = counted_id.as_deref().and_then(moment);
     if let (Some(counted), Some(now)) = (counted, moment(id))
         && now <= counted
     {
@@ -156,16 +196,16 @@ fn ran_again(known: &mut Value, id: &str) {
     let before = fields.get("runs").and_then(Value::as_u64).unwrap_or(1);
     fields.insert("runs".to_string(), json!(before.saturating_add(1)));
     fields.insert("last_audit_id".to_string(), json!(id));
-}
 
-fn moment(id: &str) -> Option<(u64, u64, u64)> {
-    let (time, serial) = id.split_once(':')?;
-    let (seconds, milliseconds) = time.split_once('.')?;
-    Some((
-        seconds.parse().ok()?,
-        milliseconds.parse().ok()?,
-        serial.parse().ok()?,
-    ))
+    let mut recent = match fields.remove(RECENT) {
+        Some(Value::Array(ids)) => ids,
+        _ => counted_id.map(Value::String).into_iter().collect(),
+    };
+    let (arguments, redacted) = recorded(execution, keep_arguments);
+    recent.push(ran(id, &arguments, redacted));
+    let over = recent.len().saturating_sub(RECENT_RUNS);
+    recent.drain(..over);
+    fields.insert(RECENT.to_string(), Value::Array(recent));
 }
 
 pub fn any_launch_was_read(items: &BTreeMap<String, Value>) -> bool {

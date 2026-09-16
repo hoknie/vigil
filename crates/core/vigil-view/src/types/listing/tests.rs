@@ -1,6 +1,104 @@
-use super::Index;
+use std::borrow::Cow;
+use std::sync::Arc;
+
+use super::{Assembled, Index, Placed, Rows};
 use crate::Facet;
 use crate::types::{RowKey, Sorting};
+
+#[test]
+fn rows_named_by_their_numbers_read_as_the_rows_they_name() {
+    let index = index();
+    let assembled = Assembled::Ordered(vec![4, 0, 2]);
+    let rows = Rows::of(&index, &assembled);
+
+    assert_eq!(rows.len(), 3);
+    assert_eq!(
+        (0..rows.len())
+            .filter_map(|place| rows.key(place))
+            .collect::<Vec<&str>>(),
+        vec!["d", "b", "c"],
+        "a list the index answered keeps the numbers of its rows, and reads each row from the \
+         index when it is asked for"
+    );
+    assert_eq!(rows.key(1), Some("b"));
+    assert!(
+        matches!(rows.get(1), Some(Cow::Borrowed(row)) if row.key == "b"),
+        "a row of the list is lent from the index and never copied"
+    );
+    assert!(rows.get(3).is_none());
+    assert_eq!(
+        Rows::built(&rows.to_vec()).to_vec(),
+        rows.to_vec(),
+        "a footer is written from either, and must read the same rows from both"
+    );
+}
+
+#[test]
+fn a_tree_of_row_numbers_builds_its_headings_from_the_rows_under_them_and_copies_no_row() {
+    let mut index = Index::new(0);
+    for (key, heading, name) in [
+        ("tcp|:80", "program|/usr/sbin/nginx", Some("nginx")),
+        ("tcp|:443", "program|/usr/sbin/nginx", Some("nginx")),
+        ("udp|:53", "unresolved", None),
+    ] {
+        let mut row = RowKey::of(key).under(1).beneath(heading);
+        row.named = name.map(Arc::from);
+        index.push(row, key, 0, Vec::new());
+    }
+    let assembled = Assembled::Gathered(vec![
+        Placed::Heading {
+            first: 0,
+            gathers: 2,
+            opened: true,
+        },
+        Placed::Row(0),
+        Placed::Row(1),
+        Placed::Heading {
+            first: 2,
+            gathers: 1,
+            opened: false,
+        },
+    ]);
+    let rows = Rows::of(&index, &assembled);
+
+    let mut nginx = RowKey::of("program|/usr/sbin/nginx")
+        .of_its_own()
+        .gathering(2)
+        .opened(true);
+    nginx.named = Some(Arc::from("nginx"));
+    assert_eq!(
+        rows.to_vec(),
+        vec![
+            nginx,
+            index.row(0).clone(),
+            index.row(1).clone(),
+            RowKey::of("unresolved").of_its_own().gathering(1),
+        ],
+        "a heading is made from the first row under it when it is asked for: its key is the \
+         heading that row names, its name is that row's name"
+    );
+    assert!(
+        matches!(rows.get(1), Some(Cow::Borrowed(_))),
+        "a row under a heading is lent from the index and never copied"
+    );
+    assert_eq!(rows.key(3), Some("unresolved"));
+}
+
+#[test]
+fn every_row_under_one_key_is_found_by_that_key() {
+    let mut index = Index::new(0);
+    for key in ["b", "a", "b", "c"] {
+        index.push(RowKey::of(key), key, 1, Vec::new());
+    }
+
+    assert_eq!(
+        index.keyed("b"),
+        &[0, 2],
+        "one unit can stand under two parents, so one key can name two rows"
+    );
+    assert_eq!(index.keyed("a"), &[1]);
+    assert!(index.keyed("z").is_empty());
+}
 
 fn faceted() -> Index {
     let mut index = Index::new(1);
@@ -65,7 +163,7 @@ fn a_facet_narrows_to_the_rows_that_recorded_it_and_two_facets_to_the_rows_that_
     }
 }
 
-fn index() -> Index {
+pub(super) fn index() -> Index {
     let mut index = Index::new(2);
     for (key, haystack, group, by_name, by_size) in [
         ("b", "nginx /usr/sbin/nginx root", 1, "nginx", "0003"),
@@ -84,7 +182,7 @@ fn index() -> Index {
     index
 }
 
-fn keys(index: &Index, at: &[usize]) -> Vec<String> {
+pub(super) fn keys(index: &Index, at: &[usize]) -> Vec<String> {
     at.iter().map(|at| index.row(*at).key.clone()).collect()
 }
 
@@ -97,48 +195,6 @@ fn an_index_that_recorded_no_facet_narrows_nothing_because_its_list_ignores_them
         None,
         "a list without facets shows every row whatever facet is kept for it, so its index must \
          not narrow them away"
-    );
-}
-
-#[test]
-fn a_search_finds_exactly_the_rows_whose_text_holds_it_whatever_the_case() {
-    let index = index();
-
-    for (search, expected) in [
-        ("", vec!["b", "a", "c", "m", "d"]),
-        ("usr/sbin", vec!["b", "a"]),
-        ("POSTGRES", vec!["c"]),
-        ("x/nc", vec!["d"]),
-        ("zz", vec![]),
-        ("ngin x", vec![]),
-    ] {
-        let walked: Vec<usize> = (0..index.len())
-            .filter(|at| search.is_empty() || index.haystack(*at).contains(&search.to_lowercase()))
-            .collect();
-
-        assert_eq!(
-            keys(&index, &index.found(search, None)),
-            expected,
-            "{search:?}"
-        );
-        assert_eq!(
-            index.found(search, None),
-            walked,
-            "{search:?}: the rows are looked up by their rarest letter and only those are read, \
-             and that must find what reading every row finds"
-        );
-    }
-}
-
-#[test]
-fn a_longer_search_is_answered_from_what_the_shorter_one_found() {
-    let index = index();
-    let shorter = index.found("s", None);
-
-    assert_eq!(
-        index.found("sshd", Some(&shorter)),
-        index.found("sshd", None),
-        "each letter typed narrows the rows the last one found instead of starting again"
     );
 }
 

@@ -1,3 +1,4 @@
+use super::keyed::Keyed;
 use crate::ui::Motion;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -11,8 +12,8 @@ impl Cursor {
         self.at
     }
 
-    pub fn step(&mut self, motion: Motion, keys: &[String], page: usize) {
-        let last = keys.len().saturating_sub(1);
+    pub fn step<K: Keyed + ?Sized>(&mut self, motion: Motion, keys: &K, page: usize) {
+        let last = keys.count().saturating_sub(1);
         self.at = match motion.distance(page) {
             Some(distance) => self.at.saturating_add_signed(distance).min(last),
             None => match motion {
@@ -23,8 +24,8 @@ impl Cursor {
         self.hold(keys);
     }
 
-    pub fn point_at(&mut self, key: &str, keys: &[String]) -> bool {
-        match keys.iter().position(|row| row == key) {
+    pub fn point_at<K: Keyed + ?Sized>(&mut self, key: &str, keys: &K) -> bool {
+        match keys.position_of(key) {
             Some(index) => {
                 self.at = index;
                 self.holding = Some(key.to_string());
@@ -34,19 +35,19 @@ impl Cursor {
         }
     }
 
-    pub fn settle(&mut self, keys: &[String]) {
+    pub fn settle<K: Keyed + ?Sized>(&mut self, keys: &K) {
         if let Some(holding) = &self.holding
-            && let Some(index) = keys.iter().position(|row| row == holding)
+            && let Some(index) = keys.position_of(holding)
         {
             self.at = index;
             return;
         }
-        self.at = self.at.min(keys.len().saturating_sub(1));
+        self.at = self.at.min(keys.count().saturating_sub(1));
         self.hold(keys);
     }
 
-    fn hold(&mut self, keys: &[String]) {
-        self.holding = keys.get(self.at).cloned();
+    fn hold<K: Keyed + ?Sized>(&mut self, keys: &K) {
+        self.holding = keys.key_at(self.at).map(str::to_string);
     }
 }
 
@@ -126,8 +127,8 @@ mod tests {
     #[test]
     fn an_empty_list_has_nowhere_to_put_a_cursor_and_does_not_divide_by_it() {
         let mut cursor = Cursor::default();
-        cursor.step(Motion::Down, &[], 10);
-        cursor.settle(&[]);
+        cursor.step(Motion::Down, &keys(&[]), 10);
+        cursor.settle(&keys(&[]));
         assert_eq!(cursor.at(), 0);
     }
 }

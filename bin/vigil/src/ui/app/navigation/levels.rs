@@ -209,9 +209,9 @@ impl App {
     }
 
     fn point_the_cursor_at(&mut self, key: &str) {
-        let rows = self.pane_keys();
+        let rows = self.pane_listed();
         if let Some(panes) = self.panes_mut() {
-            panes.cursor_mut().point_at(key, &rows);
+            panes.cursor_mut().point_at(key, rows.as_ref());
         }
         self.settle();
     }

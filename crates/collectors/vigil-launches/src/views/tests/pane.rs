@@ -32,7 +32,7 @@ fn a_launch_is_shown_under_the_person_who_ran_it() {
 
     let cells = pane.cells(&reading, &row, Room::of(160));
 
-    assert_eq!(cells.len(), 5);
+    assert_eq!(cells.len(), 6);
     assert!(!cells[0].text.is_empty(), "who ran it: {cells:?}");
 }
 

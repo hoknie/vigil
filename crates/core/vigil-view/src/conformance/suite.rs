@@ -93,6 +93,28 @@ pub fn what_the_pane_shows_of_a_row_is_more_than_the_row_itself(
     }
 }
 
+pub fn a_pane_that_keeps_a_history_has_something_to_say_under_every_row(
+    pane: &dyn Pane,
+    reading: &Snapshot,
+) {
+    if !pane.offers().history {
+        return;
+    }
+    for row in pane.rows(reading, &Showing::default()) {
+        if !row.of_the_reading {
+            continue;
+        }
+        assert!(
+            !pane.history(reading, &row).is_empty(),
+            "{} offers a history and has nothing to say about {}: a panel opened on a key and \
+             found empty reads as a console that lost the answer, where a row with no runs \
+             kept should say why",
+            pane.name(),
+            row.key
+        );
+    }
+}
+
 pub fn a_pane_says_what_to_write_over_it_and_over_the_row_it_opens(pane: &dyn Pane) {
     assert!(
         !pane.caption().is_empty() && !pane.detail_caption().is_empty(),
@@ -147,6 +169,7 @@ pub fn run_all(pane: &dyn Pane, reading: &Snapshot) {
     every_row_the_pane_offers_is_in_the_reading(pane, reading);
     nothing_is_shown_twice_under_one_key(pane, reading);
     what_the_pane_shows_of_a_row_is_more_than_the_row_itself(pane, reading);
+    a_pane_that_keeps_a_history_has_something_to_say_under_every_row(pane, reading);
     a_pane_that_gathers_rows_starts_with_every_one_of_them_put_away(pane, reading);
     every_view_answers_from_its_index_and_its_counts_as_from_the_reading(pane, reading);
 

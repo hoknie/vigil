@@ -1,4 +1,47 @@
-use crate::views::sorted::{first_seen_key, program_key};
+use crate::views::sorted::{first_seen_key, last_run_key, program_key, runs_key};
+
+#[test]
+fn a_last_run_key_puts_two_launches_in_the_order_their_moments_put_them() {
+    let moments = [
+        None,
+        Some((0, 0, 0)),
+        Some((0, 0, 1)),
+        Some((9, 999, 1)),
+        Some((10, 0, 0)),
+        Some((10, 1000, 0)),
+        Some((999_999_999, 5, 12)),
+        Some((1_757_419_203, 412, 3421)),
+        Some((1_757_419_203, 412, 99)),
+        Some((u64::MAX, u64::MAX, u64::MAX)),
+    ];
+
+    for left in moments {
+        for right in moments {
+            assert_eq!(
+                last_run_key(left).cmp(&last_run_key(right)),
+                left.cmp(&right),
+                "{left:?} against {right:?}: the index compares text, and a second written \
+                 with nine digits must not sort after one written with ten"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_run_count_key_puts_two_launches_in_the_order_their_counts_put_them() {
+    let counts = [0u64, 1, 2, 9, 10, 11, 99, 100, 109, 1_000, u64::MAX];
+
+    for left in counts {
+        for right in counts {
+            assert_eq!(
+                runs_key(left).cmp(&runs_key(right)),
+                left.cmp(&right),
+                "{left} against {right}: the index compares text, and a count written with one \
+                 digit must not sort after one written with two"
+            );
+        }
+    }
+}
 
 const NAMES: &[&str] = &[
     "", "a", "ab", "a\0", "a\0b", "a\0\0", "a\u{1}", "\0", "\u{1}", "id", "id\0x", "nc", "é", "z",

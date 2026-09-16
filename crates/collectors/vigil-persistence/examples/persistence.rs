@@ -143,7 +143,7 @@ fn measured(pane: &dyn Pane, reading: &Snapshot, rounds: u32) {
     let rows = listed(pane, reading, &longer, &index, None).1;
     let (tally, _) = timed(rounds, || pane.tally(reading, &longer, rows.len()));
     let (tally_listed, _) = timed(rounds, || {
-        pane.tally_listed(reading, &longer, &rows, &counts)
+        pane.tally_listed(reading, &longer, &vigil_view::Rows::built(&rows), &counts)
     });
 
     let sorting = match pane.offers().sorting {

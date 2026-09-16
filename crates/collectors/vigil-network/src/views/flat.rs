@@ -1,6 +1,6 @@
 use vigil_model::{KillTarget, Snapshot};
 use vigil_view::{
-    Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Showing, Sorting,
+    Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Rows, Showing, Sorting,
     Toggle, Width, basename, haystack,
 };
 
@@ -110,7 +110,7 @@ impl Pane for Flat {
         &self,
         reading: &Snapshot,
         showing: &Showing<'_>,
-        rows: &[RowKey],
+        rows: &Rows<'_>,
         counts: &Counts,
     ) -> String {
         footer::tallied(reading, showing, rows, counts, false)
