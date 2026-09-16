@@ -18,7 +18,7 @@ const NOTHING_UNDER_THE_CURSOR: &str = "There is no row under the cursor to show
 const NOT_READ_YET: &str = "This list has not been read yet, so there is no history to show.";
 
 impl App {
-    pub(super) fn open_the_history(&mut self) -> bool {
+    pub(in crate::ui::app) fn open_the_history(&mut self) -> bool {
         let Some(pane) = self.pane() else {
             return false;
         };

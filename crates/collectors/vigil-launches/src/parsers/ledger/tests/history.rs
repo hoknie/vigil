@@ -3,14 +3,25 @@ use serde_json::{Value, json};
 use super::super::snapshot::RECENT_RUNS;
 use crate::parsers::audit::Execution;
 
-use super::harness::{fresh, later, launch, snapshot_of};
+use super::harness::{fresh, kept_on, later, launch, snapshot_of, with_arguments};
 
 const NC: &str = "run|alice|/usr/bin/nc";
 
 fn recent(item: &Value) -> Vec<&str> {
     item["recent_runs"]
         .as_array()
-        .map(|ids| ids.iter().filter_map(Value::as_str).collect())
+        .map(|runs| {
+            runs.iter()
+                .filter_map(|run| run.as_str().or_else(|| run["id"].as_str()))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn commands(item: &Value) -> Vec<Option<&str>> {
+    item["recent_runs"]
+        .as_array()
+        .map(|runs| runs.iter().map(|run| run["arguments"].as_str()).collect())
         .unwrap_or_default()
 }
 
@@ -18,10 +29,10 @@ fn recent(item: &Value) -> Vec<&str> {
 fn a_row_keeps_the_moments_of_eight_runs_and_no_more_because_every_row_is_held_in_memory() {
     assert_eq!(
         RECENT_RUNS, 8,
-        "eight audit ids cost a row 434 bytes of heap and 207 bytes of the snapshot written to \
-         disk, measured over the ceiling of twenty thousand rows: 8.7 MB and 4.1 MB of the \
-         agent's sixty-four; raising it is a decision with a number measured before and after, \
-         not an edit"
+        "eight runs with the command line of each cost a row 977 bytes of the snapshot written \
+         to disk, measured over five thousand rows of eight runs: 19.5 MB at the ceiling of \
+         twenty thousand rows, and a reading of them merges in 10 ms rather than 6; raising it \
+         is a decision with a number measured before and after, not an edit"
     );
 
     let once = fresh(&[launch(1000, "/usr/bin/nc", &["nc"])]);
@@ -83,5 +94,35 @@ fn a_row_an_older_agent_wrote_without_a_history_starts_one_from_the_run_it_count
         recent(&again.items[NC]),
         vec!["1757419300.000:4001", "1757419300.000:4002"],
         "the last run the older agent counted is known, and the runs before it are not"
+    );
+}
+
+#[test]
+fn a_run_keeps_the_command_line_it_was_run_with_so_the_history_says_what_ran() {
+    let once = with_arguments(&[launch(1000, "/usr/bin/nc", &["nc", "-l", "-p", "4444"])]);
+    let twice = kept_on(
+        &once.items,
+        &[later(1000, "/usr/bin/nc", &["nc", "-z", "host", "80"], 7)],
+    );
+
+    assert_eq!(
+        commands(&twice.items[NC]),
+        vec![Some("nc -l -p 4444"), Some("nc -z host 80")],
+        "a row is one person and one program, and two runs of it are not the same command: \
+         what a reader asks a history for is what changed between them"
+    );
+}
+
+#[test]
+fn a_command_line_longer_than_what_is_kept_is_cut_rather_than_held_whole() {
+    let long = "x".repeat(400);
+    let once = with_arguments(&[launch(1000, "/usr/bin/nc", &["nc", &long])]);
+    let kept = commands(&once.items[NC])[0].expect("a command line");
+
+    assert!(
+        kept.chars().count() <= 121 && kept.ends_with('\u{2026}'),
+        "eight command lines are held in memory for every row of the ledger, and a row is one \
+         of twenty thousand: a command line is kept to be read, not to be stored whole: {}",
+        kept.chars().count()
     );
 }

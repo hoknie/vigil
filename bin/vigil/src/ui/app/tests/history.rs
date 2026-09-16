@@ -57,7 +57,11 @@ fn h_opens_the_history_of_the_launch_under_the_cursor_in_place_of_the_list_and_e
         page.contains("RUNS OF") && page.contains("/usr/bin/nc.openbsd"),
         "the panel is about the row under the cursor and names it: {page}"
     );
-    assert!(page.contains("1757419207.000:3425"), "{page}");
+    assert!(
+        page.contains("nc -z") && !page.contains("1757419207.000:3425"),
+        "a run says when it ran and what was run, and not the audit id it is written from: \
+         {page}"
+    );
     assert!(
         !page.contains("FIRST SEEN"),
         "the history is a panel of its own, not a box drawn over the list: {page}"
@@ -167,4 +171,52 @@ fn no_list_and_no_deed_answers_to_the_key_that_opens_a_history_with_something_el
             );
         }
     }
+}
+
+#[test]
+fn the_history_is_still_offered_and_opened_once_the_detail_of_a_launch_is_open() {
+    let mut app = on_nc();
+
+    press(&mut app, KeyCode::Right);
+    let beside = drawn_at(&app, 120, 30);
+    assert!(
+        beside.contains("H history"),
+        "the panel opens beside the list and the runs are still a key away: {beside}"
+    );
+
+    press(&mut app, KeyCode::Right);
+    let inside = drawn_at(&app, 120, 30);
+    assert!(
+        inside.contains("H history"),
+        "and inside the detail, where a reader is looking at the row itself: {inside}"
+    );
+
+    press(&mut app, KeyCode::Char(HISTORY));
+
+    assert!(
+        app.history.is_some(),
+        "H opened nothing with the detail of {NC} open"
+    );
+}
+
+#[test]
+fn the_detail_of_a_launch_offers_its_history_as_a_button_that_opens_the_runs() {
+    let mut app = on_nc();
+    for _ in 0..3 {
+        press(&mut app, KeyCode::Right);
+    }
+    let page = drawn_at(&app, 100, 24);
+
+    assert!(
+        page.contains("ACTIONS") && page.contains("[ H history ]"),
+        "a reader walking the buttons of a launch finds its runs among them: {page}"
+    );
+
+    press(&mut app, KeyCode::Enter);
+    let opened = drawn_at(&app, 100, 24);
+
+    assert!(
+        app.history.is_some() && opened.contains("THE HISTORY OF THE SELECTED ROW"),
+        "the button does what the key does: {opened}"
+    );
 }

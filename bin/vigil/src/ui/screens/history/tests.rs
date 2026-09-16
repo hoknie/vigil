@@ -29,11 +29,11 @@ fn the_panel_puts_the_way_back_on_top_and_the_newest_run_above_the_older_one() {
     assert!(lines[0].contains(CAPTION), "{page}");
     let newest = lines
         .iter()
-        .position(|line| line.contains("1757419207.000:3425"))
+        .position(|line| line.contains("nc -z"))
         .expect("the second run is drawn");
     let oldest = lines
         .iter()
-        .position(|line| line.contains("1757419203.412:3421"))
+        .position(|line| line.contains("nc -l -p 4444"))
         .expect("the first run is drawn");
     assert!(
         newest < oldest,
@@ -48,7 +48,10 @@ fn the_panel_fits_eighty_and_forty_columns_and_never_runs_off_the_side() {
         for line in page.lines() {
             assert!(line.chars().count() <= width as usize, "{width}: {line}");
         }
-        assert!(page.contains("3425"), "{width}: the audit id wraps: {page}");
+        assert!(
+            page.contains("nc -z"),
+            "{width}: the command line of a run wraps rather than being cut: {page}"
+        );
     }
 }
 

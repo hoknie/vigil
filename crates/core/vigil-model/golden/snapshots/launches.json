@@ -92,6 +92,25 @@
       },
       "recent_runs/[]": {
         "types": [
+          "object"
+        ],
+        "always": true
+      },
+      "recent_runs/[]/arguments": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "recent_runs/[]/arguments_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "recent_runs/[]/id": {
+        "types": [
           "string"
         ],
         "always": true

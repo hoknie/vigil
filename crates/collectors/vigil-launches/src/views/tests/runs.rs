@@ -91,11 +91,21 @@ fn the_history_of_a_launch_lists_the_moments_of_its_runs_newest_first() {
     let one = runs.iter().find(|(name, _)| name == "1").expect("a first");
     let two = runs.iter().find(|(name, _)| name == "2").expect("a second");
     assert!(
-        one.1.contains("2025-09-09 12:00:07.000 UTC") && one.1.contains("1757419207.000:3425"),
-        "{said:?}"
+        one.1.contains("2025-09-09 12:00:07.000 UTC") && one.1.contains("nc -z"),
+        "a run says when it ran and what was run: {said:?}"
     );
     assert!(
-        two.1.contains("1757419203.412:3421"),
+        two.1.contains("nc -l -p 4444"),
+        "the same person ran the same program with other arguments, and that is what a reader \
+         opens a history for: {said:?}"
+    );
+    assert!(
+        !one.1.contains("1757419207.000:3425") && !one.1.contains("ausearch"),
+        "the audit id is that moment and a number, and the moment is already written out beside \
+         it: what a reader wants there is the command line: {said:?}"
+    );
+    assert!(
+        two.1.contains("2025-09-09 12:00:03.412 UTC"),
         "the run the row was first written from is the oldest one: {said:?}"
     );
     assert!(
@@ -148,7 +158,10 @@ fn a_history_shorter_than_the_count_says_where_the_older_runs_are() {
 
     assert!(said.contains("last 8 runs"), "{said}");
     assert!(said.contains("The 18 run(s) before them"), "{said}");
-    assert!(said.contains("ausearch -a"), "{said}");
+    assert!(
+        said.contains("nc -l -p 4444"),
+        "the runs it does keep say what was run: {said}"
+    );
 }
 
 #[test]

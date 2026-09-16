@@ -4,10 +4,10 @@ use vigil_view::Piece;
 use super::fields::marked;
 use super::launches::{executable, last_run, runs, when, who};
 use crate::helpers::{Moment, moment};
-use crate::parsers::{RECENT, RECENT_RUNS};
+use crate::parsers::{RAN_AT, RECENT, RECENT_RUNS};
 
-const FINDING_ONE: &str = "ausearch -a <the number after the colon> finds a run in the host's \
-                           audit log, with its arguments and the process that started it.";
+const FINDING_ONE: &str = "Where no command line was kept, ausearch -a with the number beside \
+                           the run finds it in the host's audit log.";
 
 pub(super) fn history(key: &str, item: &Value) -> Vec<Piece> {
     if marked(key) {
@@ -35,15 +35,10 @@ pub(super) fn history(key: &str, item: &Value) -> Vec<Piece> {
         Piece::Blank,
     ];
 
-    let mut kept: Vec<(Option<Moment>, &str)> = item
+    let mut kept: Vec<Run<'_>> = item
         .get(RECENT)
         .and_then(Value::as_array)
-        .map(|ids| {
-            ids.iter()
-                .filter_map(Value::as_str)
-                .map(|id| (moment(id), id))
-                .collect()
-        })
+        .map(|runs| runs.iter().filter_map(Run::of).collect())
         .unwrap_or_default();
     if kept.is_empty() {
         said.push(Piece::text(
@@ -56,17 +51,20 @@ pub(super) fn history(key: &str, item: &Value) -> Vec<Piece> {
         return said;
     }
 
-    kept.sort_by(|left, right| right.cmp(left));
+    kept.sort_by(|left, right| (right.moment, right.id).cmp(&(left.moment, left.id)));
     said.push(Piece::heading(format!(
         "THE LAST {} RUN(S), NEWEST FIRST",
         kept.len()
     )));
-    for (at, (moment, id)) in kept.iter().enumerate() {
+    for (at, run) in kept.iter().enumerate() {
         said.push(Piece::field(
             (at + 1).to_string(),
-            match moment {
-                Some(moment) => format!("{} · audit id {id}", when(*moment)),
-                None => format!("audit id {id}, a moment this build cannot read"),
+            match run.moment {
+                Some(moment) => format!("{} · {}", when(moment), run.said()),
+                None => format!(
+                    "a run this build cannot read the moment of · {}",
+                    run.said()
+                ),
             },
         ));
     }
@@ -79,6 +77,55 @@ pub(super) fn history(key: &str, item: &Value) -> Vec<Piece> {
              run(s) before them are in the host's audit log for as long as it holds them."
         )));
     }
-    said.push(Piece::text(FINDING_ONE));
+    if kept
+        .iter()
+        .any(|run| run.arguments.is_none() && !run.redacted)
+    {
+        said.push(Piece::text(FINDING_ONE));
+    }
     said
+}
+
+struct Run<'a> {
+    moment: Option<Moment>,
+    id: &'a str,
+    arguments: Option<&'a str>,
+    redacted: bool,
+}
+
+impl<'a> Run<'a> {
+    fn of(said: &'a Value) -> Option<Run<'a>> {
+        if let Some(id) = said.as_str() {
+            return Some(Run {
+                moment: moment(id),
+                id,
+                arguments: None,
+                redacted: false,
+            });
+        }
+        let id = said.get(RAN_AT)?.as_str()?;
+        Some(Run {
+            moment: moment(id),
+            id,
+            arguments: said.get("arguments").and_then(Value::as_str),
+            redacted: said
+                .get("arguments_redacted")
+                .and_then(Value::as_bool)
+                .unwrap_or(false),
+        })
+    }
+
+    fn said(&self) -> String {
+        match (self.arguments, self.redacted) {
+            (Some(arguments), _) => arguments.to_string(),
+            (None, true) => {
+                "arguments hidden on this host before they were written down".to_string()
+            }
+            (None, false) => format!("ausearch -a {}", serial(self.id)),
+        }
+    }
+}
+
+fn serial(id: &str) -> &str {
+    id.rsplit(':').next().unwrap_or(id)
 }

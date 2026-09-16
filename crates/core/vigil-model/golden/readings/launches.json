@@ -31,7 +31,11 @@
       "first_seen": "2026-09-09T09:00:00.000Z",
       "last_audit_id": "1757419205.100:3423",
       "recent_runs": [
-        "1757419205.100:3423"
+        {
+          "arguments": "mysql -p[redacted]",
+          "arguments_redacted": true,
+          "id": "1757419205.100:3423"
+        }
       ],
       "runs": 1,
       "user": null,
@@ -49,8 +53,16 @@
       "first_seen": "2026-09-09T09:00:00.000Z",
       "last_audit_id": "1757419207.000:3425",
       "recent_runs": [
-        "1757419203.412:3421",
-        "1757419207.000:3425"
+        {
+          "arguments": "nc -l -p 4444",
+          "arguments_redacted": false,
+          "id": "1757419203.412:3421"
+        },
+        {
+          "arguments": "nc -z",
+          "arguments_redacted": false,
+          "id": "1757419207.000:3425"
+        }
       ],
       "runs": 2,
       "user": "alice",
@@ -68,7 +80,11 @@
       "first_seen": "2026-09-09T09:00:00.000Z",
       "last_audit_id": "1757419204.900:3422",
       "recent_runs": [
-        "1757419204.900:3422"
+        {
+          "arguments": "payload",
+          "arguments_redacted": false,
+          "id": "1757419204.900:3422"
+        }
       ],
       "runs": 1,
       "user": "root",
@@ -86,7 +102,11 @@
       "first_seen": "2026-09-09T09:00:00.000Z",
       "last_audit_id": "1757419206.700:3424",
       "recent_runs": [
-        "1757419206.700:3424"
+        {
+          "arguments": null,
+          "arguments_redacted": false,
+          "id": "1757419206.700:3424"
+        }
       ],
       "runs": 1,
       "user": "root",

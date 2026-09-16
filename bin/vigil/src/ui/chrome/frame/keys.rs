@@ -46,9 +46,10 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
         Level::Detail if hints.to_object => {
             " j/k ↑↓ PgUp/PgDn scroll · ← or Esc back to the list · o object · ? keys".to_string()
         }
-        Level::Detail => {
-            " j/k ↑↓ PgUp/PgDn scroll · ← or Esc back to the list · ? keys · q quit".to_string()
-        }
+        Level::Detail => format!(
+            " j/k ↑↓ PgUp/PgDn scroll{} · ← or Esc back to the list · ? keys",
+            histories(hints)
+        ),
         Level::List if screen == Screen::SUMMARY => format!(
             " j/k ↑↓ scroll · d {} · ← or Esc {} · r ask · ? keys",
             match hints.panel {
@@ -60,9 +61,10 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
         Level::List if hints.panel && hints.marks => {
             listing(hints, Room::Whole, CLOSE_THE_PANEL, Picking::Unsaid)
         }
-        Level::List if hints.panel => {
-            " j/k ↑↓ move · → detail · / search · ← or Esc close the panel · ? keys".to_string()
-        }
+        Level::List if hints.panel => format!(
+            " j/k ↑↓ move · → detail{} · / search · ← or Esc close the panel · ? keys",
+            histories(hints)
+        ),
         Level::List if screen == Screen::FINDINGS => {
             listing(hints, Room::Whole, hints.back.named(), Picking::AndOne)
         }
@@ -163,6 +165,13 @@ fn picking(hints: &Hints<'_>, screen: Screen, picking: Picking) -> Option<String
             Some(listing(hints, Room::Whole, hints.back.named(), picking))
         }
         _ => None,
+    }
+}
+
+fn histories(hints: &Hints<'_>) -> &'static str {
+    match hints.histories {
+        true => " · H history",
+        false => "",
     }
 }
 
