@@ -84,6 +84,18 @@
         ],
         "always": true
       },
+      "recent_runs": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "recent_runs/[]": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
       "runs": {
         "types": [
           "number"

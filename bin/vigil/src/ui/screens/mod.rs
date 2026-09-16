@@ -1,5 +1,6 @@
 pub mod findings;
 pub mod form;
+pub mod history;
 pub mod home;
 pub mod pane;
 pub mod summary;

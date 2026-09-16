@@ -1,7 +1,8 @@
 use serde_json::Value;
 
 use super::fields::text;
-use super::launches::{program, runs, who};
+use super::launches::{last_run, program, runs, who};
+use crate::helpers::Moment;
 
 const END_OF_THE_NAME: &str = "\0\0";
 
@@ -14,7 +15,8 @@ pub(super) fn sorted_on(item: &Value) -> Vec<String> {
     vec![
         who(item),
         program_key(name, path),
-        format!("{:020}", runs(item)),
+        runs_key(runs(item)),
+        last_run_key(last_run(item)),
         first_seen_key(text(item, "first_seen")),
     ]
 }
@@ -30,6 +32,19 @@ pub(super) fn program_key(name: &str, path: &str) -> String {
     key.push_str(END_OF_THE_NAME);
     key.push_str(path);
     key
+}
+
+pub(super) fn runs_key(counted: u64) -> String {
+    format!("{counted:020}")
+}
+
+pub(super) fn last_run_key(last: Option<Moment>) -> String {
+    match last {
+        Some((seconds, milliseconds, serial)) => {
+            format!("{SEEN}{seconds:020}{milliseconds:020}{serial:020}")
+        }
+        None => String::new(),
+    }
 }
 
 pub(super) fn first_seen_key(seen: Option<&str>) -> String {

@@ -110,6 +110,10 @@ pub trait Pane: Send + Sync {
         Offers::default()
     }
 
+    fn history(&self, _reading: &Snapshot, _row: &RowKey) -> Vec<Piece> {
+        Vec::new()
+    }
+
     fn form(
         &self,
         _reading: &Snapshot,

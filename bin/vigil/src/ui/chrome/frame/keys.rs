@@ -11,6 +11,13 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
             .unwrap_or(LAST_TWO_OF_A_FORM)
             .to_string();
     }
+    if hints.history {
+        return [HISTORY, HISTORY_SHORT, LAST_TWO_OF_A_FORM]
+            .into_iter()
+            .find(|line| line.chars().count() <= width as usize)
+            .unwrap_or(LAST_TWO_OF_A_FORM)
+            .to_string();
+    }
     if hints.typing {
         return " type to search · Enter keep it · Esc put it back".to_string();
     }
@@ -97,6 +104,10 @@ const FORM_SHORT: &str = " ↑↓ a field · Enter on a button · Esc back";
 
 const LAST_TWO_OF_A_FORM: &str = " Esc back";
 
+const HISTORY: &str = " j/k ↑↓ PgUp/PgDn scroll · ← or Esc back to the list · q quit";
+
+const HISTORY_SHORT: &str = " ↑↓ scroll · Esc back to the list";
+
 fn changes(offered: &[Changing], room: Room) -> String {
     if offered.is_empty() {
         return String::new();
@@ -169,6 +180,9 @@ fn listing(hints: &Hints<'_>, room: Room, back: &str, picking: Picking) -> Strin
         && room == Room::Whole
     {
         line.push_str(&format!(" · {key} view"));
+    }
+    if hints.histories {
+        line.push_str(" · H history");
     }
     if hints.marks {
         line.push_str(" · x mark");

@@ -17,6 +17,7 @@ Format:
 - the start-up lines say whether the console of this host may ask the agent to close a socket,
   and name the key that decides it
 - accounts can be changed from the console
+- launches show the last run beside the run count, sort by either, and H opens the runs of a row
 
 ### Fixed
 - double suppresion for one item

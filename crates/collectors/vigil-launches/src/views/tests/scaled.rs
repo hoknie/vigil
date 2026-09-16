@@ -25,6 +25,27 @@ pub(super) fn many_launches(copies: usize) -> Snapshot {
                 if copy % 7 == 3 {
                     fields.remove("user");
                 }
+                match copy % 5 {
+                    1 => {
+                        fields.insert(
+                            "last_audit_id".into(),
+                            json!(format!(
+                                "{}.{:03}:{}",
+                                99_999_990 + copy % 4,
+                                copy % 3,
+                                copy % 2
+                            )),
+                        );
+                    }
+                    2 => {
+                        fields.remove("last_audit_id");
+                        fields.remove("audit_id");
+                    }
+                    3 => {
+                        fields.insert("last_audit_id".into(), json!("not an audit id"));
+                    }
+                    _ => {}
+                }
             }
             reading.items.insert(format!("{key}~{copy:03}"), item);
         }

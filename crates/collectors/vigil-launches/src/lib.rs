@@ -1,5 +1,6 @@
 mod collectors;
 pub mod fixture;
+mod helpers;
 mod modules;
 #[cfg_attr(not(target_os = "linux"), allow(dead_code, unused_imports))]
 mod parsers;

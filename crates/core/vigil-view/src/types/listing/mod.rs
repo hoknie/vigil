@@ -4,6 +4,8 @@ mod index;
 mod placed;
 mod rows;
 #[cfg(test)]
+mod searching;
+#[cfg(test)]
 mod tests;
 
 pub use assembled::Assembled;

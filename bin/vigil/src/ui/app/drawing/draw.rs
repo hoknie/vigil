@@ -9,7 +9,7 @@ use crate::ui::chrome::frame::hints::Back;
 use crate::ui::chrome::help;
 use crate::ui::chrome::paper;
 use crate::ui::helpers::words::unreachable;
-use crate::ui::screens::{form, summary};
+use crate::ui::screens::{form, history, summary};
 
 impl App {
     pub fn draw(&self, area: Rect, buffer: &mut Buffer) {
@@ -20,6 +20,8 @@ impl App {
             &self.view,
             frame::Hints {
                 editing: self.editing.is_some(),
+                history: self.history.is_some(),
+                histories: self.pane().is_some_and(|pane| pane.offers().history),
                 kills: self.kill_target().is_some(),
                 changes: self
                     .changes_offered()
@@ -54,6 +56,10 @@ impl App {
 
         if let Some(editing) = &self.editing {
             form::render(editing, self.look, body, buffer);
+            return;
+        }
+        if let Some(opened) = &self.history {
+            history::render(opened, self.look, body, buffer);
             return;
         }
 

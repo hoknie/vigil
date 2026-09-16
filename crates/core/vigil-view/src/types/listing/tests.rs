@@ -163,7 +163,7 @@ fn a_facet_narrows_to_the_rows_that_recorded_it_and_two_facets_to_the_rows_that_
     }
 }
 
-fn index() -> Index {
+pub(super) fn index() -> Index {
     let mut index = Index::new(2);
     for (key, haystack, group, by_name, by_size) in [
         ("b", "nginx /usr/sbin/nginx root", 1, "nginx", "0003"),
@@ -182,7 +182,7 @@ fn index() -> Index {
     index
 }
 
-fn keys(index: &Index, at: &[usize]) -> Vec<String> {
+pub(super) fn keys(index: &Index, at: &[usize]) -> Vec<String> {
     at.iter().map(|at| index.row(*at).key.clone()).collect()
 }
 
@@ -195,48 +195,6 @@ fn an_index_that_recorded_no_facet_narrows_nothing_because_its_list_ignores_them
         None,
         "a list without facets shows every row whatever facet is kept for it, so its index must \
          not narrow them away"
-    );
-}
-
-#[test]
-fn a_search_finds_exactly_the_rows_whose_text_holds_it_whatever_the_case() {
-    let index = index();
-
-    for (search, expected) in [
-        ("", vec!["b", "a", "c", "m", "d"]),
-        ("usr/sbin", vec!["b", "a"]),
-        ("POSTGRES", vec!["c"]),
-        ("x/nc", vec!["d"]),
-        ("zz", vec![]),
-        ("ngin x", vec![]),
-    ] {
-        let walked: Vec<usize> = (0..index.len())
-            .filter(|at| search.is_empty() || index.haystack(*at).contains(&search.to_lowercase()))
-            .collect();
-
-        assert_eq!(
-            keys(&index, &index.found(search, None)),
-            expected,
-            "{search:?}"
-        );
-        assert_eq!(
-            index.found(search, None),
-            walked,
-            "{search:?}: the rows are looked up by their rarest letter and only those are read, \
-             and that must find what reading every row finds"
-        );
-    }
-}
-
-#[test]
-fn a_longer_search_is_answered_from_what_the_shorter_one_found() {
-    let index = index();
-    let shorter = index.found("s", None);
-
-    assert_eq!(
-        index.found("sshd", Some(&shorter)),
-        index.found("sshd", None),
-        "each letter typed narrows the rows the last one found instead of starting again"
     );
 }
 

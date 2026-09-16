@@ -5,6 +5,7 @@ mod answers;
 mod choices;
 mod deeds;
 mod drawing;
+mod history;
 mod kept;
 mod keys;
 mod narrowing;
@@ -25,8 +26,8 @@ use std::collections::BTreeMap;
 
 use crate::ui::types::cache::{Listed, Remembered, Shown};
 use crate::ui::{
-    Asking, Chooser, Dismissed, Editing, Filter, Gone, Level, Look, Nav, Paper, Picked, Screen,
-    Sorting, View,
+    Asking, Chooser, Dismissed, Editing, Filter, Gone, History, Level, Look, Nav, Paper, Picked,
+    Screen, Sorting, View,
 };
 
 type RowsAsked = (u64, Screen, usize, String);
@@ -47,6 +48,7 @@ pub struct App {
     dismissed: Dismissed,
     asking: Option<Asking>,
     editing: Option<Editing>,
+    history: Option<History>,
     named_configuration: Option<String>,
     detail_open: bool,
     level: Level,

@@ -113,7 +113,10 @@ fn rows() -> Vec<(&'static str, &'static str)> {
             "\u{2190} or Esc",
             "a search, the detail, the panel, a rung, the main screen",
         ),
-        ("r / ? / q", "ask now / this list / leave"),
+        (
+            "H / r / ? / q",
+            "the runs of a launch / ask now / this list / leave",
+        ),
     ]
 }
 
@@ -147,9 +150,15 @@ mod tests {
             "a section's words",
             "x / M",
             "K / S",
+            "H / r",
         ] {
             assert!(page.contains(key), "{key} is not on the list: {page}");
         }
+        assert!(
+            page.contains("the runs of a launch"),
+            "the key that opens a history works on one list only, and is looked up here or not \
+             found at all: {page}"
+        );
         assert!(
             !page.contains("Tab"),
             "a key the console ignores must not be offered: {page}"

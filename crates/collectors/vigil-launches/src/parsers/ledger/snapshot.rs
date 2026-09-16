@@ -4,6 +4,7 @@ use serde_json::{Value, json};
 use vigil_model::Snapshot;
 
 use super::reading::LaunchReading;
+use crate::helpers::moment;
 use vigil_collect::redact;
 
 pub const SOURCE: &str = "launches";
@@ -19,6 +20,10 @@ pub const DROPPING: &str = "launches|dropping";
 const RUN: &str = "run|";
 
 pub const LIMIT: usize = 20_000;
+
+pub const RECENT_RUNS: usize = 8;
+
+pub const RECENT: &str = "recent_runs";
 
 pub(super) const AUID_UNSET: u32 = u32::MAX;
 
@@ -79,6 +84,7 @@ pub fn launches_snapshot(
                 "runs": 1,
                 "last_audit_id": execution.id,
                 "audit_id": execution.id,
+                RECENT: [execution.id],
                 "arguments": arguments,
                 "arguments_redacted": arguments_redacted,
             }),
@@ -142,11 +148,12 @@ fn ran_again(known: &mut Value, id: &str) {
     let Some(fields) = known.as_object_mut() else {
         return;
     };
-    let counted = fields
+    let counted_id = fields
         .get("last_audit_id")
         .or_else(|| fields.get("audit_id"))
         .and_then(Value::as_str)
-        .and_then(moment);
+        .map(str::to_string);
+    let counted = counted_id.as_deref().and_then(moment);
     if let (Some(counted), Some(now)) = (counted, moment(id))
         && now <= counted
     {
@@ -156,16 +163,15 @@ fn ran_again(known: &mut Value, id: &str) {
     let before = fields.get("runs").and_then(Value::as_u64).unwrap_or(1);
     fields.insert("runs".to_string(), json!(before.saturating_add(1)));
     fields.insert("last_audit_id".to_string(), json!(id));
-}
 
-fn moment(id: &str) -> Option<(u64, u64, u64)> {
-    let (time, serial) = id.split_once(':')?;
-    let (seconds, milliseconds) = time.split_once('.')?;
-    Some((
-        seconds.parse().ok()?,
-        milliseconds.parse().ok()?,
-        serial.parse().ok()?,
-    ))
+    let mut recent = match fields.remove(RECENT) {
+        Some(Value::Array(ids)) => ids,
+        _ => counted_id.map(Value::String).into_iter().collect(),
+    };
+    recent.push(json!(id));
+    let over = recent.len().saturating_sub(RECENT_RUNS);
+    recent.drain(..over);
+    fields.insert(RECENT.to_string(), Value::Array(recent));
 }
 
 pub fn any_launch_was_read(items: &BTreeMap<String, Value>) -> bool {

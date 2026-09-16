@@ -1,9 +1,12 @@
 use std::cmp::Ordering;
 
 use serde_json::Value;
-use vigil_view::{Column, Facet, Notice, Showing, Sorting, Width, basename, time_of_day};
+use vigil_view::{Column, Facet, Notice, Showing, Sorting, Width, basename, time_of_day, utc};
 
 use super::fields::{marked, number, text};
+use crate::helpers::{Moment, moment};
+
+const UTC: &str = " UTC";
 
 pub(super) const USER: &str = "user";
 
@@ -14,6 +17,7 @@ pub(super) fn columns(wide: bool) -> Vec<Column> {
         Column::new("WHO", Width::Fixed(12)),
         Column::new("PROGRAM", Width::Least(14)),
         Column::new("RUNS", Width::Fixed(7)),
+        Column::new("LAST RUN", Width::Fixed(19)),
         Column::new("FIRST SEEN", Width::Share(2)),
     ];
     if wide {
@@ -28,6 +32,7 @@ pub(super) fn cells(key: &str, item: &Value, wide: bool) -> Vec<String> {
             "—".to_string(),
             "—".to_string(),
             "—".to_string(),
+            "—".to_string(),
             text(item, "reason")
                 .unwrap_or("this reading is not complete")
                 .to_string(),
@@ -36,6 +41,10 @@ pub(super) fn cells(key: &str, item: &Value, wide: bool) -> Vec<String> {
             who(item),
             basename(executable(item)).to_string(),
             runs(item).to_string(),
+            match last_run(item) {
+                Some(last) => day_and_time(last),
+                None => "?".to_string(),
+            },
             text(item, "first_seen")
                 .map(time_of_day)
                 .unwrap_or("?")
@@ -70,6 +79,23 @@ pub(super) fn runs(item: &Value) -> u64 {
     number(item, "runs").unwrap_or(1)
 }
 
+pub(super) fn last_run(item: &Value) -> Option<Moment> {
+    text(item, "last_audit_id")
+        .or_else(|| text(item, "audit_id"))
+        .and_then(moment)
+}
+
+pub(super) fn day_and_time(at: Moment) -> String {
+    let (seconds, _, _) = at;
+    let said = utc(i64::try_from(seconds).unwrap_or(i64::MAX));
+    said.strip_suffix(UTC).unwrap_or(&said).to_string()
+}
+
+pub(super) fn when(at: Moment) -> String {
+    let (_, milliseconds, _) = at;
+    format!("{}.{milliseconds:03}{UTC}", day_and_time(at))
+}
+
 pub(super) fn facets_of(item: &Value) -> Vec<Facet> {
     vec![
         Facet::new(USER, who(item)),
@@ -100,7 +126,8 @@ pub(super) fn order(left: (&str, &Value), right: (&str, &Value), sorting: Sortin
         1 => who(left_item).cmp(&who(right_item)),
         2 => program(left_item).cmp(&program(right_item)),
         3 => runs(left_item).cmp(&runs(right_item)),
-        4 => text(left_item, "first_seen").cmp(&text(right_item, "first_seen")),
+        4 => last_run(left_item).cmp(&last_run(right_item)),
+        5 => text(left_item, "first_seen").cmp(&text(right_item, "first_seen")),
         _ => Ordering::Equal,
     };
     let by = match sorting.descending {
