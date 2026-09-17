@@ -9,8 +9,8 @@ use super::columns::{
 use super::row::Row;
 use super::rows::rows;
 use super::tally::tally;
-use crate::ui::helpers::layout::column;
 use crate::ui::helpers::layout::scroll;
+use crate::ui::helpers::layout::{column, footing};
 use crate::ui::{Arrows, Group, Look, View};
 
 pub struct Showing {
@@ -22,9 +22,15 @@ const UNWELL: &str = "! ";
 
 const WELL: &str = "  ";
 
-pub fn render(view: &View, look: Look, showing: &Showing, area: Rect, buffer: &mut Buffer) {
+pub fn render(
+    view: &View,
+    look: Look,
+    showing: &Showing,
+    area: Rect,
+    buffer: &mut Buffer,
+) -> Vec<(usize, Rect)> {
     if area.height < 2 {
-        return;
+        return Vec::new();
     }
     let rows = rows(view);
     let wide = area.width >= ROOM_FOR_THE_COLLECTOR;
@@ -44,6 +50,7 @@ pub fn render(view: &View, look: Look, showing: &Showing, area: Rect, buffer: &m
     let mut lines: Vec<Line<'static>> = Vec::new();
     let mut at = 0usize;
     let mut selected = 0usize;
+    let mut placed = Vec::new();
     for group in Group::ALL {
         let of_this_group: Vec<&Row> = rows.iter().filter(|row| row.group() == *group).collect();
         if of_this_group.is_empty() {
@@ -70,6 +77,7 @@ pub fn render(view: &View, look: Look, showing: &Showing, area: Rect, buffer: &m
             if at == showing.cursor {
                 selected = lines.len();
             }
+            placed.push((at, lines.len()));
             lines.push(drawn(
                 row,
                 look,
@@ -94,11 +102,17 @@ pub fn render(view: &View, look: Look, showing: &Showing, area: Rect, buffer: &m
     )
     .render(page, buffer);
 
-    Paragraph::new(Line::styled(
-        tally(&rows, footer.width),
-        look.palette.quiet(),
-    ))
-    .render(footer, buffer);
+    footing::render(look, tally(&rows, footer.width), footer, buffer);
+    placed
+        .into_iter()
+        .filter(|(_, line)| (top..top + height).contains(line))
+        .map(|(at, line)| {
+            (
+                at,
+                Rect::new(page.x, page.y + (line - top) as u16, page.width, 1),
+            )
+        })
+        .collect()
 }
 
 pub fn printed_height(view: &View, width: u16) -> u16 {
@@ -128,7 +142,7 @@ fn drawn(
     longest: usize,
 ) -> Line<'static> {
     let marker = match (here, showing.arrows == Arrows::List) {
-        (true, true) => " > ",
+        (true, true) => " \u{25b8} ",
         (true, false) => " · ",
         (false, _) => "   ",
     };

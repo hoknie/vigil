@@ -7,7 +7,7 @@ use crate::ui::fixture;
 use crate::ui::helpers::words::text;
 use crate::ui::{Audience, Screen};
 
-use super::harness::{app, drawn, drawn_at, into, number, opened, press};
+use crate::ui::app::tests::harness::{app, drawn, drawn_at, into, number, opened, press};
 use crate::ui::fixture::screen;
 
 #[test]
@@ -17,32 +17,105 @@ fn where_the_arrows_are_is_on_the_screen_and_readable_with_no_colour() {
 
     let on_the_list = drawn_at(&app, 200, 24);
     assert!(
-        on_the_list.contains("▸ What the agent has found"),
-        "the caret is in the panel of the open section: {on_the_list}"
+        on_the_list.contains("\u{250f} \u{25b8} What the agent has found"),
+        "the caret and the thick frame are on the panel of the open section: {on_the_list}"
     );
-    assert!(on_the_list.contains("│ > 09:00:00"), "{on_the_list}");
+    assert!(
+        on_the_list.contains("\u{2503} \u{25b8} 09:00:00"),
+        "{on_the_list}"
+    );
 
     press(&mut app, KeyCode::Enter);
     let beside_the_list = drawn_at(&app, 200, 24);
     assert!(
-        beside_the_list.contains("▸ FINDINGS"),
+        beside_the_list.contains("\u{250f} \u{25b8} FINDINGS"),
         "the first press opened the panel and the arrows are still on the list, so the \
-         caret has not moved: {beside_the_list}"
+         caret and the thick frame have not moved: {beside_the_list}"
     );
     assert!(
-        beside_the_list.contains("│ > 09:00:00"),
+        beside_the_list
+            .lines()
+            .nth(1)
+            .is_some_and(|line| line.starts_with(" What the agent has found")),
+        "over two framed panes the section is named on a plain line and gives the thick line \
+         up to the pane that has the arrows: {beside_the_list}"
+    );
+    assert!(
+        beside_the_list.contains("\u{2503} \u{25b8} 09:00:00"),
         "{beside_the_list}"
     );
 
     press(&mut app, KeyCode::Enter);
     let in_the_detail = drawn_at(&app, 200, 24);
     assert!(
-        in_the_detail.contains("▸ THE SELECTED FINDING"),
+        in_the_detail.contains("\u{250f} \u{25b8} THE SELECTED FINDING"),
         "{in_the_detail}"
     );
-    assert!(in_the_detail.contains("  FINDINGS"), "{in_the_detail}");
-    assert!(in_the_detail.contains("│ · 09:00:00"), "{in_the_detail}");
-    assert!(!in_the_detail.contains(" > "), "{in_the_detail}");
+    assert!(
+        in_the_detail.contains("\u{256d} FINDINGS"),
+        "the list keeps its name and gives up the caret and the thick line: {in_the_detail}"
+    );
+    assert!(
+        in_the_detail.contains("\u{2502} \u{b7} 09:00:00"),
+        "{in_the_detail}"
+    );
+    assert_eq!(
+        in_the_detail.matches('\u{250f}').count(),
+        1,
+        "one thick frame on the page, or the reader cannot tell where the arrows are: \
+         {in_the_detail}"
+    );
+}
+
+#[test]
+fn a_list_writes_its_tally_into_the_bottom_edge_of_the_frame_it_sits_in() {
+    let mut app = app();
+    press(&mut app, number(Screen::FINDINGS));
+
+    for (width, height) in [(80u16, 24u16), (120, 30)] {
+        let page = drawn_at(&app, width, height);
+        let edge = page
+            .lines()
+            .find(|line| line.starts_with('\u{2517}'))
+            .unwrap_or_default();
+
+        assert!(
+            edge.starts_with("\u{2517} 3 shown of 3 held") && edge.ends_with('\u{251b}'),
+            "{width}x{height}: the tally is the footer of the frame and the frame is still \
+             closed after it: {page}"
+        );
+        assert_eq!(
+            page.matches("3 shown of 3 held").count(),
+            1,
+            "and it is not said a second time inside the frame: {page}"
+        );
+    }
+}
+
+#[test]
+fn a_pane_alone_on_a_narrow_terminal_carries_the_thick_frame_under_a_plain_heading() {
+    let mut app = app();
+    into(&mut app, Screen::FINDINGS, 80, 24);
+    press(&mut app, KeyCode::Enter);
+
+    let page = drawn_at(&app, 80, 24);
+
+    assert!(
+        page.lines()
+            .nth(1)
+            .is_some_and(|line| line.starts_with(" What the agent has found")),
+        "the section is named on a line of its own, not in a frame around the pane: {page}"
+    );
+    assert!(
+        page.lines()
+            .nth(2)
+            .is_some_and(|line| line.starts_with("\u{250f} \u{25b8} THE SELECTED FINDING")),
+        "the one pane on the screen has the arrows, so it has the thick frame and the caret, \
+         and the frame starts at the edge of the terminal: {page}"
+    );
+    for line in page.lines() {
+        assert!(line.chars().count() <= 80, "{line}");
+    }
 }
 
 #[test]

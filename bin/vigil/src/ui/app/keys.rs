@@ -2,6 +2,7 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
 use super::App;
 
+use super::clicks::MOUSE;
 use crate::ui::helpers::motion::keys;
 use crate::ui::screens::home;
 use crate::ui::{Action, Level, Motion, Screen};
@@ -9,14 +10,17 @@ use crate::ui::{Action, Level, Motion, Screen};
 impl App {
     pub fn on_key(&mut self, code: KeyCode, modifiers: KeyModifiers) {
         if self.editing.is_some() {
-            if modifiers.contains(KeyModifiers::CONTROL) {
-                if code == KeyCode::Char('c') {
-                    self.leaving = true;
-                }
+            if modifiers.contains(KeyModifiers::CONTROL) && code == KeyCode::Char('c') {
+                self.leaving = true;
                 return;
             }
             self.message = None;
-            self.walk_the_form(code);
+            self.walk_the_form(code, modifiers);
+            return;
+        }
+        if self.graph.is_some() {
+            self.message = None;
+            self.walk_the_graph(code, modifiers);
             return;
         }
         if self.graph.is_some() {
@@ -66,6 +70,11 @@ impl App {
             if modifiers.contains(KeyModifiers::CONTROL) && code == KeyCode::Char('c') {
                 self.leaving = true;
             }
+            return;
+        }
+
+        if action == Action::Letter(MOUSE) {
+            self.switch_the_mouse();
             return;
         }
 

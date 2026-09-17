@@ -1,7 +1,9 @@
 pub mod column;
 pub mod field;
+pub mod footing;
 pub mod listing;
 pub mod panes;
+pub mod popup;
 pub mod scroll;
 pub mod section;
 pub mod split;

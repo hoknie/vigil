@@ -1,8 +1,8 @@
 use ratatui::buffer::Buffer;
-use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use ratatui::crossterm::event::{KeyCode, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::layout::Rect;
 
-use crate::cli::{Cli, Command, Console};
+use crate::cli::{Cli, Command, Console, Ui};
 use crate::ui::app::App;
 use crate::ui::fixture;
 use crate::ui::helpers::words::text;
@@ -19,6 +19,33 @@ pub(super) fn opened(line: &[&str]) -> Console {
         Command::Capture(console) => console,
         other => panic!("{other:?}"),
     }
+}
+
+pub(super) fn asked(line: &[&str]) -> Ui {
+    use clap::Parser;
+
+    let cli = Cli::try_parse_from(std::iter::once("vigil").chain(line.iter().copied()))
+        .expect("the console's own command line");
+
+    match cli.command {
+        Command::Ui(ui) => ui,
+        other => panic!("{other:?}"),
+    }
+}
+
+pub(super) fn started(line: &[&str], screen: Screen) -> App {
+    let ui = asked(line);
+    let mut app = App::new(
+        &ui.console,
+        ui.console.opening(screen),
+        fixture::monochrome(),
+        Audience::Person,
+    )
+    .with_the_mouse(!ui.no_mouse);
+    app.view = fixture::view();
+    drawn(&app);
+    app.settle();
+    app
 }
 
 pub(super) fn app() -> App {
@@ -109,6 +136,37 @@ pub(super) fn into(app: &mut App, screen: Screen, width: u16, height: u16) {
     while app.level != Level::List {
         press(app, KeyCode::Down);
     }
+}
+
+pub(super) fn click(app: &mut App, column: u16, row: u16) {
+    app.on_mouse(MouseEvent {
+        kind: MouseEventKind::Down(MouseButton::Left),
+        column,
+        row,
+        modifiers: KeyModifiers::NONE,
+    });
+}
+
+pub(super) fn wheel(app: &mut App, column: u16, row: u16, down: bool) {
+    app.on_mouse(MouseEvent {
+        kind: match down {
+            true => MouseEventKind::ScrollDown,
+            false => MouseEventKind::ScrollUp,
+        },
+        column,
+        row,
+        modifiers: KeyModifiers::NONE,
+    });
+}
+
+pub(super) fn where_it_says(page: &str, wanted: &str) -> (u16, u16) {
+    for (row, line) in page.lines().enumerate() {
+        if let Some(column) = line.find(wanted) {
+            let column = line[..column].chars().count();
+            return (column as u16, row as u16);
+        }
+    }
+    panic!("{wanted} is not drawn on this page:\n{page}");
 }
 
 pub(super) fn drawn(app: &App) -> String {

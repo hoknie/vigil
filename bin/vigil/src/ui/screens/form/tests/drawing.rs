@@ -1,13 +1,13 @@
 use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
+use ratatui::layout::{Position, Rect};
 use vigil_model::Changing;
 use vigil_view::{Choice, Field, Form};
 
-use super::render;
 use crate::ui::helpers::words::text;
-use crate::ui::{Editing, Screen, fixture};
+use crate::ui::screens::form::render;
+use crate::ui::{Aim, Editing, Screen, fixture};
 
-fn editing() -> Editing {
+pub(super) fn editing() -> Editing {
     Editing::open(
         Form::new("EDIT THE ACCOUNT deploy")
             .saying("The agent runs usermod on this host when this is saved.")
@@ -35,10 +35,16 @@ fn editing() -> Editing {
     )
 }
 
-fn drawn(editing: &Editing, width: u16, height: u16) -> String {
+pub(super) type Drawn = (String, Option<Position>, Vec<(Aim, Rect)>);
+
+pub(super) fn drawn_with(editing: &Editing, width: u16, height: u16) -> Drawn {
     let mut buffer = Buffer::empty(Rect::new(0, 0, width, height));
-    render(editing, fixture::look(), buffer.area, &mut buffer);
-    text::to_text(&buffer)
+    let (cursor, aims) = render(editing, fixture::look(), buffer.area, &mut buffer);
+    (text::to_text(&buffer), cursor, aims)
+}
+
+pub(super) fn drawn(editing: &Editing, width: u16, height: u16) -> String {
+    drawn_with(editing, width, height).0
 }
 
 #[test]
@@ -65,10 +71,12 @@ fn every_field_is_drawn_with_its_label_and_its_value_in_the_shape_it_takes() {
     assert!(page.contains("EDIT THE ACCOUNT deploy"), "{page}");
     assert!(page.contains("usermod"), "{page}");
     assert!(page.contains("deploy"), "{page}");
-    assert!(page.contains("[ /bin/bash\u{2582} ]"), "{page}");
+    assert!(page.contains("\u{2595} /bin/bash "), "{page}");
+    assert!(
+        page.contains("\u{2595} wheel ") && page.contains("\u{25be} \u{258f}"),
+        "a field of choices shows what is chosen and the mark that it opens: {page}"
+    );
     assert!(page.contains("[ ] no"), "{page}");
-    assert!(page.contains("[x] wheel"), "{page}");
-    assert!(page.contains("[ ] docker"), "{page}");
     assert!(page.contains("left blank it stays"), "{page}");
 }
 
@@ -93,11 +101,11 @@ fn where_the_focus_is_reads_without_colour() {
     for _ in 0..10 {
         editing.next();
     }
-    let on_cancel = drawn(&editing, 80, 30);
+    let (on_cancel, cursor, _) = drawn_with(&editing, 80, 30);
     assert!(on_cancel.contains("\u{25b8}[ Cancel ]"), "{on_cancel}");
-    assert!(
-        !on_cancel.contains("[ /bin/bash\u{2582} ]"),
-        "the caret belongs to the field being typed in: {on_cancel}"
+    assert_eq!(
+        cursor, None,
+        "the cursor belongs to the field being typed in, not to a button: {on_cancel}"
     );
 }
 
@@ -109,7 +117,10 @@ fn it_fits_eighty_and_forty_columns_and_never_runs_off_the_side() {
             assert!(line.chars().count() <= width as usize, "{width}: {line}");
         }
         assert!(page.contains("[ Save ]"), "{width}: {page}");
-        assert!(page.contains("adm"), "{width}: the choices wrap: {page}");
+        assert!(
+            page.contains("wheel") && page.contains('\u{25be}'),
+            "{width}: the choices are one line that opens, not a row that wraps: {page}"
+        );
     }
 }
 

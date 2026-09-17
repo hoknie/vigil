@@ -38,9 +38,12 @@ fn the_panel_puts_the_way_back_and_the_counting_key_on_top_of_the_drawing() {
     let page = drawn(&opened(), 80, 40);
     let lines: Vec<&str> = page.lines().collect();
 
-    assert!(lines[0].contains("[ \u{2190} Back ]"), "{page}");
-    assert!(lines[0].contains("start counting"), "{page}");
-    assert!(lines[0].contains(CAPTION), "{page}");
+    assert!(
+        lines[0].contains(CAPTION),
+        "the caption is the top edge of the panel's frame: {page}"
+    );
+    assert!(lines[1].contains("[ \u{2190} Back ]"), "{page}");
+    assert!(lines[1].contains("start counting"), "{page}");
 }
 
 #[test]

@@ -62,7 +62,7 @@ impl App {
         matches!(motion, Motion::Up | Motion::PageUp) && self.nav.difference.top() == 0
     }
 
-    fn climbing(&self, motion: Motion) -> bool {
+    pub(in crate::ui::app) fn climbing(&self, motion: Motion) -> bool {
         matches!(motion, Motion::Up | Motion::PageUp)
             && self.nav.at() != Screen::HOME
             && self.at_the_top()

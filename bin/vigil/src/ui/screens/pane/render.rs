@@ -1,19 +1,20 @@
 use std::rc::Rc;
 
 use ratatui::buffer::Buffer;
-use ratatui::layout::{Constraint, Rect};
+use ratatui::layout::Rect;
 use ratatui::text::Line;
 use ratatui::widgets::{Paragraph, Row as TableRow, Widget};
-use vigil_view::{Column, Pane, Room, Section, Width};
+use vigil_view::{Pane, Room, Section};
 
 use super::chooser;
+use super::columns::{constraints, header};
 use super::menu::row_of_names;
 use super::notices::{gone, missing, nothing_here, said};
 use super::regions::{split_about, split_bottom, split_menu, split_top};
 use super::showing::{Showing, asked};
-use crate::ui::helpers::layout::{column, listing, panes, wrap};
+use crate::ui::helpers::layout::{column, footing, listing, panes, wrap};
 use crate::ui::types::cache::Shown;
-use crate::ui::{Arrows, Look, Reading, View};
+use crate::ui::{Arrows, Look, Placed, Reading, View};
 
 const LINES_OF_DEFINITION: usize = 2;
 
@@ -26,16 +27,17 @@ pub fn render(
     showing: &Showing<'_>,
     area: Rect,
     buffer: &mut Buffer,
-) {
+) -> Placed {
+    let mut placed = Placed::default();
     let panes = section.panes();
     if panes.is_empty() {
         crate::ui::Notice::plain("Nothing is listed here.")
             .saying("The agent is not reporting a reading for this section.")
             .render(look, area, buffer);
-        return;
+        return placed;
     }
     let Some(pane) = panes.get(showing.at.min(panes.len() - 1)) else {
-        return;
+        return placed;
     };
 
     let shown: Vec<usize> = match view.reading(pane.reads()) {
@@ -65,24 +67,27 @@ pub fn render(
     if let Some(menu) = menu
         && shown.len() > 1
     {
-        Paragraph::new(row_of_names(
-            look,
-            &panes,
-            &shown,
-            showing.at,
-            showing.arrows,
-        ))
-        .render(menu, buffer);
+        let (names, places) = row_of_names(look, &panes, &shown, showing.at, showing.arrows);
+        Paragraph::new(names).render(menu, buffer);
+        placed.names = places
+            .into_iter()
+            .map(|(at, x, wide)| {
+                (
+                    at,
+                    Rect::new(menu.x + x, menu.y, wide, 1).intersection(menu),
+                )
+            })
+            .collect();
     }
 
     let arrangements = pane.arrangements();
 
     if let Some(notice) = missing(view, pane.as_ref()) {
         notice.render(look, rest, buffer);
-        return;
+        return placed;
     }
     let Reading::Taken(snapshot) = view.reading(pane.reads()) else {
-        return;
+        return placed;
     };
 
     let about_said = match arrangements
@@ -159,7 +164,7 @@ pub fn render(
                 showing,
             )
         };
-        listing::render(
+        placed.rows = listing::render(
             look,
             header(&pane.columns(room), marking),
             listing::Rows {
@@ -176,17 +181,19 @@ pub fn render(
         );
     }
 
-    Paragraph::new(Line::styled(
-        footing(
+    footing::render(
+        look,
+        trimmed(
             match &showing.tally {
                 Some(tally) => tally.clone(),
                 None => pane.tally(snapshot, &asked, rows.len()),
             },
             footer.width,
         ),
-        look.palette.quiet(),
-    ))
-    .render(footer, buffer);
+        footer,
+        buffer,
+    );
+    placed
 }
 
 pub fn printed_height(
@@ -246,29 +253,7 @@ fn drawn(
     TableRow::new(cells)
 }
 
-fn header(columns: &[Column], marking: bool) -> TableRow<'static> {
-    let mut headers: Vec<&'static str> = Vec::with_capacity(columns.len() + 1);
-    if marking {
-        headers.push(" ");
-    }
-    headers.extend(columns.iter().map(|column| column.header));
-    TableRow::new(headers)
-}
-
-fn constraints(columns: &[Column], marking: bool) -> Vec<Constraint> {
-    let mut widths: Vec<Constraint> = Vec::with_capacity(columns.len() + 1);
-    if marking {
-        widths.push(Constraint::Length(1));
-    }
-    widths.extend(columns.iter().map(|column| match column.width {
-        Width::Fixed(room) => Constraint::Length(room),
-        Width::Least(room) => Constraint::Min(room),
-        Width::Share(part) => Constraint::Fill(part),
-    }));
-    widths
-}
-
-fn footing(tally: String, width: u16) -> String {
+fn trimmed(tally: String, width: u16) -> String {
     let room = (width as usize).saturating_sub(1);
     let mut line = String::new();
     for part in tally.split(" · ") {

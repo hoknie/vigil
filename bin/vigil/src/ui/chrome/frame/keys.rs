@@ -4,6 +4,13 @@ use super::hints::Hints;
 use crate::ui::{Level, Screen};
 
 pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
+    if hints.listing {
+        return [LIST, LIST_SHORT, LAST_OF_A_LIST]
+            .into_iter()
+            .find(|line| line.chars().count() <= width as usize)
+            .unwrap_or(LAST_OF_A_LIST)
+            .to_string();
+    }
     if hints.editing {
         return [FORM, FORM_SHORT, LAST_TWO_OF_A_FORM]
             .into_iter()
@@ -31,7 +38,7 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
     if hints.choosing {
         return match hints.choosing_acts {
             true => " a letter above does it, on this host, now · C or Esc walks away".to_string(),
-            false => " ← → choose · Enter apply · Esc leave it as it was".to_string(),
+            false => " ↑↓ choose · Enter apply · Esc leave it as it was".to_string(),
         };
     }
 
@@ -108,7 +115,13 @@ enum Room {
 
 pub(super) const LAST_TWO: &str = " ? keys · q quit";
 
-const FORM: &str = " ↑↓ Tab a field · Space switch · ←→ a choice · Enter on a button · Esc back";
+const FORM: &str = " ↑↓ Tab a field · Space switch · Enter a list · Enter on a button · Esc back";
+
+const LIST: &str = " ↑↓ move · Space toggle · type to narrow · Enter or Esc close, toggles kept";
+
+const LIST_SHORT: &str = " ↑↓ move · Space toggle · Esc close, toggles kept";
+
+const LAST_OF_A_LIST: &str = " Esc close";
 
 const FORM_SHORT: &str = " ↑↓ a field · Enter on a button · Esc back";
 

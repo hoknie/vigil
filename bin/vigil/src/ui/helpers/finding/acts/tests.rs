@@ -7,7 +7,7 @@ use crate::ui::fixture;
 use crate::ui::helpers::words::text;
 
 fn drawn(acts: Acts, at: Option<usize>, width: u16) -> String {
-    let said = lines(acts, at, fixture::look(), width as usize);
+    let said = laid(acts, at, fixture::look(), width as usize).0;
     let mut buffer = Buffer::empty(Rect::new(0, 0, width, said.len().max(1) as u16));
     Paragraph::new(said).render(buffer.area, &mut buffer);
     text::to_text(&buffer)
@@ -89,7 +89,9 @@ fn a_row_that_keeps_a_history_offers_it_as_a_button_and_after_what_acts_on_the_h
 #[test]
 fn a_row_nothing_can_be_done_to_draws_no_buttons_at_all() {
     assert!(
-        lines(Acts::of_a_row(None), None, fixture::look(), 80).is_empty(),
+        laid(Acts::of_a_row(None), None, fixture::look(), 80)
+            .0
+            .is_empty(),
         "a button that answers with a refusal is worse than no button"
     );
 }

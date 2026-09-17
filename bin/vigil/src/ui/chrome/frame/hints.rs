@@ -5,6 +5,7 @@ use crate::ui::Level;
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Hints<'a> {
     pub editing: bool,
+    pub listing: bool,
     pub history: bool,
     pub histories: bool,
     pub graph: bool,
@@ -18,6 +19,7 @@ pub struct Hints<'a> {
     pub message: Option<&'a str>,
     pub back: Back,
     pub panel: bool,
+    pub panes: bool,
     pub choosing: bool,
     pub choosing_acts: bool,
     pub sorts: bool,
@@ -27,6 +29,7 @@ pub struct Hints<'a> {
     pub buttons: bool,
     pub arranges: Option<char>,
     pub to_object: bool,
+    pub mouse: Option<&'static str>,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]

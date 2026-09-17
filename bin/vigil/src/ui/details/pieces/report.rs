@@ -42,9 +42,8 @@ pub fn report(pieces: &[Piece], acts: Acts, at: Option<usize>, look: Look, width
                 }
             }
             Piece::Key(key) => {
-                for line in acts::lines(acts, at, look, width) {
-                    report.push(line);
-                }
+                let (lines, places) = acts::laid(acts, at, look, width);
+                report.push_buttons(lines, places);
                 drawn = true;
                 if !acts.buttons().is_empty() {
                     report.blank();
@@ -70,9 +69,8 @@ pub fn report(pieces: &[Piece], acts: Acts, at: Option<usize>, look: Look, width
 
     if !drawn && !acts.buttons().is_empty() {
         report.blank();
-        for line in acts::lines(acts, at, look, width) {
-            report.push(line);
-        }
+        let (lines, places) = acts::laid(acts, at, look, width);
+        report.push_buttons(lines, places);
     }
 
     report

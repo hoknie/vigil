@@ -24,4 +24,5 @@ vigil-resources = { path = "../../crates/collectors/vigil-resources" }
 vigil-files = { path = "../../crates/collectors/vigil-files" }
 clap.workspace = true
 ratatui = "0.30"
+tui-input = "0.15"
 serde_json.workspace = true

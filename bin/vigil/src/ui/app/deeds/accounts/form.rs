@@ -1,4 +1,4 @@
-use ratatui::crossterm::event::KeyCode;
+use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use vigil_model::{AccountChange, Changing};
 use vigil_view::RowKey;
 
@@ -51,11 +51,11 @@ impl App {
         }
     }
 
-    pub(in crate::ui::app) fn walk_the_form(&mut self, code: KeyCode) {
+    pub(in crate::ui::app) fn walk_the_form(&mut self, code: KeyCode, modifiers: KeyModifiers) {
         let Some(editing) = self.editing.as_mut() else {
             return;
         };
-        match form::pressed(editing, code) {
+        match form::pressed(editing, code, modifiers) {
             Pressed::Nothing => {}
             Pressed::Leave => {
                 self.editing = None;

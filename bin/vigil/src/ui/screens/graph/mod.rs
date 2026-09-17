@@ -3,4 +3,4 @@ mod tests;
 
 mod render;
 
-pub use render::{HEADER_LINES, render};
+pub use render::render;

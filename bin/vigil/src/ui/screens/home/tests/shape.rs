@@ -34,13 +34,15 @@ fn where_the_cursor_is_readable_with_no_colour_at_all() {
     let second = drawn_at(&fixture::view(), 1, 80, 30);
 
     assert!(
-        first.lines().any(|line| line.starts_with(" >   1 ports")),
+        first
+            .lines()
+            .any(|line| line.starts_with(" \u{25b8}   1 ports")),
         "{first}"
     );
     assert!(
         second
             .lines()
-            .any(|line| line.starts_with(" >   2 accounts")),
+            .any(|line| line.starts_with(" \u{25b8}   2 accounts")),
         "{second}"
     );
 }

@@ -73,7 +73,8 @@ fn the_main_screen_holds_the_cursor_on_the_section_it_was_left_from() {
 
     let page = drawn(&app);
     assert!(
-        page.lines().any(|line| line.contains(" >   4 startup")),
+        page.lines()
+            .any(|line| line.contains(" \u{25b8}   4 startup")),
         "coming back put the reader at the top of the list: {page}"
     );
 }

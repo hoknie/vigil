@@ -57,6 +57,18 @@ pub(super) fn status(view: &View, width: u16) -> String {
     fitted(&parts, width)
 }
 
+pub(super) fn beside(line: String, mouse: Option<&str>, width: u16) -> String {
+    let Some(said) = mouse else {
+        return line;
+    };
+    let tail = format!("{said} ");
+    let used = line.chars().count() + tail.chars().count();
+    if used >= width as usize {
+        return line;
+    }
+    format!("{line}{}{tail}", " ".repeat(width as usize - used))
+}
+
 fn fitted(parts: &[String], width: u16) -> String {
     let room = (width as usize).saturating_sub(1);
     let mut line = String::new();

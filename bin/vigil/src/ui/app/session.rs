@@ -5,13 +5,15 @@ use ratatui::DefaultTerminal;
 use ratatui::crossterm::event::{self, Event, KeyEventKind};
 use ratatui::layout::Rect;
 
+use crate::terminal::capture;
+
 use crate::cli::{Console, Opening};
 
 use super::App;
 use crate::link::Link;
 
 use crate::ui::{
-    Audience, Chooser, Dismissed, Filter, Level, Look, Nav, Palette, Picked, Screen, View,
+    Audience, Chooser, Dismissed, Filter, Level, Look, Nav, Palette, Picked, Pointer, Screen, View,
 };
 
 const REFRESH: Duration = Duration::from_secs(2);
@@ -44,6 +46,8 @@ impl App {
             helping: false,
             message: None,
             body: Cell::new(Rect::ZERO),
+            cursor: Cell::new(None),
+            pointer: Pointer::starting(true),
             rows_seen: Default::default(),
             listed_seen: Default::default(),
             index_seen: Default::default(),
@@ -66,16 +70,27 @@ impl App {
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> std::io::Result<()> {
         let mut last = Instant::now();
+        let mut held = false;
         self.refresh();
 
         while !self.leaving {
-            terminal.draw(|frame| frame.render_widget(self.page(), frame.area()))?;
+            held = capture::follow(held, self.wants_the_mouse())?;
+            terminal.draw(|frame| {
+                frame.render_widget(self.page(), frame.area());
+                if let Some(cursor) = self.cursor() {
+                    frame.set_cursor_position(cursor);
+                }
+            })?;
 
-            if event::poll(TICK)?
-                && let Event::Key(key) = event::read()?
-                && key.kind == KeyEventKind::Press
-            {
-                self.on_key(key.code, key.modifiers);
+            if event::poll(TICK)? {
+                match event::read()? {
+                    Event::Key(key) if key.kind == KeyEventKind::Press => {
+                        self.on_key(key.code, key.modifiers);
+                    }
+                    Event::Mouse(mouse) => self.on_mouse(mouse),
+                    Event::Resize(_, _) => self.resized(),
+                    _ => {}
+                }
             }
 
             if self.refresh_wanted || last.elapsed() >= REFRESH {

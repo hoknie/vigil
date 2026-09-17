@@ -10,7 +10,7 @@ use crate::ui::helpers::layout::scroll;
 
 const GUTTER: u16 = 1;
 
-const MARKER: &str = " > ";
+const MARKER: &str = " \u{25b8} ";
 
 const COLD_MARKER: &str = " · ";
 
@@ -54,9 +54,9 @@ pub fn render(
     cursor: Where,
     area: Rect,
     buffer: &mut Buffer,
-) {
+) -> Vec<(usize, Rect)> {
     if area.height == 0 || area.width == 0 {
-        return;
+        return Vec::new();
     }
 
     let page = area.height.saturating_sub(1) as usize;
@@ -115,6 +115,13 @@ pub fn render(
                 &mut bar,
             );
     }
+
+    (first..(first + page).min(total))
+        .map(|at| {
+            let y = area.y + 1 + (at - first) as u16;
+            (at, Rect::new(area.x, y, area.width - gutter, 1))
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -203,7 +210,7 @@ mod tests {
         let page = drawn(fixture::look(), 5, 2, 8);
 
         assert!(
-            page.lines().any(|line| line.starts_with(" > row 2")),
+            page.lines().any(|line| line.starts_with(" \u{25b8} row 2")),
             "a highlight alone is invisible on a monochrome terminal: {page}"
         );
     }
@@ -217,7 +224,7 @@ mod tests {
             "the row is no longer marked at all: {cold}"
         );
         assert!(
-            !cold.contains(" > "),
+            !cold.contains(" \u{25b8} "),
             "and must not still offer the cursor: {cold}"
         );
     }
@@ -254,7 +261,10 @@ mod tests {
             8,
         );
 
-        assert!(!page.contains(" > "), "a file cannot move a cursor: {page}");
+        assert!(
+            !page.contains(" \u{25b8} "),
+            "a file cannot move a cursor: {page}"
+        );
         assert!(!page.contains('█'), "or drag a bar: {page}");
         assert!(page.contains("row 0"), "{page}");
     }

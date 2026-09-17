@@ -34,9 +34,11 @@ pub struct Split {
 pub struct Layout {
     pub list: Option<Rect>,
     pub list_caption: Option<Rect>,
+    pub list_frame: Option<Rect>,
     pub rule: Option<Rect>,
     pub panel: Option<Rect>,
     pub detail_caption: Option<Rect>,
+    pub detail_frame: Option<Rect>,
 }
 
 impl Layout {
@@ -45,13 +47,15 @@ impl Layout {
     }
 }
 
-pub fn layout(body: Rect, open: bool) -> Layout {
+pub fn layout(body: Rect, open: bool, framed: bool) -> Layout {
     let empty = Layout {
         list: None,
         list_caption: None,
+        list_frame: None,
         rule: None,
         panel: None,
         detail_caption: None,
+        detail_frame: None,
     };
 
     if !open {
@@ -61,19 +65,52 @@ pub fn layout(body: Rect, open: bool) -> Layout {
         };
     }
 
-    match beside(body) {
-        None => Layout {
+    match (beside(body), framed) {
+        (None, false) => Layout {
             detail_caption: Some(first_line(body)),
             panel: Some(under_the_first_line(body)),
             ..empty
         },
-        Some(split) => Layout {
+        (None, true) => Layout {
+            detail_frame: Some(body),
+            panel: Some(inside(body)),
+            ..empty
+        },
+        (Some(split), false) => Layout {
             list_caption: Some(first_line(split.list)),
             list: Some(under_the_first_line(split.list)),
             rule: Some(split.rule),
             detail_caption: Some(first_line(split.panel)),
             panel: Some(under_the_first_line(split.panel)),
+            ..empty
         },
+        (Some(split), true) => {
+            let list = Rect {
+                width: split.list.width + 2,
+                ..split.list
+            };
+            let panel = Rect {
+                x: list.right(),
+                width: split.panel.right() - list.right(),
+                ..split.panel
+            };
+            Layout {
+                list_frame: Some(list),
+                list: Some(inside(list)),
+                detail_frame: Some(panel),
+                panel: Some(inside(panel)),
+                ..empty
+            }
+        }
+    }
+}
+
+pub fn inside(frame: Rect) -> Rect {
+    Rect {
+        x: frame.x + frame.width.min(1),
+        y: frame.y + frame.height.min(1),
+        width: frame.width.saturating_sub(2),
+        height: frame.height.saturating_sub(2),
     }
 }
 
@@ -164,7 +201,7 @@ mod tests {
     #[test]
     fn the_captions_take_one_line_each_and_the_panes_get_the_rest() {
         let body = Rect::new(0, 0, 200, 30);
-        let laid_out = layout(body, true);
+        let laid_out = layout(body, true, false);
 
         let caption = laid_out.detail_caption.expect("a caption over the panel");
         let panel = laid_out.detail().expect("a panel");
@@ -178,7 +215,7 @@ mod tests {
     fn a_screen_with_one_pane_on_it_still_says_how_far_down_it_the_reader_is() {
         let body = Rect::new(0, 0, 80, 24);
 
-        let laid_out = layout(body, true);
+        let laid_out = layout(body, true, false);
 
         assert!(laid_out.detail_caption.is_some());
         assert_eq!(laid_out.detail().expect("a panel").height, body.height - 1);
@@ -192,7 +229,7 @@ mod tests {
     fn with_the_panel_closed_the_list_has_the_whole_body_and_no_caption() {
         let body = Rect::new(0, 0, 200, 30);
 
-        let laid_out = layout(body, false);
+        let laid_out = layout(body, false, false);
 
         assert_eq!(laid_out.list, Some(body));
         assert!(laid_out.list_caption.is_none());
@@ -210,5 +247,46 @@ mod tests {
         assert_eq!(split.panel.right(), area.right());
         assert_eq!(split.list.height, area.height);
         assert_eq!(split.panel.height, area.height);
+    }
+
+    #[test]
+    fn a_framed_pane_alone_on_the_screen_takes_its_frame_out_of_the_body_and_nothing_else() {
+        let body = Rect::new(1, 2, 80, 19);
+
+        let laid_out = layout(body, true, true);
+
+        assert_eq!(laid_out.detail_frame, Some(body));
+        assert_eq!(laid_out.detail(), Some(Rect::new(2, 3, 78, 17)));
+        assert!(
+            laid_out.detail_caption.is_none() && laid_out.list.is_none(),
+            "the name is in the edge of the frame, not on a line of its own"
+        );
+    }
+
+    #[test]
+    fn two_framed_panes_tile_the_body_and_each_keeps_the_room_it_had_beside_a_rule() {
+        for width in SPLIT_AT..=400 {
+            let body = Rect::new(1, 2, width, 30);
+            let laid_out = layout(body, true, true);
+            let (Some(list), Some(panel)) = (laid_out.list_frame, laid_out.detail_frame) else {
+                panic!("{width} columns is wide enough for both");
+            };
+
+            assert_eq!(list.x, body.x);
+            assert_eq!(
+                panel.x,
+                list.right(),
+                "{width}: nothing lost between the frames"
+            );
+            assert_eq!(panel.right(), body.right(), "{width}");
+            assert!(
+                laid_out.list.expect("a list").width >= LIST_FLOOR,
+                "{width} columns leaves the framed list less than its floor"
+            );
+            assert!(
+                laid_out.detail().expect("a panel").width >= PANEL_FLOOR,
+                "{width} columns leaves the framed panel less than its floor"
+            );
+        }
     }
 }

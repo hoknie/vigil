@@ -1,5 +1,6 @@
 mod answers;
 mod buttons;
+mod clicks;
 mod deeds;
 mod drawing;
 mod graph;

@@ -4,5 +4,6 @@ pub mod form;
 pub mod graph;
 pub mod history;
 pub mod picking;
+pub mod pointer;
 pub mod position;
 pub mod sorting;

@@ -1,4 +1,5 @@
 use ratatui::style::{Color, Modifier, Style};
+use ratatui::widgets::Shadow;
 use vigil_model::{CollectorState, Severity};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -38,6 +39,17 @@ impl Palette {
         self.tint(Style::default().add_modifier(Modifier::DIM), Color::Blue)
     }
 
+    pub fn focus(self) -> Style {
+        self.tint(Style::default(), Color::Cyan)
+    }
+
+    pub fn shadow(self) -> Shadow {
+        match self.colour {
+            true => Shadow::overlay().style(Style::default().add_modifier(Modifier::DIM)),
+            false => Shadow::light_shade().style(self.quiet()),
+        }
+    }
+
     pub fn label(self) -> Style {
         self.tint(Style::default(), Color::Cyan)
     }
@@ -48,6 +60,10 @@ impl Palette {
 
     pub fn selected(self) -> Style {
         Style::default().add_modifier(Modifier::REVERSED)
+    }
+
+    pub fn field(self) -> Style {
+        Style::default().add_modifier(Modifier::UNDERLINED)
     }
 
     pub fn marked(self) -> Style {
@@ -120,9 +136,11 @@ mod tests {
             monochrome.title(),
             monochrome.quiet(),
             monochrome.border(),
+            monochrome.focus(),
             monochrome.accent(),
             monochrome.label(),
             monochrome.selected(),
+            monochrome.field(),
             monochrome.marked(),
             monochrome.alarm(),
             monochrome.healthy(),
@@ -188,6 +206,7 @@ mod tests {
             colour.title(),
             colour.quiet(),
             colour.border(),
+            colour.focus(),
             colour.accent(),
             colour.label(),
             colour.alarm(),

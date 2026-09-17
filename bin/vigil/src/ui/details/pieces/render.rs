@@ -18,12 +18,12 @@ pub fn render(
     top: usize,
     area: Rect,
     buffer: &mut Buffer,
-) {
+) -> Vec<(usize, Rect)> {
     if pieces.is_empty() {
         Notice::plain("Nothing is selected.")
             .saying("Move to a row and press →. Esc closes this.")
             .render(look, area, buffer);
-        return;
+        return Vec::new();
     }
 
     let gutter = area.width - look.text_width(area.width) as u16;
@@ -60,6 +60,16 @@ pub fn render(
             &mut bar,
         );
     }
+
+    report
+        .buttons()
+        .iter()
+        .filter(|(_, line, _, _)| (top..top + page).contains(line))
+        .map(|(button, line, x, wide)| {
+            let drawn = Rect::new(area.x + x, area.y + (line - top) as u16, *wide, 1);
+            (*button, drawn.intersection(area))
+        })
+        .collect()
 }
 
 pub fn height(pieces: &[Piece], acts: Acts, look: Look, width: usize) -> usize {

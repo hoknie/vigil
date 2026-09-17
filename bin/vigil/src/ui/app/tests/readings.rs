@@ -100,7 +100,7 @@ fn a_finding_about_a_filesystem_opens_the_host_and_one_about_a_file_opens_the_pa
         let page = drawn_at(&app, 80, 30);
         assert!(
             page.lines()
-                .any(|line| line.contains("> ") && line.contains(row)),
+                .any(|line| line.contains("\u{25b8} ") && line.contains(row)),
             "{key} landed somewhere else: {page}"
         );
     }
@@ -118,7 +118,7 @@ fn a_finding_about_a_container_opens_the_row_about_the_container_it_names() {
     let page = drawn_at(&app, 120, 30);
     assert!(
         page.lines()
-            .any(|line| line.contains("> ") && line.contains("9f2e8d7c6b5a")),
+            .any(|line| line.contains("\u{25b8} ") && line.contains("9f2e8d7c6b5a")),
         "the key names the program the container runs, and that is the row it is about: {page}"
     );
 }
