@@ -21,8 +21,16 @@ impl App {
                 self.chose_a_way_of_killing(target, at);
                 return;
             }
+            Choosing::Control(target) => {
+                self.chose_a_way_of_controlling(target, at);
+                return;
+            }
             Choosing::Delete(_) => {
                 self.chose_to_delete();
+                return;
+            }
+            Choosing::Unwatch => {
+                self.chose_to_stop_watching();
                 return;
             }
             Choosing::Filter if holding(self.nav.at().name()).is_some() => {

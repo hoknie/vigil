@@ -10,6 +10,7 @@ const NAME_WIDTH: usize = 9;
 
 pub fn report(pieces: &[Piece], acts: Acts, at: Option<usize>, look: Look, width: usize) -> Report {
     let mut report = Report::default();
+    let mut drawn = false;
 
     for piece in pieces {
         match piece {
@@ -44,6 +45,7 @@ pub fn report(pieces: &[Piece], acts: Acts, at: Option<usize>, look: Look, width
                 for line in acts::lines(acts, at, look, width) {
                     report.push(line);
                 }
+                drawn = true;
                 if !acts.buttons().is_empty() {
                     report.blank();
                 }
@@ -58,7 +60,18 @@ pub fn report(pieces: &[Piece], acts: Acts, at: Option<usize>, look: Look, width
                     ));
                 }
             }
+            Piece::Line(drawn) => {
+                let kept: String = drawn.chars().take(width).collect();
+                report.push(Line::styled(kept, look.palette.quiet()));
+            }
             Piece::Blank => report.blank(),
+        }
+    }
+
+    if !drawn && !acts.buttons().is_empty() {
+        report.blank();
+        for line in acts::lines(acts, at, look, width) {
+            report.push(line);
         }
     }
 

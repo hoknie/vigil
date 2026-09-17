@@ -70,3 +70,13 @@ fn a_module_that_shows_nothing_is_a_module_and_not_a_half_written_one() {
     assert_eq!(Ports.unit(), None);
     assert_eq!(Ports.settings_key(), None);
 }
+
+#[test]
+fn a_module_that_says_nothing_about_it_is_read_once_at_start_up_and_never_while_running() {
+    assert!(
+        !Ports.follows_the_file(),
+        "a key the daemon picks up while it runs is a key an edit reaches without anybody \
+         restarting anything, and that is a decision a module makes by name rather than one \
+         it inherits by saying nothing"
+    );
+}

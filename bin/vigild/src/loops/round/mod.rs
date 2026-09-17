@@ -1,5 +1,6 @@
 mod asked;
 mod budget;
+mod following;
 mod health;
 mod kept;
 mod killings;
@@ -15,6 +16,7 @@ use vigil_model::Finding;
 use vigil_store::FileStore;
 
 use crate::budget::Meter;
+use crate::config::Followed;
 use crate::helpers::health as health_words;
 use crate::socket::Shared;
 use crate::types::{Delivery, Due, Policy, Said, Schedule};
@@ -37,6 +39,7 @@ pub struct Round {
     pub meter: Meter,
     pub opening: Vec<Finding>,
     pub standing: Vec<(&'static str, String)>,
+    pub followed: Followed,
 }
 
 impl Round {
@@ -75,6 +78,7 @@ impl Round {
             }
 
             self.take_what_the_console_did();
+            self.follow_the_file(&mut said);
             self.read_what_the_console_asked_for(&mut said);
 
             match self.schedule.due_now(Instant::now()) {

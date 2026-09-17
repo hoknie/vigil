@@ -29,12 +29,14 @@ fn the_arrows_walk_from_one_reading_of_the_section_to_the_other() {
     press(&mut app, number(screen("system")));
 
     press(&mut app, KeyCode::Right);
+    press(&mut app, KeyCode::Right);
 
-    assert_eq!(showing(&app), 1);
+    assert_eq!(showing(&app), 2);
     let page = drawn_at(&app, 80, 30);
     assert!(page.contains("[watched files]"), "{page}");
     assert!(page.contains("/etc/ssh/sshd_config"), "{page}");
 
+    press(&mut app, KeyCode::Left);
     press(&mut app, KeyCode::Left);
     assert_eq!(showing(&app), 0);
     assert!(drawn_at(&app, 80, 30).contains("memory and swap"));
@@ -55,6 +57,7 @@ fn a_search_on_one_reading_of_the_section_does_not_narrow_the_other() {
     press(&mut app, KeyCode::Esc);
     press(&mut app, KeyCode::Esc);
     press(&mut app, KeyCode::Right);
+    press(&mut app, KeyCode::Right);
 
     let other = drawn_at(&app, 80, 30);
     assert!(
@@ -68,15 +71,15 @@ fn each_reading_of_the_section_asks_the_agent_for_the_collector_that_holds_it() 
     let mut app = app();
     press(&mut app, number(screen("system")));
 
-    assert_eq!(app.wanted_reading().as_deref(), Some("resources"));
-
-    press(&mut app, KeyCode::Right);
-
-    assert_eq!(
-        app.wanted_reading().as_deref(),
-        Some("files"),
-        "a section of two readings asks for the one the reader is looking at, and not for both"
-    );
+    for reads in ["resources", "resources", "files"] {
+        assert_eq!(
+            app.wanted_reading().as_deref(),
+            Some(reads),
+            "a section of two readings asks for the one the list under the cursor holds, and \
+             not for both"
+        );
+        press(&mut app, KeyCode::Right);
+    }
 }
 
 #[test]
@@ -84,7 +87,7 @@ fn a_finding_about_a_filesystem_opens_the_host_and_one_about_a_file_opens_the_pa
     for (key, pane, row) in [
         ("resource|disk|/var", 0, "/var"),
         ("resource|boot", 0, "this host's boot"),
-        ("file|/etc/hosts", 1, "/etc/hosts"),
+        ("file|/etc/hosts", 2, "/etc/hosts"),
     ] {
         let mut app = app();
         app.view.found.findings[0].finding_key = key.into();

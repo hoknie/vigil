@@ -197,6 +197,8 @@
             "persistence.unit.new",
             "persistence.timer.new",
             "persistence.cron.new",
+            "persistence.cron.removed",
+            "persistence.cron.changed",
             "persistence.preload_changed",
             "persistence.kernel_module.loaded",
             "persistence.shell_profile_changed",
@@ -227,7 +229,11 @@
             "agent.process.killed",
             "agent.process.kill_refused",
             "agent.account.changed",
-            "agent.account.change_refused"
+            "agent.account.change_refused",
+            "agent.unit.controlled",
+            "agent.unit.control_refused",
+            "agent.cron.changed",
+            "agent.cron.change_refused"
           ]
         },
         "severity": {

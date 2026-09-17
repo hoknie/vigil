@@ -5,21 +5,26 @@ use crate::ui::chrome::frame::hints::Back;
 use crate::ui::chrome::frame::keys::keys;
 
 #[test]
-fn a_list_that_keeps_a_history_offers_h_on_the_line_at_every_width_down_to_eighty() {
-    for width in [80u16, 100, 140, 200] {
-        let line = keys(
-            &Hints {
-                histories: true,
-                ..sorting(Level::List, Back::MainScreen)
-            },
-            a_section(),
-            width,
-        );
+fn a_list_that_keeps_a_history_offers_h_on_a_whole_line_and_gives_it_up_first_when_cut() {
+    let with_a_history = Hints {
+        histories: true,
+        ..sorting(Level::List, Back::MainScreen)
+    };
 
-        assert!(line.contains("H history"), "{width}: {line}");
-        assert!(line.contains("f filter"), "{width}: {line}");
-        assert!(line.chars().count() <= width as usize, "{width}: {line}");
+    let wide = keys(&with_a_history, a_section(), 200);
+    assert!(wide.contains("H history"), "{wide}");
+
+    let eighty = keys(&with_a_history, a_section(), 80);
+    for kept in ["→ detail", "s sort", "f filter", "back to the main screen"] {
+        assert!(
+            eighty.contains(kept),
+            "a line cut to eighty columns keeps the keys that move through the list and the way \
+             back, and gives up H first, because H is also a button in the detail of the row: \
+             {kept} is missing from {eighty}"
+        );
     }
+    assert!(!eighty.contains("H history"), "{eighty}");
+    assert!(eighty.chars().count() <= 80, "{eighty}");
     let without = keys(&sorting(Level::List, Back::MainScreen), a_section(), 200);
     assert!(
         !without.contains("H history"),

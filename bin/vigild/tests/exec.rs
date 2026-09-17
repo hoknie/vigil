@@ -9,6 +9,8 @@ const THE_OTHER_PLACE: &str = "bin/vigild/src/killing/destruction.rs";
 
 const THE_ACCOUNTS_PLACE: &str = "bin/vigild/src/accounts/tools.rs";
 
+const THE_UNITS_PLACE: &str = "bin/vigild/src/units/systemctl.rs";
+
 fn sources() -> Vec<(String, String)> {
     let mut read = Vec::new();
     for tree in [
@@ -45,7 +47,7 @@ fn walk(at: &Path, into: &mut Vec<(String, String)>) {
 }
 
 #[test]
-fn the_three_places_that_start_a_program_are_the_operators_command_the_kill_and_the_account_change_it_asked_for()
+fn the_four_places_that_start_a_program_are_the_operators_command_the_kill_the_account_change_and_the_unit_it_asked_for()
  {
     let mut starts: Vec<String> = Vec::new();
 
@@ -60,20 +62,24 @@ fn the_three_places_that_start_a_program_are_the_operators_command_the_kill_and_
         THE_ONE_PLACE.to_string(),
         THE_OTHER_PLACE.to_string(),
         THE_ACCOUNTS_PLACE.to_string(),
+        THE_UNITS_PLACE.to_string(),
     ];
     expected.sort();
 
     assert_eq!(
         starts, expected,
-        "this daemon watches a host it does not touch, and it starts a program in three \
+        "this daemon watches a host it does not touch, and it starts a program in four \
          places, each of them an operator's own instruction arriving at the front door: \
          `vigild collector <name> enable`, the kill a person confirmed at the console after \
-         switching killing on in vigil.yaml, and the change to an account a person saved at \
-         the console after switching accounts on. The second and the third were added on \
-         2026-09-14 with the trade-off stated: see docs/designs/2026-09-14-DESIGN-console-kill.md \
-         and docs/designs/2026-09-14-DESIGN-console-accounts.md. A fourth place is a path from \
-         a reading, a rule or an unasked-for message to execution on the host, and that is \
-         the failure the contract has no reverse channel for"
+         switching killing on in vigil.yaml, the change to an account a person saved at the \
+         console after switching accounts on, and the systemctl a person asked for on the \
+         startup screen after switching units on. The second and the third were added on \
+         2026-09-14 and the fourth on 2026-09-16, each with the trade-off stated: see \
+         docs/designs/2026-09-14-DESIGN-console-kill.md, \
+         docs/designs/2026-09-14-DESIGN-console-accounts.md and \
+         docs/designs/2026-09-16-DESIGN-console-units.md. A fifth place is a path from a \
+         reading, a rule or an unasked-for message to execution on the host, and that is the \
+         failure the contract has no reverse channel for"
     );
 }
 
@@ -92,6 +98,8 @@ fn the_watching_loop_and_the_rules_reach_none_of_them() {
             "host::enable",
             "accounts::",
             "tools::",
+            "units::",
+            "systemctl::",
         ] {
             assert!(
                 !text.contains(how),
@@ -172,6 +180,48 @@ fn the_account_tools_are_reached_only_through_the_console_change_and_from_nowher
         assert!(
             !text.contains("tools::run"),
             "{named} runs an account tool from outside the accounts module"
+        );
+    }
+}
+
+#[test]
+fn the_unit_and_the_crontab_are_reached_only_through_the_console_control_and_from_nowhere_else() {
+    let text = fs::read_to_string(workspace().join(THE_UNITS_PLACE)).expect("the units place");
+    let code = text
+        .split("#[cfg(test)]")
+        .next()
+        .expect("the code above the tests of it");
+    assert!(
+        !code.contains("\"sh\"") && !code.contains("/bin/sh"),
+        "systemctl is run with its two arguments, never through a shell"
+    );
+
+    let callers: Vec<String> = sources()
+        .into_iter()
+        .filter(|(named, text)| {
+            named != THE_UNITS_PLACE
+                && !named.starts_with("bin/vigild/src/units/")
+                && (text.contains("units::carry_out")
+                    || (text.contains("crate::units") && text.contains("carry_out")))
+        })
+        .map(|(named, _)| named)
+        .collect();
+
+    assert_eq!(
+        callers,
+        vec!["bin/vigild/src/socket/control.rs".to_string()],
+        "a person choosing a way on the band at the console is the one road to systemctl and \
+         to a rewritten crontab: the watching loop, the rules and the reading answers do not \
+         reach them"
+    );
+
+    for (named, text) in sources() {
+        if named.starts_with("bin/vigild/src/units/") {
+            continue;
+        }
+        assert!(
+            !text.contains("systemctl::run"),
+            "{named} runs systemctl from outside the module the decision is written in"
         );
     }
 }

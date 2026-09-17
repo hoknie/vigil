@@ -97,3 +97,25 @@ fn nothing_selected_is_a_sentence_rather_than_an_empty_panel() {
         0
     );
 }
+
+#[test]
+fn a_drawn_line_reaches_the_screen_as_it_was_written_and_is_never_wrapped_or_indented() {
+    let path = "in ──▶ prerouting ──▶ ( routing ) ──▶ input ──▶ this host, and a tail long \
+                enough that prose of this length would be broken in two";
+
+    let page = drawn(&[Piece::line(format!("   {path}"))]);
+    let first = page.lines().next().expect("a page has a first line");
+
+    assert!(
+        first.starts_with("   in ──▶ prerouting"),
+        "a drawn line carries its own indent, and three columns added to it move every arrow \
+         of a diagram away from what it points at: {first:?}"
+    );
+    assert!(
+        !page
+            .lines()
+            .any(|line| line.trim_start().starts_with("enough that prose")),
+        "the remainder of a wrapped line lands under the first column and turns a diagram \
+         into a column of fragments: {page}"
+    );
+}

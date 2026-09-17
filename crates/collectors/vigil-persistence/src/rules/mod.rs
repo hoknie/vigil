@@ -3,8 +3,8 @@ mod tests;
 #[cfg(test)]
 mod verdict;
 
+mod cron;
 mod kernel_module_loaded;
-mod new_cron_job;
 mod new_timer;
 mod new_unit;
 mod persistence_finding;
@@ -13,8 +13,8 @@ mod set;
 mod shell_profile_changed;
 mod unit_command_changed;
 
+pub use cron::{CronJobChanged, CronJobRemoved, NewCronJob};
 pub use kernel_module_loaded::KernelModuleLoaded;
-pub use new_cron_job::NewCronJob;
 pub use new_timer::NewTimer;
 pub use new_unit::NewUnit;
 pub use preload_changed::PreloadChanged;

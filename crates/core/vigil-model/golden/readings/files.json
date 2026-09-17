@@ -17,6 +17,7 @@
       "uid": 0
     },
     "file|/etc/hosts": {
+      "ceiling_bytes": 1048576,
       "gid": 0,
       "mode": "0644",
       "over_the_ceiling": false,
@@ -28,6 +29,7 @@
       "uid": 0
     },
     "file|/etc/pam.d/sshd": {
+      "ceiling_bytes": 1048576,
       "gid": null,
       "mode": null,
       "over_the_ceiling": false,
@@ -39,6 +41,7 @@
       "uid": null
     },
     "file|/etc/ssh/sshd_config": {
+      "ceiling_bytes": 1048576,
       "gid": 0,
       "mode": "0600",
       "over_the_ceiling": false,
@@ -47,6 +50,18 @@
       "readable": true,
       "sha256": "87e95e7564445110057c3e0563e80077ccdab840ac81fccc5e66aaef991bb298",
       "size": 53,
+      "uid": 0
+    },
+    "file|/etc/ssl/certs/ca-certificates.crt": {
+      "ceiling_bytes": 8388608,
+      "gid": 0,
+      "mode": "0644",
+      "over_the_ceiling": false,
+      "path": "/etc/ssl/certs/ca-certificates.crt",
+      "present": true,
+      "readable": true,
+      "sha256": "8010bfcee1842b2a4ce8f67c3e9455f0188f7a15bf39ec61a26feb75cd785821",
+      "size": 59,
       "uid": 0
     }
   }

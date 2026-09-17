@@ -1,6 +1,8 @@
 mod answers;
+mod buttons;
 mod deeds;
 mod drawing;
+mod graph;
 mod harness;
 mod history;
 mod narrowing;

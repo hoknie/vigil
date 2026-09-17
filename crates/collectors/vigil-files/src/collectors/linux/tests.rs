@@ -34,11 +34,12 @@ impl Bench {
 
     fn collector(&self, watched: &[String], ceiling: u64) -> FilesCollector {
         let shown = self.directory.display().to_string();
+        let hashed: Vec<(String, u64)> =
+            watched.iter().map(|path| (path.clone(), ceiling)).collect();
 
         FilesCollector::with_directories(
             || "2026-09-11T12:00:00.000Z".to_string(),
-            watched,
-            ceiling,
+            &hashed,
             &[&shown],
         )
     }

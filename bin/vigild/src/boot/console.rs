@@ -8,6 +8,7 @@ pub fn listen(config: &Config, schedule: &Schedule, shared: &Shared) -> Result<(
     eprintln!("  console: {} (0600, this user only)", config.socket_path);
     eprintln!("  console: {}", killing(config));
     eprintln!("  console: {}", accounts(config));
+    eprintln!("  console: {}", units(config));
 
     eprintln!(
         "  history: {}, kept {} days",
@@ -27,6 +28,18 @@ fn killing(config: &Config) -> &'static str {
              (killing.from_the_console)"
         }
         false => "reads, and asks for nothing (killing.from_the_console is off)",
+    }
+}
+
+fn units(config: &Config) -> &'static str {
+    match config.units.from_the_console {
+        true => {
+            "may ask this agent to stop, start, disable, enable, mask and unmask a unit or a \
+             timer, and to comment a line out of a crontab and back in (units.from_the_console)"
+        }
+        false => {
+            "starts and stops nothing this host starts by itself (units.from_the_console is off)"
+        }
     }
 }
 
@@ -63,6 +76,29 @@ mod tests {
         assert!(accounts(&quiet).contains("off"));
         for said in [accounts(&armed), accounts(&quiet)] {
             assert!(said.contains("accounts.from_the_console"), "{said}");
+        }
+    }
+
+    #[test]
+    fn whether_the_console_may_stop_what_this_host_starts_by_itself_is_said_at_start_up_either_way()
+    {
+        let quiet = Config::default();
+        let armed = Config {
+            units: crate::config::Units {
+                from_the_console: true,
+            },
+            ..Config::default()
+        };
+
+        assert!(
+            units(&armed).contains("disable") && units(&armed).contains("crontab"),
+            "an operator reading the start-up of a host where the console can disable a \
+             service must be told so there: {}",
+            units(&armed)
+        );
+        assert!(units(&quiet).contains("off"));
+        for said in [units(&armed), units(&quiet)] {
+            assert!(said.contains("units.from_the_console"), "{said}");
         }
     }
 

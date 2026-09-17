@@ -36,6 +36,14 @@ impl Watch {
         self.previous = Some(baseline);
     }
 
+    pub fn follow(&mut self, collector: Box<dyn Collector>, rules: RuleSet) {
+        if let Some(previous) = &self.previous {
+            collector.restore(previous);
+        }
+        self.collector = collector;
+        self.rules = rules;
+    }
+
     pub fn health(&self) -> Health {
         self.collector.available()
     }

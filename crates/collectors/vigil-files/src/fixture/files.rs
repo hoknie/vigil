@@ -8,10 +8,20 @@ const SSHD_CONFIG: &str = "Port 22\nPermitRootLogin no\nPasswordAuthentication n
 
 const HOSTS: &str = "127.0.0.1 localhost\n::1 localhost ip6-localhost\n";
 
+const BUNDLE: &str = "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n";
+
+const CEILING_BYTES: u64 = 1024 * 1024;
+
+const A_BIGGER_CEILING: u64 = 8 * 1024 * 1024;
+
 pub fn files() -> Snapshot {
     let files = vec![
         watched("/etc/ssh/sshd_config", SSHD_CONFIG, "0600"),
         watched("/etc/hosts", HOSTS, "0644"),
+        WatchedFile {
+            ceiling_bytes: A_BIGGER_CEILING,
+            ..watched("/etc/ssl/certs/ca-certificates.crt", BUNDLE, "0644")
+        },
         WatchedFile {
             path: "/etc/pam.d/sshd".into(),
             present: false,
@@ -22,6 +32,7 @@ pub fn files() -> Snapshot {
             uid: None,
             gid: None,
             over_the_ceiling: false,
+            ceiling_bytes: CEILING_BYTES,
         },
     ];
     let directories = vec![
@@ -49,6 +60,7 @@ fn watched(path: &str, content: &str, mode: &str) -> WatchedFile {
         uid: Some(0),
         gid: Some(0),
         over_the_ceiling: false,
+        ceiling_bytes: CEILING_BYTES,
     }
 }
 

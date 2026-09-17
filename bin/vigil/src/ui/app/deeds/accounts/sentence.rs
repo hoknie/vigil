@@ -12,7 +12,7 @@ pub(super) fn not_offered(object: AccountObject, changing: Changing) -> String {
     ))
 }
 
-pub(super) fn sentence(said: &str) -> String {
+pub(in crate::ui::app::deeds) fn sentence(said: &str) -> String {
     let said = said.trim();
     let mut characters = said.chars();
     let mut out: String = match characters.next() {

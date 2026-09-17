@@ -1,4 +1,4 @@
-use vigil_model::Changing;
+use vigil_model::{Changing, ControlTarget};
 
 use crate::ui::Level;
 
@@ -7,7 +7,10 @@ pub struct Hints<'a> {
     pub editing: bool,
     pub history: bool,
     pub histories: bool,
+    pub graph: bool,
+    pub graphs: bool,
     pub kills: bool,
+    pub controls: Option<ControlTarget>,
     pub changes: &'static [Changing],
     pub typing: bool,
     pub asking: Option<&'a str>,

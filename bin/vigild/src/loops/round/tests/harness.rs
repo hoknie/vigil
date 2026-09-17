@@ -9,6 +9,7 @@ use vigil_module::{Module, Settings};
 use vigil_store::FileStore;
 
 use crate::budget::Meter;
+use crate::config::Followed;
 use crate::socket::{Shared, State};
 use crate::types::{Delivery, Due, Policy, Schedule, Startup};
 
@@ -115,6 +116,7 @@ pub fn watching(name: &str, health: Health, readings: Vec<Snapshot>) -> Watching
             periods: [("ports".to_string(), 30)].into_iter().collect(),
             killing_from_the_console: false,
             accounts_from_the_console: false,
+            units_from_the_console: false,
         },
         &[("ports", health)],
         &[],
@@ -141,6 +143,7 @@ pub fn watching(name: &str, health: Health, readings: Vec<Snapshot>) -> Watching
             meter: Meter::default(),
             opening: Vec::new(),
             standing: Vec::new(),
+            followed: Followed::nothing(),
         },
         collector,
         directory,

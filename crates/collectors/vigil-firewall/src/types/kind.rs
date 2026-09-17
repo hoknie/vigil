@@ -4,6 +4,7 @@ pub enum Kind {
     Backend,
     Table,
     Chain,
+    Interface,
 }
 
 const RULESET: &str = "fw-summary";
@@ -14,6 +15,8 @@ const CHAIN: &str = "fw-chain";
 
 const BACKEND: &str = "fw-backend";
 
+const INTERFACE: &str = "fw-interface";
+
 impl Kind {
     pub fn of(key: &str) -> Option<Kind> {
         match key.split('|').next()? {
@@ -21,6 +24,7 @@ impl Kind {
             TABLE => Some(Kind::Table),
             CHAIN => Some(Kind::Chain),
             BACKEND => Some(Kind::Backend),
+            INTERFACE => Some(Kind::Interface),
             _ => None,
         }
     }
@@ -31,6 +35,7 @@ impl Kind {
             Kind::Backend => BACKEND,
             Kind::Table => TABLE,
             Kind::Chain => CHAIN,
+            Kind::Interface => INTERFACE,
         }
     }
 
@@ -40,6 +45,7 @@ impl Kind {
             Kind::Backend => "backend",
             Kind::Table => "table",
             Kind::Chain => "chain",
+            Kind::Interface => "link",
         }
     }
 }
@@ -54,6 +60,7 @@ mod tests {
         assert_eq!(Kind::of("fw-table|inet filter"), Some(Kind::Table));
         assert_eq!(Kind::of("fw-chain|inet filter|input"), Some(Kind::Chain));
         assert_eq!(Kind::of("fw-backend|legacy"), Some(Kind::Backend));
+        assert_eq!(Kind::of("fw-interface|eth0"), Some(Kind::Interface));
     }
 
     #[test]
@@ -70,12 +77,24 @@ mod tests {
 
     #[test]
     fn the_whole_ruleset_is_read_before_the_tables_it_is_made_of() {
-        let mut order = vec![Kind::Chain, Kind::Table, Kind::Ruleset, Kind::Backend];
+        let mut order = vec![
+            Kind::Interface,
+            Kind::Chain,
+            Kind::Table,
+            Kind::Ruleset,
+            Kind::Backend,
+        ];
         order.sort();
 
         assert_eq!(
             order,
-            vec![Kind::Ruleset, Kind::Backend, Kind::Table, Kind::Chain],
+            vec![
+                Kind::Ruleset,
+                Kind::Backend,
+                Kind::Table,
+                Kind::Chain,
+                Kind::Interface
+            ],
             "a reader looks at what the host filters as a whole, then at what holds the rules"
         );
     }

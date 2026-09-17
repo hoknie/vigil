@@ -14,6 +14,7 @@ fn with_launches_switched_off() -> State {
             periods: [("ports".to_string(), 30u32)].into_iter().collect(),
             killing_from_the_console: false,
             accounts_from_the_console: false,
+            units_from_the_console: false,
         },
         &[("ports", Health::Ok)],
         &[],
@@ -86,4 +87,25 @@ fn a_collector_that_is_switched_off_is_given_no_period_at_all() {
         launches.every_seconds, None,
         "a period for something that does not run would be a promise nobody keeps"
     );
+}
+
+#[test]
+fn a_console_allowed_any_one_of_the_three_things_keeps_the_watching_loop_awake_for_it() {
+    assert!(
+        !with_launches_switched_off().console_may_act(),
+        "a daemon nobody switched anything on for sleeps until its next reading is due"
+    );
+
+    for state in [
+        fixture::state_that_may_kill(),
+        fixture::state_that_may_change(),
+        fixture::state_that_may_control(),
+    ] {
+        assert!(
+            state.console_may_act(),
+            "the loop rests a shorter while when the console may act, because a person who \
+             stopped a unit is looking at a screen that must not go on saying it runs; a \
+             switch missing from this answer is a screen that waits out the whole period"
+        );
+    }
 }

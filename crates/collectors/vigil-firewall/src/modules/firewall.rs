@@ -1,3 +1,4 @@
+use serde::Deserialize;
 use vigil_collect::Collector;
 use vigil_module::{Module, Settings};
 use vigil_rules::RuleSet;
@@ -7,6 +8,12 @@ use crate::rules::firewall_rules;
 use crate::views::WhatTheHostLetsIn;
 
 const FAMILIES: &[&str] = &["firewall"];
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Watching {
+    pub monitoring: bool,
+}
 
 pub struct Firewall;
 
@@ -25,6 +32,17 @@ impl Module for Firewall {
 
     fn unit(&self) -> Option<&'static str> {
         Some("vigil-firewall.timer")
+    }
+
+    fn settings_key(&self) -> Option<&'static str> {
+        Some("firewall")
+    }
+
+    fn check(&self, settings: &Settings) -> Result<(), String> {
+        settings
+            .read::<Watching>()
+            .map(|_| ())
+            .map_err(|error| error.to_string())
     }
 
     fn collector(&self, settings: &Settings) -> Result<Box<dyn Collector>, String> {
@@ -54,7 +72,12 @@ impl Module for Firewall {
 
 #[cfg(target_os = "linux")]
 fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
-    Ok(Box::new(crate::FirewallCollector::new(settings.now())))
+    let watching: Watching = settings.read().map_err(|error| error.to_string())?;
+
+    Ok(Box::new(crate::FirewallCollector::new(
+        settings.now(),
+        watching.monitoring,
+    )))
 }
 
 #[cfg(not(target_os = "linux"))]

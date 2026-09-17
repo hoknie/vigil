@@ -6,6 +6,7 @@ pub enum Family {
     Table,
     Chain,
     Backend,
+    Interface,
 }
 
 pub struct FirewallView<'a> {
@@ -20,6 +21,8 @@ const TABLE: &str = "fw-table";
 const CHAIN: &str = "fw-chain";
 
 const BACKEND: &str = "fw-backend";
+
+const INTERFACE: &str = "fw-interface";
 
 const CLOSED: &str = "drop";
 
@@ -36,6 +39,7 @@ impl<'a> FirewallView<'a> {
             TABLE => Some(Family::Table),
             CHAIN => Some(Family::Chain),
             BACKEND => Some(Family::Backend),
+            INTERFACE => Some(Family::Interface),
             _ => None,
         }
     }

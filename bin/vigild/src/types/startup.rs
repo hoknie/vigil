@@ -10,4 +10,5 @@ pub struct Startup {
     pub periods: BTreeMap<String, u32>,
     pub killing_from_the_console: bool,
     pub accounts_from_the_console: bool,
+    pub units_from_the_console: bool,
 }

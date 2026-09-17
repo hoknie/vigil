@@ -30,6 +30,7 @@
       },
       "free_inodes_percent_step": {
         "types": [
+          "null",
           "number"
         ],
         "always": true
@@ -49,6 +50,18 @@
       "read_only": {
         "types": [
           "boolean"
+        ],
+        "always": true
+      },
+      "storage": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "storage_from": {
+        "types": [
+          "string"
         ],
         "always": true
       },

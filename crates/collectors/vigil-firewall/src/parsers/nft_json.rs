@@ -2,7 +2,11 @@ use std::fmt;
 
 use serde_json::Value;
 
+use super::expression::{NftRule, rule_of};
+
 const FIRST_LINE_SHOWN: usize = 160;
+
+pub const RULES_KEPT_PER_CHAIN: usize = 32;
 
 const ROOT: &str = "nftables";
 
@@ -64,6 +68,7 @@ pub struct NftChain {
     pub priority: i64,
     pub policy: String,
     pub rules: usize,
+    pub kept: Vec<NftRule>,
 }
 
 impl NftChain {
@@ -149,6 +154,7 @@ pub fn parse_nft_ruleset(bytes: &[u8]) -> Result<NftRuleset, NftRefusal> {
                 priority: body.get("prio").and_then(Value::as_i64).unwrap_or(0),
                 policy: text(body, "policy"),
                 rules: 0,
+                kept: Vec::new(),
             }),
             RULE => {
                 ruleset.rules += 1;
@@ -157,6 +163,9 @@ pub fn parse_nft_ruleset(bytes: &[u8]) -> Result<NftRuleset, NftRefusal> {
                 for held in chains.iter_mut() {
                     if held.table_key() == table && held.name == chain {
                         held.rules += 1;
+                        if held.kept.len() < RULES_KEPT_PER_CHAIN {
+                            held.kept.push(rule_of(body));
+                        }
                     }
                 }
                 for held in ruleset.tables.iter_mut() {

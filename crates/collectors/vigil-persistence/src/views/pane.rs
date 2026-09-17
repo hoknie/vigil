@@ -1,4 +1,4 @@
-use vigil_model::Snapshot;
+use vigil_model::{ControlTarget, Snapshot};
 use vigil_view::{
     Arrangement, Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Rows,
     Showing,
@@ -133,6 +133,11 @@ impl Pane for Of {
     }
 
     fn offers(&self) -> Offers {
-        Offers::default().sorted(false)
+        let offers = Offers::default().sorted(false);
+        match self.0 {
+            List::Units | List::Timers => offers.controlled(ControlTarget::Unit),
+            List::Cron => offers.controlled(ControlTarget::Cron),
+            _ => offers,
+        }
     }
 }

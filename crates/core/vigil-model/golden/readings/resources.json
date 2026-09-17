@@ -13,7 +13,20 @@
       "free_percent_step": 60,
       "mount": "/",
       "read_only": false,
+      "storage": "sda",
+      "storage_from": "disk",
       "total_bytes": 52479123456,
+      "type": "ext4"
+    },
+    "fs|/home": {
+      "device": "/dev/mapper/vg-home",
+      "free_inodes_percent_step": 95,
+      "free_percent_step": 55,
+      "mount": "/home",
+      "read_only": false,
+      "storage": "sda",
+      "storage_from": "disk",
+      "total_bytes": 30064771072,
       "type": "ext4"
     },
     "fs|/run": {
@@ -22,8 +35,21 @@
       "free_percent_step": 95,
       "mount": "/run",
       "read_only": false,
+      "storage": "tmpfs",
+      "storage_from": "source",
       "total_bytes": 821264384,
       "type": "tmpfs"
+    },
+    "fs|/srv": {
+      "device": "/dev/sdb1",
+      "free_inodes_percent_step": null,
+      "free_percent_step": 70,
+      "mount": "/srv",
+      "read_only": false,
+      "storage": "sdb",
+      "storage_from": "disk",
+      "total_bytes": 107374182400,
+      "type": "xfs"
     },
     "fs|/var": {
       "device": "/dev/sda2",
@@ -31,6 +57,8 @@
       "free_percent_step": 40,
       "mount": "/var",
       "read_only": false,
+      "storage": "sda",
+      "storage_from": "disk",
       "total_bytes": 20938809344,
       "type": "ext4"
     },

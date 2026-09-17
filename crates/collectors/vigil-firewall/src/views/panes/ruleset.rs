@@ -3,16 +3,16 @@ use vigil_view::{
     Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Rows, Showing,
 };
 
-use super::columns::{cells, columns};
-use super::detail;
-use super::footer;
-use super::notices;
-use super::rows::{SORTED_BY, indexed, rows};
-use super::tally::tally;
+use super::super::columns::{cells, columns};
+use super::super::detail;
+use super::super::footer;
+use super::super::notices;
+use super::super::rows::{SORTED_BY, indexed, rows};
+use super::super::tally::tally;
 
 const ROOM_FOR_THE_TYPE: u16 = 118;
 
-pub(super) struct TheRuleset;
+pub(in crate::views) struct TheRuleset;
 
 impl Pane for TheRuleset {
     fn name(&self) -> &str {

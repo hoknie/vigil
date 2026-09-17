@@ -41,6 +41,9 @@ killing:
 accounts:
   from_the_console: false
 
+units:
+  from_the_console: false
+
 resources:
   # A step of the wall clock this wide is reported as a finding.
   clock_skew_seconds: 300
@@ -48,6 +51,13 @@ resources:
   disk_free_percent: 10
   # A filesystem with free inodes under this percentage is reported as a finding.
   inode_free_percent: 10
+
+firewall:
+  # Whether the packet counters of this host's interfaces are part of the reading. Off keeps
+  # the reading still: a counter moves on every pass, so a host that carries one reports a
+  # change once a minute for as long as it runs. On is what fills the numbers under the path
+  # a packet takes, on the firewall screen of the console.
+  monitoring: false
 
 files:
   # The files watched for a changed content, changed permissions and a new suid bit.

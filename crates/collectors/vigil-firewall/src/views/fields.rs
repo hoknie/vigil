@@ -8,6 +8,8 @@ pub const ACCEPT: &str = "accept";
 
 const UNSAID: &str = "—";
 
+pub const NO_ADDRESS: &str = "no address";
+
 pub fn what(key: &str, item: &Value) -> String {
     match Kind::of(key).unwrap_or(Kind::Ruleset) {
         Kind::Ruleset => match version(item) {
@@ -21,6 +23,7 @@ pub fn what(key: &str, item: &Value) -> String {
             text(item, "table"),
             text(item, "name")
         ),
+        Kind::Interface => text(item, "name").to_string(),
         Kind::Backend => match legacy_tables(item).is_empty() {
             true => "legacy iptables".to_string(),
             false => format!("legacy iptables: {}", legacy_tables(item).join(", ")),
@@ -115,6 +118,57 @@ pub fn legacy_tables(item: &Value) -> Vec<&str> {
     item["tables"]
         .as_array()
         .map(|values| values.iter().filter_map(Value::as_str).collect())
+        .unwrap_or_default()
+}
+
+pub fn addresses(item: &Value) -> Vec<&str> {
+    item["addresses"]
+        .as_array()
+        .map(|values| values.iter().filter_map(Value::as_str).collect())
+        .unwrap_or_default()
+}
+
+pub fn shown_addresses(item: &Value) -> String {
+    match addresses(item).is_empty() {
+        true => NO_ADDRESS.to_string(),
+        false => addresses(item).join(", "),
+    }
+}
+
+pub fn the_way_out(item: &Value) -> bool {
+    item["the_way_out"].as_bool().unwrap_or(false)
+}
+
+pub fn counted(item: &Value) -> bool {
+    item["counted"].as_bool().unwrap_or(false)
+}
+
+pub fn packets(item: &Value) -> Option<u64> {
+    match counted(item) {
+        false => None,
+        true => Some(number(item, "packets_in").saturating_add(number(item, "packets_out"))),
+    }
+}
+
+pub fn flow(item: &Value, field: &str) -> u64 {
+    number(item, field)
+}
+
+pub fn kept_rules(item: &Value) -> Vec<(i64, &str, &str)> {
+    item["rules_kept"]
+        .as_array()
+        .map(|values| {
+            values
+                .iter()
+                .map(|rule| {
+                    (
+                        rule["handle"].as_i64().unwrap_or(0),
+                        rule["matches"].as_str().unwrap_or(UNSAID),
+                        rule["does"].as_str().unwrap_or(UNSAID),
+                    )
+                })
+                .collect()
+        })
         .unwrap_or_default()
 }
 

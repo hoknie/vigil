@@ -18,6 +18,11 @@ Format:
   and name the key that decides it
 - accounts can be changed from the console
 - launches show the last run beside the run count, sort by either, and H opens the runs of a row
+- units and timers can be stopped, started, disabled, enabled, masked and unmasked
+- cron can be enabled or disabled
+- the firewall section lists tables and zones, says what each rule matches and does
+- the filesystems of this host are drawn as a tree of the disks and volumes they
+- watched paths edited in `vigil.yaml`, from the console or by hand
 
 ### Fixed
 - double suppresion for one item

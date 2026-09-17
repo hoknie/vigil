@@ -20,6 +20,7 @@ pub struct Config {
     pub suppressions: Vec<Suppression>,
     pub killing: Killing,
     pub accounts: Accounts,
+    pub units: Units,
     #[serde(skip)]
     pub of_the_modules: BTreeMap<String, Value>,
 }
@@ -37,6 +38,7 @@ impl Default for Config {
             suppressions: Vec::new(),
             killing: Killing::default(),
             accounts: Accounts::default(),
+            units: Units::default(),
             of_the_modules: BTreeMap::new(),
         }
     }
@@ -71,6 +73,12 @@ pub struct Killing {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Accounts {
+    pub from_the_console: bool,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Units {
     pub from_the_console: bool,
 }
 
@@ -121,12 +129,28 @@ mod tests {
     }
 
     #[test]
-    fn a_file_that_switches_killing_on_has_not_switched_accounts_on() {
+    fn a_configuration_nobody_edited_stops_and_disables_nothing_this_host_starts_by_itself() {
+        assert!(
+            !Config::default().units.from_the_console,
+            "the console can ask the agent to stop, disable or mask a unit and to comment a \
+             line out of a crontab. That is off on a host whose operator has not written the \
+             word down, and it is a key of its own: a host where a process may be signalled \
+             has not thereby agreed that a service may be disabled until somebody notices"
+        );
+    }
+
+    #[test]
+    fn a_file_that_switches_killing_on_has_switched_neither_accounts_nor_units_on() {
         let config: Config =
             serde_yaml::from_str("killing:\n  from_the_console: true\n").expect("parses");
 
         assert!(config.killing.from_the_console);
         assert!(!config.accounts.from_the_console);
+        assert!(
+            !config.units.from_the_console,
+            "three verbs, three keys: one word in this file must never switch on a second \
+             thing the agent does to the host"
+        );
     }
 
     #[test]

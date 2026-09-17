@@ -2,7 +2,7 @@ use vigil_view::{Piece, RowKey};
 
 use crate::ui::app::App;
 
-use crate::ui::app::history::HISTORY;
+use crate::ui::app::deeds::killing::KILL;
 use crate::ui::helpers::finding::acts::Acts;
 use crate::ui::helpers::finding::suppression;
 use crate::ui::{Paper, Reading, holding};
@@ -25,12 +25,25 @@ impl App {
             .pane_row_under_the_cursor()
             .is_some_and(|row| row.of_the_reading);
 
-        let acts = match self.kill_target() {
-            Some(target) => Acts::of_a_row(on_a_row.then_some(target)),
-            None if on_a_row => self.account_acts(),
-            None => Acts::default(),
+        let Some(pane) = self.pane() else {
+            return Acts::default();
         };
-        acts.historied(on_a_row && self.pane().is_some_and(|pane| pane.offers().history))
+        let (creating, editing, deleting) = self.row_changes(on_a_row);
+        Acts::of_a_pane(&pane.offers(), on_a_row).changing(creating, editing, deleting)
+    }
+
+    fn row_changes(&self, on_a_row: bool) -> (bool, bool, bool) {
+        if self.changes_offered().is_some() {
+            let account = self.account_acts();
+            let creating = self
+                .changes_offered()
+                .is_some_and(|object| object.offers(vigil_model::Changing::Create));
+            return (creating, account.editing, account.deleting);
+        }
+        match self.watching_offered() {
+            true => (true, on_a_row, on_a_row),
+            false => (false, false, false),
+        }
     }
 
     pub(in crate::ui::app) fn buttons_here(&self) -> usize {
@@ -87,16 +100,8 @@ impl App {
             return false;
         };
         match button.key {
-            HISTORY => {
-                self.open_the_history();
-            }
-            SUPPRESS => {
-                self.show_the_suppressions();
-            }
-            key if key == super::accounts::EDIT || key == super::accounts::DELETE => {
-                self.changing_by_key(key);
-            }
-            _ => self.killing(),
+            KILL => self.killing(),
+            key => self.letter(key),
         }
         true
     }

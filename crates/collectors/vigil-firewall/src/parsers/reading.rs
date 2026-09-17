@@ -2,6 +2,7 @@ use serde_json::json;
 use vigil_model::Snapshot;
 
 use super::nft_json::NftRuleset;
+use crate::types::Interface;
 
 pub const SOURCE: &str = "firewall";
 
@@ -13,9 +14,13 @@ const TABLE: &str = "fw-table";
 
 const CHAIN: &str = "fw-chain";
 
+const INTERFACE: &str = "fw-interface";
+
 pub struct FirewallReading<'a> {
     pub ruleset: &'a NftRuleset,
     pub legacy_tables: &'a [String],
+    pub interfaces: &'a [Interface],
+    pub counting: bool,
 }
 
 impl FirewallReading<'_> {
@@ -31,6 +36,7 @@ pub fn firewall_snapshot(taken_at: &str, reading: &FirewallReading<'_>) -> Snaps
     add_tables(&mut snapshot, reading);
     add_chains(&mut snapshot, reading);
     add_backend(&mut snapshot, reading);
+    add_interfaces(&mut snapshot, reading);
 
     snapshot
 }
@@ -80,8 +86,41 @@ fn add_chains(snapshot: &mut Snapshot, reading: &FirewallReading<'_>) {
                 "priority": chain.priority,
                 "policy": chain.policy,
                 "rules": chain.rules,
+                "rules_kept": chain
+                    .kept
+                    .iter()
+                    .map(|rule| json!({
+                        "handle": rule.handle,
+                        "matches": rule.matches,
+                        "does": rule.does,
+                    }))
+                    .collect::<Vec<serde_json::Value>>(),
             }),
         );
+    }
+}
+
+fn add_interfaces(snapshot: &mut Snapshot, reading: &FirewallReading<'_>) {
+    for interface in reading.interfaces {
+        let mut said = json!({
+            "name": interface.name,
+            "addresses": interface.addresses,
+            "the_way_out": interface.the_way_out,
+            "counted": reading.counting,
+        });
+
+        if let (true, Some(traffic)) = (reading.counting, interface.traffic) {
+            said["packets_in"] = json!(traffic.packets_in);
+            said["packets_out"] = json!(traffic.packets_out);
+            said["bytes_in"] = json!(traffic.bytes_in);
+            said["bytes_out"] = json!(traffic.bytes_out);
+            said["dropped_in"] = json!(traffic.dropped_in);
+            said["dropped_out"] = json!(traffic.dropped_out);
+        }
+
+        snapshot
+            .items
+            .insert(format!("{INTERFACE}|{}", interface.name), said);
     }
 }
 
@@ -118,6 +157,24 @@ mod tests {
     const NOTHING_AT_ALL: &str =
         r#"{"nftables": [{"metainfo": {"version": "1.0.6", "json_schema_version": 1}}]}"#;
 
+    fn with_an_interface() -> Snapshot {
+        let ruleset = parse_nft_ruleset(HOST_WITH_A_FILTER.as_bytes()).expect("reads");
+        let interfaces = vec![Interface {
+            name: "eth0".to_string(),
+            ..Interface::default()
+        }];
+
+        firewall_snapshot(
+            AT,
+            &FirewallReading {
+                ruleset: &ruleset,
+                legacy_tables: &[],
+                interfaces: &interfaces,
+                counting: true,
+            },
+        )
+    }
+
     fn snapshot(document: &str, legacy: &[&str]) -> Snapshot {
         let ruleset = parse_nft_ruleset(document.as_bytes()).expect("reads");
         let legacy: Vec<String> = legacy.iter().map(|name| (*name).to_string()).collect();
@@ -127,6 +184,8 @@ mod tests {
             &FirewallReading {
                 ruleset: &ruleset,
                 legacy_tables: &legacy,
+                interfaces: &[],
+                counting: false,
             },
         )
     }
@@ -151,10 +210,12 @@ mod tests {
         let filtering = snapshot(HOST_WITH_A_FILTER, &[]);
         let old_backend = snapshot(NOTHING_AT_ALL, &["filter"]);
 
+        let watched = with_an_interface();
         let mut classes: Vec<&str> = filtering
             .items
             .keys()
             .chain(old_backend.items.keys())
+            .chain(watched.items.keys())
             .map(|key| class_of(key))
             .collect();
         classes.sort_unstable();
@@ -162,7 +223,13 @@ mod tests {
 
         assert_eq!(
             classes,
-            vec!["fw-backend", "fw-chain", "fw-summary", "fw-table"],
+            vec![
+                "fw-backend",
+                "fw-chain",
+                "fw-interface",
+                "fw-summary",
+                "fw-table"
+            ],
             "class_of reads the first segment of the key, and the shape published beside the \
              reading has one entry per class. Four kinds of row under one class is a shape \
              where every field is optional, which asserts nothing about any of them"

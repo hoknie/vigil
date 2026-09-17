@@ -15,15 +15,14 @@ impl FilesCollector {
         }
 
         let mut complaints: Vec<String> = Vec::new();
-        for path in &self.watched {
+        for (path, ceiling_bytes) in &self.watched {
             let shown = path.display();
             match fs::symlink_metadata(path) {
                 Err(_) => {}
-                Ok(metadata) if metadata.len() > self.ceiling_bytes => complaints.push(format!(
-                    "{shown} is {} bytes, over the {} this collector hashes, so a change to it \
-                     will be seen in its size and its mode and not in its content",
-                    metadata.len(),
-                    self.ceiling_bytes
+                Ok(metadata) if metadata.len() > *ceiling_bytes => complaints.push(format!(
+                    "{shown} is {} bytes, over the {ceiling_bytes} this collector hashes, so a \
+                     change to it will be seen in its size and its mode and not in its content",
+                    metadata.len()
                 )),
                 Ok(_) if fs::read(path).is_err() => complaints.push(format!(
                     "{shown} is there and cannot be read by this agent, so a change to its \

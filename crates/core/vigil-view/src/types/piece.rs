@@ -6,6 +6,7 @@ pub enum Piece {
     Text(String),
     Warning(String),
     Key(String),
+    Line(String),
     Blank,
 }
 
@@ -32,11 +33,33 @@ impl Piece {
         }
     }
 
+    pub fn line(drawn: impl Into<String>) -> Piece {
+        Piece::Line(drawn.into())
+    }
+
     pub fn text(text: impl Into<String>) -> Piece {
         Piece::Text(text.into())
     }
 
     pub fn warning(text: impl Into<String>) -> Piece {
         Piece::Warning(text.into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_drawn_line_is_a_piece_of_its_own_because_prose_is_the_only_thing_that_may_be_rewrapped() {
+        let drawn = Piece::line("   in ──▶ prerouting ──▶ input");
+
+        assert_eq!(drawn, Piece::Line("   in ──▶ prerouting ──▶ input".into()));
+        assert_ne!(
+            drawn,
+            Piece::text("   in ──▶ prerouting ──▶ input"),
+            "a diagram handed over as text is a diagram the renderer is free to wrap at the \
+             width of the panel, and a wrapped diagram is a column of arrows pointing nowhere"
+        );
     }
 }

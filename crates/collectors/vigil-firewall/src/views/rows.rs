@@ -11,7 +11,7 @@ pub(super) fn rows(reading: &Snapshot, showing: &Showing<'_>) -> Vec<RowKey> {
     let mut rows: Vec<((Kind, String, String), String)> = reading
         .items
         .iter()
-        .filter(|(key, _)| Kind::of(key).is_some())
+        .filter(|(key, _)| of_the_ruleset(key))
         .filter(|(key, item)| showing.matches(key, item))
         .map(|(key, item)| (sort_key(key, item), key.clone()))
         .collect();
@@ -27,7 +27,7 @@ pub(super) fn indexed(reading: &Snapshot) -> Index {
     let mut read: Vec<((Kind, String, String), &String, &Value)> = reading
         .items
         .iter()
-        .filter(|(key, _)| Kind::of(key).is_some())
+        .filter(|(key, _)| of_the_ruleset(key))
         .map(|(key, item)| (sort_key(key, item), key, item))
         .collect();
     read.sort_by(|left, right| left.0.cmp(&right.0).then_with(|| left.1.cmp(right.1)));
@@ -57,6 +57,10 @@ pub(super) fn summary(reading: &Snapshot) -> Option<&Value> {
 }
 
 pub(super) const SORTED_BY: &[&str] = &["KIND", "WHAT", "HOOK", "POLICY", "RULES"];
+
+pub(super) fn of_the_ruleset(key: &str) -> bool {
+    !matches!(Kind::of(key), None | Some(Kind::Interface))
+}
 
 fn sort(keys: &mut [String], reading: &Snapshot, sorting: Sorting) {
     if sorting.as_read() {
