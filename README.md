@@ -19,7 +19,10 @@ Components:
   `systemctl mask`.
 
 ## Install
-
+```bash
+curl -fsSL https://raw.githubusercontent.com/hoknie/vigil/main/env/scripts/install.sh | bash
+```
+OR
 ```bash
 curl -fsSLO https://raw.githubusercontent.com/hoknie/vigil/main/env/scripts/install.sh
 sudo bash install.sh                    # the latest release, as a deb or an rpm
