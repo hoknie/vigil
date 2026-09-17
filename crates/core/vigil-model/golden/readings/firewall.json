@@ -9,6 +9,7 @@
       "policy": "drop",
       "priority": 0,
       "rules": 0,
+      "rules_kept": [],
       "table": "filter",
       "type": "filter"
     },
@@ -19,6 +20,23 @@
       "policy": "drop",
       "priority": 0,
       "rules": 3,
+      "rules_kept": [
+        {
+          "does": "accept",
+          "handle": 10,
+          "matches": "meta iifname lo"
+        },
+        {
+          "does": "accept",
+          "handle": 11,
+          "matches": "ct state in established . related"
+        },
+        {
+          "does": "jump allowed",
+          "handle": 12,
+          "matches": "tcp dport 22"
+        }
+      ],
       "table": "filter",
       "type": "filter"
     },
@@ -29,6 +47,7 @@
       "policy": "accept",
       "priority": 0,
       "rules": 0,
+      "rules_kept": [],
       "table": "filter",
       "type": "filter"
     },
@@ -39,6 +58,13 @@
       "policy": "accept",
       "priority": 100,
       "rules": 1,
+      "rules_kept": [
+        {
+          "does": "masquerade",
+          "handle": 21,
+          "matches": "meta oifname != docker0"
+        }
+      ],
       "table": "nat",
       "type": "nat"
     },
@@ -49,8 +75,59 @@
       "policy": "accept",
       "priority": -100,
       "rules": 1,
+      "rules_kept": [
+        {
+          "does": "jump DOCKER",
+          "handle": 20,
+          "matches": "meta nfproto in ipv4"
+        }
+      ],
       "table": "nat",
       "type": "nat"
+    },
+    "fw-interface|docker0": {
+      "addresses": [
+        "172.17.0.1"
+      ],
+      "bytes_in": 511204,
+      "bytes_out": 2004118,
+      "counted": true,
+      "dropped_in": 0,
+      "dropped_out": 0,
+      "name": "docker0",
+      "packets_in": 4102,
+      "packets_out": 3980,
+      "the_way_out": false
+    },
+    "fw-interface|eth0": {
+      "addresses": [
+        "192.168.1.23",
+        "2001:db8::42/64"
+      ],
+      "bytes_in": 91200311,
+      "bytes_out": 12084411,
+      "counted": true,
+      "dropped_in": 7,
+      "dropped_out": 2,
+      "name": "eth0",
+      "packets_in": 318841,
+      "packets_out": 201773,
+      "the_way_out": true
+    },
+    "fw-interface|lo": {
+      "addresses": [
+        "127.0.0.1",
+        "::1/128"
+      ],
+      "bytes_in": 5140552,
+      "bytes_out": 5140552,
+      "counted": true,
+      "dropped_in": 0,
+      "dropped_out": 0,
+      "name": "lo",
+      "packets_in": 41220,
+      "packets_out": 41220,
+      "the_way_out": false
     },
     "fw-summary|nftables": {
       "base_chains": 5,

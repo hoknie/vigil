@@ -22,6 +22,10 @@ and nothing else about any subject; `bin/vigil` walks the same list for the sect
 - **`settings_key`** and `Settings` — its own fragment of `vigil.yaml`, already parsed into a
   value, plus the clock it stamps a reading with. A module never reads the file and never
   reads the host's time;
+- **`follows_the_file`** — whether the daemon hands it its fragment again while it runs, when
+  the file changes and still loads. The default is no: a fragment is read once, at start-up,
+  and a module that says otherwise is saying that an edit to its block is safe to take up on
+  the next round. Today that is `files` alone;
 - **`collector`, `rules`** — the two halves of the watch: what it reads, and what it makes of
   the difference between two readings;
 - **`families`, `row_of`** — which finding keys are its own, and which row of its reading a

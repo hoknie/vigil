@@ -20,6 +20,10 @@ pub trait Module: Send + Sync {
         None
     }
 
+    fn follows_the_file(&self) -> bool {
+        false
+    }
+
     fn check(&self, _settings: &Settings) -> Result<(), String> {
         Ok(())
     }

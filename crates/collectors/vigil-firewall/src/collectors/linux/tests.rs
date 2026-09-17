@@ -53,6 +53,46 @@ impl Bench {
             .expect("sets the time this reading was written");
     }
 
+    fn interfaces(&self) -> [String; 4] {
+        let written = [
+            (
+                "net_dev",
+                "a\nb\n  eth0: 900 30 0 1 0 0 0 0 400 12 0 0 0 0 0 0\n",
+            ),
+            (
+                "route",
+                "Iface Destination Gateway Flags RefCnt Use Metric Mask MTU Window IRTT\n\
+                 eth0 00000000 0101A8C0 0003 0 0 100 00000000 0 0 0\n\
+                 eth0 0001A8C0 00000000 0001 0 0 100 00FFFFFF 0 0 0\n",
+            ),
+            (
+                "fib_trie",
+                "Local:\n  |-- 192.168.1.23\n     /32 host LOCAL\n",
+            ),
+            ("if_inet6", ""),
+        ];
+
+        written.map(|(named, body)| {
+            let path = self.directory.join(named);
+            fs::write(&path, body).expect("writes");
+            path.display().to_string()
+        })
+    }
+
+    fn watching(&self, counting: bool) -> FirewallCollector {
+        let written = self.interfaces();
+        let sources = [
+            written[0].as_str(),
+            written[1].as_str(),
+            written[2].as_str(),
+            written[3].as_str(),
+        ];
+
+        self.collector(false)
+            .reading_interfaces_from(sources)
+            .counting(counting)
+    }
+
     fn collector(&self, legacy: bool) -> FirewallCollector {
         let sources: Vec<String> = match legacy {
             true => vec![self.legacy().display().to_string()],
@@ -197,4 +237,62 @@ fn a_ruleset_bigger_than_this_collector_reads_is_refused_by_name_and_not_half_re
 
     assert!(matches!(collector.collect(), Err(CollectError::Budget(_))));
     assert!(matches!(collector.available(), Health::Degraded(_)));
+}
+
+#[test]
+fn the_interfaces_of_this_host_are_read_beside_the_ruleset_and_not_instead_of_it() {
+    let bench = Bench::new("interfaces");
+    bench.write(ONE_FILTER);
+
+    let reading = bench.watching(false).collect().expect("reads");
+
+    assert_eq!(
+        reading.items["fw-chain|inet filter|input"]["policy"],
+        "drop"
+    );
+    assert_eq!(reading.items["fw-interface|eth0"]["name"], "eth0");
+    assert_eq!(
+        reading.items["fw-interface|eth0"]["addresses"][0],
+        "192.168.1.23"
+    );
+    assert_eq!(reading.items["fw-interface|eth0"]["the_way_out"], true);
+}
+
+#[test]
+fn a_host_told_to_count_carries_the_counters_and_one_that_was_not_carries_none() {
+    let bench = Bench::new("counting");
+    bench.write(ONE_FILTER);
+
+    let quiet = bench.watching(false).collect().expect("reads");
+    let watched = bench.watching(true).collect().expect("reads");
+
+    assert!(quiet.items["fw-interface|eth0"]["packets_in"].is_null());
+    assert_eq!(watched.items["fw-interface|eth0"]["packets_in"], 30);
+    assert_eq!(watched.items["fw-interface|eth0"]["dropped_in"], 1);
+}
+
+#[test]
+fn a_host_whose_proc_this_agent_cannot_see_is_read_with_no_interface_and_no_refusal() {
+    let bench = Bench::new("no-proc");
+    bench.write(ONE_FILTER);
+    let blind = bench.collector(false).reading_interfaces_from([
+        "/nonexistent/dev",
+        "/nonexistent/route",
+        "/x",
+        "/y",
+    ]);
+
+    let reading = blind
+        .collect()
+        .expect("a ruleset that reads is still a reading");
+
+    assert!(
+        reading
+            .items
+            .keys()
+            .all(|key| !key.starts_with("fw-interface")),
+        "a container with no view of the host's network namespace shows no interface, and \
+         the rules it does show are still worth reading"
+    );
+    assert_eq!(reading.items["fw-summary|nftables"]["tables"], 1);
 }

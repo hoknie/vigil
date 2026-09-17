@@ -61,7 +61,10 @@ impl App {
                 self.editing = None;
                 self.settle();
             }
-            Pressed::Submit => self.submit_the_form(),
+            Pressed::Submit => match self.a_watching_form_is_open() {
+                true => self.save_the_watched_path(),
+                false => self.submit_the_form(),
+            },
         }
     }
 

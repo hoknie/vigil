@@ -19,7 +19,11 @@ impl FilesCollector {
             ));
         }
 
-        let files: Vec<WatchedFile> = self.watched.iter().map(|path| self.file(path)).collect();
+        let files: Vec<WatchedFile> = self
+            .watched
+            .iter()
+            .map(|(path, ceiling_bytes)| file(path, *ceiling_bytes))
+            .collect();
         let directories: Vec<WatchedDirectory> = self
             .directories
             .iter()
@@ -34,40 +38,42 @@ impl FilesCollector {
             },
         ))
     }
+}
 
-    fn file(&self, path: &Path) -> WatchedFile {
-        let shown = path.display().to_string();
-        let Ok(metadata) = fs::symlink_metadata(path) else {
-            return WatchedFile {
-                path: shown,
-                present: false,
-                readable: false,
-                digest: None,
-                size: 0,
-                mode: None,
-                uid: None,
-                gid: None,
-                over_the_ceiling: false,
-            };
-        };
-
-        let over_the_ceiling = metadata.len() > self.ceiling_bytes;
-        let digest = match over_the_ceiling {
-            true => None,
-            false => fs::read(path).ok().map(|bytes| hex(&sha256(&bytes))),
-        };
-
-        WatchedFile {
+fn file(path: &Path, ceiling_bytes: u64) -> WatchedFile {
+    let shown = path.display().to_string();
+    let Ok(metadata) = fs::symlink_metadata(path) else {
+        return WatchedFile {
             path: shown,
-            present: true,
-            readable: digest.is_some(),
-            digest,
-            size: metadata.len(),
-            mode: Some(mode_of(&metadata)),
-            uid: Some(metadata.uid()),
-            gid: Some(metadata.gid()),
-            over_the_ceiling,
-        }
+            present: false,
+            readable: false,
+            digest: None,
+            size: 0,
+            mode: None,
+            uid: None,
+            gid: None,
+            over_the_ceiling: false,
+            ceiling_bytes,
+        };
+    };
+
+    let over_the_ceiling = metadata.len() > ceiling_bytes;
+    let digest = match over_the_ceiling {
+        true => None,
+        false => fs::read(path).ok().map(|bytes| hex(&sha256(&bytes))),
+    };
+
+    WatchedFile {
+        path: shown,
+        present: true,
+        readable: digest.is_some(),
+        digest,
+        size: metadata.len(),
+        mode: Some(mode_of(&metadata)),
+        uid: Some(metadata.uid()),
+        gid: Some(metadata.gid()),
+        over_the_ceiling,
+        ceiling_bytes,
     }
 }
 

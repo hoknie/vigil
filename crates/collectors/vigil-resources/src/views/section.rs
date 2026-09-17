@@ -1,6 +1,7 @@
 use vigil_view::{Pane, Section};
 
 use super::pane::TheHost;
+use super::storage::ByStorage;
 
 pub struct TheHostAndItsFiles;
 
@@ -18,6 +19,6 @@ impl Section for TheHostAndItsFiles {
     }
 
     fn panes(&self) -> Vec<Box<dyn Pane>> {
-        vec![Box::new(TheHost)]
+        vec![Box::new(TheHost), Box::new(ByStorage)]
     }
 }

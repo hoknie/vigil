@@ -4,6 +4,7 @@ mod budget;
 mod cli;
 mod collector;
 mod config;
+mod files;
 mod helpers;
 mod identity;
 mod killing;
@@ -11,8 +12,9 @@ mod loops;
 mod modules;
 mod socket;
 mod types;
+mod units;
 mod wizard;
 
 pub use boot::{run, start};
-pub use config::{Config, ConfigError, Receiver};
+pub use config::{Config, ConfigError, Receiver, load};
 pub use vigil_config::Suppression;

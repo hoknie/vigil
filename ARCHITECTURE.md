@@ -330,8 +330,8 @@ protocol structure and keeps its internal state private.
 daemon **from outside the host** is data: `host-findings/v1` defines no reverse channel, so this
 guarantee comes from the contract itself.
 
-**The local console protocol has exactly two verbs, both added by the owner's decisions of
-2026-09-14.** `kill` closes a socket that a person has marked on the ports screen, either by
+**The local console protocol has exactly three verbs, each added by a decision of the owner's
+own.** `kill` closes a socket that a person has marked on the ports screen, either by
 signalling the process that holds it or by destroying the socket itself. The same verb stops a
 program marked in the list of running programs, by signalling each of its processes found in
 `/proc` at the moment of the request. It is enabled in `vigil.yaml`
@@ -352,30 +352,47 @@ thereby a host where the console may grant sudo. The daemon runs the distributio
 by absolute path, checks a sudoers file with `visudo -cf` before it replaces the old one, and
 refuses uid 0 deletion or locking, deleting the agent's own account or the gid 0 group, a key
 absent from the latest reading, and any name, path, key line or rule that does not pass its
-checks. Every attempt produces `agent.account.changed` or `agent.account.change_refused`
-(`docs/designs/2026-09-14-DESIGN-console-accounts.md`). A third verb requires an equivalent
-decision, and the test `two_requests_do_something_on_the_host_and_both_are_named_here` fails if
-one appears.
+checks. Every attempt produces `agent.account.changed` or `agent.account.change_refused`.
+
+`control` acts on what this host starts by itself, from the startup screen: a unit or a timer is
+stopped, started, disabled, enabled, masked or unmasked through `systemctl` — those six words and
+no seventh, each with its opposite beside it, so a person undoes from the same band what they
+just did — and a cron line is commented out or brought back. `restart`, `reload`, `isolate`,
+`daemon-reload`, `reboot` and the rest have no word in `Controlling` at all, so no shape of the
+request reaches them. It has its own switch, `units.from_the_console`, `off` by default. The
+daemon refuses a key absent from the latest reading, a unit name it did not read off this host or
+that could be read as an option, the agent's own unit and the unit any of its readings needs, a
+crontab whose line is no longer there byte for byte, and a job that is a whole file of
+`/etc/cron.daily` and its neighbours. The crontab is rewritten the way an `authorized_keys` file
+is, by a candidate renamed over it, following no symbolic link. Every attempt produces
+`agent.unit.controlled`, `agent.unit.control_refused`, `agent.cron.changed` or
+`agent.cron.change_refused`. A fourth verb
+requires an equivalent decision, and the test
+`three_requests_do_something_on_the_host_and_all_three_are_named_here` fails if one appears.
 
 **The daemon's watch path starts no programs.** No collector, differ, rule, sink or socket answer
-ever reaches `exec`. Exactly three places start a program, and each carries out an instruction a
+ever reaches `exec`. Exactly four places start a program, and each carries out an instruction a
 person gave on this host: the operator command `vigild collector <name> enable|disable`
 (`bin/vigild/src/collector/host.rs`, which runs `/usr/bin/systemctl` by absolute path), closing a
 socket with `ss -K` after a person confirms it at the console
 (`bin/vigild/src/killing/destruction.rs`, which runs the distribution's `ss` by absolute path),
-and changing an account a person saved or deleted at the console
+changing an account a person saved or deleted at the console
 (`bin/vigild/src/accounts/tools.rs`, which runs the distribution's account tools, `visudo` and
-`loginctl` by absolute path, with an empty environment and no shell). Incoming messages trigger
-none of them.
+`loginctl` by absolute path, with an empty environment and no shell), and the word a person chose
+on the band of the startup screen (`bin/vigild/src/units/systemctl.rs`, which runs `systemctl` by
+absolute path with an argument list of exactly two: the word and the unit name). Incoming
+messages trigger none of them.
 
-Five tests in `bin/vigild/tests/exec.rs` enforce this:
-`the_three_places_that_start_a_program_are_the_operators_command_the_kill_and_the_account_change_it_asked_for`
-(exactly three such files exist in the tree), `the_watching_loop_and_the_rules_reach_none_of_them`
+Six tests in `bin/vigild/tests/exec.rs` enforce this:
+`the_four_places_that_start_a_program_are_the_operators_command_the_kill_the_account_change_and_the_unit_it_asked_for`
+(exactly four such files exist in the tree), `the_watching_loop_and_the_rules_reach_none_of_them`
 (reading, the differ and the rules cannot reach them),
 `the_place_that_starts_one_is_reached_from_the_command_line_and_from_nowhere_else`
 (only the operator path reaches it),
 `the_account_tools_are_reached_only_through_the_console_change_and_from_nowhere_else` (only the
-console's `change` reaches them) and
+console's `change` reaches them),
+`the_unit_and_the_crontab_are_reached_only_through_the_console_control_and_from_nowhere_else`
+(only the console's `control` reaches `systemctl` and a crontab) and
 `the_collectors_themselves_start_nothing_whatever_they_have_to_read` (`exec` never appears in
 the collectors; for this reason the firewall reading is produced by a packaged systemd timer).
 

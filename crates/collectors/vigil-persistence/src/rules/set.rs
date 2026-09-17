@@ -1,6 +1,6 @@
 use super::{
-    KernelModuleLoaded, NewCronJob, NewTimer, NewUnit, PreloadChanged, ShellProfileChanged,
-    UnitCommandChanged,
+    CronJobChanged, CronJobRemoved, KernelModuleLoaded, NewCronJob, NewTimer, NewUnit,
+    PreloadChanged, ShellProfileChanged, UnitCommandChanged,
 };
 use vigil_rules::RuleSet;
 
@@ -11,6 +11,8 @@ pub fn persistence_rules() -> RuleSet {
         Box::new(NewUnit),
         Box::new(NewTimer),
         Box::new(NewCronJob),
+        Box::new(CronJobRemoved),
+        Box::new(CronJobChanged),
         Box::new(ShellProfileChanged),
         Box::new(KernelModuleLoaded),
     ])

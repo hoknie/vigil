@@ -68,6 +68,7 @@ impl App {
 
         self.view = view;
         self.settle();
+        self.follow_the_graph();
     }
 
     pub(super) fn read(&self, view: &mut View, request: &Request, answer: Response) {
@@ -105,14 +106,17 @@ impl App {
                 view.found.dropped = dropped;
                 view.found.capacity = capacity;
             }
-            Response::Killed { .. } | Response::Changed { .. } => {}
+            Response::Killed { .. } | Response::Changed { .. } | Response::Controlled { .. } => {}
             Response::Error { error } => match request {
                 Request::Snapshot { collector } => view.readings.put(
                     collector.clone(),
                     Reading::Refused(Refusal::answered(error.message)),
                 ),
                 Request::Findings { .. } => view.found.refused = Some(error.message),
-                Request::Status | Request::Kill { .. } | Request::Change { .. } => {
+                Request::Status
+                | Request::Kill { .. }
+                | Request::Change { .. }
+                | Request::Control { .. } => {
                     view.trouble = Some(Trouble::new(
                         self.link.path(),
                         TroubleKind::Unreadable,

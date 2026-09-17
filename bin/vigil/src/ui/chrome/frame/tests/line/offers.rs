@@ -1,4 +1,4 @@
-use vigil_model::Changing;
+use vigil_model::{Changing, ControlTarget};
 
 use super::hints::{a_section, acting, hints, sorting};
 use crate::ui::chrome::frame::Hints;
@@ -44,6 +44,43 @@ fn a_list_of_accounts_offers_the_keys_that_change_them_and_not_the_key_that_kill
         !wide.contains("n new"),
         "a list that creates nothing does not offer n: {wide}"
     );
+}
+
+#[test]
+fn a_list_of_what_this_host_starts_by_itself_offers_the_key_that_acts_on_it_at_eighty_columns() {
+    for (target, word) in [
+        (ControlTarget::Unit, "U stop/disable"),
+        (ControlTarget::Cron, "U comment out"),
+    ] {
+        for width in [80u16, 120, 200] {
+            let line = keys(
+                &Hints {
+                    marks: true,
+                    controls: Some(target),
+                    ..hints(Level::List, Back::MainScreen)
+                },
+                a_section(),
+                width,
+            );
+
+            assert!(
+                line.contains('U'),
+                "{width}: the key is dropped on the list it is the only key of: {line}"
+            );
+            assert!(!line.contains("K "), "{width}: {line}");
+            assert!(line.chars().count() <= width as usize, "{width}: {line}");
+        }
+        let wide = keys(
+            &Hints {
+                marks: true,
+                controls: Some(target),
+                ..hints(Level::List, Back::MainScreen)
+            },
+            a_section(),
+            200,
+        );
+        assert!(wide.contains(word), "{wide}");
+    }
 }
 
 #[test]
@@ -209,7 +246,7 @@ fn a_list_of_programs_says_that_k_stops_them_and_not_that_it_closes_something() 
 fn a_list_nothing_can_be_done_to_offers_none_of_the_keys_that_do_it() {
     let line = keys(&sorting(Level::List, Back::MainScreen), a_section(), 200);
 
-    for key in ["x mark", "K close", "S suppress"] {
+    for key in ["x mark", "K close", "S suppress", "U stop/disable"] {
         assert!(
             !line.contains(key),
             "a key the list answers with a refusal is a key the line must not offer: {line}"

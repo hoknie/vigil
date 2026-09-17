@@ -25,6 +25,8 @@ pub fn configuration(taken_at: &str, survey: &[Surveyed], defaults: &Config) -> 
     out.push('\n');
     out.push_str(&accounts(defaults));
     out.push('\n');
+    out.push_str(&units(defaults));
+    out.push('\n');
     out.push_str(&arguments());
 
     out
@@ -132,7 +134,7 @@ fn killing(defaults: &Config) -> String {
     for line in [
         "Whether a person at the console of this host may ask the agent to close a listening socket.".to_string(),
         String::new(),
-        "Off by default, and one of the two keys in this file that let the agent change anything on a host it did not set up. On, the console can ask for one of three things against the sockets a person marked there: SIGTERM to the process holding one, SIGKILL to it, or closing the socket itself and leaving the process running. The console asks the person to confirm; the agent asks nothing and does what it was told.".into(),
+        "Off by default, and one of the three keys in this file that let the agent change anything on a host it did not set up. On, the console can ask for one of three things against the sockets a person marked there: SIGTERM to the process holding one, SIGKILL to it, or closing the socket itself and leaving the process running. The console asks the person to confirm; the agent asks nothing and does what it was told.".into(),
         String::new(),
         "Everything it does, and everything it refuses to do, is a finding of its own, so what happened is in the journal and at whatever receiver this file names. The agent will not signal pid 1 and will not signal itself.".into(),
         String::new(),
@@ -165,6 +167,29 @@ fn accounts(defaults: &Config) -> String {
     out.push_str(&format!(
         "  from_the_console: {}\n",
         defaults.accounts.from_the_console
+    ));
+    out
+}
+
+fn units(defaults: &Config) -> String {
+    let mut out = String::new();
+    for line in [
+        "Whether a person at the console of this host may ask the agent to start and stop what this host starts by itself.".to_string(),
+        String::new(),
+        "Off by default, and a key of its own: a host where a program may be signalled has not thereby agreed that a service may be disabled until somebody notices. On, the console can ask for one of six things against the units and timers a person marked on the startup screen — stop, start, disable, enable, mask, unmask — each of which the same band undoes, and for one of two against a cron job: comment its line out, or take the # off again. The agent hands systemctl the word and the unit name it read off this host, and nothing else: no flags, no shell, no restart, no reboot, no daemon-reload.".into(),
+        String::new(),
+        "A crontab is rewritten in place, by a new file renamed over it, keeping its owner and its mode, following no symbolic link, and only when the line the console marked is still in it, byte for byte. A job that is a whole file of /etc/cron.daily and its neighbours has no line to comment out and is refused by name.".into(),
+        String::new(),
+        "Everything it does, and everything it refuses to do, is a finding of its own. The agent will not stop itself, nor a unit one of its own readings needs.".into(),
+        String::new(),
+        "Nothing reaches this from the network. The console socket is 0600 and local; turning this on gives whoever can read it the services of this host.".into(),
+    ] {
+        out.push_str(&comment(&line));
+    }
+    out.push_str("units:\n");
+    out.push_str(&format!(
+        "  from_the_console: {}\n",
+        defaults.units.from_the_console
     ));
     out
 }

@@ -1,12 +1,13 @@
 use serde_json::Value;
-use vigil_model::Snapshot;
+use vigil_model::{Changing, Snapshot};
 use vigil_view::{
-    Cell, Column, Counts, Index, Notice, Offers, Pane, Piece, Room, RowKey, Rows, Showing, Sorting,
-    Width, every_field, haystack,
+    Cell, Column, Counts, Form, Index, Notice, Offers, Pane, Piece, Room, RowKey, Rows, Showing,
+    Sorting, Width, every_field, haystack,
 };
 
 use super::fields::{digest, held, means, mode, owner, sort_key, standing, what};
 use super::footer::footer;
+use super::form::form;
 use super::notices;
 use super::tally::tally;
 use crate::types::Family;
@@ -160,7 +161,16 @@ impl Pane for WatchedFiles {
     }
 
     fn offers(&self) -> Offers {
-        Offers::default()
+        Offers::default().watched(true)
+    }
+
+    fn form(
+        &self,
+        reading: &Snapshot,
+        row: Option<&RowKey>,
+        changing: Changing,
+    ) -> Result<Form, String> {
+        form(reading, row, changing)
     }
 }
 

@@ -121,13 +121,20 @@ fn a_list_that_keeps_no_history_says_so_when_h_is_pressed() {
 }
 
 #[test]
-fn the_launches_offer_h_at_the_foot_of_the_screen_even_at_eighty_columns() {
+fn the_launches_offer_h_on_a_wide_line_and_keep_detail_sort_and_filter_at_eighty_columns() {
     let app = on_nc();
 
-    for width in [80u16, 160] {
-        let page = drawn_at(&app, width, 30);
-        assert!(page.contains("H history"), "{width}: {page}");
-    }
+    let wide = drawn_at(&app, 160, 30);
+    assert!(wide.contains("H history"), "{wide}");
+
+    let eighty = drawn_at(&app, 80, 30);
+    let line = eighty.lines().last().unwrap_or_default();
+    assert!(
+        line.contains("→ detail") && line.contains("s sort") && line.contains("f filter"),
+        "at eighty columns the launches keep the keys that walk and order the list, and H waits \
+         in the detail of the row: {line}"
+    );
+    assert!(!line.contains("H history"), "{line}");
     let running = on_the_programs(RUNNING);
     assert!(
         !drawn_at(&running, 160, 30).contains("H history"),

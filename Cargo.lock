@@ -1694,6 +1694,7 @@ version = "1.0.7"
 dependencies = [
  "serde",
  "serde_json",
+ "serde_yaml",
  "vigil-collect",
  "vigil-model",
  "vigil-module",
@@ -1705,6 +1706,7 @@ dependencies = [
 name = "vigil-firewall"
 version = "1.0.7"
 dependencies = [
+ "serde",
  "serde_json",
  "vigil-collect",
  "vigil-model",

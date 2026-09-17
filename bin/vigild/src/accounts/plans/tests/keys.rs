@@ -134,7 +134,7 @@ fn a_first_key_for_an_account_whose_ssh_directory_points_elsewhere_is_refused_be
             line: OTHER.into(),
         },
         &reading,
-        &crate::accounts::files::read,
+        &crate::files::read,
     )
     .expect_err("a link bob made is not followed");
 

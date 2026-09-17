@@ -3,6 +3,7 @@ mod filesystem;
 mod meminfo;
 mod mounts;
 mod reading;
+mod storage;
 mod uptime;
 
 pub use boot_id::parse_boot_id;
@@ -10,4 +11,5 @@ pub use filesystem::{Filesystem, free_percent_step};
 pub use meminfo::{MemoryFacts, parse_meminfo};
 pub use mounts::{MountPoint, parse_mounts};
 pub use reading::{BOOT, ResourcesReading, booted_at_of, resources_snapshot};
+pub use storage::{UNNAMED, backed_by};
 pub use uptime::parse_uptime_seconds;

@@ -20,16 +20,14 @@ pub(super) const DIRECTORIES_OF_THE_PATH: &[&str] = &[
 impl FilesCollector {
     pub fn new(
         now: impl Fn() -> Rfc3339 + Send + Sync + 'static,
-        watched: &[String],
-        ceiling_bytes: u64,
+        watched: &[(String, u64)],
     ) -> Self {
-        FilesCollector::with_directories(now, watched, ceiling_bytes, DIRECTORIES_OF_THE_PATH)
+        FilesCollector::with_directories(now, watched, DIRECTORIES_OF_THE_PATH)
     }
 
     pub fn with_directories(
         now: impl Fn() -> Rfc3339 + Send + Sync + 'static,
-        watched: &[String],
-        ceiling_bytes: u64,
+        watched: &[(String, u64)],
         directories: &[&str],
     ) -> Self {
         FilesCollector {
@@ -37,10 +35,9 @@ impl FilesCollector {
             watched: watched
                 .iter()
                 .take(PATH_CEILING)
-                .map(PathBuf::from)
+                .map(|(path, ceiling_bytes)| (PathBuf::from(path), *ceiling_bytes))
                 .collect(),
             directories: directories.iter().map(PathBuf::from).collect(),
-            ceiling_bytes,
         }
     }
 }

@@ -86,8 +86,8 @@ fn rows() -> Vec<(&'static str, &'static str)> {
             "mark the row (a program takes all of it) / unmark all",
         ),
         (
-            "K / S",
-            "close or stop it, or all marked / its suppressions",
+            "K / U / S",
+            "close or stop it \u{b7} U: units, timers, cron / silence",
         ),
         (
             "",
@@ -114,8 +114,8 @@ fn rows() -> Vec<(&'static str, &'static str)> {
             "a search, the detail, the panel, a rung, the main screen",
         ),
         (
-            "H / r / ? / q",
-            "the runs of a launch / ask now / this list / leave",
+            "H / P / r / ? / q",
+            "the runs of a launch / the path / ask / list / leave",
         ),
     ]
 }
@@ -149,11 +149,16 @@ mod tests {
             "as a tree",
             "a section's words",
             "x / M",
-            "K / S",
-            "H / r",
+            "K / U / S",
+            "H / P / r",
         ] {
             assert!(page.contains(key), "{key} is not on the list: {page}");
         }
+        assert!(
+            page.contains("the path"),
+            "the key that draws the path of a packet works on one list only, and is looked up \
+             here or not found at all: {page}"
+        );
         assert!(
             page.contains("the runs of a launch"),
             "the key that opens a history works on one list only, and is looked up here or not \
@@ -170,9 +175,14 @@ mod tests {
         assert!(page.contains("comes back to it"), "{page}");
         assert!(page.contains("any key closes this"), "{page}");
         assert!(
-            page.contains("close or stop it, or all marked"),
-            "the one key on this console that changes the host has to say what it takes, \
+            page.contains("close or stop it"),
+            "the keys on this console that change the host have to say what they take, \
              where the keys are listed: {page}"
+        );
+        assert!(
+            page.contains("units, timers, cron"),
+            "the key that stops a service and hides a cron line is looked up here or not \
+             found at all: {page}"
         );
     }
 

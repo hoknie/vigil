@@ -54,6 +54,7 @@ fn a_degraded_collector_keeps_the_reason_it_was_given_at_start() {
             periods: [("ports".to_string(), 30u32)].into_iter().collect(),
             killing_from_the_console: false,
             accounts_from_the_console: false,
+            units_from_the_console: false,
         },
         &[("ports", Health::Degraded("run as root".into()))],
         &[],

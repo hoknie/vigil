@@ -16,13 +16,15 @@ pub struct Console {
     #[arg(
         long,
         value_name = "PATH",
-        help = "The configuration to silence a finding in",
+        help = "The configuration to silence findings and watch paths in",
         long_help = "\
-The configuration to silence a finding in, when it is not the one the daemon says it read.
+The configuration to silence findings and watch paths in, when it is not the one the daemon
+says it read.
 
 The daemon answers with the file it was started with, and that is the file the findings screen
-writes to. Name one here to edit another. The daemon reads its configuration at start, so a
-restart is named after every change."
+and the watched files write to. Name one here to edit another. The daemon takes the watched
+paths from it again on its next round; everything else, suppressions among it, is read at
+start, so a restart is named after those changes."
     )]
     pub config: Option<String>,
 

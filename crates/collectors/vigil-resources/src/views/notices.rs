@@ -25,3 +25,16 @@ pub(super) fn empty(showing: &Showing<'_>) -> Notice {
         false => Notice::plain("This reading lists nothing at all.").saying(NOT_THE_SAME),
     }
 }
+
+pub(super) fn nothing_on_a_store(showing: &Showing<'_>) -> Notice {
+    match showing.holding_back() {
+        true => Notice::plain(format!("No filesystem matches {:?}.", showing.search)).saying(
+            "The search covers every value recorded about the filesystem, the store it is \
+             written to among them. Press / to change it, Esc to drop it.",
+        ),
+        false => Notice::plain("This host has no filesystem this agent can measure.").saying(
+            "What a filesystem is written to is read from the block devices this kernel names; \
+             a host that names none is gathered under whatever mounted each one.",
+        ),
+    }
+}

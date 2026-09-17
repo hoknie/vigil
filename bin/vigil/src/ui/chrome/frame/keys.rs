@@ -1,4 +1,4 @@
-use vigil_model::Changing;
+use vigil_model::{Changing, ControlTarget};
 
 use super::hints::Hints;
 use crate::ui::{Level, Screen};
@@ -13,6 +13,13 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
     }
     if hints.history {
         return [HISTORY, HISTORY_SHORT, LAST_TWO_OF_A_FORM]
+            .into_iter()
+            .find(|line| line.chars().count() <= width as usize)
+            .unwrap_or(LAST_TWO_OF_A_FORM)
+            .to_string();
+    }
+    if hints.graph {
+        return [GRAPH, GRAPH_SHORT, LAST_TWO_OF_A_FORM]
             .into_iter()
             .find(|line| line.chars().count() <= width as usize)
             .unwrap_or(LAST_TWO_OF_A_FORM)
@@ -47,8 +54,9 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
             " j/k ↑↓ PgUp/PgDn scroll · ← or Esc back to the list · o object · ? keys".to_string()
         }
         Level::Detail => format!(
-            " j/k ↑↓ PgUp/PgDn scroll{} · ← or Esc back to the list · ? keys",
-            histories(hints)
+            " j/k ↑↓ PgUp/PgDn scroll{}{} · ← or Esc back to the list · ? keys",
+            histories(hints),
+            graphs(hints)
         ),
         Level::List if screen == Screen::SUMMARY => format!(
             " j/k ↑↓ scroll · d {} · ← or Esc {} · r ask · ? keys",
@@ -110,6 +118,11 @@ const HISTORY: &str = " j/k ↑↓ PgUp/PgDn scroll · ← or Esc back to the li
 
 const HISTORY_SHORT: &str = " ↑↓ scroll · Esc back to the list";
 
+const GRAPH: &str =
+    " j/k ↑↓ scroll · w count what goes through · ← or Esc back to the list · q quit";
+
+const GRAPH_SHORT: &str = " ↑↓ scroll · w count · Esc back to the list";
+
 fn changes(offered: &[Changing], room: Room) -> String {
     if offered.is_empty() {
         return String::new();
@@ -135,6 +148,16 @@ fn changes(offered: &[Changing], room: Room) -> String {
                 format!(" · {key} {word}")
             })
             .collect(),
+    }
+}
+
+fn controls(offered: Option<ControlTarget>, room: Room) -> &'static str {
+    match (offered, room) {
+        (None, _) => "",
+        (Some(ControlTarget::Unit), Room::Cramped) => " · U unit",
+        (Some(ControlTarget::Unit), _) => " · U stop/disable",
+        (Some(ControlTarget::Cron), Room::Cramped) => " · U cron",
+        (Some(ControlTarget::Cron), _) => " · U comment out",
     }
 }
 
@@ -175,6 +198,13 @@ fn histories(hints: &Hints<'_>) -> &'static str {
     }
 }
 
+fn graphs(hints: &Hints<'_>) -> &'static str {
+    match hints.graphs {
+        true => " · P path",
+        false => "",
+    }
+}
+
 fn listing(hints: &Hints<'_>, room: Room, back: &str, picking: Picking) -> String {
     let mut line = String::from(" j/k ↑↓ move");
     line.push_str(match picking {
@@ -190,8 +220,11 @@ fn listing(hints: &Hints<'_>, room: Room, back: &str, picking: Picking) -> Strin
     {
         line.push_str(&format!(" · {key} view"));
     }
-    if hints.histories {
+    if hints.histories && room == Room::Whole {
         line.push_str(" · H history");
+    }
+    if hints.graphs && room == Room::Whole {
+        line.push_str(" · P path");
     }
     if hints.marks {
         line.push_str(" · x mark");
@@ -201,10 +234,11 @@ fn listing(hints: &Hints<'_>, room: Room, back: &str, picking: Picking) -> Strin
                 false => " · K close",
             });
         }
-        line.push_str(&changes(hints.changes, room));
-        if room == Room::Whole {
-            line.push_str(" · S suppress");
-        }
+        line.push_str(controls(hints.controls, room));
+    }
+    line.push_str(&changes(hints.changes, room));
+    if hints.marks && room == Room::Whole {
+        line.push_str(" · S suppress");
     }
     if hints.sorts && room != Room::Cramped {
         line.push_str(" · s sort");

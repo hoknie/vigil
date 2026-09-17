@@ -2,7 +2,7 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-pub const SCHEMA_VERSION: SchemaVersion = SchemaVersion { major: 1, minor: 5 };
+pub const SCHEMA_VERSION: SchemaVersion = SchemaVersion { major: 1, minor: 6 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]

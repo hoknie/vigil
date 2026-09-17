@@ -1,14 +1,16 @@
-use std::fs;
-use std::io::ErrorKind;
-use std::path::PathBuf;
+use std::fs::{self, File};
+use std::io::{ErrorKind, Read};
+use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 use vigil_model::{Rfc3339, Snapshot};
 
 use crate::parsers::{
-    FirewallReading, IP_TABLES_NAMES, IP6_TABLES_NAMES, NftRuleset, firewall_snapshot,
-    parse_ip_tables_names, parse_nft_ruleset,
+    FIB_TRIE, FirewallReading, IF_INET6, IP_TABLES_NAMES, IP6_TABLES_NAMES, NET_DEV, NftRuleset,
+    ROUTE, firewall_snapshot, parse_fib_trie, parse_if_inet6, parse_ip_tables_names, parse_net_dev,
+    parse_nft_ruleset, parse_route,
 };
+use crate::types::Interface;
 use vigil_collect::{CollectError, Collector, Health};
 use vigil_module::Module;
 
@@ -20,6 +22,8 @@ pub const WRITTEN_BY: &str = "vigil-firewall.timer";
 
 pub(super) const RULESET_CEILING_BYTES: u64 = 8 * 1024 * 1024;
 
+pub(super) const PROC_CEILING_BYTES: u64 = 1024 * 1024;
+
 const STALE_AFTER_PERIODS: u64 = 2;
 
 const HOW_IT_IS_WRITTEN: &str = "this reading is written by the vigil-firewall.timer unit, which runs /usr/sbin/nft --json list ruleset and nothing else; the agent never starts a program of its own";
@@ -30,11 +34,14 @@ pub struct FirewallCollector {
     now: Box<dyn Fn() -> Rfc3339 + Send + Sync>,
     ruleset_path: PathBuf,
     legacy_sources: Vec<PathBuf>,
+    interface_sources: [PathBuf; 4],
+    counting: bool,
 }
 
 impl FirewallCollector {
-    pub fn new(now: impl Fn() -> Rfc3339 + Send + Sync + 'static) -> Self {
+    pub fn new(now: impl Fn() -> Rfc3339 + Send + Sync + 'static, counting: bool) -> Self {
         FirewallCollector::with_paths(now, RULESET_PATH, &[IP_TABLES_NAMES, IP6_TABLES_NAMES])
+            .counting(counting)
     }
 
     pub fn with_paths(
@@ -46,7 +53,31 @@ impl FirewallCollector {
             now: Box::new(now),
             ruleset_path: ruleset_path.into(),
             legacy_sources: legacy_sources.iter().map(PathBuf::from).collect(),
+            interface_sources: [NET_DEV, ROUTE, FIB_TRIE, IF_INET6].map(PathBuf::from),
+            counting: false,
         }
+    }
+
+    pub fn counting(self, counting: bool) -> Self {
+        FirewallCollector { counting, ..self }
+    }
+
+    pub fn reading_interfaces_from(self, sources: [&str; 4]) -> Self {
+        FirewallCollector {
+            interface_sources: sources.map(PathBuf::from),
+            ..self
+        }
+    }
+
+    fn interfaces(&self) -> Vec<Interface> {
+        let [counted, routed, local, inet6] = &self.interface_sources;
+
+        Interface::gathered(
+            &parse_net_dev(&bounded(counted)),
+            &parse_route(&bounded(routed)),
+            &parse_fib_trie(&bounded(local)),
+            &parse_if_inet6(&bounded(inet6)),
+        )
     }
 
     pub(super) fn stale_after_seconds(&self) -> u64 {
@@ -163,7 +194,21 @@ impl Collector for FirewallCollector {
             &FirewallReading {
                 ruleset: &ruleset,
                 legacy_tables: &legacy,
+                interfaces: &self.interfaces(),
+                counting: self.counting,
             },
         ))
+    }
+}
+
+fn bounded(path: &Path) -> String {
+    let Ok(file) = File::open(path) else {
+        return String::new();
+    };
+
+    let mut read = String::new();
+    match file.take(PROC_CEILING_BYTES).read_to_string(&mut read) {
+        Ok(_) => read,
+        Err(_) => String::new(),
     }
 }

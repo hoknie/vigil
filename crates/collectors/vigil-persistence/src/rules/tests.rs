@@ -59,6 +59,40 @@ fn exactly_one_persistence_rule_fires_for_each_change_a_host_can_produce() {
             "persistence.cron.new",
         ),
         (
+            "crontab -e took a job out again",
+            Change::Removed {
+                key: "cron|/var/spool/cron/crontabs/deploy|deploy|/usr/local/bin/sync".into(),
+                before: fixture::cron_job(
+                    "/var/spool/cron/crontabs/deploy",
+                    "deploy",
+                    "*/5 * * * *",
+                    "/usr/local/bin/sync",
+                ),
+            },
+            "cron_job_removed",
+            "persistence.cron.removed",
+        ),
+        (
+            "the same job now runs at every boot",
+            Change::Changed {
+                key: "cron|/var/spool/cron/crontabs/deploy|deploy|/usr/local/bin/sync".into(),
+                before: fixture::cron_job(
+                    "/var/spool/cron/crontabs/deploy",
+                    "deploy",
+                    "*/5 * * * *",
+                    "/usr/local/bin/sync",
+                ),
+                after: fixture::cron_job(
+                    "/var/spool/cron/crontabs/deploy",
+                    "deploy",
+                    "@reboot",
+                    "/usr/local/bin/sync",
+                ),
+            },
+            "cron_job_changed",
+            "persistence.cron.changed",
+        ),
+        (
             "echo /lib/hider.so > /etc/ld.so.preload",
             Change::Changed {
                 key: "preload|/etc/ld.so.preload".into(),
@@ -108,7 +142,7 @@ fn exactly_one_persistence_rule_fires_for_each_change_a_host_can_produce() {
 }
 
 #[test]
-fn things_going_away_in_this_family_are_carried_in_the_snapshot_and_reported_by_nobody() {
+fn of_the_things_going_away_in_this_family_a_cron_line_is_the_one_that_is_reported() {
     for change in [
         Change::Removed {
             key: "unit|nginx.service".into(),
@@ -119,16 +153,31 @@ fn things_going_away_in_this_family_are_carried_in_the_snapshot_and_reported_by_
             before: fixture::timer("certbot.timer", &["daily"], None),
         },
         Change::Removed {
-            key: "cron|/etc/crontab|root|/usr/bin/backup".into(),
-            before: fixture::cron_job("/etc/crontab", "root", "0 3 * * *", "/usr/bin/backup"),
-        },
-        Change::Removed {
             key: "module|loop".into(),
             before: fixture::kernel_module("loop", 32768),
         },
     ] {
-        assert!(persistence(&change).is_empty(), "{change:?}");
+        assert!(
+            persistence(&change).is_empty(),
+            "a unit file, a timer file and a module come and go with every package upgrade \
+             on a host, and a finding on each is the noise this product dies of: {change:?}"
+        );
     }
+
+    let gone = persistence(&Change::Removed {
+        key: "cron|/etc/crontab|root|/usr/bin/backup".into(),
+        before: fixture::cron_job("/etc/crontab", "root", "0 3 * * *", "/usr/bin/backup"),
+    });
+
+    assert_eq!(
+        gone.len(),
+        1,
+        "a line that left a crontab is reported since 2026-09-16, by the owner's decision \
+         (docs/designs/2026-09-16-DESIGN-console-units.md): the console can comment one out, \
+         so a job that stops being scheduled is now something this agent may have done, and \
+         the reading has to say so either way"
+    );
+    assert_eq!(gone[0].1, "persistence.cron.removed");
 }
 
 #[test]

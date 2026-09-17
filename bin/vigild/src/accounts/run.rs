@@ -4,9 +4,9 @@ use vigil_users::parse_authorized_keys;
 use super::aims::aim;
 use super::carried::Carried;
 use super::carry::carry;
-use super::files;
 use super::ours::Ours;
 use super::plans::plan;
+use crate::files;
 
 pub const READING: &str = "users";
 

@@ -1,8 +1,8 @@
 use serde_json::json;
 use vigil_module::{Module, Settings};
 
-use super::files::Watching;
-use super::{Files, WATCHED_BY_DEFAULT};
+use super::Files;
+use crate::types::{WATCHED_BY_DEFAULT, Watched, Watching};
 
 fn at_noon() -> vigil_model::Rfc3339 {
     "2026-09-13T12:00:00.000Z".to_string()
@@ -35,13 +35,21 @@ fn a_module_names_the_reading_it_takes_and_how_often_it_takes_it() {
 fn a_host_whose_file_names_no_path_watches_the_list_this_product_ships() {
     let watching = Watching::default();
 
-    assert!(watching.paths.contains(&"/etc/ssh/sshd_config".to_string()));
+    let paths: Vec<&str> = watching.paths.iter().map(Watched::path).collect();
+    assert!(paths.contains(&"/etc/ssh/sshd_config"));
     assert_eq!(watching.ceiling_bytes, 1024 * 1024);
-    for path in &watching.paths {
+    for path in &paths {
         assert!(
             !path.ends_with('/'),
             "{path} is a directory, and a directory in this list is a walk that hashes \
              everything under it: the shortest path to an agent the operator turns off"
+        );
+    }
+    for (path, hashed) in watching.hashed() {
+        assert_eq!(
+            hashed,
+            1024 * 1024,
+            "{path} names no ceiling of its own, so it is hashed to the one the block names"
         );
     }
 }
@@ -55,7 +63,10 @@ fn a_host_that_names_its_own_paths_watches_those_and_not_the_shipped_ones() {
     );
     let watching: Watching = named.read().expect("the sample parses");
 
-    assert_eq!(watching.paths, vec!["/etc/sudoers".to_string()]);
+    assert_eq!(
+        watching.paths,
+        vec![Watched::Named("/etc/sudoers".to_string())]
+    );
     assert_eq!(
         watching.ceiling_bytes,
         1024 * 1024,
@@ -118,4 +129,68 @@ fn none_of_the_paths_this_product_ships_is_one_another_collector_already_reports
              in it by name; hashing it here as well would put two findings on one edit"
         );
     }
+}
+
+#[test]
+fn a_path_that_names_a_ceiling_of_its_own_is_hashed_to_that_one_and_the_rest_to_the_block() {
+    let named = Settings::of(
+        at_noon,
+        "files",
+        json!({
+            "paths": [
+                "/etc/hosts",
+                { "path": "/etc/ssl/certs/ca-certificates.crt", "ceiling_bytes": 8_388_608u64 },
+            ],
+        }),
+    );
+    let watching: Watching = named.read().expect("the sample parses");
+
+    assert_eq!(
+        watching.hashed(),
+        vec![
+            ("/etc/hosts".to_string(), 1024 * 1024),
+            ("/etc/ssl/certs/ca-certificates.crt".to_string(), 8_388_608),
+        ],
+        "a bundle past the ceiling would be watched by its mode alone, and naming the ceiling \
+         beside the path is how an operator says otherwise for that one file"
+    );
+    assert!(Files.check(&named).is_ok());
+}
+
+#[test]
+fn a_path_named_twice_is_refused_rather_than_read_and_hashed_twice_every_pass() {
+    let twice = Settings::of(
+        at_noon,
+        "files",
+        json!({ "paths": ["/etc/hosts", { "path": "/etc/hosts", "ceiling_bytes": 4096 }] }),
+    );
+
+    let refusal = Files
+        .check(&twice)
+        .expect_err("two entries for one path read the same file twice on every pass");
+
+    assert!(refusal.contains("named twice"), "{refusal}");
+}
+
+#[test]
+fn a_ceiling_no_pass_of_this_agent_could_finish_is_refused_at_the_door() {
+    let huge = Settings::of(
+        at_noon,
+        "files",
+        json!({ "paths": [{ "path": "/var/log/journal.bin", "ceiling_bytes": 1_073_741_824u64 }] }),
+    );
+
+    let refusal = Files.check(&huge).expect_err("must not be accepted");
+
+    assert!(refusal.contains("paths #1"), "{refusal}");
+    assert!(refusal.contains("over the"), "{refusal}");
+}
+
+#[test]
+fn the_paths_this_module_watches_are_taken_from_the_file_again_while_the_daemon_runs() {
+    assert!(
+        Files.follows_the_file(),
+        "a path added from the console is not watched until a restart otherwise, and the \
+         operator who added it believes it already is"
+    );
 }

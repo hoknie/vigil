@@ -18,6 +18,7 @@ pub struct WatchedFile {
     pub uid: Option<u32>,
     pub gid: Option<u32>,
     pub over_the_ceiling: bool,
+    pub ceiling_bytes: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -50,6 +51,7 @@ pub fn files_snapshot(taken_at: &str, reading: &FilesReading<'_>) -> Snapshot {
                 "uid": file.uid,
                 "gid": file.gid,
                 "over_the_ceiling": file.over_the_ceiling,
+                "ceiling_bytes": file.ceiling_bytes,
             }),
         );
     }
@@ -89,6 +91,7 @@ mod tests {
             uid: Some(0),
             gid: Some(0),
             over_the_ceiling: false,
+            ceiling_bytes: 1024 * 1024,
         }
     }
 
@@ -103,6 +106,7 @@ mod tests {
             uid: None,
             gid: None,
             over_the_ceiling: false,
+            ceiling_bytes: 1024 * 1024,
         }
     }
 

@@ -17,9 +17,8 @@ use source::NAME;
 
 pub struct FilesCollector {
     now: Box<dyn Fn() -> Rfc3339 + Send + Sync>,
-    watched: Vec<PathBuf>,
+    watched: Vec<(PathBuf, u64)>,
     directories: Vec<PathBuf>,
-    ceiling_bytes: u64,
 }
 
 impl Collector for FilesCollector {

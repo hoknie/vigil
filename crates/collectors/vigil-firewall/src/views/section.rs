@@ -1,6 +1,6 @@
 use vigil_view::{Pane, Section};
 
-use super::pane::TheRuleset;
+use super::panes::{TheGroups, TheInterfaces, TheRuleset};
 
 pub struct WhatTheHostLetsIn;
 
@@ -18,7 +18,11 @@ impl Section for WhatTheHostLetsIn {
     }
 
     fn panes(&self) -> Vec<Box<dyn Pane>> {
-        vec![Box::new(TheRuleset)]
+        vec![
+            Box::new(TheRuleset),
+            Box::new(TheGroups),
+            Box::new(TheInterfaces),
+        ]
     }
 
     fn shows_what_has_gone(&self) -> bool {

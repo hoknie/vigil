@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use super::store::{baselines, health, history};
-use super::{console, greeting, outgoing, policy, reporters, schedule, watches};
+use super::{console, following, greeting, outgoing, policy, reporters, schedule, watches};
 use crate::budget::Meter;
 use crate::helpers::{absolute, agent_finding, rfc3339};
 use crate::loops::Round;
@@ -10,6 +10,7 @@ use crate::types::{Delivery, Startup};
 use crate::{config, identity};
 
 pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let stamp = config::Stamp::of(config_path);
     let config = config::load(config_path)?;
     let state_dir = Path::new(&config.state_dir);
 
@@ -33,6 +34,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
                 .collect(),
             killing_from_the_console: config.killing.from_the_console,
             accounts_from_the_console: config.accounts.from_the_console,
+            units_from_the_console: config.units.from_the_console,
         },
         &watches::healths(&watches),
         &reporters::names(&reporters),
@@ -72,6 +74,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     baselines::restore(&store, &mut watches);
 
     console::listen(&config, &schedule, &shared)?;
+    let followed = following::of(config_path, stamp, &config, &watches);
 
     Round {
         watches,
@@ -83,6 +86,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         meter: Meter::default(),
         opening,
         standing,
+        followed,
     }
     .run()
 }

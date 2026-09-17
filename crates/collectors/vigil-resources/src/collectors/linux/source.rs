@@ -6,6 +6,7 @@ use vigil_model::Rfc3339;
 
 use super::ResourcesCollector;
 use super::files::Files;
+use super::storage::{SYS, Sysfs};
 
 pub(super) const NAME: &str = "resources";
 
@@ -23,10 +24,20 @@ impl ResourcesCollector {
         proc_directory: impl Into<PathBuf>,
         wall_clock: impl Fn() -> Option<i64> + Send + Sync + 'static,
     ) -> Self {
+        ResourcesCollector::with_block_devices(now, proc_directory, wall_clock, SYS)
+    }
+
+    pub fn with_block_devices(
+        now: impl Fn() -> Rfc3339 + Send + Sync + 'static,
+        proc_directory: impl Into<PathBuf>,
+        wall_clock: impl Fn() -> Option<i64> + Send + Sync + 'static,
+        sys_directory: impl Into<PathBuf>,
+    ) -> Self {
         ResourcesCollector {
             now: Box::new(now),
             wall_clock: Box::new(wall_clock),
             files: Files::under(proc_directory),
+            blocks: Sysfs::under(sys_directory),
             booted_at: Mutex::new(None),
         }
     }

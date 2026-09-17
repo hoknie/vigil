@@ -10,3 +10,4 @@ mod sheet;
 mod tests;
 
 pub use changing::{DELETE, EDIT, NEW, NOTHING_TO_CHANGE};
+pub(super) use sentence::sentence;

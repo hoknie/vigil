@@ -1,9 +1,11 @@
 use vigil_model::Snapshot;
 
 use super::views::every_view_answers_from_its_index_and_its_counts_as_from_the_reading;
-use crate::{Pane, Room, Showing};
+use crate::{Pane, Piece, Room, Showing};
 
 const ROOMS: [u16; 2] = [80, 160];
+
+const NARROWEST: usize = 80;
 
 pub fn a_pane_reads_the_snapshot_it_says_it_reads(pane: &dyn Pane, reading: &Snapshot) {
     assert_eq!(
@@ -115,6 +117,42 @@ pub fn a_pane_that_keeps_a_history_has_something_to_say_under_every_row(
     }
 }
 
+pub fn a_pane_that_draws_a_graph_draws_one_under_every_row_and_never_off_the_side(
+    pane: &dyn Pane,
+    reading: &Snapshot,
+) {
+    if !pane.offers().graph {
+        return;
+    }
+    for row in pane.rows(reading, &Showing::default()) {
+        if !row.of_the_reading {
+            continue;
+        }
+        let drawn = pane.graph(reading, &row);
+        assert!(
+            !drawn.is_empty(),
+            "{} offers a graph and draws nothing for {}: a panel opened on a key and found \
+             empty reads as a console that lost the answer",
+            pane.name(),
+            row.key
+        );
+        for piece in &drawn {
+            let Piece::Line(line) = piece else {
+                continue;
+            };
+            assert!(
+                line.chars().count() <= NARROWEST,
+                "{} draws a line of {} columns for {}: a drawn line is never rewrapped, so a \
+                 line wider than the narrowest terminal this console supports is a line cut \
+                 in half — {line:?}",
+                pane.name(),
+                line.chars().count(),
+                row.key
+            );
+        }
+    }
+}
+
 pub fn a_pane_says_what_to_write_over_it_and_over_the_row_it_opens(pane: &dyn Pane) {
     assert!(
         !pane.caption().is_empty() && !pane.detail_caption().is_empty(),
@@ -170,6 +208,7 @@ pub fn run_all(pane: &dyn Pane, reading: &Snapshot) {
     nothing_is_shown_twice_under_one_key(pane, reading);
     what_the_pane_shows_of_a_row_is_more_than_the_row_itself(pane, reading);
     a_pane_that_keeps_a_history_has_something_to_say_under_every_row(pane, reading);
+    a_pane_that_draws_a_graph_draws_one_under_every_row_and_never_off_the_side(pane, reading);
     a_pane_that_gathers_rows_starts_with_every_one_of_them_put_away(pane, reading);
     every_view_answers_from_its_index_and_its_counts_as_from_the_reading(pane, reading);
 

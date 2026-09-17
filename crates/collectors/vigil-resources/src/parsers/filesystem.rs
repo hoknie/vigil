@@ -1,3 +1,5 @@
+use crate::types::Backing;
+
 pub const GRAIN_PERCENT: u64 = 5;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -5,6 +7,8 @@ pub struct Filesystem {
     pub mount: String,
     pub device: String,
     pub kind: String,
+    pub storage: String,
+    pub backing: Backing,
     pub read_only: bool,
     pub total_bytes: u64,
     pub free_percent_step: Option<u64>,

@@ -1,11 +1,13 @@
-use vigil_model::{AccountObject, KillTarget};
+use vigil_model::{AccountObject, ControlTarget, KillTarget};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Choosing {
     Sort,
     Filter,
     Kill(KillTarget),
+    Control(ControlTarget),
     Delete(AccountObject),
+    Unwatch,
 }
 
 impl Choosing {
@@ -15,12 +17,18 @@ impl Choosing {
             Choosing::Filter => "show only",
             Choosing::Kill(KillTarget::Socket) => "close them by",
             Choosing::Kill(KillTarget::Program) => "stop them by",
+            Choosing::Control(ControlTarget::Unit) => "do this to them:",
+            Choosing::Control(ControlTarget::Cron) => "do this to the line:",
             Choosing::Delete(_) => "delete them:",
+            Choosing::Unwatch => "stop watching it:",
         }
     }
 
     pub fn asks_before_acting(self) -> bool {
-        matches!(self, Choosing::Kill(_) | Choosing::Delete(_))
+        matches!(
+            self,
+            Choosing::Kill(_) | Choosing::Control(_) | Choosing::Delete(_) | Choosing::Unwatch
+        )
     }
 }
 
@@ -165,6 +173,12 @@ mod tests {
                 && Choosing::Kill(KillTarget::Program).asks_before_acting(),
             "there is no second band after this one: choosing how is choosing to do it, so \
              this band is where the line at the foot has to say what Enter costs"
+        );
+        assert!(
+            Choosing::Control(ControlTarget::Unit).asks_before_acting()
+                && Choosing::Control(ControlTarget::Cron).asks_before_acting(),
+            "the band that stops a service is the only warning before it stops: there is no \
+             second band after it"
         );
         for harmless in [Choosing::Sort, Choosing::Filter] {
             assert!(

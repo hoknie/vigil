@@ -5,6 +5,7 @@ mod answers;
 mod choices;
 mod deeds;
 mod drawing;
+mod graph;
 mod history;
 mod kept;
 mod keys;
@@ -26,8 +27,8 @@ use std::collections::BTreeMap;
 
 use crate::ui::types::cache::{Listed, Remembered, Shown};
 use crate::ui::{
-    Asking, Chooser, Dismissed, Editing, Filter, Gone, History, Level, Look, Nav, Paper, Picked,
-    Screen, Sorting, View,
+    Asking, Chooser, Dismissed, Editing, Filter, Gone, Graph, History, Level, Look, Nav, Paper,
+    Picked, Screen, Sorting, View,
 };
 
 type RowsAsked = (u64, Screen, usize, String);
@@ -37,6 +38,7 @@ type DetailAsked = (u64, Screen, usize, RowKey, usize);
 type FoundBefore = (RowsAsked, String, Rc<Vec<usize>>);
 
 pub use deeds::KILL;
+pub use graph::WATCHING;
 
 pub struct App {
     link: Link,
@@ -48,6 +50,7 @@ pub struct App {
     dismissed: Dismissed,
     asking: Option<Asking>,
     editing: Option<Editing>,
+    graph: Option<Graph>,
     history: Option<History>,
     named_configuration: Option<String>,
     detail_open: bool,

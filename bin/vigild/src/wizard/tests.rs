@@ -86,6 +86,26 @@ fn a_degraded_collector_is_switched_on_and_says_what_it_is_missing() {
 }
 
 #[test]
+fn every_key_that_lets_the_console_change_this_host_is_written_out_and_switched_off() {
+    let text = rendered();
+
+    for (key, said) in [
+        ("killing:", "close a listening socket"),
+        ("accounts:", "change its accounts"),
+        ("units:", "starts by itself"),
+    ] {
+        assert!(text.contains(key), "{key} is not in the file: {text}");
+        assert!(flattened(&text).contains(said), "{said}: {text}");
+    }
+    assert_eq!(
+        text.matches("  from_the_console: false").count(),
+        3,
+        "a file written by the wizard switches on nothing this agent does to a host it did \
+         not set up, and a key missing from it is a key nobody knows to look for: {text}"
+    );
+}
+
+#[test]
 fn the_numbers_in_it_are_the_daemons_own_defaults() {
     let text = rendered();
     let defaults = Config::default();

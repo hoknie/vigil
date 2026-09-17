@@ -5,6 +5,7 @@ mod filesystems;
 mod health;
 mod reading;
 mod source;
+mod storage;
 
 #[cfg(test)]
 mod tests;
@@ -17,11 +18,13 @@ use vigil_collect::{CollectError, Collector, Health};
 
 use files::Files;
 use source::NAME;
+use storage::Sysfs;
 
 pub struct ResourcesCollector {
     now: Box<dyn Fn() -> Rfc3339 + Send + Sync>,
     wall_clock: Box<dyn Fn() -> Option<i64> + Send + Sync>,
     files: Files,
+    blocks: Sysfs,
     booted_at: Mutex<Option<i64>>,
 }
 

@@ -88,8 +88,14 @@ impl State {
         self.startup.accounts_from_the_console
     }
 
+    pub fn units_from_the_console(&self) -> bool {
+        self.startup.units_from_the_console
+    }
+
     pub fn console_may_act(&self) -> bool {
-        self.killing_from_the_console() || self.accounts_from_the_console()
+        self.killing_from_the_console()
+            || self.accounts_from_the_console()
+            || self.units_from_the_console()
     }
 
     pub fn record_what_the_console_did(&mut self, findings: &[Finding]) {

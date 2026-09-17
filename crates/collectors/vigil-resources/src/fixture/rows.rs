@@ -29,6 +29,8 @@ pub fn filesystem(mount: &str, free_percent_step: Option<u64>, free_inodes: Opti
         "mount": mount,
         "device": "/dev/sda2",
         "type": "ext4",
+        "storage": "sda",
+        "storage_from": "disk",
         "read_only": false,
         "total_bytes": 20_938_809_344u64,
         "free_percent_step": free_percent_step,

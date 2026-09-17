@@ -114,6 +114,14 @@ pub trait Pane: Send + Sync {
         Vec::new()
     }
 
+    fn graph(&self, _reading: &Snapshot, _row: &RowKey) -> Vec<Piece> {
+        Vec::new()
+    }
+
+    fn counted(&self, _reading: &Snapshot, _row: &RowKey) -> Option<u64> {
+        None
+    }
+
     fn form(
         &self,
         _reading: &Snapshot,

@@ -9,7 +9,7 @@ use crate::ui::chrome::frame::hints::Back;
 use crate::ui::chrome::help;
 use crate::ui::chrome::paper;
 use crate::ui::helpers::words::unreachable;
-use crate::ui::screens::{form, history, summary};
+use crate::ui::screens::{form, graph, history, summary};
 
 impl App {
     pub fn draw(&self, area: Rect, buffer: &mut Buffer) {
@@ -22,10 +22,14 @@ impl App {
                 editing: self.editing.is_some(),
                 history: self.history.is_some(),
                 histories: self.pane().is_some_and(|pane| pane.offers().history),
+                graph: self.graph.is_some(),
+                graphs: self.pane().is_some_and(|pane| pane.offers().graph),
                 kills: self.kill_target().is_some(),
-                changes: self
-                    .changes_offered()
-                    .map_or(&[], vigil_model::AccountObject::changings),
+                controls: self.control_target(),
+                changes: match self.changes_offered() {
+                    Some(object) => object.changings(),
+                    None => self.written_to_the_configuration(),
+                },
                 typing: self.typing(),
                 asking: asking.as_deref(),
                 level: self.level,
@@ -56,6 +60,17 @@ impl App {
 
         if let Some(editing) = &self.editing {
             form::render(editing, self.look, body, buffer);
+            return;
+        }
+        if let Some(opened) = &self.graph {
+            graph::render(
+                &self.graph_pieces(),
+                opened.watching(),
+                self.look,
+                opened.top(),
+                body,
+                buffer,
+            );
             return;
         }
         if let Some(opened) = &self.history {

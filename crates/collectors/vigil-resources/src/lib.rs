@@ -3,6 +3,7 @@ pub mod fixture;
 mod modules;
 #[cfg_attr(not(target_os = "linux"), allow(dead_code, unused_imports))]
 mod parsers;
+mod ports;
 mod rules;
 mod types;
 mod views;

@@ -38,6 +38,36 @@
         ],
         "always": true
       },
+      "rules_kept": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "rules_kept/[]": {
+        "types": [
+          "object"
+        ],
+        "always": false
+      },
+      "rules_kept/[]/does": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "rules_kept/[]/handle": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "rules_kept/[]/matches": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
       "table": {
         "types": [
           "string"
@@ -47,6 +77,74 @@
       "type": {
         "types": [
           "string"
+        ],
+        "always": true
+      }
+    },
+    "fw-interface": {
+      "addresses": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "addresses/[]": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "bytes_in": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "bytes_out": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "counted": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "dropped_in": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "dropped_out": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "packets_in": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "packets_out": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "the_way_out": {
+        "types": [
+          "boolean"
         ],
         "always": true
       }
