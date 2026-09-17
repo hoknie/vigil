@@ -8,6 +8,10 @@ impl App {
     pub fn page(&self) -> Page<'_> {
         Page { app: self }
     }
+
+    pub fn cursor(&self) -> Option<ratatui::layout::Position> {
+        self.cursor.get()
+    }
 }
 
 pub struct Page<'a> {

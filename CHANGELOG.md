@@ -28,6 +28,7 @@ Format:
 - double suppresion for one item
 - moving through a list of several hundred rows no longer lags: only the rows on the screen are drawn
 - list lag fixed
+- the help page fits an 80x24 terminal
 
 ### Changed
 - not default config path is correctly resolve from now
@@ -37,6 +38,8 @@ Format:
 - reorganized crates
 - hotkeys changed for more UX
 - improved lists perfomance
+- console look: rounded frames, inset fields with a real cursor, dropdowns and popups
+- console look: a section's panes carry the frames, the popup shadow dims instead of covering
 
 ### Fixed
 - a socket state between two readings of an unchanged host

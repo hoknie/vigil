@@ -7,7 +7,6 @@ use super::App;
 use crate::ui::details::pieces;
 use crate::ui::helpers::finding::acts::Acts;
 use crate::ui::helpers::motion::keys;
-use crate::ui::screens::graph::HEADER_LINES;
 use crate::ui::{Action, Graph, Reading};
 
 pub const GRAPH: char = 'P';
@@ -59,6 +58,7 @@ impl App {
                 self.graph = None;
                 self.settle();
             }
+            Action::Letter(crate::ui::app::clicks::MOUSE) => self.switch_the_mouse(),
             Action::Letter(WATCHING) => {
                 if let Some(graph) = self.graph.as_mut() {
                     graph.watch(Instant::now());
@@ -66,9 +66,9 @@ impl App {
                 self.follow_the_graph();
             }
             Action::Move(motion) | Action::Pick(motion) | Action::Gather(motion) => {
-                let body = self.body.get();
-                let page = body.height.saturating_sub(HEADER_LINES) as usize;
-                let width = self.look.text_width(body.width);
+                let drawing = pieces::drawing(self.body.get());
+                let page = drawing.height as usize;
+                let width = self.look.text_width(drawing.width);
                 let look = self.look;
                 let drawn = self.graph_pieces();
                 if let Some(graph) = self.graph.as_mut() {

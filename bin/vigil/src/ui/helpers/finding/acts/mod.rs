@@ -131,10 +131,19 @@ impl Acts {
     }
 }
 
-pub fn lines(acts: Acts, at: Option<usize>, look: Look, width: usize) -> Vec<Line<'static>> {
+pub type Place = (usize, usize, u16, u16);
+
+const ARROWS: usize = 3;
+
+pub fn laid(
+    acts: Acts,
+    at: Option<usize>,
+    look: Look,
+    width: usize,
+) -> (Vec<Line<'static>>, Vec<Place>) {
     let buttons = acts.buttons();
     if buttons.is_empty() {
-        return Vec::new();
+        return (Vec::new(), Vec::new());
     }
 
     let arrows = match at {
@@ -143,6 +152,7 @@ pub fn lines(acts: Acts, at: Option<usize>, look: Look, width: usize) -> Vec<Lin
     };
     let room = width.saturating_sub(4);
     let mut lines = vec![section::rule(look, "ACTIONS", width)];
+    let mut places = Vec::new();
     let mut spans = vec![Span::raw(arrows)];
     let mut used = 0;
 
@@ -158,6 +168,12 @@ pub fn lines(acts: Acts, at: Option<usize>, look: Look, width: usize) -> Vec<Lin
             spans.push(Span::raw("   "));
             used = 0;
         }
+        places.push((
+            index,
+            lines.len(),
+            (ARROWS + used) as u16,
+            (wanted - 1) as u16,
+        ));
         used += wanted;
         spans.push(Span::styled(
             drawn,
@@ -170,7 +186,7 @@ pub fn lines(acts: Acts, at: Option<usize>, look: Look, width: usize) -> Vec<Lin
         spans.push(Span::raw(" "));
     }
     lines.push(Line::from(spans));
-    lines
+    (lines, places)
 }
 
 #[cfg(test)]

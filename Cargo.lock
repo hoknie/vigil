@@ -1559,6 +1559,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e1c906769ad99c88eaa54e728060edef082f8e358ff32030cb7c7d315e81109"
 
 [[package]]
+name = "tui-input"
+version = "0.15.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4eb7c7ddaef6dcc58fae905d0f89a3df49ef77e93822df7447a5bb0babc9ece3"
+dependencies = [
+ "ratatui",
+ "unicode-segmentation",
+ "unicode-width",
+]
+
+[[package]]
 name = "typenum"
 version = "1.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1636,6 +1647,7 @@ dependencies = [
  "clap",
  "ratatui",
  "serde_json",
+ "tui-input",
  "vigil-config",
  "vigil-containers",
  "vigil-files",

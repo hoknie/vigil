@@ -26,18 +26,15 @@ pub(super) fn split_bottom(
     if area.height < 2 {
         return (area, Rect { height: 0, ..area }, None);
     }
-    let bar = match picking && area.height >= 4 {
-        true => Some(Rect {
-            y: area.y + area.height - 1,
-            height: 1,
-            ..area
-        }),
-        false => None,
-    };
-    let room = area.height - u16::from(bar.is_some());
+    let bar = picking && area.height >= 4;
+    let room = area.height - u16::from(bar);
     let table = match look.interactive() {
         true => room - 1,
         false => (rows.max(2) as u16).saturating_add(1).min(room - 1),
+    };
+    let (footer, below) = match look.interactive() {
+        true => (area.y + area.height - 1, area.y + table),
+        false => (area.y + table, area.y + area.height - 1),
     };
     (
         Rect {
@@ -45,10 +42,14 @@ pub(super) fn split_bottom(
             ..area
         },
         Rect {
-            y: area.y + table,
+            y: footer,
             height: 1,
             ..area
         },
-        bar,
+        bar.then_some(Rect {
+            y: below,
+            height: 1,
+            ..area
+        }),
     )
 }

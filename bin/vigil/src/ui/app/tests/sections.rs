@@ -98,7 +98,7 @@ fn a_section_in_trouble_is_marked_with_the_cursor_on_it_and_with_the_cursor_away
     assert!(
         onto_it
             .lines()
-            .any(|line| line.contains("accounts") && line.contains(" > ")),
+            .any(|line| line.contains("accounts") && line.contains(" \u{25b8} ")),
         "and the cursor is on it too: {onto_it}"
     );
 }
@@ -152,8 +152,8 @@ fn a_wide_terminal_puts_the_reason_beside_the_list_rather_than_under_it() {
     assert!(page.contains("SECTIONS"), "{page}");
     assert!(page.contains("THE SELECTED SECTION"), "{page}");
     assert!(
-        page.contains(" │ "),
-        "the two sit either side of a rule: {page}"
+        page.contains("\u{2503}\u{2502}"),
+        "the two sit side by side, each in a frame of its own: {page}"
     );
     assert!(squashed(&page).contains(&squashed(DEGRADED)), "{page}");
 }
@@ -185,7 +185,7 @@ fn the_row_of_a_section_carries_no_sentence_under_it_any_more() {
         .collect();
 
     for line in &rows {
-        let list = line.split(" │ ").next().unwrap_or(line);
+        let list = line.split('\u{2503}').nth(1).unwrap_or(line);
         assert!(
             !squashed(list).contains(&squashed("could not be resolved")),
             "a table with prose wrapped between its rows cannot be read down a column: {list}"

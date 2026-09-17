@@ -2,8 +2,10 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
 use super::harness::{drawn, quiet};
+use crate::ui::chrome::frame::Hints;
 use crate::ui::chrome::frame::render;
 use crate::ui::fixture::screen;
+use crate::ui::helpers::words::text;
 use crate::ui::{Audience, Look, Screen, fixture};
 
 #[test]
@@ -47,7 +49,10 @@ fn a_script_gets_the_heading_and_the_facts_without_a_box_or_key_hints() {
         "a file wants the facts too: {page}"
     );
     assert!(!page.contains("q quit"), "a file cannot press keys: {page}");
-    assert!(!page.contains('┌'), "and is read with grep: {page}");
+    assert!(
+        !page.contains('┌') && !page.contains('\u{256d}') && !page.contains('\u{250f}'),
+        "and is read with grep: {page}"
+    );
     assert_eq!(body.height, 21);
 }
 
@@ -84,4 +89,51 @@ fn nothing_runs_off_the_side_at_any_of_the_widths_this_is_read_at() {
             );
         }
     }
+}
+
+#[test]
+fn the_frame_of_a_section_is_thick_while_the_arrows_are_its_own_and_a_plain_line_over_panes() {
+    let framed = |panes: bool| {
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 80, 24));
+        let body = render(
+            fixture::look(),
+            screen("ports"),
+            &fixture::view(),
+            Hints { panes, ..quiet() },
+            buffer.area,
+            &mut buffer,
+        );
+        (text::to_text(&buffer), body)
+    };
+
+    let (alone, _) = framed(false);
+    assert!(
+        alone
+            .lines()
+            .nth(1)
+            .is_some_and(|line| line.starts_with("\u{250f} \u{25b8} What is listening")),
+        "with nothing framed inside it, the section's own frame is where the arrows are: {alone}"
+    );
+    assert!(alone.contains('\u{251b}'), "{alone}");
+
+    let (over, body) = framed(true);
+    let header = over.lines().nth(1).unwrap_or_default();
+    assert!(
+        header.starts_with(" What is listening") && header.ends_with("as of 09:00:01"),
+        "over panes that have frames of their own, the section is named on a plain line with \
+         the time of its reading, so no side of the screen carries two borders: {over}"
+    );
+    for corner in [
+        '\u{256d}', '\u{256f}', '\u{250f}', '\u{251b}', '\u{2502}', '\u{2503}',
+    ] {
+        assert!(
+            !over.contains(corner),
+            "the section draws no frame of its own around panes that are framed: {over}"
+        );
+    }
+    assert_eq!(
+        body,
+        Rect::new(0, 2, 80, 20),
+        "the two columns and the row the outer frame took go to the panes"
+    );
 }

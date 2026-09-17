@@ -1,6 +1,7 @@
 use vigil_model::Changing;
 use vigil_view::{Entry, Form};
 
+use super::dropdown::Dropdown;
 use crate::ui::{Screen, Spot};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -11,7 +12,8 @@ pub struct Editing {
     row: Option<String>,
     changing: Changing,
     spot: Spot,
-    choice: usize,
+    pub(super) cursor: usize,
+    pub(super) dropdown: Option<Dropdown>,
     trouble: Option<String>,
 }
 
@@ -30,10 +32,11 @@ impl Editing {
             row,
             changing,
             spot: Spot::Back,
-            choice: 0,
+            cursor: 0,
+            dropdown: None,
             trouble: None,
         };
-        editing.spot = editing.stops().get(1).copied().unwrap_or(Spot::Save);
+        editing.arrive(editing.stops().get(1).copied().unwrap_or(Spot::Save));
         editing
     }
 
@@ -59,10 +62,6 @@ impl Editing {
 
     pub fn spot(&self) -> Spot {
         self.spot
-    }
-
-    pub fn choice(&self) -> usize {
-        self.choice
     }
 
     pub fn trouble(&self) -> Option<&str> {
@@ -96,8 +95,22 @@ impl Editing {
             .unwrap_or(0) as isize;
         let next = (here + by).clamp(0, stops.len() as isize - 1) as usize;
         if stops[next] != self.spot {
-            self.spot = stops[next];
-            self.choice = 0;
+            self.arrive(stops[next]);
+        }
+    }
+
+    fn arrive(&mut self, spot: Spot) {
+        self.spot = spot;
+        self.dropdown = None;
+        self.cursor = match self.entry() {
+            Some(Entry::Text(text)) => text.chars().count(),
+            _ => 0,
+        };
+    }
+
+    pub fn focus(&mut self, spot: Spot) {
+        if spot != self.spot && self.stops().contains(&spot) {
+            self.arrive(spot);
         }
     }
 
@@ -109,14 +122,14 @@ impl Editing {
         self.step(-1);
     }
 
-    fn entry(&self) -> Option<&Entry> {
+    pub(super) fn entry(&self) -> Option<&Entry> {
         match self.spot {
             Spot::Field(at) => self.form.fields.get(at).map(|field| &field.entry),
             _ => None,
         }
     }
 
-    fn entry_mut(&mut self) -> Option<&mut Entry> {
+    pub(super) fn entry_mut(&mut self) -> Option<&mut Entry> {
         match self.spot {
             Spot::Field(at) => self.form.fields.get_mut(at).map(|field| &mut field.entry),
             _ => None,
@@ -127,40 +140,21 @@ impl Editing {
         matches!(self.entry(), Some(Entry::Text(_)))
     }
 
+    pub fn in_a_list(&self) -> bool {
+        matches!(self.entry(), Some(Entry::Choices(_)))
+    }
+
     pub fn sideways(&mut self, by: isize) {
-        match (self.spot, self.entry()) {
-            (Spot::Save, _) if by > 0 => self.spot = Spot::Cancel,
-            (Spot::Cancel, _) if by < 0 => self.spot = Spot::Save,
-            (_, Some(Entry::Choices(choices))) if !choices.is_empty() => {
-                let last = choices.len() as isize - 1;
-                self.choice = (self.choice as isize + by).clamp(0, last) as usize;
-            }
+        match self.spot {
+            Spot::Save if by > 0 => self.spot = Spot::Cancel,
+            Spot::Cancel if by < 0 => self.spot = Spot::Save,
             _ => {}
         }
     }
 
     pub fn toggle(&mut self) {
-        let choice = self.choice;
-        match self.entry_mut() {
-            Some(Entry::Switch(on)) => *on = !*on,
-            Some(Entry::Choices(choices)) => {
-                if let Some(one) = choices.get_mut(choice) {
-                    one.chosen = !one.chosen;
-                }
-            }
-            _ => {}
-        }
-    }
-
-    pub fn type_character(&mut self, character: char) {
-        if let Some(Entry::Text(text)) = self.entry_mut() {
-            text.push(character);
-        }
-    }
-
-    pub fn erase(&mut self) {
-        if let Some(Entry::Text(text)) = self.entry_mut() {
-            text.pop();
+        if let Some(Entry::Switch(on)) = self.entry_mut() {
+            *on = !*on;
         }
     }
 }

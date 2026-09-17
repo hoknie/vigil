@@ -89,7 +89,8 @@ fn a_socket_under_an_open_branch_folds_it_and_lands_the_cursor_on_the_heading() 
     );
     assert!(
         page.lines()
-            .any(|line| line.contains(" > ") && line.contains('\u{25b8}')),
-        "and the cursor is left on the heading it came out of, not on a row that moved: {page}"
+            .any(|line| line.matches('\u{25b8}').count() >= 2),
+        "and the cursor is left on the heading it came out of, not on a row that moved: the row \
+         carries both the mark of the cursor and the mark of a folded branch: {page}"
     );
 }

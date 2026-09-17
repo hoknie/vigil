@@ -26,7 +26,7 @@ fn onto(app: &mut App, name: &str) {
 fn cursor_row(app: &App) -> String {
     drawn_at(app, WIDE, 30)
         .lines()
-        .find(|line| line.contains(" > "))
+        .find(|line| line.contains("\u{2503} \u{25b8} "))
         .unwrap_or_default()
         .to_string()
 }

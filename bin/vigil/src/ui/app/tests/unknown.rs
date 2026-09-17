@@ -17,7 +17,7 @@ fn onto_the_row(app: &mut App, named: &str) {
     for _ in 0..20 {
         if drawn_at(app, 120, 40)
             .lines()
-            .any(|line| line.contains(" > ") && line.contains(named))
+            .any(|line| line.contains(" \u{25b8} ") && line.contains(named))
         {
             return;
         }

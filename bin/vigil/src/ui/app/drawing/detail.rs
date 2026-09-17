@@ -1,6 +1,7 @@
 use ratatui::layout::Rect;
 
 use crate::ui::app::App;
+use crate::ui::chrome::frame;
 
 use crate::ui::details::pieces;
 use crate::ui::helpers::finding::diff;
@@ -24,7 +25,28 @@ impl App {
     }
 
     pub(in crate::ui::app) fn detail_area(&self) -> Option<Rect> {
-        split::layout(self.body.get(), self.detail_showing(self.body.get())).detail()
+        split::layout(
+            self.body.get(),
+            self.detail_showing(self.body.get()),
+            self.look.interactive(),
+        )
+        .detail()
+    }
+
+    pub(in crate::ui::app) fn framed_panes(&self, area: Rect) -> bool {
+        let body = frame::body(self.look, area, true);
+        if !self.look.interactive() || self.editing.is_some() {
+            return false;
+        }
+        if self.graph.is_some() || self.history.is_some() {
+            return true;
+        }
+        match self.nav.at() {
+            _ if !self.view.has_reading() => false,
+            Screen::HOME => self.detail_open,
+            Screen::SUMMARY => false,
+            _ => self.detail_showing(body),
+        }
     }
 
     pub(in crate::ui::app) fn detail_height(&self, area: Rect) -> usize {

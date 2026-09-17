@@ -3,6 +3,7 @@ mod tests;
 
 mod answers;
 mod choices;
+pub(in crate::ui) mod clicks;
 mod deeds;
 mod drawing;
 mod graph;
@@ -19,7 +20,7 @@ mod session;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use ratatui::layout::Rect;
+use ratatui::layout::{Position, Rect};
 use vigil_view::{Counts, Index, Piece, RowKey};
 
 use crate::link::Link;
@@ -28,7 +29,7 @@ use std::collections::BTreeMap;
 use crate::ui::types::cache::{Listed, Remembered, Shown};
 use crate::ui::{
     Asking, Chooser, Dismissed, Editing, Filter, Gone, Graph, History, Level, Look, Nav, Paper,
-    Picked, Screen, Sorting, View,
+    Picked, Pointer, Screen, Sorting, View,
 };
 
 type RowsAsked = (u64, Screen, usize, String);
@@ -64,6 +65,8 @@ pub struct App {
     helping: bool,
     message: Option<String>,
     body: Cell<Rect>,
+    cursor: Cell<Option<Position>>,
+    pointer: Pointer,
     rows_seen: Remembered<RowsAsked, Rc<Shown>>,
     listed_seen: Remembered<RowsAsked, Rc<Listed>>,
     index_seen: Remembered<RowsAsked, Option<Rc<Index>>>,

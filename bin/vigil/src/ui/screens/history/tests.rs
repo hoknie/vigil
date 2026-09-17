@@ -4,6 +4,7 @@ use vigil_view::{Pane, Piece, RowKey};
 
 use super::render;
 use super::render::CAPTION;
+use crate::ui::details::pieces;
 use crate::ui::helpers::words::text;
 use crate::ui::{History, Motion, fixture};
 
@@ -25,8 +26,14 @@ fn the_panel_puts_the_way_back_on_top_and_the_newest_run_above_the_older_one() {
     let page = drawn(&opened(NC), 80, 30);
     let lines: Vec<&str> = page.lines().collect();
 
-    assert!(lines[0].contains("[ \u{2190} Back ]"), "{page}");
-    assert!(lines[0].contains(CAPTION), "{page}");
+    assert!(
+        lines[0].contains(CAPTION),
+        "the caption is the top edge of the panel's frame: {page}"
+    );
+    assert!(
+        lines[1].contains("[ \u{2190} Back ]"),
+        "and the way back is the first line inside it: {page}"
+    );
     let newest = lines
         .iter()
         .position(|line| line.contains("nc -z"))
@@ -59,7 +66,12 @@ fn the_panel_fits_eighty_and_forty_columns_and_never_runs_off_the_side() {
 fn a_row_about_the_reading_opens_a_panel_that_says_why_it_has_no_runs() {
     let page = drawn(&opened("launches|capped"), 80, 20);
 
-    assert!(page.contains("nothing ran under it"), "{page}");
+    let said = page
+        .split_whitespace()
+        .filter(|word| *word != "\u{2503}")
+        .collect::<Vec<_>>()
+        .join(" ");
+    assert!(said.contains("nothing ran under it"), "{page}");
 }
 
 #[test]
@@ -69,7 +81,11 @@ fn a_panel_scrolled_down_shows_the_later_lines_and_no_longer_the_first() {
             .map(|at| Piece::text(format!("line number {at:02}")))
             .collect(),
     );
-    history.scroll(Motion::Last, 8, 40);
+    history.scroll(
+        Motion::Last,
+        pieces::drawing(Rect::new(0, 0, 80, 10)).height as usize,
+        40,
+    );
 
     let page = drawn(&history, 80, 10);
 

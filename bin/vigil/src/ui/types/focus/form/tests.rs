@@ -1,6 +1,8 @@
 use vigil_model::Changing;
 use vigil_view::{Choice, Field, Form};
 
+use tui_input::InputRequest;
+
 use super::editing::Editing;
 use crate::ui::{Screen, Spot};
 
@@ -79,25 +81,118 @@ fn typing_and_erasing_change_the_text_field_the_focus_is_on_and_nothing_else() {
 }
 
 #[test]
-fn space_turns_a_switch_and_the_choice_under_the_cursor_and_the_side_arrows_walk_choices() {
+fn space_turns_a_switch_and_the_choice_under_the_cursor_of_the_open_list_and_the_arrows_walk_it() {
     let mut editing = editing();
     editing.next();
     editing.toggle();
     assert_eq!(editing.form().switch("locked"), Some(true));
 
     editing.next();
-    editing.sideways(1);
-    editing.sideways(1);
+    editing.open_the_list();
+    editing.walk_the_list(1);
+    editing.walk_the_list(1);
     assert_eq!(
-        editing.choice(),
-        1,
+        editing.dropdown().map(|dropdown| dropdown.at()),
+        Some(1),
         "the last choice is where the arrow stops"
     );
-    editing.toggle();
+    editing.toggle_in_the_list();
     assert_eq!(
         editing.form().chosen("groups"),
         Some(vec!["wheel", "docker"])
     );
+}
+
+#[test]
+fn a_list_opens_only_on_a_field_of_choices_and_closes_when_the_focus_moves_on() {
+    let mut editing = editing();
+    editing.open_the_list();
+    assert!(
+        editing.dropdown().is_none(),
+        "a text field has no list to open"
+    );
+
+    editing.next();
+    editing.next();
+    editing.open_the_list();
+    assert!(editing.dropdown().is_some());
+
+    editing.next();
+    assert!(
+        editing.dropdown().is_none(),
+        "a list left open on a field the focus is no longer on would take keys meant for another"
+    );
+}
+
+#[test]
+fn letters_typed_into_an_open_list_narrow_it_and_space_toggles_what_is_left_under_the_cursor() {
+    let mut editing = editing();
+    editing.next();
+    editing.next();
+    editing.open_the_list();
+
+    for character in "DOC".chars() {
+        editing.narrow_the_list(character);
+    }
+    let dropdown = editing.dropdown().expect("open");
+    assert_eq!(
+        dropdown.shown(editing.choices()),
+        vec![1],
+        "narrowing ignores case, because a group is not typed in capitals"
+    );
+    editing.toggle_in_the_list();
+    assert_eq!(
+        editing.form().chosen("groups"),
+        Some(vec!["wheel", "docker"]),
+        "the toggle lands on the choice the narrowed list shows, not on the one at the same place in the whole list"
+    );
+
+    editing.widen_the_list();
+    editing.widen_the_list();
+    editing.widen_the_list();
+    assert_eq!(
+        editing
+            .dropdown()
+            .map(|dropdown| dropdown.shown(editing.choices()).len()),
+        Some(2)
+    );
+}
+
+#[test]
+fn closing_the_list_keeps_every_toggle_made_while_it_was_open() {
+    let mut editing = editing();
+    editing.next();
+    editing.next();
+    editing.open_the_list();
+    editing.toggle_in_the_list();
+
+    editing.close_the_list();
+
+    assert!(editing.dropdown().is_none());
+    assert_eq!(
+        editing.form().chosen("groups"),
+        Some(vec![]),
+        "a list closed with Esc is not a form left with Esc: what was toggled is kept"
+    );
+}
+
+#[test]
+fn the_text_cursor_walks_inside_the_value_and_a_letter_lands_where_it_stands() {
+    let mut editing = editing();
+    assert_eq!(
+        editing.input().map(|input| input.cursor()),
+        Some(9),
+        "the cursor arrives at the end of what is already there"
+    );
+
+    editing.edit(InputRequest::GoToStart);
+    editing.type_character('>');
+    editing.edit(InputRequest::GoToEnd);
+    editing.edit(InputRequest::DeletePrevWord);
+
+    assert_eq!(editing.form().text("shell"), Some(">/bin/"));
+    editing.edit(InputRequest::DeleteLine);
+    assert_eq!(editing.form().text("shell"), Some(""));
 }
 
 #[test]

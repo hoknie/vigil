@@ -3,6 +3,7 @@ use ratatui::text::Line;
 #[derive(Default)]
 pub struct Report {
     lines: Vec<Line<'static>>,
+    buttons: Vec<(usize, usize, u16, u16)>,
 }
 
 impl Report {
@@ -20,6 +21,24 @@ impl Report {
 
     pub fn lines(&self) -> &[Line<'static>] {
         &self.lines
+    }
+
+    pub fn push_buttons(
+        &mut self,
+        lines: Vec<Line<'static>>,
+        places: Vec<(usize, usize, u16, u16)>,
+    ) {
+        let first = self.lines.len();
+        self.buttons.extend(
+            places
+                .into_iter()
+                .map(|(button, line, x, wide)| (button, first + line, x, wide)),
+        );
+        self.lines.extend(lines);
+    }
+
+    pub fn buttons(&self) -> &[(usize, usize, u16, u16)] {
+        &self.buttons
     }
 }
 

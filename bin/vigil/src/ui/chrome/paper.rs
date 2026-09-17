@@ -1,7 +1,7 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Clear, Paragraph, Widget};
+use ratatui::widgets::{Block, BorderType, Clear, Paragraph, Widget};
 
 use crate::ui::helpers::layout::wrap;
 use crate::ui::{Look, Paper};
@@ -21,6 +21,7 @@ pub fn render(paper: &Paper, look: Look, area: Rect, buffer: &mut Buffer) {
     Clear.render(panel, buffer);
 
     let block = Block::bordered()
+        .border_type(BorderType::Rounded)
         .border_style(look.palette.border())
         .title(Line::styled(
             format!(" {} ", paper.caption),

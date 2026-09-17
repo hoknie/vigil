@@ -14,7 +14,7 @@ fn the_same_key_narrows_a_list_of_findings_and_a_list_of_a_reading() {
     assert_eq!(app.nav.at(), screen("ports"));
     let page = drawn_at(&app, 120, 24);
     assert!(
-        page.contains("[every kind]") && page.contains("only tcp"),
+        page.contains("\u{25b8} every kind") && page.contains("only tcp"),
         "f opened nothing here, and a key that works on one list and refuses on the next is \
          a key a reader stops trusting: {page}"
     );

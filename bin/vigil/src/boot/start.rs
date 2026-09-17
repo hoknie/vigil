@@ -8,9 +8,10 @@ use clap::Parser;
 
 use crate::cli::{
     CAPTURE_MOVED, COLLECTOR_LIVES_IN_THE_DAEMON, CONFIGURE_LIVES_IN_THE_DAEMON, Cli, Command,
-    Console, Silencing, the_old_shape,
+    Console, Silencing, Ui, the_old_shape,
 };
 use crate::config;
+use crate::terminal::capture;
 use crate::ui::{App, Audience, Palette, Screen, to_text};
 
 const NARROWEST: u16 = 80;
@@ -42,7 +43,7 @@ pub fn start(arguments: impl IntoIterator<Item = String>) -> ExitCode {
                 eprintln!("{CAPTURE_MOVED}");
                 ExitCode::from(2)
             }
-            false => interactive(&ui.console),
+            false => interactive(&ui),
         },
         Command::Capture(console) => capture(&console),
         Command::Suppress(asked) => {
@@ -93,13 +94,15 @@ fn capture(options: &Console) -> ExitCode {
     }
 }
 
-fn interactive(options: &Console) -> ExitCode {
+fn interactive(asked: &Ui) -> ExitCode {
+    let options = &asked.console;
     let mut app = App::new(
         options,
         options.opening(Screen::HOME),
         Palette::from_environment(),
         Audience::Person,
-    );
+    )
+    .with_the_mouse(!asked.no_mouse);
 
     let mut terminal = match ratatui::try_init() {
         Ok(terminal) => terminal,
@@ -110,7 +113,9 @@ fn interactive(options: &Console) -> ExitCode {
         }
     };
 
+    capture::release_on_panic();
     let outcome = app.run(&mut terminal);
+    capture::release();
     ratatui::restore();
 
     match outcome {

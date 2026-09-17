@@ -5,7 +5,6 @@ use super::App;
 use crate::ui::details::pieces;
 use crate::ui::helpers::finding::acts::Acts;
 use crate::ui::helpers::motion::keys;
-use crate::ui::screens::history::HEADER_LINES;
 use crate::ui::{Action, History, Reading};
 
 pub const HISTORY: char = 'H';
@@ -55,10 +54,11 @@ impl App {
                 self.history = None;
                 self.settle();
             }
+            Action::Letter(crate::ui::app::clicks::MOUSE) => self.switch_the_mouse(),
             Action::Move(motion) | Action::Pick(motion) | Action::Gather(motion) => {
-                let body = self.body.get();
-                let page = body.height.saturating_sub(HEADER_LINES) as usize;
-                let width = self.look.text_width(body.width);
+                let drawing = pieces::drawing(self.body.get());
+                let page = drawing.height as usize;
+                let width = self.look.text_width(drawing.width);
                 let look = self.look;
                 if let Some(history) = self.history.as_mut() {
                     let total = pieces::height(history.pieces(), Acts::default(), look, width);
