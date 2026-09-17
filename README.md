@@ -21,6 +21,20 @@ Components:
 ## Install
 
 ```bash
+curl -fsSLO https://raw.githubusercontent.com/hoknie/vigil/main/env/scripts/install.sh
+sudo bash install.sh                    # the latest release, as a deb or an rpm
+sudo bash install.sh --version 1.0.6    # a release of your choosing
+sudo bash install.sh --list             # the releases there are
+```
+
+The same script installs and updates: it reads the release list from GitHub, picks the
+package this host manages and the architecture it runs, checks the download against the
+`SHA256SUMS` of that release, and keeps `/etc/vigil/vigil.yaml` as this host has it.
+`--dry-run` says what it would do and stops.
+
+By hand, from the release page:
+
+```bash
 dpkg -i vigil_0.1.0.debian.amd64.deb    # Debian, Ubuntu
 rpm -i vigil_0.1.0.el.x86_64.rpm        # RHEL, Rocky, AlmaLinux, Fedora
 tar -xzf vigil_0.1.0.linux.x86_64.tar.gz  # anywhere else: the binaries and the unit
