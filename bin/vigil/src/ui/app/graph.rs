@@ -7,7 +7,6 @@ use super::App;
 use crate::ui::details::pieces;
 use crate::ui::helpers::finding::acts::Acts;
 use crate::ui::helpers::motion::keys;
-use crate::ui::screens::graph::HEADER_LINES;
 use crate::ui::{Action, Graph, Reading};
 
 pub const GRAPH: char = 'P';

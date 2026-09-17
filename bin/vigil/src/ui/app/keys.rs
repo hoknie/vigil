@@ -23,11 +23,6 @@ impl App {
             self.walk_the_graph(code, modifiers);
             return;
         }
-        if self.graph.is_some() {
-            self.message = None;
-            self.walk_the_graph(code, modifiers);
-            return;
-        }
         if self.history.is_some() {
             self.message = None;
             self.walk_the_history(code, modifiers);

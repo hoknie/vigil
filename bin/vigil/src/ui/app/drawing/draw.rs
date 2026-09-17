@@ -91,17 +91,6 @@ impl App {
             }
             return;
         }
-        if let Some(opened) = &self.graph {
-            graph::render(
-                &self.graph_pieces(),
-                opened.watching(),
-                self.look,
-                opened.top(),
-                body,
-                buffer,
-            );
-            return;
-        }
         if let Some(opened) = &self.history {
             self.pointer.put(body, Target::Detail);
             for (drawn, target) in history::render(opened, self.look, body, buffer) {
