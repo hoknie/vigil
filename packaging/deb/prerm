@@ -4,7 +4,7 @@ set -e
 case "$1" in
 remove|deconfigure)
     if [ -d /run/systemd/system ]; then
-        systemctl stop vigild.service vigil-firewall.timer >/dev/null 2>&1 || true
+        systemctl stop vigild.service vigil-firewall.timer vigil-containers.timer >/dev/null 2>&1 || true
     fi
     ;;
 esac

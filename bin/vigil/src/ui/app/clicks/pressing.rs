@@ -18,6 +18,7 @@ impl App {
             Target::Counting => self.pressed(KeyCode::Char(WATCHING)),
             Target::Row(at) => self.press_the_row(at),
             Target::Pane(at) => self.press_the_name(at),
+            Target::Group(at) => self.press_the_group(at),
             Target::List | Target::Detail => {}
         }
     }
@@ -127,7 +128,7 @@ impl App {
 
     fn press_the_name(&mut self, at: usize) {
         if self.panes().is_some_and(|panes| panes.showing() == at) {
-            self.level = Level::top(self.rungs());
+            self.level = Level::of_the_lists(self.rungs());
             return;
         }
         if let Some(panes) = self.panes_mut() {
@@ -137,6 +138,6 @@ impl App {
         self.nav.difference = Offset::default();
         self.refresh_wanted = true;
         self.settle();
-        self.level = Level::top(self.rungs());
+        self.level = Level::of_the_lists(self.rungs());
     }
 }

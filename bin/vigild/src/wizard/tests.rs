@@ -40,12 +40,14 @@ fn rendered() -> String {
 
 #[test]
 fn what_it_writes_is_a_file_the_daemon_reads() {
+    static NAMES_GIVEN: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     let path = std::env::temp_dir().join(format!(
         "vigil-generated-{}-{}.yaml",
         std::process::id(),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .map(|since| since.as_nanos())
+            .map(|since| since.as_nanos()
+                + NAMES_GIVEN.fetch_add(1, std::sync::atomic::Ordering::Relaxed) as u128)
             .unwrap_or(0)
     ));
     std::fs::write(&path, rendered()).expect("writes");

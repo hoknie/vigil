@@ -12,6 +12,10 @@ const READ_NOT_CHANGED: &str = "this list is read, not changed";
 pub trait Pane: Send + Sync {
     fn name(&self) -> &str;
 
+    fn belongs_to(&self) -> Option<&'static str> {
+        None
+    }
+
     fn caption(&self) -> &str;
 
     fn detail_caption(&self) -> &'static str {
@@ -67,6 +71,10 @@ pub trait Pane: Send + Sync {
     fn empty(&self, showing: &Showing<'_>) -> Notice;
 
     fn nothing_in_the_reading(&self) -> Option<Notice> {
+        None
+    }
+
+    fn why_nothing_is_listed(&self, _reading: &Snapshot, _showing: &Showing<'_>) -> Option<Notice> {
         None
     }
 

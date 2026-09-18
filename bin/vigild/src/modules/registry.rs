@@ -11,5 +11,6 @@ pub fn modules() -> Vec<Box<dyn Module>> {
         Box::new(vigil_resources::Resources),
         Box::new(vigil_files::Files),
         Box::new(vigil_containers::Containers),
+        Box::new(vigil_engines::Engines),
     ]
 }

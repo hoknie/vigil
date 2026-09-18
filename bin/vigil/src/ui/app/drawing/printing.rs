@@ -67,9 +67,11 @@ impl App {
 
     fn every_list(&self) -> Vec<Band> {
         match self.nav.at() {
-            screen if screen.draws_a_reading() => {
-                self.shown_panes().into_iter().map(Band::Pane).collect()
-            }
+            screen if screen.draws_a_reading() => self
+                .every_shown_pane()
+                .into_iter()
+                .map(Band::Pane)
+                .collect(),
             _ => Vec::new(),
         }
     }

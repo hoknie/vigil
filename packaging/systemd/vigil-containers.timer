@@ -1,0 +1,23 @@
+[Unit]
+# How often this host's container engines are asked what they hold. The agent's engines
+# collector reads the files every 120 seconds and calls the reading stale once it is older
+# than two of those periods, so a longer interval here turns into a health line saying how old
+# the reading is, never into silence.
+#
+#     systemctl mask vigil-containers.timer    stop the reading, keep the package
+#
+# vigild.service pulls this timer in with Wants=, so enabling the agent enables the reading
+# and masking the timer switches it off without touching the agent. The period is also written
+# as dump_seconds in the containers block of /etc/vigil/vigil.yaml; change one and change the
+# other, or the agent calls a current reading stale.
+Description=vigil: read what this host's container engines hold, every two minutes
+Documentation=file:/usr/share/doc/vigil/README.md
+
+[Timer]
+OnBootSec=45s
+OnUnitActiveSec=120s
+AccuracySec=10s
+Unit=vigil-containers.service
+
+[Install]
+WantedBy=timers.target

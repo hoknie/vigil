@@ -1,3 +1,4 @@
+mod grouping;
 mod listing;
 mod suite;
 mod tallying;
@@ -6,6 +7,10 @@ mod views;
 #[cfg(test)]
 mod tests;
 
+pub use grouping::{
+    a_section_gives_every_pane_a_group_or_none_of_them,
+    every_group_the_section_names_is_carried_by_a_pane, run_all_of_the_section,
+};
 pub use listing::{
     the_index_lists_every_search_and_sort_as_the_rows_do,
     the_index_lists_every_search_and_sort_as_the_rows_do_also,

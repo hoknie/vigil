@@ -1,10 +1,13 @@
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 const ASKED_TO_WRITE: &str = "VIGIL_GOLDEN";
 
 const RECIPE: &str = "just golden";
+
+static STAGED: AtomicUsize = AtomicUsize::new(0);
 
 pub struct Golden {
     family: &'static str,
@@ -67,8 +70,7 @@ impl Golden {
                 fs::create_dir_all(parent)
                     .map_err(|error| format!("{}: {error}", parent.display()))?;
             }
-            return fs::write(&path, document)
-                .map_err(|error| format!("{}: {error}", path.display()));
+            return write_whole(&path, document);
         }
 
         if self.held().as_deref() == Some(document) {
@@ -124,9 +126,61 @@ impl Golden {
     }
 }
 
+fn write_whole(path: &Path, document: &str) -> Result<(), String> {
+    let staged = path.with_extension(format!(
+        "json.{}.{}",
+        std::process::id(),
+        STAGED.fetch_add(1, Ordering::Relaxed)
+    ));
+    fs::write(&staged, document).map_err(|error| format!("{}: {error}", staged.display()))?;
+    fs::rename(&staged, path).map_err(|error| {
+        let _ = fs::remove_file(&staged);
+        format!("{}: {error}", path.display())
+    })
+}
+
 #[cfg(test)]
 mod tests {
+    use std::io::{Read, Seek, SeekFrom};
+
     use super::*;
+
+    #[test]
+    fn a_sample_written_again_replaces_the_file_whole_so_a_reader_that_opened_it_never_sees_it_emptied()
+     {
+        let folder = env::temp_dir().join(format!("vigil-golden-whole-{}", std::process::id()));
+        fs::create_dir_all(&folder).expect("a scratch folder");
+        let path = folder.join("resources.json");
+        fs::write(&path, "the sample as it was\n").expect("the sample before");
+        let mut reader = fs::File::open(&path).expect("a reader opens the sample");
+
+        write_whole(&path, "the sample as it is now\n").expect("the sample is written again");
+
+        let mut seen = String::new();
+        reader
+            .seek(SeekFrom::Start(0))
+            .expect("the reader starts over");
+        reader.read_to_string(&mut seen).expect("the reader reads");
+        let now = fs::read_to_string(&path).expect("the sample after");
+        let left: Vec<_> = fs::read_dir(&folder)
+            .expect("the scratch folder")
+            .map(|entry| entry.expect("an entry").file_name())
+            .collect();
+        fs::remove_dir_all(&folder).expect("the scratch folder goes");
+
+        assert_eq!(
+            seen, "the sample as it was\n",
+            "the tests that write a sample and the ones that read it run side by side; a file \
+             emptied before it is filled is read as nothing, and the reader fails on a sample \
+             that never changed"
+        );
+        assert_eq!(now, "the sample as it is now\n");
+        assert_eq!(
+            left.len(),
+            1,
+            "the staged copy is renamed into place and nothing is left beside the sample: {left:?}"
+        );
+    }
 
     #[test]
     fn a_shape_that_drifted_says_which_command_writes_the_sample_again() {

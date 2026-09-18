@@ -69,12 +69,14 @@ impl Reporter for Scripted {
 }
 
 fn temporary_path(name: &str) -> std::path::PathBuf {
+    static NAMES_GIVEN: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     std::env::temp_dir().join(format!(
         "vigild-delivery-{}-{name}-{}.ndjson",
         std::process::id(),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .map(|since| since.as_nanos())
+            .map(|since| since.as_nanos()
+                + NAMES_GIVEN.fetch_add(1, std::sync::atomic::Ordering::Relaxed) as u128)
             .unwrap_or(0)
     ))
 }

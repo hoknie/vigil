@@ -14,6 +14,7 @@ pub struct Panes {
     only: Vec<Vec<Facet>>,
     hidden: Vec<String>,
     arranged: Option<String>,
+    group: Option<String>,
 }
 
 impl Panes {
@@ -28,6 +29,7 @@ impl Panes {
             only: vec![Vec::new(); count],
             hidden: Vec::new(),
             arranged: None,
+            group: None,
         }
     }
 
@@ -35,8 +37,18 @@ impl Panes {
         let count = count.max(1);
         self.cursors.resize(count, Cursor::default());
         self.searches.resize(count, Search::default());
+        self.marked.resize(count, BTreeSet::new());
+        self.opened.resize(count, BTreeSet::new());
         self.only.resize(count, Vec::new());
         self.at = self.at.min(count - 1);
+    }
+
+    pub fn group(&self) -> Option<&str> {
+        self.group.as_deref()
+    }
+
+    pub fn choose_group(&mut self, name: &str) {
+        self.group = Some(name.to_string());
     }
 
     pub fn showing(&self) -> usize {

@@ -3,19 +3,7 @@ use vigil_model::{Change, Evidence, Finding, KnownKind, Severity};
 use super::container_finding::{ContainerFinding, build, finding_key, running};
 use super::docker_socket_exposed::is_a_runtime_socket;
 use crate::types::{ContainerView, Family};
-use vigil_rules::{Rule, RuleContext};
-
-const OF_THIS_HOST: &[&str] = &[
-    "/", "/boot", "/dev", "/etc", "/home", "/proc", "/root", "/srv", "/sys", "/usr", "/var",
-];
-
-const A_RUNTIME_PUTS_THERE: &[&str] = &[
-    "/var/lib/docker/containers/",
-    "/var/lib/containers/storage/",
-    "/var/lib/kubelet/pods/",
-    "/var/lib/docker/volumes/",
-    "/var/lib/containerd/",
-];
+use vigil_rules::{Rule, RuleContext, is_a_path_of_this_host};
 
 pub struct ContainerHostMount;
 
@@ -80,16 +68,8 @@ fn of_this_host<'a>(view: &ContainerView<'a>) -> Vec<&'a str> {
     view.host_paths()
         .into_iter()
         .filter(|path| !is_a_runtime_socket(path))
-        .filter(|path| !A_RUNTIME_PUTS_THERE.iter().any(|at| path.starts_with(at)))
-        .filter(|path| under_a_watched_root(path))
+        .filter(|path| is_a_path_of_this_host(path))
         .collect()
-}
-
-fn under_a_watched_root(path: &str) -> bool {
-    OF_THIS_HOST.iter().any(|root| match *root {
-        "/" => path == "/",
-        named => path == named || path.starts_with(&format!("{named}/")),
-    })
 }
 
 fn severity(held: &[&str]) -> Severity {

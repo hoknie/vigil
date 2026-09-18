@@ -56,6 +56,14 @@ fn every_key_a_list_offers_on_a_row_is_a_button_in_the_detail_of_that_row() {
                     screen.name()
                 );
             }
+            assert!(
+                !offers.suppressing || buttons.contains(&'S'),
+                "{} of {}: a list that says a finding can be raised about its rows draws S \
+                 among the buttons of a row even where it offers nothing else, or a list the \
+                 console only reads is a list whose rows cannot be suppressed from it",
+                pane.name(),
+                screen.name()
+            );
         }
     }
 }

@@ -6,9 +6,13 @@ use crate::ui::{Level, Offset, Origin, Rungs, Screen};
 
 impl App {
     pub(in crate::ui::app) fn rungs(&self) -> Rungs {
-        let menu = self.section().is_some() && self.shown_panes().len() > 1;
+        let Some(section) = self.section() else {
+            return Rungs::new(false, false, self.has_detail());
+        };
+        let groups = !section.groups().is_empty();
+        let menu = self.shown_panes_of(section.as_ref()).len() > 1;
 
-        Rungs::new(menu, self.has_detail())
+        Rungs::new(groups, menu, self.has_detail())
     }
 
     pub(in crate::ui::app) fn visit(&mut self, screen: Screen) {
@@ -160,13 +164,11 @@ impl App {
         let Some(section) = self.section_of(screen) else {
             return;
         };
-        let Some(at) = section
-            .panes()
-            .iter()
-            .position(|pane| pane.reads() == named)
-        else {
+        let drawn = section.panes();
+        let Some(at) = drawn.iter().position(|pane| pane.reads() == named) else {
             return;
         };
+        self.nav.lists.ready(screen.name(), drawn.len());
         if let Some(panes) = self.panes_of_mut(screen) {
             panes.show(at);
         }
@@ -231,6 +233,10 @@ impl App {
                 true => self.open(),
                 false => self.go_back(),
             };
+        }
+        if self.level == Level::Groups {
+            self.step_the_groups(by);
+            return;
         }
         match self.nav.at() {
             screen if screen.draws_a_reading() => {

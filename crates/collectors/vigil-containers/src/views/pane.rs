@@ -14,6 +14,8 @@ use crate::types::Kind;
 
 const ROOM_FOR_THE_RUNTIME: u16 = 118;
 
+pub(super) const HOST: &str = "host";
+
 const SORTED_BY: &[&str] = &["CONTAINER", "PROGRAM", "RUNTIME", "SYS_ADMIN", "HOST PATHS"];
 
 pub(super) struct Contained;
@@ -21,6 +23,10 @@ pub(super) struct Contained;
 impl Pane for Contained {
     fn name(&self) -> &str {
         "containers"
+    }
+
+    fn belongs_to(&self) -> Option<&'static str> {
+        Some(HOST)
     }
 
     fn caption(&self) -> &str {

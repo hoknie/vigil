@@ -31,6 +31,7 @@ fn drawn_with(
             hidden,
             cursor: 0,
             arrows: Arrows::List,
+            group: None,
             sorting: Sorting::default(),
             note: None,
             elsewhere: 0,
@@ -66,6 +67,7 @@ fn rows_and_a_tally_the_console_already_holds_are_drawn_as_given_and_not_worked_
             hidden: &[],
             cursor: 0,
             arrows: Arrows::List,
+            group: None,
             sorting: Sorting::default(),
             note: None,
             elsewhere: 0,
@@ -209,5 +211,66 @@ fn the_tree_draws_programs_alone_until_one_of_them_is_opened() {
     assert!(
         opened.contains('\u{25be}'),
         "an open branch says so: {opened}"
+    );
+}
+
+fn said(line: &ratatui::text::Line<'static>) -> String {
+    line.spans
+        .iter()
+        .map(|span| span.content.as_ref())
+        .collect()
+}
+
+#[test]
+fn a_row_of_names_wider_than_the_terminal_folds_to_the_one_name_and_its_neighbours() {
+    let named: Vec<(usize, String)> = ["containers", "images", "volumes", "networks", "compose"]
+        .iter()
+        .enumerate()
+        .map(|(at, name)| (at, (*name).to_string()))
+        .collect();
+
+    let (whole, places) = super::menu::row(fixture::look(), &named, 1, true, 80);
+    assert_eq!(
+        places.len(),
+        named.len(),
+        "with room for every name, every name is on the row and every one of them can be \
+         clicked: {}",
+        said(&whole)
+    );
+
+    let (folded, places) = super::menu::row(fixture::look(), &named, 1, true, 20);
+    let drawn = said(&folded);
+
+    assert!(
+        drawn.contains("< [images] >"),
+        "a row that does not fit is folded onto the name the reader is on, with the way to \
+         the next on either side of it, rather than being cut off at the frame: {drawn}"
+    );
+    assert_eq!(
+        places.iter().map(|(at, ..)| *at).collect::<Vec<usize>>(),
+        vec![0, 1, 2],
+        "and the arrows are the neighbours, so a click on one is a step along the row"
+    );
+    assert!(
+        drawn.chars().count() <= 20,
+        "a folded row fits the terminal it was folded for: {drawn}"
+    );
+}
+
+#[test]
+fn the_row_the_arrows_are_on_carries_the_caret_and_the_other_row_does_not() {
+    let named = vec![(0, "host".to_string()), (1, "docker".to_string())];
+
+    let here = said(&super::menu::row(fixture::look(), &named, 0, true, 80).0);
+    let away = said(&super::menu::row(fixture::look(), &named, 0, false, 80).0);
+
+    assert!(here.starts_with(" \u{25b8} "), "{here}");
+    assert!(
+        away.starts_with("   ") && !away.contains('\u{25b8}'),
+        "which row the arrows walk is readable with no colour at all: {away}"
+    );
+    assert!(
+        away.contains("[host]"),
+        "and the chosen name is still marked on the row that is not focused: {away}"
     );
 }

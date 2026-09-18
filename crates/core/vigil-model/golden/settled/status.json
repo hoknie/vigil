@@ -59,6 +59,16 @@
         "from": "the name this build gives the collector"
       }
     },
+    "collector-ok|containers-engines": {
+      "every_seconds": {
+        "value": 120,
+        "from": "the period the collectors of this build declare for containers-engines"
+      },
+      "name": {
+        "value": "containers-engines",
+        "from": "the name this build gives the collector"
+      }
+    },
     "collector-ok|files": {
       "every_seconds": {
         "value": 300,

@@ -24,12 +24,14 @@ Format:
 - the filesystems of this host are drawn as a tree of the disks and volumes they
 - watched paths edited in `vigil.yaml`, from the console or by hand
 - `env/scripts/install.sh` installs and updates vigil via cli
+- added support for docker and podman
 
 ### Fixed
 - double suppresion for one item
 - moving through a list of several hundred rows no longer lags: only the rows on the screen are drawn
 - list lag fixed
 - the help page fits an 80x24 terminal
+- `just golden` no longer fails a test that reads a sample while another test writes it
 
 ### Changed
 - not default config path is correctly resolve from now

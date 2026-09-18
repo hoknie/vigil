@@ -28,17 +28,18 @@ trap cleanup EXIT
 
 
 build_binaries() {
-    say "building vigild, vigil and vigil-audit-plugin for $TARGET"
+    say "building vigild, vigil, vigil-audit-plugin and vigil-container-dump for $TARGET"
 
     RUSTFLAGS="${RUSTFLAGS:-} -C linker=rust-lld" \
         cargo build --release --target "$TARGET" \
-            --bin vigild --bin vigil --bin vigil-audit-plugin
+            --bin vigild --bin vigil --bin vigil-audit-plugin --bin vigil-container-dump
 
     mkdir -p "$BINARIES"
     local built="${CARGO_TARGET_DIR:-$ROOT/target}/$TARGET/release"
     install -m 0755 "$built/vigild" "$BINARIES/vigild"
     install -m 0755 "$built/vigil" "$BINARIES/vigil"
     install -m 0755 "$built/vigil-audit-plugin" "$BINARIES/vigil-audit-plugin"
+    install -m 0755 "$built/vigil-container-dump" "$BINARIES/vigil-container-dump"
 
     if command -v file >/dev/null 2>&1; then
         file "$BINARIES/vigild"
@@ -61,6 +62,7 @@ stage() {
     install -D -m 0755 "$BINARIES/vigild" "$tree/usr/sbin/vigild"
     install -D -m 0755 "$BINARIES/vigil" "$tree/usr/bin/vigil"
     install -D -m 0755 "$BINARIES/vigil-audit-plugin" "$tree/usr/sbin/vigil-audit-plugin"
+    install -D -m 0755 "$BINARIES/vigil-container-dump" "$tree/usr/sbin/vigil-container-dump"
 
     install -d -m 0700 "$tree/etc/vigil"
     install -m 0600 "$ROOT/config/vigil.example.yaml" "$tree/etc/vigil/vigil.yaml"
@@ -71,6 +73,10 @@ stage() {
         "$tree/usr/lib/systemd/system/vigil-firewall.service"
     install -D -m 0644 "$ROOT/packaging/systemd/vigil-firewall.timer" \
         "$tree/usr/lib/systemd/system/vigil-firewall.timer"
+    install -D -m 0644 "$ROOT/packaging/systemd/vigil-containers.service" \
+        "$tree/usr/lib/systemd/system/vigil-containers.service"
+    install -D -m 0644 "$ROOT/packaging/systemd/vigil-containers.timer" \
+        "$tree/usr/lib/systemd/system/vigil-containers.timer"
     install -D -m 0644 "$ROOT/packaging/systemd/vigil-tmpfiles.conf" \
         "$tree/usr/lib/tmpfiles.d/vigil.conf"
     install -D -m 0644 "$ROOT/packaging/logrotate/vigil" "$tree/etc/logrotate.d/vigil"
@@ -84,6 +90,7 @@ stage() {
 
     install -d -m 0700 "$tree/var/lib/vigil"
     install -d -m 0700 "$tree/var/lib/vigil/firewall"
+    install -d -m 0700 "$tree/var/lib/vigil/containers"
     install -d -m 0700 "$tree/var/log/vigil"
 
     install -d -m 0755 "$tree/usr/share/doc/vigil"

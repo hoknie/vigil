@@ -7,6 +7,7 @@ pub(in crate::ui) mod clicks;
 mod deeds;
 mod drawing;
 mod graph;
+mod groups;
 mod history;
 mod kept;
 mod keys;

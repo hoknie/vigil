@@ -41,6 +41,10 @@ pub fn view() -> View {
         "containers",
         Reading::Taken(vigil_containers::fixture::containers()),
     );
+    view.readings.put(
+        "containers-engines",
+        Reading::Taken(vigil_engines::fixture::engines()),
+    );
     view.readings
         .put("files", Reading::Taken(vigil_files::fixture::files()));
     view.found.findings = vec![

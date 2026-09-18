@@ -1,5 +1,11 @@
+#[cfg(test)]
+pub(crate) mod instead;
+mod together;
+
 use vigil_module::Module;
-use vigil_view::{Pane, Section};
+use vigil_view::Section;
+
+use together::together;
 
 pub fn modules() -> Vec<Box<dyn Module>> {
     vec![
@@ -12,16 +18,25 @@ pub fn modules() -> Vec<Box<dyn Module>> {
         Box::new(vigil_resources::Resources),
         Box::new(vigil_files::Files),
         Box::new(vigil_containers::Containers),
+        Box::new(vigil_engines::Engines),
     ]
 }
 
 pub fn sections() -> Declared {
-    together(
+    let declared = together(
         modules()
             .iter()
             .filter_map(|module| module.section())
             .collect(),
-    )
+    );
+
+    #[cfg(test)]
+    let declared = declared
+        .into_iter()
+        .map(|section| instead::of(section.name()).unwrap_or(section))
+        .collect();
+
+    declared
 }
 
 pub fn holding(name: &str) -> Option<Box<dyn Section>> {
@@ -32,67 +47,73 @@ pub fn holding(name: &str) -> Option<Box<dyn Section>> {
 
 type Declared = Vec<Box<dyn Section>>;
 
-fn together(declared: Declared) -> Declared {
-    let mut named: Vec<&'static str> = Vec::new();
-    for section in &declared {
-        if !named.contains(&section.name()) {
-            named.push(section.name());
-        }
-    }
-
-    let mut sections: Declared = Vec::new();
-    let mut left = declared;
-    for name in named {
-        let (mine, rest): (Declared, Declared) =
-            left.into_iter().partition(|section| section.name() == name);
-        left = rest;
-        sections.push(match mine.len() {
-            1 => mine.into_iter().next().expect("one section"),
-            _ => Box::new(Together(mine)),
-        });
-    }
-
-    sections
-}
-
-struct Together(Vec<Box<dyn Section>>);
-
-impl Section for Together {
-    fn name(&self) -> &'static str {
-        self.0[0].name()
-    }
-
-    fn title(&self) -> &'static str {
-        self.0[0].title()
-    }
-
-    fn holds(&self) -> &'static str {
-        self.0[0].holds()
-    }
-
-    fn panes(&self) -> Vec<Box<dyn Pane>> {
-        self.0.iter().flat_map(|section| section.panes()).collect()
-    }
-
-    fn shows_what_has_gone(&self) -> bool {
-        self.0.iter().any(|section| section.shows_what_has_gone())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn every_module_linked_into_this_console_declares_the_screen_that_draws_its_reading() {
+    fn every_section_this_console_draws_groups_all_of_its_lists_or_none_of_them() {
+        for section in sections() {
+            vigil_view::conformance::run_all_of_the_section(section.as_ref());
+        }
+    }
+
+    #[test]
+    fn a_section_put_in_the_place_of_another_stands_only_while_the_test_holds_it() {
+        let named = crate::ui::fixture::grouped::SECTION;
+        let reads = |section: Box<dyn Section>| -> Vec<String> {
+            let mut read: Vec<String> = section
+                .panes()
+                .iter()
+                .map(|pane| pane.reads().to_string())
+                .collect();
+            read.dedup();
+            read
+        };
+        {
+            let _standing = instead::drawn(named, crate::ui::fixture::grouped::section);
+            assert_eq!(
+                reads(holding(named).expect("a section under that name")),
+                vec!["containers"]
+            );
+        }
+
+        assert_eq!(
+            reads(holding(named).expect("a section under that name")),
+            vec!["containers", "containers-engines"],
+            "a section put in the place of another for one test is put back when the test \
+             ends, or the next test reads a console this build does not ship"
+        );
+    }
+
+    #[test]
+    fn the_containers_screen_is_the_host_then_every_engine_as_the_modules_are_linked() {
+        let containers = holding("containers").expect("the containers screen");
+
+        assert_eq!(
+            containers.groups(),
+            vec!["host", "docker", "podman"],
+            "what /proc sees comes first, because it sees a container of any runtime, and the \
+             engines follow in the order their dumps are read"
+        );
+        assert_eq!(
+            containers
+                .panes()
+                .first()
+                .map(|pane| pane.reads().to_string()),
+            Some("containers".to_string())
+        );
+    }
+
+    #[test]
+    fn every_screen_a_module_declares_is_a_screen_this_console_draws() {
+        let mut declared = 0;
+
         for module in modules() {
-            let section = module.section().unwrap_or_else(|| {
-                panic!(
-                    "{} is linked into this console and declares no section: its reading \
-                     would arrive with nowhere to be drawn",
-                    module.name()
-                )
-            });
+            let Some(section) = module.section() else {
+                continue;
+            };
+            declared += 1;
             assert!(
                 sections()
                     .iter()
@@ -102,6 +123,35 @@ mod tests {
                 section.name()
             );
         }
+
+        assert!(
+            declared > 0,
+            "no module declares a screen, so this guard reads nothing"
+        );
+    }
+
+    #[test]
+    fn a_module_with_no_screen_of_its_own_is_opened_as_the_plain_list_of_what_it_read() {
+        let without: Vec<&'static str> = modules()
+            .iter()
+            .filter(|module| module.section().is_none())
+            .map(|module| module.name())
+            .collect();
+
+        for name in &without {
+            assert!(
+                crate::ui::Screen::showing(name).is_none(),
+                "{name} is drawn by a screen and declares no section, so nothing decides \
+                 which of the two the reader gets"
+            );
+        }
+        assert_eq!(
+            without,
+            Vec::<&str>::new(),
+            "a reading no screen of this build draws is shown as a plain list rather than \
+             hidden, and which readings those are is a thing this console states out loud: \
+             this build has none"
+        );
     }
 
     #[test]

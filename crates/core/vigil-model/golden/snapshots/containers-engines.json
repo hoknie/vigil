@@ -1,0 +1,745 @@
+{
+  "source": "containers-engines",
+  "classes": {
+    "docker": {
+      "cgroup_driver": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "cgroup_version": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "configuration_files": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "configuration_files/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "containers": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "containers/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "device": {
+        "types": [
+          "null"
+        ],
+        "always": false
+      },
+      "digest": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": false
+      },
+      "driver": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "dump_read": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "engine": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "from": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "host": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "host_network": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "id": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "image": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "image_id": {
+        "types": [
+          "null"
+        ],
+        "always": false
+      },
+      "insecure": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "interface": {
+        "types": [
+          "null"
+        ],
+        "always": false
+      },
+      "internal": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "ipv6": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "labels": {
+        "types": [
+          "object"
+        ],
+        "always": false
+      },
+      "labels/com.docker.compose.network": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "labels/com.docker.compose.project": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "labels/com.docker.compose.project.config_files": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "labels/com.docker.compose.project.working_dir": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "labels/com.docker.compose.service": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "labels/com.docker.compose.volume": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "labels/com.docker.volume.anonymous": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "labels/com.shop.api-token": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "labels_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "logging_driver": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "mountpoint": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "mounts": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "mounts/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "mounts_truncated": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "networks": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "networks/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "pod": {
+        "types": [
+          "null"
+        ],
+        "always": false
+      },
+      "ports": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "ports/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "present": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "project": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": false
+      },
+      "read": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "role": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "root_directory": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "rootless": {
+        "types": [
+          "null"
+        ],
+        "always": false
+      },
+      "scope": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "security_options": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "security_options/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "service": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "services": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "services/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "size": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "storage_driver": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "subject": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "subnets": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "tags": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "tags/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "unanswered": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "untagged": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "version": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "working_directory": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      }
+    },
+    "podman": {
+      "cgroup": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "cgroup_driver": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "cgroup_version": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "containers": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "containers/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "created_at": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "device": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": false
+      },
+      "digest": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": false
+      },
+      "driver": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "dump_read": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "engine": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "from": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "host": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "host_network": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "id": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "image": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "image_id": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "infra_id": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "insecure": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "interface": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "internal": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "ipv6": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "labels": {
+        "types": [
+          "object"
+        ],
+        "always": false
+      },
+      "labels/com.corp.vault-token": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "labels/role": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "labels_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "logging_driver": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "mountpoint": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "mounts": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "mounts/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "mounts_truncated": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "networks": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "networks/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "pod": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "ports": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "ports/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "present": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "project": {
+        "types": [
+          "null"
+        ],
+        "always": false
+      },
+      "read": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "role": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "root_directory": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "rootless": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "scope": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "security_options": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "service": {
+        "types": [
+          "null"
+        ],
+        "always": false
+      },
+      "size": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "storage_driver": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "subject": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "subnets": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "subnets/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "tags": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "tags/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "unanswered": {
+        "types": [
+          "array"
+        ],
+        "always": false
+      },
+      "untagged": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "updated_at": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "value_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "version": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      }
+    }
+  }
+}

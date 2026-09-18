@@ -12,6 +12,7 @@ pub struct Acts {
     pub editing: bool,
     pub deleting: bool,
     pub control: bool,
+    pub suppress: bool,
     pub history: bool,
     pub graph: bool,
 }
@@ -53,6 +54,7 @@ impl Acts {
                 editing: false,
                 deleting: false,
                 control: offers.controlling.is_some(),
+                suppress: offers.suppressing,
                 history: offers.history,
                 graph: offers.graph,
             },
@@ -105,7 +107,7 @@ impl Acts {
                 name: "start or stop it",
             });
         }
-        if !buttons.is_empty() {
+        if !buttons.is_empty() || self.suppress {
             buttons.push(Button {
                 key: 'S',
                 name: "suppress it",

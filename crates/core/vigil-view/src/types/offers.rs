@@ -6,6 +6,7 @@ pub struct Offers {
     pub search: bool,
     pub detail: bool,
     pub marking: bool,
+    pub suppressing: bool,
     pub killing: Option<KillTarget>,
     pub changing: Option<AccountObject>,
     pub controlling: Option<ControlTarget>,
@@ -21,6 +22,7 @@ impl Default for Offers {
             search: true,
             detail: true,
             marking: false,
+            suppressing: false,
             killing: None,
             changing: None,
             controlling: None,
@@ -38,6 +40,7 @@ impl Offers {
             search: false,
             detail: false,
             marking: false,
+            suppressing: false,
             killing: None,
             changing: None,
             controlling: None,
@@ -81,6 +84,14 @@ impl Offers {
 
     pub fn marked(self, marking: bool) -> Offers {
         Offers { marking, ..self }
+    }
+
+    pub fn suppressed(self, suppressing: bool) -> Offers {
+        Offers {
+            marking: self.marking || suppressing,
+            suppressing,
+            ..self
+        }
     }
 
     pub fn killed(self, target: KillTarget) -> Offers {
@@ -129,6 +140,29 @@ mod tests {
              grows the keys for it without asking is a list that grew a verb by accident"
         );
         assert!(Offers::default().marked(true).marking);
+    }
+
+    #[test]
+    fn a_list_offers_to_suppress_its_rows_only_where_it_says_a_finding_can_be_raised_about_them() {
+        assert!(!Offers::default().suppressing && !Offers::nothing().suppressing);
+
+        let suppressed = Offers::default().suppressed(true);
+        assert!(suppressed.suppressing);
+        assert!(
+            suppressed.marking,
+            "a suppression is written for the marked rows or the one under the cursor, so a \
+             list that offers it and cannot be marked writes one entry at a time by accident"
+        );
+        assert_eq!(
+            (
+                suppressed.killing,
+                suppressed.changing,
+                suppressed.controlling
+            ),
+            (None, None, None),
+            "and writing an entry into suppressions does nothing to the host: no verb comes \
+             with it"
+        );
     }
 
     #[test]

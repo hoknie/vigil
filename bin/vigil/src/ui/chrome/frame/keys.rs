@@ -49,6 +49,10 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
             false => " j/k ↑↓ a section · → or Enter open it · d details · 1-9 by number · ? keys"
                 .to_string(),
         },
+        Level::Groups => format!(
+            " ←→ which group · ↓ to its lists · ↑ or Esc {} · ? keys",
+            hints.back.named()
+        ),
         Level::Menu => format!(
             " ←→ which list · ↓ into it · ↑ or Esc {} · ? keys · q quit",
             hints.back.named()

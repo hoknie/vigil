@@ -9,7 +9,7 @@ remove)
         echo "vigil: package, or set 'active = no' in it, before auditd is next restarted."
     fi
     if [ -d /run/systemd/system ]; then
-        systemctl disable vigild.service vigil-firewall.timer >/dev/null 2>&1 || true
+        systemctl disable vigild.service vigil-firewall.timer vigil-containers.timer >/dev/null 2>&1 || true
         systemctl daemon-reload >/dev/null 2>&1 || true
     fi
     ;;

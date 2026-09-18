@@ -3,6 +3,7 @@ mod tests;
 
 mod chooser;
 mod columns;
+mod grouping;
 mod menu;
 mod notices;
 mod regions;

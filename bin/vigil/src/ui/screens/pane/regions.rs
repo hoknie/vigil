@@ -4,15 +4,18 @@ use crate::ui::{Look, Search};
 
 const ROOM_FOR_THE_DEFINITION: u16 = 7;
 
-pub(super) fn split_menu(area: Rect) -> (Option<Rect>, Rect) {
-    if area.height < 3 {
+pub(super) fn split_menu(area: Rect, rows: u16) -> (Option<Rect>, Rect) {
+    if area.height < rows + 2 {
         return (None, area);
     }
     (
-        Some(Rect { height: 1, ..area }),
+        Some(Rect {
+            height: rows,
+            ..area
+        }),
         Rect {
-            y: area.y + 1,
-            height: area.height - 1,
+            y: area.y + rows,
+            height: area.height - rows,
             ..area
         },
     )

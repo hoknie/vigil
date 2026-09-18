@@ -8,7 +8,7 @@ fn a_collector_that_is_off_is_counted_apart_from_one_that_is_not_reading() {
 
     let (page, _) = drawn(fixture::look(), Screen::SUMMARY, &view, 120, 24);
 
-    assert!(page.contains("9 collector(s), 8 reading, 1 off"), "{page}");
+    assert!(page.contains("10 collector(s), 9 reading, 1 off"), "{page}");
     assert!(!page.contains("not reading everything"), "{page}");
 }
 
@@ -22,7 +22,7 @@ fn a_collector_that_is_off_and_one_that_is_failing_are_two_different_numbers() {
     let (page, _) = drawn(fixture::look(), Screen::SUMMARY, &view, 120, 24);
 
     assert!(
-        page.contains("9 collector(s), 1 not reading everything, 1 off"),
+        page.contains("10 collector(s), 1 not reading everything, 1 off"),
         "{page}"
     );
 }

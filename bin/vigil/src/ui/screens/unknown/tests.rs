@@ -97,12 +97,22 @@ fn a_reading_nobody_draws_is_searched_and_sorted_from_its_index_as_from_the_read
 
 #[test]
 fn a_reading_this_build_has_a_section_for_is_never_listed_here() {
-    let section = Unknown::of(&fixture::view());
+    let view = fixture::view();
+    let listed = unknown_readings(&view);
 
-    assert!(
-        section.panes().is_empty(),
-        "every reading of this build has a screen of its own, and drawing one of them here \
-         as well would be the same rows in two places"
+    for drawn in ["ports", "users", "firewall", "containers", "files"] {
+        assert!(
+            !listed.contains(&drawn.to_string()),
+            "{drawn} has a screen of its own and is listed here as well, which is the same \
+             rows in two places"
+        );
+    }
+    assert_eq!(
+        listed,
+        Vec::<String>::new(),
+        "what a screen of this build draws and what only this list draws is one fact, and it \
+         is stated here so that a reading quietly losing its screen is caught: every reading of \
+         this build has a screen, the engines' among them"
     );
-    assert!(unknown_readings(&fixture::view()).is_empty());
+    assert_eq!(Unknown::of(&view).panes().len(), listed.len());
 }

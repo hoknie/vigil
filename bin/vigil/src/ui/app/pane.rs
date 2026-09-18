@@ -53,6 +53,7 @@ impl App {
             hidden: panes.hidden(),
             cursor: panes.at(),
             arrows: Arrows::at(self.level),
+            group: None,
             sorting: self.sorted(),
             note: None,
             elsewhere: 0,
@@ -98,14 +99,31 @@ impl App {
     }
 
     pub(super) fn shown_panes(&self) -> Vec<usize> {
-        let Some(section) = self.section() else {
-            return Vec::new();
-        };
+        match self.section() {
+            Some(section) => self.shown_panes_of(section.as_ref()),
+            None => Vec::new(),
+        }
+    }
 
+    pub(in crate::ui::app) fn shown_panes_of(&self, section: &dyn Section) -> Vec<usize> {
+        let group = self.group_of(section);
+
+        self.panes_shown(section, group)
+    }
+
+    pub(in crate::ui::app) fn every_shown_pane(&self) -> Vec<usize> {
+        match self.section() {
+            Some(section) => self.panes_shown(section.as_ref(), None),
+            None => Vec::new(),
+        }
+    }
+
+    fn panes_shown(&self, section: &dyn Section, group: Option<&str>) -> Vec<usize> {
         section
             .panes()
             .iter()
             .enumerate()
+            .filter(|(_, pane)| group.is_none() || pane.belongs_to() == group)
             .filter(|(_, pane)| match self.view.reading(pane.reads()) {
                 Reading::Taken(reading) => pane.shown(reading),
                 _ => true,
@@ -127,7 +145,13 @@ impl App {
 
     pub(super) fn showing_pane(&self) -> Option<pane::Showing<'_>> {
         let panes = self.panes()?;
-        let pane = self.pane()?;
+        let section = self.section()?;
+        let group = self.group_of(section.as_ref());
+        let mut every = section.panes();
+        if every.is_empty() {
+            return None;
+        }
+        let pane = every.remove(panes.showing().min(every.len().saturating_sub(1)));
 
         Some(pane::Showing {
             listed: None,
@@ -137,6 +161,7 @@ impl App {
             hidden: panes.hidden(),
             cursor: panes.at(),
             arrows: Arrows::at(self.level),
+            group,
             sorting: self.sorted(),
             note: self.view.collector_note(pane.reads()),
             elsewhere: panes.narrowed_elsewhere(),
@@ -163,6 +188,7 @@ impl App {
             hidden: panes.hidden(),
             cursor: 0,
             arrows: Arrows::Away,
+            group: self.group_of_the_pane(at),
             sorting: self.sorted(),
             note: None,
             elsewhere: 0,

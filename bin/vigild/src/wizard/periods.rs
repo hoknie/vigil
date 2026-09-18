@@ -70,12 +70,14 @@ mod tests {
 
     #[test]
     fn a_generated_schedule_carries_the_periods_the_collectors_declare() {
+        static NAMES_GIVEN: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
         let path = std::env::temp_dir().join(format!(
             "vigil-generated-schedule-{}-{}.yaml",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .map(|since| since.as_nanos())
+                .map(|since| since.as_nanos()
+                    + NAMES_GIVEN.fetch_add(1, std::sync::atomic::Ordering::Relaxed) as u128)
                 .unwrap_or(0)
         ));
         std::fs::write(&path, rendered()).expect("writes");

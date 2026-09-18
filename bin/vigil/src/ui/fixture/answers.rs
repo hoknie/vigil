@@ -32,6 +32,7 @@ pub fn watching() -> AgentStatus {
         collector_degraded("firewall", 60, READING_NOBODY_REFRESHED),
         collector("resources", 60, 5, 0),
         collector("containers", 60, 3, 0),
+        collector("containers-engines", 120, 31, 0),
         collector("files", 300, 8, 0),
         collector_off(),
     ];

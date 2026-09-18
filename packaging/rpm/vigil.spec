@@ -17,9 +17,11 @@ vigil reads the host it is installed on — listening sockets, accounts and
 logins, and the files that decide who may enter — compares each reading with the
 previous one, and turns the difference into findings.
 
-This package installs three programs: vigild, the daemon systemd runs, vigil,
-the terminal console that reads its local socket, and vigil-audit-plugin, which
-auditd starts to hand this host's program launches over.
+This package installs four programs: vigild, the daemon systemd runs, vigil,
+the terminal console that reads its local socket, vigil-audit-plugin, which
+auditd starts to hand this host's program launches over, and
+vigil-container-dump, which a timer runs to ask this host's container engines
+what they hold.
 
 %prep
 
@@ -34,6 +36,7 @@ cp -a %{vigil_stage}/. %{buildroot}/
 %attr(0755,root,root) /usr/sbin/vigild
 %attr(0755,root,root) /usr/bin/vigil
 %attr(0755,root,root) /usr/sbin/vigil-audit-plugin
+%attr(0755,root,root) /usr/sbin/vigil-container-dump
 %dir %attr(0700,root,root) /etc/vigil
 %config(noreplace) %attr(0600,root,root) /etc/vigil/vigil.yaml
 %config(noreplace) %attr(0644,root,root) /etc/logrotate.d/vigil
@@ -45,9 +48,12 @@ cp -a %{vigil_stage}/. %{buildroot}/
 %attr(0644,root,root) /usr/lib/systemd/system/vigild.service
 %attr(0644,root,root) /usr/lib/systemd/system/vigil-firewall.service
 %attr(0644,root,root) /usr/lib/systemd/system/vigil-firewall.timer
+%attr(0644,root,root) /usr/lib/systemd/system/vigil-containers.service
+%attr(0644,root,root) /usr/lib/systemd/system/vigil-containers.timer
 %attr(0644,root,root) /usr/lib/tmpfiles.d/vigil.conf
 %dir %attr(0700,root,root) /var/lib/vigil
 %dir %attr(0700,root,root) /var/lib/vigil/firewall
+%dir %attr(0700,root,root) /var/lib/vigil/containers
 %dir %attr(0700,root,root) /var/log/vigil
 %dir %attr(0755,root,root) /usr/share/doc/vigil
 %doc %attr(0644,root,root) /usr/share/doc/vigil/README.md
@@ -59,7 +65,7 @@ cp -a %{vigil_stage}/. %{buildroot}/
 if [ -x /usr/bin/systemd-tmpfiles ]; then
     /usr/bin/systemd-tmpfiles --create /usr/lib/tmpfiles.d/vigil.conf >/dev/null 2>&1 || true
 fi
-for directory in /run/vigil /var/lib/vigil /var/lib/vigil/firewall /var/log/vigil; do
+for directory in /run/vigil /var/lib/vigil /var/lib/vigil/firewall /var/lib/vigil/containers /var/log/vigil; do
     [ -d "$directory" ] || mkdir -p "$directory"
     chmod 0700 "$directory"
 done
@@ -102,29 +108,35 @@ Reading the nftables ruleset is done by vigil-firewall.timer, which vigild.servi
 /usr/sbin/nft runs there and not inside the agent, so the agent keeps the two capabilities it
 had. To stop that reading and keep everything else:  systemctl mask vigil-firewall.timer
 
+What this host's container engines hold is read the same way, by vigil-containers.timer, which
+runs /usr/sbin/vigil-container-dump. To stop that one:  systemctl mask vigil-containers.timer
+
 NOTICE
 # A first installation writes the line and starts the timer; an upgrade never touches the
 # administrator's file, for the same reason this package does not load audit rules or restart
 # auditd on a running host. Neither outcome may fail the installation.
-if /usr/sbin/vigild collector firewall enable > /tmp/vigil-firewall-enable.$$ 2>&1; then
-    sed 's/^/  /' /tmp/vigil-firewall-enable.$$
-else
-    echo "vigil: the firewall collector was left switched off on this host:"
-    sed 's/^/  /' /tmp/vigil-firewall-enable.$$
-    echo "vigil: switch it on when that is fixed:  vigild collector firewall enable"
-fi
-rm -f /tmp/vigil-firewall-enable.$$
+for collector in firewall containers-engines; do
+    if /usr/sbin/vigild collector "$collector" enable > /tmp/vigil-enable.$$ 2>&1; then
+        sed 's/^/  /' /tmp/vigil-enable.$$
+    else
+        echo "vigil: the $collector collector was left switched off on this host:"
+        sed 's/^/  /' /tmp/vigil-enable.$$
+        echo "vigil: switch it on when that is fixed:  vigild collector $collector enable"
+    fi
+    rm -f /tmp/vigil-enable.$$
+done
 else
 echo
 echo "vigil: this is an upgrade, so /etc/vigil/vigil.yaml was not touched. To switch"
 echo "vigil: the firewall collector on:  vigild collector firewall enable"
+echo "vigil: the container engines on:   vigild collector containers-engines enable"
 echo
 fi
 
 %preun
 if [ "$1" -eq 0 ] && [ -d /run/systemd/system ]; then
-    systemctl --no-reload disable vigild.service vigil-firewall.timer >/dev/null 2>&1 || true
-    systemctl stop vigild.service vigil-firewall.timer >/dev/null 2>&1 || true
+    systemctl --no-reload disable vigild.service vigil-firewall.timer vigil-containers.timer >/dev/null 2>&1 || true
+    systemctl stop vigild.service vigil-firewall.timer vigil-containers.timer >/dev/null 2>&1 || true
 fi
 
 %postun

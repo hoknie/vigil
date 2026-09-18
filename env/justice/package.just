@@ -7,7 +7,7 @@ NEXT_VERSION := env('NEXT_VERSION', '0.1.1')
 
 CLEAN := 'docker run --rm --platform ' + PLATFORM + ' -v "$PWD":/work -w /work'
 
-# The three statically linked musl binaries the packages wrap
+# The four statically linked musl binaries the packages wrap
 [group('package')]
 package-binaries:
     {{ COMPOSE }} run --rm --build -T -e TARGET={{ TARGET }} vigil ./env/scripts/package.sh binaries
@@ -49,4 +49,4 @@ package-systemd: package-deb
 # `systemd-analyze verify` over every unit the package ships, as installed
 [group('package')]
 package-unit: package-deb
-    {{ CLEAN }} {{ CLEAN_DEB }} bash -c 'timeout -s KILL 600 sh -c "apt-get -qq update && apt-get -qq install -y --no-install-recommends systemd nftables >/dev/null && dpkg -i \"\$(ls -t dist/vigil_*_amd64.deb | head -1)\" >/dev/null && systemd-analyze verify /usr/lib/systemd/system/vigild.service /usr/lib/systemd/system/vigil-firewall.service /usr/lib/systemd/system/vigil-firewall.timer && echo \"the units verify\""'
+    {{ CLEAN }} {{ CLEAN_DEB }} bash -c 'timeout -s KILL 600 sh -c "apt-get -qq update && apt-get -qq install -y --no-install-recommends systemd nftables >/dev/null && dpkg -i \"\$(ls -t dist/vigil_*_amd64.deb | head -1)\" >/dev/null && systemd-analyze verify /usr/lib/systemd/system/vigild.service /usr/lib/systemd/system/vigil-firewall.service /usr/lib/systemd/system/vigil-firewall.timer /usr/lib/systemd/system/vigil-containers.service /usr/lib/systemd/system/vigil-containers.timer && echo \"the units verify\""'

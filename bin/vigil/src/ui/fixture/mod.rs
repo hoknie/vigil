@@ -4,6 +4,7 @@ mod tests;
 pub mod agent;
 pub mod answers;
 pub mod findings;
+pub mod grouped;
 pub mod host;
 pub mod look;
 pub mod readings;
@@ -29,6 +30,10 @@ pub fn of_a_reading_with_no_screen() -> (Status, Reading) {
         agent: agent::agent(),
         sent_at: "2026-09-09T09:00:01.000Z".into(),
     };
+    status
+        .agent
+        .collectors
+        .retain(|collector| crate::ui::Screen::showing(&collector.name).is_some());
     status
         .agent
         .collectors
