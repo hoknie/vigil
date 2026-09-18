@@ -23,7 +23,7 @@ jobs:
   gate:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: dtolnay/rust-toolchain@1.98.1
         with:
@@ -54,7 +54,7 @@ jobs:
       TARGET: ${{ matrix.target }}
       TAG: ${{ github.ref_name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: dtolnay/rust-toolchain@1.98.1
         with:
@@ -99,7 +99,7 @@ jobs:
       - name: The assets collect
         run: ./env/scripts/release.sh collect
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: vigil-${{ matrix.target }}
           path: dist/release/*
@@ -116,9 +116,9 @@ jobs:
       TAG: ${{ github.ref_name }}
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist/release
           pattern: vigil-*
