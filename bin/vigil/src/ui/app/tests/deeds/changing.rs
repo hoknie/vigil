@@ -210,7 +210,7 @@ fn the_panel_of_an_account_carries_edit_and_delete_buttons_and_enter_on_edit_ope
 #[test]
 fn a_key_that_changes_accounts_says_where_it_works_on_a_list_that_changes_nothing() {
     let mut app = app();
-    into(&mut app, screen("ports"), 120, 30);
+    into(&mut app, screen("network"), 120, 30);
 
     press(&mut app, KeyCode::Char('e'));
 

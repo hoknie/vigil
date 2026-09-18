@@ -1,0 +1,26 @@
+# Who may log in to this host, as whom, and with what. Without this block, or with
+# `enabled: false` in it, nothing watches them.
+users:
+  # How often this collector reads: a number of seconds, or 30s, 5m, 1h.
+  schedule: 300
+
+  # Whether a person at the console of this host may ask the agent to change its accounts.
+  #
+  # Off by default, and separate from `killing` in the block of processes: a host where a
+  # program may be stopped has not thereby agreed that sudo may be granted. On, the console
+  # can ask the agent to change an account (shell, home, comment, lock, groups) or delete it,
+  # keeping its home directory; create, change or delete a group; change or remove a sudo
+  # grant; add, change or remove a key in authorized_keys; and end a session. The agent does it
+  # with the system's own tools, useradd's family, gpasswd, visudo and loginctl, by absolute
+  # path.
+  #
+  # Everything it does, and everything it refuses to do, is a finding of its own. It will not
+  # delete or lock uid 0, delete the account it runs as, or delete the group with gid 0. Sudo
+  # grants are written only in /etc/sudoers.d, and a file that visudo does not accept never
+  # replaces the one in place; a grant in /etc/sudoers itself is left for a person to edit.
+  #
+  # Nothing reaches this from the network. The console socket is 0600 and local; turning this
+  # on gives whoever can read it the accounts of this host.
+  accounts:
+    # true lets the console ask. false, the default, refuses every such request.
+    from_the_console: false

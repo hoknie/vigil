@@ -5,6 +5,8 @@ use serde_json::Value;
 
 use vigil_config::Suppression;
 
+use super::apart::Apart;
+
 const WHEN_NOTHING_SAYS_OTHERWISE: u32 = 30;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -16,13 +18,18 @@ pub struct Config {
     pub interval_seconds: Option<u32>,
     pub schedule: BTreeMap<String, u32>,
     pub collectors: Option<Vec<String>>,
+    pub collectors_path: Option<String>,
     pub reporters: Vec<Receiver>,
+    pub reporters_path: Option<String>,
     pub suppressions: Vec<Suppression>,
+    pub suppressions_path: Option<String>,
     pub killing: Killing,
     pub accounts: Accounts,
     pub units: Units,
     #[serde(skip)]
     pub of_the_modules: BTreeMap<String, Value>,
+    #[serde(skip)]
+    pub apart: Apart,
 }
 
 impl Default for Config {
@@ -34,12 +41,16 @@ impl Default for Config {
             interval_seconds: None,
             schedule: BTreeMap::new(),
             collectors: None,
+            collectors_path: None,
             reporters: Vec::new(),
+            reporters_path: None,
             suppressions: Vec::new(),
+            suppressions_path: None,
             killing: Killing::default(),
             accounts: Accounts::default(),
             units: Units::default(),
             of_the_modules: BTreeMap::new(),
+            apart: Apart::default(),
         }
     }
 }
@@ -57,6 +68,14 @@ impl Config {
 
     pub fn of_the_module(&self, key: &str) -> Value {
         self.of_the_modules.get(key).cloned().unwrap_or(Value::Null)
+    }
+
+    pub fn every_suppression(&self) -> Vec<Suppression> {
+        let mut every = self.suppressions.clone();
+        for source in &self.apart.suppressions {
+            every.extend(source.suppressions.iter().cloned());
+        }
+        every
     }
 
     pub fn every_seconds_by_default(&self) -> u32 {
@@ -170,7 +189,7 @@ mod tests {
         let config = Config::default();
 
         assert_eq!(config.every_seconds("launches"), 15);
-        assert_eq!(config.every_seconds("ports"), 30);
+        assert_eq!(config.every_seconds("network"), 30);
         assert_eq!(config.every_seconds("persistence"), 300);
     }
 
@@ -183,7 +202,7 @@ mod tests {
         config.schedule.insert("persistence".into(), 600);
 
         assert_eq!(config.every_seconds("persistence"), 600);
-        assert_eq!(config.every_seconds("ports"), 10);
+        assert_eq!(config.every_seconds("network"), 10);
     }
 
     #[test]

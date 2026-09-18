@@ -30,7 +30,7 @@ fn escape_after_o_comes_back_to_the_finding_it_was_pressed_on() {
     app.view.found.findings[2].finding_key = "port.listen|tcp|0.0.0.0:4444".into();
 
     press(&mut app, KeyCode::Char('o'));
-    assert_eq!(app.nav.at(), screen("ports"));
+    assert_eq!(app.nav.at(), screen("network"));
 
     press(&mut app, KeyCode::Esc);
 
@@ -54,8 +54,8 @@ fn a_jump_remembers_one_place_and_forgets_it_once_it_has_been_used() {
     press(&mut app, KeyCode::Esc);
 
     assert_eq!(
-        app.nav.at(),
-        Screen::HOME,
+        (app.nav.at(), app.level),
+        (Screen::FINDINGS, crate::ui::Level::Menu),
         "the second Escape from the same rung is the ladder, not the ring"
     );
 }
@@ -64,7 +64,7 @@ fn a_jump_remembers_one_place_and_forgets_it_once_it_has_been_used() {
 fn walking_into_a_section_from_the_main_screen_leaves_nothing_for_escape_to_come_back_to() {
     let mut app = app();
 
-    press(&mut app, number(screen("ports")));
+    press(&mut app, number(screen("network")));
     press(&mut app, KeyCode::Esc);
 
     assert_eq!(app.nav.at(), Screen::HOME);
@@ -75,7 +75,7 @@ fn changing_section_by_its_number_forgets_where_the_jump_came_from() {
     let mut app = app();
     into(&mut app, Screen::FINDINGS, 80, 30);
     press(&mut app, KeyCode::Char('o'));
-    assert_eq!(app.nav.at(), screen("ports"));
+    assert_eq!(app.nav.at(), screen("network"));
 
     press(&mut app, number(screen("accounts")));
     press(&mut app, KeyCode::Esc);

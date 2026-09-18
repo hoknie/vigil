@@ -35,13 +35,12 @@ docker-kill-smoke:
 docker-check:
     {{ RUN }} just check
 
-# The path from the kernel through a live auditd to a finding. Changes the HOST kernel's
-# audit state, not the container's, and puts it back; refuses to run beside another auditd
+# The path from a live auditd to a finding; changes the HOST kernel's audit state and puts it back
 [group('docker')]
 docker-audit:
     {{ COMPOSE }} run --rm --build audit
 
-# The daemon against CONFIG, in the foreground, inside the container (Ctrl-C to stop)
+# The daemon against CONFIG or a copy of config/, in the foreground, inside the container
 [group('docker')]
 docker-daemon:
     {{ RUN }} just daemon

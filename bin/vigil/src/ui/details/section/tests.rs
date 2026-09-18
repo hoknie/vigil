@@ -44,10 +44,10 @@ fn the_reason_a_section_is_marked_lives_in_the_panel_and_not_under_the_row() {
 
 #[test]
 fn a_section_with_nothing_to_report_draws_no_heading_over_the_nothing() {
-    let page = drawn(Some(&row(&fixture::view(), "ports")), fixture::look(), 60);
+    let page = drawn(Some(&row(&fixture::view(), "network")), fixture::look(), 60);
 
     assert!(
-        page.contains("PORTS"),
+        page.contains("NETWORK"),
         "its own fields are still there: {page}"
     );
     assert!(page.contains("collector"), "{page}");
@@ -60,14 +60,14 @@ fn a_reading_this_console_has_no_section_for_says_so_where_the_reader_is_looking
     let mut view = fixture::view();
     if let Some(status) = view.status.as_mut() {
         status.agent.collectors.push(vigil_model::CollectorStatus {
-            name: "network".into(),
+            name: "wireguard".into(),
             state: vigil_model::CollectorState::Ok,
             items: 9,
             ..fixture::collector_off()
         });
     }
 
-    let page = drawn(Some(&row(&view, "network")), fixture::look(), 60);
+    let page = drawn(Some(&row(&view, "wireguard")), fixture::look(), 60);
 
     assert!(
         squashed(&page).contains(&squashed("has no section for it")),
@@ -105,7 +105,7 @@ fn the_panel_says_the_same_thing_with_no_colour_in_the_palette_at_all() {
 #[test]
 fn a_panel_is_as_tall_as_what_it_has_to_say_and_no_taller() {
     let view = fixture::view_with_trouble();
-    let quiet = height(Some(&row(&fixture::view(), "ports")), fixture::look(), 60);
+    let quiet = height(Some(&row(&fixture::view(), "network")), fixture::look(), 60);
     let loud = height(Some(&row(&view, "programs")), fixture::look(), 60);
 
     assert!(quiet > 0);
@@ -122,7 +122,7 @@ fn no_label_in_this_panel_is_cut_in_half_at_any_width_the_console_is_read_at() {
     let view = fixture::view_with_trouble();
 
     for width in [40u16, 60, 80, 120] {
-        for name in ["ports", "accounts", "summary", "findings"] {
+        for name in ["network", "accounts", "summary", "findings"] {
             let page = drawn(Some(&row(&view, name)), fixture::look(), width);
             for line in page.lines() {
                 assert!(

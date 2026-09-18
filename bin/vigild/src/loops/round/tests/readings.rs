@@ -15,7 +15,7 @@ fn a_collector_that_reads_again_is_well_on_that_reading_and_not_five_minutes_lat
         vec![snapshot(&[443, 4444]), snapshot(&[443])],
     );
     let mut said = Said::about([(
-        "ports",
+        "network",
         "degraded:the owner of one socket could not be resolved".to_string(),
     )]);
     it.round.read(0, &mut said);
@@ -48,18 +48,18 @@ fn a_reading_the_console_asked_for_is_taken_at_once_and_the_period_starts_again_
         Health::Ok,
         vec![snapshot(&[443, 4444]), snapshot(&[443])],
     );
-    let mut said = Said::about([("ports", "ok".to_string())]);
+    let mut said = Said::about([("network", "ok".to_string())]);
     it.round.read(0, &mut said);
     it.round.schedule.advance(0, Instant::now());
     it.round
         .shared
-        .with(|state| state.ask_for_a_reading("ports"));
+        .with(|state| state.ask_for_a_reading("network"));
 
     it.round.read_what_the_console_asked_for(&mut said);
 
     assert!(
         it.round.shared.with(|state| state
-            .snapshot("ports")
+            .snapshot("network")
             .is_some_and(|reading| reading.items.contains_key("tcp|0.0.0.0:4444"))),
         "a person who just changed the host is shown the host as it is now, not as it was \
          when the period last came round"
@@ -83,7 +83,7 @@ fn a_reading_the_console_asked_for_is_taken_at_once_and_the_period_starts_again_
 #[test]
 fn a_reading_asked_for_a_collector_this_agent_does_not_watch_reads_nothing() {
     let mut it = watching("unwatched", Health::Ok, vec![snapshot(&[443])]);
-    let mut said = Said::about([("ports", "ok".to_string())]);
+    let mut said = Said::about([("network", "ok".to_string())]);
     it.round
         .shared
         .with(|state| state.ask_for_a_reading("users"));
@@ -93,7 +93,7 @@ fn a_reading_asked_for_a_collector_this_agent_does_not_watch_reads_nothing() {
     assert_eq!(
         it.collector.readings.lock().expect("not poisoned").len(),
         1,
-        "users is switched off on this host, and asking for it is not a reason to read ports"
+        "users is switched off on this host, and asking for it is not a reason to read network"
     );
 }
 
@@ -104,7 +104,7 @@ fn a_reading_that_found_nothing_does_not_pay_for_a_second_look_at_the_collector(
         Health::Ok,
         vec![snapshot(&[443]), snapshot(&[443])],
     );
-    let mut said = Said::about([("ports", "ok".to_string())]);
+    let mut said = Said::about([("network", "ok".to_string())]);
     it.round.read(0, &mut said);
     let after_the_baseline = it.collector.asked.load(Ordering::Relaxed);
 
@@ -121,7 +121,7 @@ fn a_reading_that_found_nothing_does_not_pay_for_a_second_look_at_the_collector(
 #[test]
 fn a_collector_that_could_not_read_and_then_read_is_looked_at_again_without_waiting() {
     let mut it = watching("failed", Health::Ok, Vec::new());
-    let mut said = Said::about([("ports", "ok".to_string())]);
+    let mut said = Said::about([("network", "ok".to_string())]);
     it.round.read(0, &mut said);
     let after_the_failure = it.collector.asked.load(Ordering::Relaxed);
     assert_eq!(
@@ -147,7 +147,7 @@ fn a_reading_of_a_collector_that_is_still_well_says_nothing_about_its_health() {
         Health::Ok,
         vec![snapshot(&[443, 4444]), snapshot(&[443])],
     );
-    let mut said = Said::about([("ports", "ok".to_string())]);
+    let mut said = Said::about([("network", "ok".to_string())]);
     it.round.read(0, &mut said);
 
     it.round.read(0, &mut said);

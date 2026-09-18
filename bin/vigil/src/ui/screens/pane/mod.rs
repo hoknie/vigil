@@ -4,7 +4,7 @@ mod tests;
 mod chooser;
 mod columns;
 mod grouping;
-mod menu;
+pub(in crate::ui) mod menu;
 mod notices;
 mod regions;
 mod render;

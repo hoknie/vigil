@@ -18,13 +18,13 @@ struct Listed(Value);
 
 impl Collector for Listed {
     fn name(&self) -> &'static str {
-        "ports"
+        "network"
     }
     fn available(&self) -> Health {
         Health::Ok
     }
     fn collect(&self) -> Result<Snapshot, CollectError> {
-        let mut reading = Snapshot::new("ports", "2026-09-17T12:00:00.000Z");
+        let mut reading = Snapshot::new("network", "2026-09-17T12:00:00.000Z");
         for path in self.0["paths"].as_array().into_iter().flatten() {
             reading.items.insert(
                 format!("file|{}", path.as_str().unwrap_or_default()),
@@ -39,7 +39,7 @@ struct FollowingTheFile;
 
 impl Module for FollowingTheFile {
     fn name(&self) -> &'static str {
-        "ports"
+        "network"
     }
     fn subject(&self) -> &'static str {
         "a module that takes its list from the file while the daemon runs"
@@ -73,7 +73,7 @@ fn written(path: &std::path::Path, text: &str) {
 fn read_now(round: &crate::loops::Round) -> Vec<String> {
     round.shared.with(|state| {
         state
-            .snapshot("ports")
+            .snapshot("network")
             .map(|reading| reading.items.keys().cloned().collect())
             .unwrap_or_default()
     })
@@ -92,9 +92,9 @@ fn a_path_written_into_the_file_is_read_on_the_round_after_it_and_not_after_a_re
         Stamp::of(name),
         &load(name).expect("loads"),
         vec![Box::new(FollowingTheFile)],
-        &["ports"],
+        &["network"],
     );
-    let mut said = Said::about([("ports", "ok".to_string())]);
+    let mut said = Said::about([("network", "ok".to_string())]);
     it.round.read(0, &mut said);
     it.round.schedule.advance(0, Instant::now());
 
@@ -133,9 +133,9 @@ fn a_bad_edit_leaves_the_collector_that_was_running_in_place_and_raises_nothing(
         Stamp::of(name),
         &load(name).expect("loads"),
         vec![Box::new(FollowingTheFile)],
-        &["ports"],
+        &["network"],
     );
-    let mut said = Said::about([("ports", "ok".to_string())]);
+    let mut said = Said::about([("network", "ok".to_string())]);
     it.round.read(0, &mut said);
     let before = raised(&it.round).len();
 
@@ -167,4 +167,41 @@ fn a_bad_edit_leaves_the_collector_that_was_running_in_place_and_raises_nothing(
         "the file that loads again is taken up on the round after it is written"
     );
     let _ = std::fs::remove_dir_all(&directory);
+}
+
+#[test]
+fn an_object_silenced_in_the_directory_is_not_reported_from_the_next_round_on() {
+    let mut it = watching(
+        "following-silence",
+        Health::Ok,
+        vec![snapshot(&[443]), snapshot(&[443, 8080])],
+    );
+    let directory = temporary_directory("following-silence-configuration");
+    std::fs::create_dir_all(directory.join("suppressions")).expect("a directory");
+    let path = directory.join("vigil.yaml");
+    written(&path, "suppressions_path: suppressions\n");
+    let name = path.to_str().expect("utf-8");
+    it.round.silences = crate::config::Silences::of(name, &load(name).expect("loads"));
+    let mut said = Said::about([("network", "ok".to_string())]);
+
+    written(
+        &directory.join("suppressions").join("console.yaml"),
+        "suppressions:\n  - finding_key_prefix: \"port.listen|\"\n    reason: every port is expected here\n",
+    );
+    it.round.follow_the_file(&mut said);
+
+    let silence = it.round.shared.with(|state| state.agent().silence);
+    assert_eq!(
+        silence.suppressions,
+        vec!["port.listen|* — every port is expected here".to_string()],
+        "the console reads what is in force from the status, and it is in force now"
+    );
+    it.round.read(0, &mut said);
+    it.round.read(0, &mut said);
+    assert!(
+        raised(&it.round).is_empty(),
+        "the port that opened after the entry was written is covered by it: {:?}",
+        raised(&it.round)
+    );
+    assert_eq!(it.round.policy.suppressed(), 1);
 }

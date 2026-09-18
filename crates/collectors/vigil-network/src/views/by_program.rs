@@ -34,7 +34,7 @@ impl Pane for ByProgram {
     }
 
     fn reads(&self) -> &str {
-        "ports"
+        "network"
     }
 
     fn columns(&self, room: Room) -> Vec<Column> {

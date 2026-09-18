@@ -18,7 +18,7 @@ fn the_first_entry_turns_the_empty_list_into_a_block_and_moves_nothing_else() {
     for kept in [
         "state_dir: /var/lib/vigil",
         "retention_days: 90",
-        "  - ports",
+        "  - network",
         "# What this host is expected to do.",
         "reporters: []",
     ] {

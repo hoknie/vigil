@@ -15,7 +15,9 @@ fn escape_lets_go_of_what_is_picked_before_it_leaves_the_screen() {
     assert!(!drawn(&app).contains("picked"), "{}", drawn(&app));
 
     press(&mut app, KeyCode::Esc);
+    assert_eq!(app.level, Level::Menu, "then up to the row of lists");
 
+    press(&mut app, KeyCode::Esc);
     assert_eq!(app.nav.at(), Screen::HOME);
 }
 
@@ -83,7 +85,7 @@ fn nothing_is_picked_on_a_screen_that_is_not_the_findings() {
     let mut app = app();
     into(
         &mut app,
-        Screen::parse("ports").expect("a section"),
+        Screen::parse("network").expect("a section"),
         200,
         30,
     );

@@ -57,6 +57,13 @@ expect_mode /usr/sbin/vigil-audit-plugin 755
 expect_mode /usr/sbin/vigil-container-dump 755
 expect_mode /etc/vigil 700
 expect_mode /etc/vigil/vigil.yaml 600
+expect_mode /etc/vigil/collectors 700
+for shipped in config/collectors/*.yaml; do
+    expect_mode "/etc/vigil/collectors/$(basename "$shipped")" 600
+done
+expect_mode /etc/vigil/watch_fs.yaml 600
+expect_mode /etc/vigil/suppressions 700
+expect_mode /etc/vigil/reporters 700
 expect_mode /etc/logrotate.d/vigil 644
 expect_mode /usr/lib/systemd/system/vigild.service 644
 expect_mode /usr/lib/systemd/system/vigil-containers.service 644
@@ -72,12 +79,20 @@ expect_mode /etc/audit/plugins.d 750
 expect_mode /etc/audit/rules.d/vigil-exec.rules 640
 expect_mode /etc/audit/plugins.d/vigil.conf 640
 
-say "the shipped configuration is the example, unedited"
-if [ "$(md5sum < config/vigil.example.yaml)" = "$(md5sum < /etc/vigil/vigil.yaml)" ]; then
-    ok "/etc/vigil/vigil.yaml is config/vigil.example.yaml"
-else
-    bad "the installed configuration is not the shipped example"
-fi
+say "the shipped configuration is config/, unedited"
+same() {
+    if [ "$(md5sum < "$1")" = "$(md5sum < "$2")" ]; then ok "$2 is $1"
+    else bad "$2 is not $1"; fi
+}
+same config/vigil.example.yaml /etc/vigil/vigil.yaml
+for shipped in config/collectors/*.yaml; do
+    same "$shipped" "/etc/vigil/collectors/$(basename "$shipped")"
+done
+same config/watch_fs.yaml /etc/vigil/watch_fs.yaml
+for installed in /etc/vigil/collectors/*.yaml; do
+    [ -f "config/collectors/$(basename "$installed")" ] \
+        || bad "$installed is installed and is not in config/collectors"
+done
 
 say "the container dump, on a machine with no engine installed"
 if /usr/sbin/vigil-container-dump --version | grep -q "vigil-container-dump $VERSION"; then
@@ -154,7 +169,10 @@ else
 fi
 grep -q 'host ' /tmp/vigild.out && ok "identity: $(head -1 /tmp/vigild.out)" \
     || bad "the daemon said nothing about the host it is watching"
-grep -q 'collector ports: ok' /tmp/vigild.out && ok "the socket collector is healthy" \
+grep -q 'collectors: read from /etc/vigil/collectors' /tmp/vigild.out \
+    && ok "the collectors are read from /etc/vigil/collectors" \
+    || bad "the daemon did not read /etc/vigil/collectors: $(grep -i collectors /tmp/vigild.out | tr '\n' ' ')"
+grep -q 'collector network: ok' /tmp/vigild.out && ok "the socket collector is healthy" \
     || bad "the socket collector is not ok: $(grep -i collector /tmp/vigild.out | tr '\n' ' ')"
 grep -q 'collector launches: ok' /tmp/vigild.out \
     && ok "the launches collector is reading the plugin's spool" \
@@ -182,6 +200,14 @@ install_id="$(cat /var/lib/vigil/install_id 2>/dev/null || true)"
 say "upgrade to $NEXT with a locally edited configuration"
 printf '\n# edited by the operator on this machine\nretention_days: 7\n' >> /etc/vigil/vigil.yaml
 edited="$(md5sum /etc/vigil/vigil.yaml | cut -d' ' -f1)"
+printf '\n# edited by the operator on this machine\n' >> /etc/vigil/collectors/users.yaml
+sed -i 's/^  schedule: 300$/  schedule: 600/' /etc/vigil/collectors/users.yaml
+collected="$(md5sum /etc/vigil/collectors/users.yaml | cut -d' ' -f1)"
+printf '\n# edited by the operator on this machine\n' >> /etc/vigil/watch_fs.yaml
+watched="$(md5sum /etc/vigil/watch_fs.yaml | cut -d' ' -f1)"
+printf 'suppressions:\n  - finding_key: "user|group|docker"\n    reason: the deploy user belongs there\n' > /etc/vigil/suppressions/console.yaml
+chmod 0600 /etc/vigil/suppressions/console.yaml
+silenced="$(md5sum /etc/vigil/suppressions/console.yaml | cut -d' ' -f1)"
 
 case "$FORMAT" in
 deb)
@@ -201,6 +227,23 @@ if [ -f "$next_package" ]; then
         bad "the upgrade overwrote /etc/vigil/vigil.yaml"
     fi
     expect_mode /etc/vigil/vigil.yaml 600
+    if [ "$(md5sum /etc/vigil/collectors/users.yaml | cut -d' ' -f1)" = "$collected" ]; then
+        ok "the edited /etc/vigil/collectors/users.yaml survived the upgrade"
+    else
+        bad "the upgrade overwrote /etc/vigil/collectors/users.yaml"
+    fi
+    expect_mode /etc/vigil/collectors/users.yaml 600
+    if [ "$(md5sum /etc/vigil/watch_fs.yaml | cut -d' ' -f1)" = "$watched" ]; then
+        ok "the edited /etc/vigil/watch_fs.yaml survived the upgrade"
+    else
+        bad "the upgrade overwrote /etc/vigil/watch_fs.yaml"
+    fi
+    expect_mode /etc/vigil/watch_fs.yaml 600
+    if [ "$(md5sum /etc/vigil/suppressions/console.yaml | cut -d' ' -f1)" = "$silenced" ]; then
+        ok "what the console silenced survived the upgrade"
+    else
+        bad "the upgrade overwrote /etc/vigil/suppressions/console.yaml"
+    fi
     case "$FORMAT" in
     deb) installed="$(dpkg-query -W -f '${Version}' vigil)" ;;
     rpm) installed="$(rpm -q --queryformat '%{VERSION}' vigil)" ;;
@@ -214,6 +257,7 @@ if [ -f "$next_package" ]; then
         || bad "install_id changed across the upgrade"
 fi
 
+rm -f /etc/vigil/suppressions/console.yaml
 printf '{"kind":"port.listen.new"}\n' > /var/log/vigil/findings.ndjson
 chmod 0600 /var/log/vigil/findings.ndjson
 
@@ -226,6 +270,8 @@ deb)
     expect_absent /usr/sbin/vigil-audit-plugin
     expect_absent /usr/sbin/vigil-container-dump
     expect_present /etc/vigil/vigil.yaml
+    expect_present /etc/vigil/collectors/users.yaml
+    expect_present /etc/vigil/watch_fs.yaml
     expect_present /etc/audit/rules.d/vigil-exec.rules
     expect_present /var/lib/vigil/install_id
     ;;

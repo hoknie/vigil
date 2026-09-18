@@ -21,19 +21,19 @@ const TABLES: &[(&str, Protocol)] = &[
 
 const UNIX_TABLE: &str = "/proc/net/unix";
 
-pub struct PortsCollector {
+pub struct NetworkCollector {
     now: Box<dyn Fn() -> Rfc3339 + Send + Sync>,
 }
 
-impl PortsCollector {
+impl NetworkCollector {
     pub fn new(now: impl Fn() -> Rfc3339 + Send + Sync + 'static) -> Self {
-        PortsCollector { now: Box::new(now) }
+        NetworkCollector { now: Box::new(now) }
     }
 }
 
-impl Collector for PortsCollector {
+impl Collector for NetworkCollector {
     fn name(&self) -> &'static str {
-        "ports"
+        "network"
     }
 
     fn available(&self) -> Health {
@@ -181,11 +181,11 @@ mod tests {
 
     #[test]
     fn reads_this_host_and_names_itself_in_the_snapshot() {
-        let collector = PortsCollector::new(|| "2026-09-08T12:00:00.000Z".to_string());
+        let collector = NetworkCollector::new(|| "2026-09-08T12:00:00.000Z".to_string());
 
         let snapshot = collector.collect().expect("procfs is readable on Linux");
 
-        assert_eq!(snapshot.source, "ports");
+        assert_eq!(snapshot.source, "network");
         assert_eq!(snapshot.taken_at, "2026-09-08T12:00:00.000Z");
         for (key, item) in &snapshot.items {
             assert!(item.get("owner_resolved").is_some(), "{key} lost its flag");
@@ -204,7 +204,7 @@ mod tests {
 
     #[test]
     fn a_unix_socket_reaches_the_snapshot_under_the_name_it_is_reachable_by() {
-        let collector = PortsCollector::new(|| "2026-09-08T12:00:00.000Z".to_string());
+        let collector = NetworkCollector::new(|| "2026-09-08T12:00:00.000Z".to_string());
         let snapshot = collector.collect().expect("procfs is readable on Linux");
 
         for (key, item) in &snapshot.items {

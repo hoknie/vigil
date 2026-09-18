@@ -168,7 +168,7 @@ mod tests {
 
     #[test]
     fn each_kind_of_row_is_looked_up_in_the_reading_that_holds_it() {
-        assert_eq!(reading_of(KillTarget::Socket), "ports");
+        assert_eq!(reading_of(KillTarget::Socket), "network");
         assert_eq!(reading_of(KillTarget::Program), "processes");
     }
 }

@@ -8,5 +8,5 @@ mod silence;
 mod watched;
 
 pub use options::Options;
-pub use silence::{DEFAULT_PATH, RESTART, add, list, remove};
+pub use silence::{DEFAULT_PATH, NEXT_ROUND, add, every, list, remove, take_out};
 pub use watched::{unwatch, watch};

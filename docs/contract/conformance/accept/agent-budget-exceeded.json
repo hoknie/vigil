@@ -49,7 +49,7 @@
         },
         {
           "kind": "cost",
-          "value": "ports · 1.90 % of one core · every 30 s · 570.0 ms per reading · 2 slot(s) missed"
+          "value": "network · 1.90 % of one core · every 30 s · 570.0 ms per reading · 2 slot(s) missed"
         },
         {
           "kind": "cost",
@@ -57,7 +57,7 @@
         },
         {
           "kind": "schedule",
-          "value": "reading less often is a decision for a person to take, so this agent does not take it. To take it, put this in the configuration:\nschedule:\n  ports: 64\n  users: 639\n"
+          "value": "reading less often is a decision for a person to take, so this agent does not take it. To take it, put this in the configuration:\nschedule:\n  network: 64\n  users: 639\n"
         }
       ],
       "rule": "agent_budget"

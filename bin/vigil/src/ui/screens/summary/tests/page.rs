@@ -11,7 +11,7 @@ fn it_says_where_this_is_what_is_watching_and_where_findings_go() {
         "the published host id: {page}"
     );
     assert!(page.contains("every 30 seconds"), "{page}");
-    assert!(page.contains("ports"), "{page}");
+    assert!(page.contains("network"), "{page}");
     assert!(page.contains("ndjson"), "{page}");
 }
 

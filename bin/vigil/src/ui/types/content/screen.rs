@@ -37,6 +37,8 @@ impl Default for Screen {
     }
 }
 
+const FORMER_NAME_OF_THE_NETWORK: &str = "ports";
+
 impl Screen {
     pub const HOME: Screen = Screen { name: "home" };
 
@@ -119,6 +121,10 @@ impl Screen {
                 name: of_the_console,
             });
         }
+        let name = match name {
+            FORMER_NAME_OF_THE_NETWORK => "network",
+            other => other,
+        };
         Screen::all()
             .into_iter()
             .find(|screen| screen.name() == name)
@@ -183,7 +189,7 @@ mod tests {
         assert_eq!(
             pairs,
             vec![
-                (Some(1), "ports"),
+                (Some(1), "network"),
                 (Some(2), "accounts"),
                 (Some(3), "programs"),
                 (Some(4), "startup"),

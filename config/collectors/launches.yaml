@@ -1,0 +1,11 @@
+# What people run, from the kernel's audit records: the vigil_exec rule in
+# /etc/audit/rules.d and the auditd plugin in /etc/audit/plugins.d/vigil.conf. Without this
+# block, or with `enabled: false` in it, nothing watches them.
+launches:
+  # How often this collector reads: a number of seconds, or 30s, 5m, 1h.
+  schedule: 15
+  # Whether a finding about a program launch carries the arguments the command was given. Off
+  # means they are never assembled, so they reach neither the journal nor a reporter. On,
+  # secrets are removed first, and that removal is not complete: what it does not recognise
+  # as a secret reaches the journal and every reporter.
+  record_arguments: false

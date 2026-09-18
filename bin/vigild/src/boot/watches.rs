@@ -101,7 +101,7 @@ mod tests {
     }
 
     fn all() -> Vec<Family> {
-        vec![family("ports"), family("users"), family("launches")]
+        vec![family("network"), family("users"), family("launches")]
     }
 
     fn names(families: &[Family]) -> Vec<&str> {
@@ -115,7 +115,7 @@ mod tests {
     fn no_list_at_all_runs_everything_this_build_has() {
         let (on, off) = split(all(), None);
 
-        assert_eq!(names(&on), vec!["ports", "users", "launches"]);
+        assert_eq!(names(&on), vec!["network", "users", "launches"]);
         assert!(off.is_empty());
     }
 
@@ -126,7 +126,7 @@ mod tests {
         let (on, off) = split(all(), Some(&wanted));
 
         assert_eq!(names(&on), vec!["users"]);
-        assert_eq!(off, vec!["ports".to_string(), "launches".to_string()]);
+        assert_eq!(off, vec!["network".to_string(), "launches".to_string()]);
     }
 
     #[test]
@@ -141,10 +141,10 @@ mod tests {
 
     #[test]
     fn the_order_is_the_products_and_not_the_files() {
-        let wanted = vec!["launches".to_string(), "ports".to_string()];
+        let wanted = vec!["launches".to_string(), "network".to_string()];
 
         let (on, _) = split(all(), Some(&wanted));
 
-        assert_eq!(names(&on), vec!["ports", "launches"]);
+        assert_eq!(names(&on), vec!["network", "launches"]);
     }
 }

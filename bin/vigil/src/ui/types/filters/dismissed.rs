@@ -32,6 +32,10 @@ impl Dismissed {
         self.objects.is_empty()
     }
 
+    pub fn forget(&mut self, key: &str) {
+        self.objects.remove(key);
+    }
+
     pub fn bring_back(&mut self) {
         self.objects.clear();
     }
@@ -151,6 +155,17 @@ mod tests {
             "two rows about one object are one entry in the file, so they are one entry to \
              take back out"
         );
+    }
+
+    #[test]
+    fn an_object_reported_again_from_the_list_of_what_is_silenced_comes_back_on_its_own() {
+        let all = findings();
+        let mut dismissed = Dismissed::default();
+        dismissed.silence(all.iter().map(|finding| finding.finding_key.clone()));
+
+        dismissed.forget("user|group|docker");
+
+        assert_eq!(dismissed.objects(), ["port.listen|tcp|0.0.0.0:4444"]);
     }
 
     #[test]

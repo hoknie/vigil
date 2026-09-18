@@ -79,13 +79,13 @@
         "from": "the name this build gives the collector"
       }
     },
-    "collector-ok|ports": {
+    "collector-ok|network": {
       "every_seconds": {
         "value": 30,
-        "from": "the period the collectors of this build declare for ports"
+        "from": "the period the collectors of this build declare for network"
       },
       "name": {
-        "value": "ports",
+        "value": "network",
         "from": "the name this build gives the collector"
       }
     },

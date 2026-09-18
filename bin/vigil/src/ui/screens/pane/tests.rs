@@ -18,7 +18,7 @@ fn drawn_with(
     opened: Vec<String>,
 ) -> String {
     let view = fixture::view();
-    let section = holding("ports").expect("this build draws the sockets");
+    let section = holding("network").expect("this build draws the sockets");
     let mut buffer = Buffer::empty(Rect::new(0, 0, width, 24));
 
     render(
@@ -53,7 +53,7 @@ fn drawn_with(
 #[test]
 fn rows_and_a_tally_the_console_already_holds_are_drawn_as_given_and_not_worked_out_again() {
     let view = fixture::view();
-    let section = holding("ports").expect("this build draws the sockets");
+    let section = holding("network").expect("this build draws the sockets");
     let search = Search::default();
     let mut buffer = Buffer::empty(Rect::new(0, 0, 120, 24));
 

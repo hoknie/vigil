@@ -7,6 +7,7 @@ pub struct Filter {
     floor: Severity,
     search: Search,
     column: Column,
+    kind: Option<String>,
 }
 
 impl Default for Filter {
@@ -15,6 +16,7 @@ impl Default for Filter {
             floor: Severity::Info,
             search: Search::default(),
             column: Column::default(),
+            kind: None,
         }
     }
 }
@@ -29,7 +31,15 @@ impl Filter {
     }
 
     pub fn holding_back(&self) -> bool {
-        rank(&self.floor) > 0 || self.search.holding_back()
+        rank(&self.floor) > 0 || self.search.holding_back() || self.kind.is_some()
+    }
+
+    pub fn kind(&self) -> Option<&str> {
+        self.kind.as_deref()
+    }
+
+    pub fn only_kind(&mut self, kind: Option<String>) {
+        self.kind = kind;
     }
 
     pub fn column(&self) -> Column {
@@ -52,9 +62,17 @@ impl Filter {
         findings
             .iter()
             .filter(|finding| {
-                self.above_the_floor(finding) && self.search.matches(&self.column.haystack(finding))
+                self.above_the_floor(finding)
+                    && self.of_the_kind(finding)
+                    && self.search.matches(&self.column.haystack(finding))
             })
             .collect()
+    }
+
+    fn of_the_kind(&self, finding: &Finding) -> bool {
+        self.kind
+            .as_deref()
+            .is_none_or(|kind| finding.kind.as_str() == kind)
     }
 
     fn above_the_floor(&self, finding: &Finding) -> bool {
@@ -69,15 +87,22 @@ impl Filter {
     }
 
     pub fn describe(&self) -> String {
-        let matching = match self.column {
-            Column::Any => format!("matching {:?}", self.search.query()),
-            column => format!("{} matching {:?}", column.name(), self.search.query()),
-        };
-        match (rank(&self.floor), self.search.holding_back()) {
-            (0, false) => "everything the agent still holds".to_string(),
-            (0, true) => matching,
-            (_, false) => format!("{} and above", self.floor.as_str()),
-            (_, true) => format!("{} and above, {matching}", self.floor.as_str()),
+        let mut said = Vec::new();
+        if rank(&self.floor) > 0 {
+            said.push(format!("{} and above", self.floor.as_str()));
+        }
+        if let Some(kind) = &self.kind {
+            said.push(format!("only {kind}"));
+        }
+        if self.search.holding_back() {
+            said.push(match self.column {
+                Column::Any => format!("matching {:?}", self.search.query()),
+                column => format!("{} matching {:?}", column.name(), self.search.query()),
+            });
+        }
+        match said.is_empty() {
+            true => "everything the agent still holds".to_string(),
+            false => said.join(", "),
         }
     }
 }
@@ -210,6 +235,50 @@ mod tests {
         let mut in_the_object = searching_for("port.listen");
         in_the_object.look_in(Column::Object);
         assert_eq!(in_the_object.passing(&all).len(), 1);
+    }
+
+    #[test]
+    fn one_kind_chosen_hides_every_other_kind_and_names_itself() {
+        let mut filter = Filter::default();
+        filter.only_kind(Some("user.session.new".into()));
+
+        let all = findings();
+        let passing = filter.passing(&all);
+
+        assert_eq!(passing.len(), 1);
+        assert_eq!(passing[0].kind.as_str(), "user.session.new");
+        assert!(filter.holding_back());
+        assert_eq!(filter.describe(), "only user.session.new");
+    }
+
+    #[test]
+    fn a_kind_a_floor_and_a_search_narrow_together_and_are_all_said() {
+        let mut filter = searching_for("deploy");
+        filter.set_floor(Severity::Low);
+        filter.only_kind(Some("user.session.new".into()));
+
+        assert_eq!(filter.passing(&findings()).len(), 1);
+        assert_eq!(
+            filter.describe(),
+            "low and above, only user.session.new, matching \"deploy\""
+        );
+
+        filter.only_kind(Some("port.listen.new".into()));
+        assert!(
+            filter.passing(&findings()).is_empty(),
+            "the search still holds, and the listening port does not match it"
+        );
+    }
+
+    #[test]
+    fn every_kind_again_holds_nothing_back_that_the_kind_held_back() {
+        let mut filter = Filter::default();
+        filter.only_kind(Some("user.session.new".into()));
+
+        filter.only_kind(None);
+
+        assert!(!filter.holding_back());
+        assert_eq!(filter.passing(&findings()).len(), 2);
     }
 
     #[test]

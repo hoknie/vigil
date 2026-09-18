@@ -7,7 +7,7 @@ use crate::ui::{Level, Screen};
 #[test]
 fn the_left_arrow_on_the_row_of_lists_walks_along_it_and_never_out_of_the_section() {
     for screen in [
-        screen("ports"),
+        screen("network"),
         screen("accounts"),
         screen("programs"),
         screen("startup"),

@@ -109,7 +109,7 @@ pub fn one_open_finding_is_found_by_its_object_and_its_kind(store: &dyn Store) {
     );
     assert!(
         store
-            .open_finding("agent.collector|ports", "agent.collector.degraded")
+            .open_finding("agent.collector|network", "agent.collector.degraded")
             .expect("readable")
             .is_none(),
         "and asking about an object with no history is not an error"

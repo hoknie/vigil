@@ -30,7 +30,7 @@ impl Module for Engines {
     }
 
     fn settings_key(&self) -> Option<&'static str> {
-        Some("containers")
+        Some("containers-engines")
     }
 
     fn check(&self, settings: &Settings) -> Result<(), String> {

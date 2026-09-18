@@ -1,8 +1,11 @@
 use std::path::PathBuf;
+use std::sync::Mutex;
 
 use vigil_model::Rfc3339;
 
 use super::FilesCollector;
+use super::plan::Plan;
+use crate::types::Listing;
 
 pub(super) const NAME: &str = "files";
 
@@ -30,14 +33,42 @@ impl FilesCollector {
         watched: &[(String, u64)],
         directories: &[&str],
     ) -> Self {
+        FilesCollector::of(
+            now,
+            Plan::Named(watched.iter().take(PATH_CEILING).cloned().collect()),
+            directories,
+        )
+    }
+
+    pub fn listed(now: impl Fn() -> Rfc3339 + Send + Sync + 'static, listing: Listing) -> Self {
+        FilesCollector::listed_with_directories(now, listing, DIRECTORIES_OF_THE_PATH)
+    }
+
+    pub fn listed_with_directories(
+        now: impl Fn() -> Rfc3339 + Send + Sync + 'static,
+        listing: Listing,
+        directories: &[&str],
+    ) -> Self {
+        FilesCollector::of(
+            now,
+            Plan::Listed {
+                listing,
+                lists: Mutex::new(Default::default()),
+            },
+            directories,
+        )
+    }
+
+    fn of(
+        now: impl Fn() -> Rfc3339 + Send + Sync + 'static,
+        plan: Plan,
+        directories: &[&str],
+    ) -> Self {
         FilesCollector {
             now: Box::new(now),
-            watched: watched
-                .iter()
-                .take(PATH_CEILING)
-                .map(|(path, ceiling_bytes)| (PathBuf::from(path), *ceiling_bytes))
-                .collect(),
+            plan,
             directories: directories.iter().map(PathBuf::from).collect(),
+            last: Mutex::new(None),
         }
     }
 }

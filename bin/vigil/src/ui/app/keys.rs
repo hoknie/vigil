@@ -85,7 +85,10 @@ impl App {
                 true => self.picked.clear(),
                 false => self.go_back(),
             },
-            Action::Refresh => self.refresh_wanted = true,
+            Action::Refresh => {
+                self.read_the_silences_again();
+                self.refresh_wanted = true;
+            }
             Action::Go(screen) => self.visit(screen),
             Action::Sideways(by) => self.sideways(by),
             Action::Move(motion) => {
@@ -175,6 +178,10 @@ impl App {
     }
 
     fn searching(&mut self) {
+        if self.on_the_silenced() {
+            self.message = Some(super::silences::IN_THE_ORDER_OF_THE_FILES.to_string());
+            return;
+        }
         if self.nav.at() == Screen::HOME {
             self.message = Some(home::SEARCH_LIVES_IN_A_LIST.to_string());
             return;

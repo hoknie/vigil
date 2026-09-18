@@ -1,0 +1,400 @@
+{
+  "source": "network",
+  "classes": {
+    "tcp": {
+      "address": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "owner_resolved": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "port": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "process": {
+        "types": [
+          "null",
+          "object"
+        ],
+        "always": true
+      },
+      "process/cmdline": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": false
+      },
+      "process/cmdline_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "process/exe": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": false
+      },
+      "process/exe_deleted": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "process/pid": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "protocol": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "uid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "user": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "tcp6": {
+      "address": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "owner_resolved": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "port": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "process": {
+        "types": [
+          "null",
+          "object"
+        ],
+        "always": true
+      },
+      "process/cmdline": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "process/cmdline_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "process/exe": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "process/exe_deleted": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "process/pid": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "protocol": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "uid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "user": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "udp": {
+      "address": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "owner_resolved": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "port": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "process": {
+        "types": [
+          "null",
+          "object"
+        ],
+        "always": true
+      },
+      "process/cmdline": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "process/cmdline_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "process/exe": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "process/exe_deleted": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "process/pid": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "protocol": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "uid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "user": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "udp6": {
+      "address": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "owner_resolved": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "port": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "process": {
+        "types": [
+          "null",
+          "object"
+        ],
+        "always": true
+      },
+      "process/cmdline": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "process/cmdline_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "process/exe": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "process/exe_deleted": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "process/pid": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "protocol": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "uid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "user": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "unix": {
+      "abstract": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "count": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "owner_resolved": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "path": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "process": {
+        "types": [
+          "null",
+          "object"
+        ],
+        "always": false
+      },
+      "process/cmdline": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "process/cmdline_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "process/exe": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "process/exe_deleted": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "process/pid": {
+        "types": [
+          "number"
+        ],
+        "always": false
+      },
+      "protocol": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "type": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "uid": {
+        "types": [
+          "null",
+          "number"
+        ],
+        "always": false
+      },
+      "user": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": false
+      }
+    }
+  }
+}

@@ -6,7 +6,23 @@ use crate::types::Said;
 use super::Round;
 
 impl Round {
+    pub(super) fn follow_the_suppressions(&mut self) {
+        let heard = self.silences.look();
+        for line in &heard.said {
+            eprintln!("{} {line}", rfc3339::now());
+        }
+        let Some(suppressions) = heard.suppressions else {
+            return;
+        };
+        self.policy.replace(suppressions);
+        let described = self.policy.describe_suppressions();
+        let suppressed = self.policy.suppressed();
+        self.shared
+            .with(|state| state.record_policy(described, suppressed));
+    }
+
     pub(super) fn follow_the_file(&mut self, said: &mut Said) {
+        self.follow_the_suppressions();
         let looked = self.followed.look();
         for line in &looked.said {
             eprintln!("{} {line}", rfc3339::now());

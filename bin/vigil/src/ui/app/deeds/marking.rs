@@ -16,7 +16,7 @@ pub const SUPPRESS: char = 'S';
 const NOTHING_TO_MARK: &str = "Nothing on this list is marked with a key: marking is offered where the console can act \
      on a row, which is the sockets, the running programs and the accounts of this host.";
 
-const NOTHING_IS_MARKED: &str = "Nothing is marked. Press x on a row; on a program of the ports \
+const NOTHING_IS_MARKED: &str = "Nothing is marked. Press x on a row; on a program of the network \
                                  screen it takes every socket under it.";
 
 impl App {

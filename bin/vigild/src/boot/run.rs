@@ -5,7 +5,7 @@ use super::{console, following, greeting, outgoing, policy, reporters, schedule,
 use crate::budget::Meter;
 use crate::helpers::{absolute, agent_finding, rfc3339};
 use crate::loops::Round;
-use crate::socket::{Shared, State};
+use crate::socket::{Shared, State, switched_off_reasons};
 use crate::types::{Delivery, Startup};
 use crate::{config, identity};
 
@@ -38,7 +38,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         },
         &watches::healths(&watches),
         &reporters::names(&reporters),
-        &switched_off,
+        &switched_off_reasons(&config, &switched_off),
     ));
 
     let greeting = greeting::Greeting {
@@ -57,6 +57,9 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let policy = policy::of(&config);
 
     history::prune(&store, config.retention_days);
+    for line in health::renamed(&store, &rfc3339::now()) {
+        eprintln!("{line}");
+    }
     history::recall(&store, &shared, &policy);
 
     let mut opening = at_start;
@@ -75,6 +78,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
 
     console::listen(&config, &schedule, &shared)?;
     let followed = following::of(config_path, stamp, &config, &watches);
+    let silences = config::Silences::of(config_path, &config);
 
     Round {
         watches,
@@ -87,6 +91,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         opening,
         standing,
         followed,
+        silences,
     }
     .run()
 }

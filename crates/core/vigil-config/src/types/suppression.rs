@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(default, deny_unknown_fields)]
 pub struct Suppression {
     pub finding_key: Option<String>,
@@ -41,6 +41,12 @@ impl Suppression {
             (_, Some(prefix)) => finding_key.starts_with(prefix.as_str()),
             _ => self.kind.is_some(),
         }
+    }
+
+    pub fn says_the_same_as(&self, other: &Suppression) -> bool {
+        self.finding_key == other.finding_key
+            && self.finding_key_prefix == other.finding_key_prefix
+            && self.kind == other.kind
     }
 
     pub fn describe(&self) -> String {
@@ -98,6 +104,26 @@ mod tests {
             "port.listen.new",
             "2026-09-09T10:00:00.000Z"
         ));
+    }
+
+    #[test]
+    fn two_entries_that_silence_the_same_statement_are_one_whatever_their_reasons_say() {
+        let first = suppression(Some("port.listen|tcp|0.0.0.0:8080"), None);
+        let mut second = first.clone();
+        second.reason = "written again by somebody else".into();
+        second.until = Some("2026-12-31T00:00:00.000Z".into());
+
+        assert!(first.says_the_same_as(&second));
+
+        second.kind = Some("port.listen.new".into());
+        assert!(
+            !first.says_the_same_as(&second),
+            "silencing one kind about an object is a narrower statement than silencing the object"
+        );
+        assert!(
+            !first.says_the_same_as(&suppression(None, Some("port.listen|tcp|0.0.0.0:8080"))),
+            "a prefix and an exact key spelled alike cover different things"
+        );
     }
 
     #[test]

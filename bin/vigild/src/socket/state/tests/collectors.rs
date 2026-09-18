@@ -10,7 +10,7 @@ fn a_collector_that_could_not_read_is_degraded_and_keeps_its_last_reading() {
     state.record_reading(fixture::reading(fixture::snapshot()));
 
     state.record_failure(
-        "ports",
+        "network",
         "2026-09-09T09:00:30.000Z".into(),
         "not permitted to read /proc/net/tcp",
     );
@@ -20,7 +20,7 @@ fn a_collector_that_could_not_read_is_degraded_and_keeps_its_last_reading() {
     assert_eq!(agent.collectors[0].failures, 1);
     assert_eq!(agent.collectors[0].readings, 1);
     assert!(
-        state.snapshot("ports").is_some(),
+        state.snapshot("network").is_some(),
         "losing the privilege to look is not a host with nothing on it"
     );
 }
@@ -51,18 +51,18 @@ fn a_degraded_collector_keeps_the_reason_it_was_given_at_start() {
             host: fixture::host(),
             started_at: "2026-09-09T08:00:00.000Z".into(),
             interval_seconds: 30,
-            periods: [("ports".to_string(), 30u32)].into_iter().collect(),
+            periods: [("network".to_string(), 30u32)].into_iter().collect(),
             killing_from_the_console: false,
             accounts_from_the_console: false,
             units_from_the_console: false,
         },
-        &[("ports", Health::Degraded("run as root".into()))],
+        &[("network", Health::Degraded("run as root".into()))],
         &[],
         &[],
     );
 
     state.record_reading(fixture::reading(Snapshot::new(
-        "ports",
+        "network",
         "2026-09-09T09:00:00.000Z",
     )));
 
@@ -78,7 +78,7 @@ fn what_the_console_is_shown_is_the_reading_the_rules_compared() {
 
     state.record_reading(fixture::reading(reading.clone()));
 
-    assert_eq!(state.snapshot("ports"), Some(&reading));
+    assert_eq!(state.snapshot("network"), Some(&reading));
     assert!(state.snapshot("files").is_none());
 }
 
@@ -87,24 +87,24 @@ fn a_collector_that_was_repaired_stops_being_reported_as_broken() {
     let mut state = fixture::state();
 
     state.record_health(
-        "ports",
+        "network",
         &Health::Degraded("cannot resolve socket owners".into()),
     );
     let degraded = state.agent();
     let row = degraded
         .collectors
         .iter()
-        .find(|row| row.name == "ports")
+        .find(|row| row.name == "network")
         .expect("the row is there");
     assert_eq!(row.state, CollectorState::Degraded);
     assert_eq!(row.reason.as_deref(), Some("cannot resolve socket owners"));
 
-    state.record_health("ports", &Health::Ok);
+    state.record_health("network", &Health::Ok);
     let repaired = state.agent();
     let row = repaired
         .collectors
         .iter()
-        .find(|row| row.name == "ports")
+        .find(|row| row.name == "network")
         .expect("the row is there");
     assert_eq!(row.state, CollectorState::Ok);
     assert_eq!(row.reason, None, "the complaint has to go with the state");
@@ -136,25 +136,25 @@ fn status_says_when_each_collector_reads_next_and_how_many_slots_it_missed() {
 
     state.record_reading(reading);
 
-    let ports = &state.agent().collectors[0];
-    assert_eq!(ports.every_seconds, Some(30));
+    let network = &state.agent().collectors[0];
+    assert_eq!(network.every_seconds, Some(30));
     assert_eq!(
-        ports.next_run_at.as_deref(),
+        network.next_run_at.as_deref(),
         Some("2026-09-09T09:00:30.000Z")
     );
     assert_eq!(
-        ports.skipped, 2,
+        network.skipped, 2,
         "a slot the host slept through is a number, not a silence"
     );
 }
 
 #[test]
 fn a_collector_that_has_not_read_yet_still_says_how_often_it_is_going_to() {
-    let ports = &fixture::state().agent().collectors[0];
+    let network = &fixture::state().agent().collectors[0];
 
-    assert_eq!(ports.every_seconds, Some(30));
+    assert_eq!(network.every_seconds, Some(30));
     assert_eq!(
-        ports.next_run_at, None,
+        network.next_run_at, None,
         "the daemon has not read once; there is nothing to date"
     );
 }

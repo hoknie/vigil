@@ -1,9 +1,10 @@
 use std::fmt;
+use std::path::Path;
 
 use vigil_module::Settings;
 use vigil_report::SyslogFacility;
 
-use super::{Config, Receiver, split};
+use super::{Config, Receiver, apart, collectors, former, split};
 use crate::helpers::rfc3339;
 
 pub fn load(path: &str) -> Result<Config, ConfigError> {
@@ -11,7 +12,15 @@ pub fn load(path: &str) -> Result<Config, ConfigError> {
         path: path.to_string(),
         cause: e.to_string(),
     })?;
-    let read = split::read(&text, &keys()).map_err(|cause| ConfigError {
+    let mut read = split::read(&text, &keys()).map_err(|cause| ConfigError {
+        path: path.to_string(),
+        cause,
+    })?;
+    match collectors::pointed(&read) {
+        Some(at) => collectors::forbidden(&read, &at),
+        None => former::renamed_settings(&mut read.of_the_modules),
+    }
+    .map_err(|cause| ConfigError {
         path: path.to_string(),
         cause,
     })?;
@@ -21,6 +30,11 @@ pub fn load(path: &str) -> Result<Config, ConfigError> {
             cause: e.to_string(),
         })?;
     config.of_the_modules = read.of_the_modules;
+
+    read_collectors(path, &mut config).map_err(|cause| ConfigError {
+        path: path.to_string(),
+        cause,
+    })?;
 
     for (index, suppression) in config.suppressions.iter().enumerate() {
         suppression.validate().map_err(|cause| ConfigError {
@@ -65,7 +79,10 @@ pub fn load(path: &str) -> Result<Config, ConfigError> {
             .check(&Settings::of(rfc3339::now, key, config.of_the_module(key)))
             .map_err(|cause| ConfigError {
                 path: path.to_string(),
-                cause: format!("{key}: {cause}"),
+                cause: match config.apart.block(module.name()) {
+                    Some(block) => format!("{}: {key}: {cause}", block.file.display()),
+                    None => format!("{key}: {cause}"),
+                },
             })?;
     }
 
@@ -78,14 +95,61 @@ pub fn load(path: &str) -> Result<Config, ConfigError> {
         }
     }
 
+    read_apart(path, &mut config).map_err(|cause| ConfigError {
+        path: path.to_string(),
+        cause,
+    })?;
+
     Ok(config)
 }
 
+fn read_collectors(path: &str, config: &mut Config) -> Result<(), String> {
+    match apart::place(
+        Path::new(path),
+        vigil_config::COLLECTORS_PATH,
+        config.collectors_path.as_deref(),
+    )? {
+        Some(at) => collectors::taken(config, at),
+        None => former::renamed(config),
+    }
+}
+
+fn read_apart(path: &str, config: &mut Config) -> Result<(), String> {
+    let configuration = Path::new(path);
+
+    if let Some(at) = apart::place(
+        configuration,
+        vigil_config::SUPPRESSIONS_PATH,
+        config.suppressions_path.as_deref(),
+    )? {
+        config.apart.suppressions = apart::suppressions(&at)?;
+        config.apart.suppressions_at = Some(at);
+    }
+
+    if let Some(at) = apart::place(
+        configuration,
+        REPORTERS_PATH,
+        config.reporters_path.as_deref(),
+    )? {
+        config.apart.reporters = apart::reporters(&at)?;
+        for file in &config.apart.reporters {
+            config.reporters.extend(file.receivers.iter().cloned());
+        }
+        config.apart.reporters_at = Some(at);
+    }
+
+    Ok(())
+}
+
+const REPORTERS_PATH: &str = "reporters_path";
+
 fn keys() -> Vec<&'static str> {
-    crate::modules::modules()
+    let mut keys: Vec<&'static str> = crate::modules::modules()
         .iter()
         .filter_map(|module| module.settings_key())
-        .collect()
+        .collect();
+    keys.extend(former::settings_keys());
+    keys
 }
 
 #[derive(Debug)]

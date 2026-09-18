@@ -39,21 +39,21 @@ fn told(
             host: host(),
             started_at: "2026-09-09T08:00:00.000Z".into(),
             interval_seconds: 30,
-            periods: [("ports".to_string(), period("ports"))]
+            periods: [("network".to_string(), period("network"))]
                 .into_iter()
                 .collect(),
             killing_from_the_console,
             accounts_from_the_console,
             units_from_the_console,
         },
-        &[("ports", Health::Ok)],
+        &[("network", Health::Ok)],
         &["ndjson".to_string()],
         &[],
     )
 }
 
 pub fn reading(snapshot: Snapshot) -> Reading {
-    reading_of("ports", snapshot)
+    reading_of("network", snapshot)
 }
 
 pub fn reading_of(collector: &'static str, snapshot: Snapshot) -> Reading {

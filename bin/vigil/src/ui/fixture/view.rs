@@ -18,7 +18,7 @@ pub fn view() -> View {
         trouble: None,
     };
     view.readings
-        .put("ports", Reading::Taken(vigil_network::fixture::ports()));
+        .put("network", Reading::Taken(vigil_network::fixture::network()));
     view.readings
         .put("users", Reading::Taken(vigil_users::fixture::users()));
     view.readings.put(

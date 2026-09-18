@@ -23,7 +23,7 @@ impl Rule for FileChanged {
 
         let moved = match (was.digest(), now.digest()) {
             (Some(was), Some(now)) => was != now,
-            _ => was.present() != now.present(),
+            _ => was.present() != now.present() || was.target() != now.target(),
         };
         if !moved {
             return None;
@@ -57,6 +57,14 @@ impl Rule for FileChanged {
 }
 
 fn title(was: &FileView<'_>, now: &FileView<'_>) -> String {
+    if was.present() && now.present() && was.target() != now.target() {
+        return format!(
+            "{} now points at {}, and at the reading before it pointed at {}",
+            now.path(),
+            now.target().unwrap_or("nothing this agent could read"),
+            was.target().unwrap_or("nothing this agent could read")
+        );
+    }
     match (was.present(), now.present()) {
         (true, false) => format!("{} is gone, and this host was watching it", now.path()),
         (false, true) => format!(
@@ -169,6 +177,29 @@ mod tests {
             .is_none(),
             "a digest that stopped being taken is said in the health of the collector; \
              reporting it as a file that changed would be a finding nobody can act on"
+        );
+    }
+
+    #[test]
+    fn a_link_found_by_a_walk_that_points_somewhere_else_now_is_a_file_that_changed() {
+        let mut before = fixture::walked_file("/etc/pam.d/sshd", "/etc/pam.d", "0777");
+        before["type"] = serde_json::json!("symlink");
+        before["sha256"] = serde_json::Value::Null;
+        before["target"] = serde_json::json!("sshd.dist");
+        let mut after = before.clone();
+        after["target"] = serde_json::json!("/tmp/x");
+
+        let finding = apply(&Change::Changed {
+            key: "file|/etc/pam.d/sshd".into(),
+            before,
+            after,
+        })
+        .expect("a link is not followed, so where it points is what it holds");
+
+        assert!(
+            finding.title.contains("now points at /tmp/x"),
+            "{}",
+            finding.title
         );
     }
 }

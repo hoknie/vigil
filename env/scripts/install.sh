@@ -37,8 +37,9 @@ usage: install.sh [options]
 environment: VIGIL_VERSION, VIGIL_KIND, VIGIL_REPOSITORY, VIGIL_TOKEN (or GITHUB_TOKEN)
 
 Every download is checked against the SHA256SUMS of its own release before anything
-is installed. The configuration at /etc/vigil/vigil.yaml is a conffile: an update
-keeps the file this host has and never writes over it.
+is installed. The configuration under /etc/vigil (vigil.yaml, collectors/*.yaml,
+watch_fs.yaml) is conffiles: an update keeps the files this host has and never
+writes over them.
 USAGE
 }
 
@@ -195,11 +196,12 @@ GOT="$(sum_of "$WORK/$ASSET")"
   got      $GOT"
 note "  sha256    $GOT"
 
-DEFAULTS_DEB=/etc/vigil/vigil.yaml.dpkg-dist
-DEFAULTS_RPM=/etc/vigil/vigil.yaml.rpmnew
-stamp() { [ -f "$1" ] && stat -c '%Y %s' "$1" 2>/dev/null || true; }
-DEB_WAS="$(stamp "$DEFAULTS_DEB")"
-RPM_WAS="$(stamp "$DEFAULTS_RPM")"
+defaults() {
+    [ -d /etc/vigil ] || return 0
+    find /etc/vigil \( -name '*.dpkg-dist' -o -name '*.rpmnew' \) -exec stat -c '%n %i %Y %s' {} + \
+        2>/dev/null | sort
+}
+defaults > "$WORK/before"
 
 say "installing"
 case "$KIND" in
@@ -223,11 +225,10 @@ if [ -d /run/systemd/system ] && have systemctl; then
     fi
 fi
 
-for pair in "$DEFAULTS_DEB|$DEB_WAS" "$DEFAULTS_RPM|$RPM_WAS"; do
-    written="${pair%%|*}"
-    [ -f "$written" ] && [ "$(stamp "$written")" != "${pair#*|}" ] || continue
+defaults > "$WORK/after"
+comm -13 "$WORK/before" "$WORK/after" | while read -r written _; do
     note ""
-    note "/etc/vigil/vigil.yaml is yours and was kept as it is."
+    note "${written%.*} is yours and was kept as it is."
     note "the defaults this version ships are beside it, at $written"
 done
 

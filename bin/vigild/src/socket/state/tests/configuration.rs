@@ -1,7 +1,8 @@
 use vigil_collect::Health;
 use vigil_model::CollectorState;
 
-use crate::socket::{State, fixture};
+use crate::Config;
+use crate::socket::{State, fixture, switched_off_reasons};
 use crate::types::Startup;
 
 fn with_launches_switched_off() -> State {
@@ -11,14 +12,14 @@ fn with_launches_switched_off() -> State {
             host: fixture::host(),
             started_at: "2026-09-09T08:00:00.000Z".into(),
             interval_seconds: 30,
-            periods: [("ports".to_string(), 30u32)].into_iter().collect(),
+            periods: [("network".to_string(), 30u32)].into_iter().collect(),
             killing_from_the_console: false,
             accounts_from_the_console: false,
             units_from_the_console: false,
         },
-        &[("ports", Health::Ok)],
+        &[("network", Health::Ok)],
         &[],
-        &["launches".to_string()],
+        &switched_off_reasons(&Config::default(), &["launches".to_string()]),
     )
 }
 
@@ -71,7 +72,7 @@ fn a_snapshot_is_never_offered_for_a_collector_that_is_off() {
     let state = with_launches_switched_off();
 
     assert!(!state.knows_collector("launches"));
-    assert_eq!(state.collector_names(), vec!["ports".to_string()]);
+    assert_eq!(state.collector_names(), vec!["network".to_string()]);
 }
 
 #[test]

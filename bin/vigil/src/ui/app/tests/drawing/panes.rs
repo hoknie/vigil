@@ -114,7 +114,7 @@ fn panes_with_frames_of_their_own_leave_one_border_on_each_side_and_one_thick_fr
 #[test]
 fn a_section_with_no_panes_of_its_own_keeps_its_one_thick_frame_and_no_heading_line() {
     let mut app = app();
-    into(&mut app, screen("ports"), 80, 24);
+    into(&mut app, screen("network"), 80, 24);
 
     let page = drawn_at(&app, 80, 24);
 

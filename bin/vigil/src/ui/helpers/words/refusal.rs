@@ -58,10 +58,10 @@ mod tests {
 
     #[test]
     fn a_refusal_that_came_without_a_state_does_not_get_one_put_into_its_mouth() {
-        let drawn = page(&Refusal::answered("watching ports, not \"launches\""));
+        let drawn = page(&Refusal::answered("watching network, not \"launches\""));
 
         assert!(!drawn.contains("unavailable"), "{drawn}");
         assert!(!drawn.contains("degraded"), "{drawn}");
-        assert!(drawn.contains("watching ports"), "{drawn}");
+        assert!(drawn.contains("watching network"), "{drawn}");
     }
 }

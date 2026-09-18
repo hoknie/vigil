@@ -103,7 +103,7 @@ mod tests {
 
     #[test]
     fn a_file_that_is_a_list_or_a_word_is_refused_rather_than_read_as_empty() {
-        for text in ["- ports\n", "ports\n", "42\n"] {
+        for text in ["- network\n", "network\n", "42\n"] {
             assert!(read(text, KEYS).is_err(), "{text:?}");
         }
     }

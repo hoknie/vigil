@@ -13,7 +13,7 @@ fn sorting(app: &App) -> Sorting {
 
 fn with_the_sort_band() -> App {
     let mut app = app();
-    into(&mut app, screen("ports"), WIDE.0, WIDE.1);
+    into(&mut app, screen("network"), WIDE.0, WIDE.1);
     press(&mut app, KeyCode::Char('s'));
     drawn_at(&app, WIDE.0, WIDE.1);
     app

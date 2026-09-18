@@ -46,10 +46,18 @@ pub struct Silence {
     pub until: Option<String>,
 
     #[arg(
+        short,
+        long,
+        value_name = "NAME",
+        help = "The file under suppressions_path to write it to (default: console.yaml)"
+    )]
+    pub file: Option<String>,
+
+    #[arg(
         long,
         value_name = "PATH",
         default_value = config::DEFAULT_PATH,
-        help = "The configuration file to edit"
+        help = "The daemon's configuration, which says where suppressions are kept"
     )]
     pub config: String,
 

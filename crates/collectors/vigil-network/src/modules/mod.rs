@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests;
 
-mod ports;
+mod network;
 
-pub use ports::Ports;
+pub use network::Network;

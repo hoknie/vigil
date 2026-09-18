@@ -1,7 +1,7 @@
 set shell := ["bash", "-c"]
 
 CARGO := env('CARGO', 'cargo')
-CONFIG := env('CONFIG', 'config/vigil.example.yaml')
+CONFIG := env('CONFIG', '')
 
 COMPOSE := env('COMPOSE', 'docker compose -f env/docker/compose.yaml')
 RUN := COMPOSE + ' run --rm --build vigil'

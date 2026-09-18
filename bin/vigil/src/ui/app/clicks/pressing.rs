@@ -76,6 +76,10 @@ impl App {
     }
 
     fn press_the_row(&mut self, at: usize) {
+        if self.on_the_silenced() {
+            self.point_at_the_silenced(at);
+            return;
+        }
         if self.level == Level::List && self.row_the_cursor_is_on() == Some(at) {
             self.pressed(KeyCode::Right);
             return;
@@ -127,6 +131,14 @@ impl App {
     }
 
     fn press_the_name(&mut self, at: usize) {
+        if self.nav.at() == Screen::FINDINGS {
+            if self.findings_list() != at {
+                self.choose_the_findings_list(at);
+                self.settle();
+            }
+            self.level = Level::of_the_lists(self.rungs());
+            return;
+        }
         if self.panes().is_some_and(|panes| panes.showing() == at) {
             self.level = Level::of_the_lists(self.rungs());
             return;

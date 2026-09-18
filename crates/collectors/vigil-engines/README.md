@@ -88,7 +88,7 @@ accident. On top of that:
 | a dump is not the document this build reads | `Degraded`, naming the file; the reading fails rather than publishing an empty host |
 | a dump is larger than 16 MiB | `Degraded` (`CollectError::Budget`) |
 | a dump is older than `dump_seconds` × 2 | `Degraded`, saying how old; the reading is still taken, because an old answer is still the last one known |
-| the engine is not installed | `Degraded`, naming the engine; the reading has a row for it with `present: false` |
+| the engine is not installed | `Ok` — an answer, not a failure: the reading has a row for it with `present: false`, and its lists say "not installed on this host". A host where no engine named in `engines:` is installed is `Ok` too, and is a host with no container engines |
 | the engine answered some commands and not others | `Degraded`, naming the subject and what the engine said; the subjects that failed contribute no rows |
 | a registries file cannot be read | `Degraded`, saying which registries are unknown |
 
@@ -170,8 +170,12 @@ subject the engine did not answer for says so instead of claiming the engine hol
 
 ## Configuration
 
+The block is named after the module, like every other one: `containers-engines`, in the
+collectors' files (`/etc/vigil/collectors/containers.yaml`, as the second document).
+
 ```yaml
-containers:
+containers-engines:
+  schedule: 120
   engines: [docker, podman]
   dump_seconds: 120
   report:
@@ -190,6 +194,9 @@ Declared through `settings_key()` and checked at start-up: an engine this build 
 an engine named twice, a `dump_seconds` of zero and a key nobody declares are all refused by
 name before the daemon starts. `dump_seconds` is the period `vigil-containers.timer` runs at;
 change one and change the other, or the agent calls a current reading stale.
+
+A `vigil.yaml` of the former layout, which holds its collectors itself, still configures the
+engines under a top-level `containers:` block: the daemon reads that key as `containers-engines`.
 
 ## The fixture
 

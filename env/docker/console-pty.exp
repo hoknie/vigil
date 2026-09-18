@@ -201,7 +201,7 @@ check_loose "the footer names the range that opens something" $page "1 - 9"
 check_absent_loose "and the row of screen names along the top is gone" $page "▸ 1 summary"
 
 note "a section's row carries its number, how many objects and when it last read"
-check_loose "ports is the first section" $page "1 ports"
+check_loose "network is the first section" $page "1 network"
 check_loose "accounts is the second" $page "2 accounts"
 check_loose "programs is the third" $page "3 programs"
 check_loose "startup is the fourth" $page "4 startup"
@@ -360,14 +360,28 @@ check_loose "the findings are still the screen open" $page "▸ What the agent h
 check_absent_loose "with nothing held back any more" $page "matching \"$port\""
 check_loose "and what the search hid is back" $page "agent.collector.degraded"
 
-note "Esc once more: nothing left to undo, so this one is the ladder"
+note "Esc once more: nothing left to undo, so this one is the ladder, up to the row of lists"
+send $Esc
+set page [drawn 2]
+check_loose "the row of the findings' two lists" $page "▸ \[reported\] · silenced"
+
+note "→ along that row: the list of what this host silences"
+send $Right
+set page [drawn 2]
+check_loose "the second list is chosen" $page "reported · \[silenced\]"
+check_loose "and it says where each entry stands" $page "STANDING"
+send $Left
+
+note "Esc from the row of lists: the main screen"
 send $Esc
 set page [drawn 2]
 check_loose "the main screen" $page "▸ What this agent watches"
 
-note "9, →: a finding and its detail, side by side on a terminal wide enough for both"
+note "9, ↓, →: a finding and its detail, side by side on a terminal wide enough for both"
 send "9"
 after 400
+send $Down
+after 200
 send $Right
 set page [drawn 2]
 check_loose "the detail of the finding opened" $page "THE SELECTED FINDING"
@@ -388,10 +402,15 @@ check_absent_loose "the panel is off the screen" $page "THE SELECTED FINDING"
 check_loose "and the findings are still the screen open" $page "▸ What the agent has found"
 check_absent_loose "that press was one step, not two" $page "▸ What this agent watches"
 
-note "← three times: the findings have no row of lists, so this rung is the main screen"
+note "← three times: the rung above the list is the row of the findings' lists"
 send $Left
 set page [drawn 2]
-check_loose "the main screen" $page "▸ What this agent watches"
+check_loose "the row of lists" $page "▸ \[reported\] · silenced"
+check_absent_loose "and not the main screen yet" $page "WHAT IT CONCLUDES"
+
+send $Esc
+set page [drawn 2]
+check_loose "Esc from there is the main screen" $page "▸ What this agent watches"
 
 note "the port opened for this run is closed behind it"
 catch { exec kill $listener }
@@ -401,7 +420,7 @@ send "1"
 after 400
 send "/"
 set page [drawn 3]
-check_loose "the box opened on the ports, where the reader was" $page "every value the agent read"
+check_loose "the box opened on the network, where the reader was" $page "every value the agent read"
 check_loose "and did not move them to the findings" $page "▸ What is listening"
 send "nginxq"
 after 300

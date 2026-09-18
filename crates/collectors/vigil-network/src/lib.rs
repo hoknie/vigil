@@ -7,9 +7,9 @@ mod rules;
 mod types;
 mod views;
 
-pub use modules::Ports;
+pub use modules::Network;
 pub use types::SocketView;
 pub use views::Listening;
 
 #[cfg(target_os = "linux")]
-pub use collectors::PortsCollector;
+pub use collectors::NetworkCollector;

@@ -32,7 +32,7 @@ impl Pane for Flat {
     }
 
     fn reads(&self) -> &str {
-        "ports"
+        "network"
     }
 
     fn columns(&self, room: Room) -> Vec<Column> {

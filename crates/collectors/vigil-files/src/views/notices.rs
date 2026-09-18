@@ -1,7 +1,8 @@
 use vigil_view::{Notice, Showing};
 
-const NAMED_IN_THE_CONFIGURATION: &str =
-    "The list is the paths named in the configuration file, plus the directories on PATH.";
+const NAMED_IN_THE_CONFIGURATION: &str = "The list is the paths the watch list names, each \
+                                          directory walked whole and each mask matched, plus \
+                                          the directories on PATH.";
 
 pub(super) fn nothing_read() -> Notice {
     Notice::plain("No path is being watched on this host.")

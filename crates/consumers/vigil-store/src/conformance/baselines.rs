@@ -3,20 +3,23 @@ use crate::Store;
 
 pub fn a_collector_with_no_history_has_no_baseline(store: &dyn Store) {
     assert!(
-        store.baseline("ports").expect("readable").is_none(),
+        store.baseline("network").expect("readable").is_none(),
         "a store with no history must answer None, never an empty snapshot"
     );
 }
 
 pub fn the_baseline_is_the_last_reading(store: &dyn Store) {
     store
-        .set_baseline(&snapshot("ports", "2026-09-09T10:00:00.000Z", 22))
+        .set_baseline(&snapshot("network", "2026-09-09T10:00:00.000Z", 22))
         .expect("write");
     store
-        .set_baseline(&snapshot("ports", "2026-09-09T10:00:30.000Z", 443))
+        .set_baseline(&snapshot("network", "2026-09-09T10:00:30.000Z", 443))
         .expect("write");
 
-    let baseline = store.baseline("ports").expect("readable").expect("present");
+    let baseline = store
+        .baseline("network")
+        .expect("readable")
+        .expect("present");
 
     assert_eq!(baseline.taken_at, "2026-09-09T10:00:30.000Z");
     assert!(baseline.items.contains_key("tcp|0.0.0.0:443"));
@@ -28,7 +31,7 @@ pub fn the_baseline_is_the_last_reading(store: &dyn Store) {
 
 pub fn baselines_are_kept_per_collector(store: &dyn Store) {
     store
-        .set_baseline(&snapshot("ports", "2026-09-09T10:00:00.000Z", 22))
+        .set_baseline(&snapshot("network", "2026-09-09T10:00:00.000Z", 22))
         .expect("write");
     store
         .set_baseline(&snapshot("users", "2026-09-09T10:00:00.000Z", 1))
@@ -36,11 +39,11 @@ pub fn baselines_are_kept_per_collector(store: &dyn Store) {
 
     assert_eq!(
         store
-            .baseline("ports")
+            .baseline("network")
             .expect("readable")
             .expect("present")
             .source,
-        "ports"
+        "network"
     );
     assert_eq!(
         store
@@ -54,7 +57,7 @@ pub fn baselines_are_kept_per_collector(store: &dyn Store) {
 
 pub fn a_forgotten_baseline_is_gone_and_takes_nothing_else_with_it(store: &dyn Store) {
     store
-        .set_baseline(&snapshot("ports", "2026-09-09T10:00:00.000Z", 443))
+        .set_baseline(&snapshot("network", "2026-09-09T10:00:00.000Z", 443))
         .expect("writes");
     store
         .set_baseline(&snapshot("users", "2026-09-09T10:00:00.000Z", 22))
@@ -66,10 +69,10 @@ pub fn a_forgotten_baseline_is_gone_and_takes_nothing_else_with_it(store: &dyn S
         ))
         .expect("records");
 
-    assert!(store.forget_baseline("ports").expect("forgets"));
+    assert!(store.forget_baseline("network").expect("forgets"));
 
     assert!(
-        store.baseline("ports").expect("readable").is_none(),
+        store.baseline("network").expect("readable").is_none(),
         "a forgotten baseline must read as no baseline, not as an empty one"
     );
     assert!(
@@ -82,7 +85,7 @@ pub fn a_forgotten_baseline_is_gone_and_takes_nothing_else_with_it(store: &dyn S
         "forgetting a reading must not forget what happened"
     );
     assert!(
-        !store.forget_baseline("ports").expect("forgets"),
+        !store.forget_baseline("network").expect("forgets"),
         "forgetting what is not there is not an error, and it says so"
     );
 }

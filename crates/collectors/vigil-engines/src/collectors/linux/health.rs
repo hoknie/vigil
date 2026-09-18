@@ -55,12 +55,7 @@ fn complaint(collector: &EnginesCollector, one: &Held) -> Vec<String> {
             "{engine}: {refusal}, so what this host's {engine} holds is unknown — which is \
              not the same as an engine holding nothing"
         )),
-        Ok(dump) if !dump.on_this_host() => said.push(format!(
-            "{engine} is not installed on this host: {}",
-            dump.why
-                .clone()
-                .unwrap_or_else(|| "and no reason was written down".to_string())
-        )),
+        Ok(dump) if !dump.on_this_host() => {}
         Ok(dump) => {
             let unanswered = dump.unanswered();
             if !unanswered.is_empty() {

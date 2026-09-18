@@ -38,9 +38,9 @@ mod tests {
 
     #[test]
     fn a_refusal_with_no_state_behind_it_is_not_a_refusal_in_a_state_this_console_invented() {
-        let refusal = Refusal::answered("watching ports, not \"files\"");
+        let refusal = Refusal::answered("watching network, not \"files\"");
 
         assert_eq!(refusal.state, None);
-        assert_eq!(refusal.reason, "watching ports, not \"files\"");
+        assert_eq!(refusal.reason, "watching network, not \"files\"");
     }
 }

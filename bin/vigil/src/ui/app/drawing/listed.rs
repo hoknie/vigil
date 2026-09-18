@@ -4,10 +4,11 @@ use ratatui::text::Line;
 use ratatui::widgets::{Paragraph, Widget};
 
 use crate::ui::app::App;
+use crate::ui::app::silences::LISTS;
 use crate::ui::details::pieces;
 use crate::ui::helpers::finding::diff;
 use crate::ui::helpers::layout::{footing, split};
-use crate::ui::screens::{findings, pane};
+use crate::ui::screens::{findings, pane, silences};
 use crate::ui::theme::{caption, panel};
 use crate::ui::{Level, Screen, Target};
 
@@ -130,11 +131,51 @@ impl App {
                     self.rows_drawn(placed.rows);
                 }
             }
-            _ => {
-                let rows = findings::render(&self.view, self.look, &self.found(), area, buffer);
-                self.rows_drawn(rows);
+            _ => self.draw_the_findings_lists(area, buffer),
+        }
+    }
+
+    fn draw_the_findings_lists(&self, area: Rect, buffer: &mut Buffer) {
+        let (list, names) = match self.look.interactive() && area.height > 2 {
+            true => (
+                Rect {
+                    y: area.y + 1,
+                    height: area.height - 1,
+                    ..area
+                },
+                Some(Rect { height: 1, ..area }),
+            ),
+            false => (area, None),
+        };
+        if let Some(names) = names {
+            let named: Vec<(usize, String)> = LISTS
+                .iter()
+                .enumerate()
+                .map(|(at, name)| (at, (*name).to_string()))
+                .collect();
+            let (line, places) = pane::menu::row(
+                self.look,
+                &named,
+                self.findings_list(),
+                self.level == Level::Menu,
+                names.width,
+            );
+            Paragraph::new(line).render(names, buffer);
+            for (at, x, wide) in places {
+                self.pointer.put(
+                    Rect::new(names.x + x, names.y, wide, 1).intersection(names),
+                    Target::Pane(at),
+                );
             }
         }
+
+        let rows = match &self.silences {
+            Some(opened) => {
+                silences::render(opened, self.silences_running(), self.look, list, buffer)
+            }
+            None => findings::render(&self.view, self.look, &self.found(), list, buffer),
+        };
+        self.rows_drawn(rows);
     }
 
     pub(in crate::ui::app) fn draw_detail(&self, area: Rect, buffer: &mut Buffer) {
@@ -167,6 +208,7 @@ impl App {
         match self.nav.at() {
             Screen::HOME => "SECTIONS".to_string(),
             screen if screen.draws_a_reading() => self.pane_caption(),
+            Screen::FINDINGS if self.on_the_silenced() => silences::CAPTION.to_string(),
             _ => "FINDINGS".to_string(),
         }
     }

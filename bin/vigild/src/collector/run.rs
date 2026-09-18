@@ -1,5 +1,6 @@
 use vigil_collect::Health;
 
+use super::apart::{collectors_at, switch};
 use super::edit::{self, Edit};
 use super::host::{self, Standing};
 use crate::wizard::{DEFAULT_PATH, Surveyed, take};
@@ -25,6 +26,8 @@ impl Default for Options {
 pub fn enable(options: &Options) -> Result<String, String> {
     let name = known(&options.name)?;
     let mut said = Vec::new();
+    let text = read(&options.path)?;
+    let apart = collectors_at(options, &text)?;
 
     if let Some(unit) = crate::modules::unit_of(name) {
         said.push(start(unit, options.dry_run)?);
@@ -38,7 +41,10 @@ pub fn enable(options: &Options) -> Result<String, String> {
         ));
     }
 
-    said.push(written(options, name)?);
+    said.push(match &apart {
+        Some(at) => switch(options, name, at, true)?,
+        None => written(options, &text, name)?,
+    });
 
     if let Health::Degraded(why) = &standing.health {
         said.push(format!("{name} will read less than all of it: {why}"));
@@ -53,15 +59,9 @@ pub fn disable(options: &Options) -> Result<String, String> {
     let mut said = Vec::new();
 
     let text = read(&options.path)?;
-    let every: Vec<(&str, u32)> = crate::modules::watched()
-        .iter()
-        .map(|collector| (collector.name, collector.every_seconds))
-        .collect();
-
-    match edit::remove(&text, name, &every) {
-        Edit::NotOurs(why) => return Err(why),
-        Edit::AlreadySo => said.push(format!("{name} is not named in {}", options.path)),
-        Edit::Changed(after) => said.push(put(options, &text, &after)?),
+    match collectors_at(options, &text)? {
+        Some(at) => said.push(switch(options, name, &at, false)?),
+        None => said.push(unnamed(options, &text, name)?),
     }
 
     match crate::modules::unit_of(name) {
@@ -117,13 +117,25 @@ fn start(unit: &str, dry_run: bool) -> Result<String, String> {
     }
 }
 
-fn written(options: &Options, name: &str) -> Result<String, String> {
-    let text = read(&options.path)?;
+fn unnamed(options: &Options, text: &str, name: &str) -> Result<String, String> {
+    let every: Vec<(&str, u32)> = crate::modules::watched()
+        .iter()
+        .map(|collector| (collector.name, collector.every_seconds))
+        .collect();
+
+    match edit::remove(text, listed_as(text, name), &every) {
+        Edit::NotOurs(why) => Err(why),
+        Edit::AlreadySo => Ok(format!("{name} is not named in {}", options.path)),
+        Edit::Changed(after) => put(options, text, &after),
+    }
+}
+
+fn written(options: &Options, text: &str, name: &str) -> Result<String, String> {
     let every_seconds = crate::modules::every_seconds_of(name).unwrap_or(60);
 
-    match edit::add(&text, name, every_seconds) {
+    match edit::add(text, listed_as(text, name), every_seconds) {
         Edit::NotOurs(why) => Err(why),
-        Edit::AlreadySo => Ok(match edit::watching(&text, name) {
+        Edit::AlreadySo => Ok(match edit::watching(text, name) {
             None => format!(
                 "{} names no collectors at all, which means every one of them: {name} is \
                  already watched",
@@ -131,7 +143,19 @@ fn written(options: &Options, name: &str) -> Result<String, String> {
             ),
             _ => format!("{name} is already named in {}", options.path),
         }),
-        Edit::Changed(after) => put(options, &text, &after),
+        Edit::Changed(after) => put(options, text, &after),
+    }
+}
+
+fn listed_as<'a>(text: &str, name: &'a str) -> &'a str {
+    match config::former_name(name) {
+        Some(was)
+            if edit::watching(text, name) != Some(true)
+                && edit::watching(text, was) == Some(true) =>
+        {
+            was
+        }
+        _ => name,
     }
 }
 
@@ -175,7 +199,23 @@ mod tests {
 
         assert!(refused.contains("firewal"), "{refused}");
         assert!(refused.contains("firewall"), "{refused}");
-        assert!(refused.contains("ports"), "{refused}");
+        assert!(refused.contains("network"), "{refused}");
+    }
+
+    #[test]
+    fn a_file_of_the_former_layout_that_lists_ports_is_edited_under_the_name_it_wrote() {
+        let former = "collectors:\n  - ports\n  - users\n";
+
+        assert_eq!(
+            listed_as(former, "network"),
+            "ports",
+            "switching network off on an upgraded host takes out the line that switched it on"
+        );
+        assert_eq!(
+            listed_as("collectors:\n  - network\n", "network"),
+            "network"
+        );
+        assert_eq!(listed_as(former, "users"), "users");
     }
 
     #[test]
@@ -191,7 +231,7 @@ mod tests {
             crate::modules::unit_of("firewall"),
             Some("vigil-firewall.timer")
         );
-        assert_eq!(crate::modules::unit_of("ports"), None);
+        assert_eq!(crate::modules::unit_of("users"), None);
 
         let source = include_str!("run.rs");
         assert!(

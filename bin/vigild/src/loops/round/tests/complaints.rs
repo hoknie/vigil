@@ -6,7 +6,7 @@ use crate::types::Said;
 #[test]
 fn a_reading_that_failed_is_a_finding_and_not_only_a_line_in_the_daemons_log() {
     let mut it = watching("failed-once", Health::Ok, Vec::new());
-    let mut said = Said::about([("ports", "ok".to_string())]);
+    let mut said = Said::about([("network", "ok".to_string())]);
 
     it.round.read(0, &mut said);
 
@@ -15,12 +15,12 @@ fn a_reading_that_failed_is_a_finding_and_not_only_a_line_in_the_daemons_log() {
         .iter()
         .find(|finding| finding.kind.as_str() == "agent.collector.degraded")
         .expect("a collector that cannot read has to say so where the findings go");
-    assert_eq!(about_it.finding_key, "agent.collector|ports");
+    assert_eq!(about_it.finding_key, "agent.collector|network");
     assert!(
         about_it
             .evidence
             .iter()
-            .any(|evidence| evidence.kind == "error" && evidence.value.contains("ports")),
+            .any(|evidence| evidence.kind == "error" && evidence.value.contains("network")),
         "the finding carries the same error the screen shows: {:?}",
         about_it.evidence
     );
@@ -37,7 +37,7 @@ fn a_reading_that_failed_is_a_finding_and_not_only_a_line_in_the_daemons_log() {
 #[test]
 fn a_collector_that_fails_every_reading_raises_one_finding_and_not_one_a_tick() {
     let mut it = watching("failing", Health::Ok, Vec::new());
-    let mut said = Said::about([("ports", "ok".to_string())]);
+    let mut said = Said::about([("network", "ok".to_string())]);
 
     for _ in 0..10 {
         it.round.read(0, &mut said);
@@ -65,7 +65,7 @@ fn a_collector_that_fails_every_reading_raises_one_finding_and_not_one_a_tick() 
 #[test]
 fn a_reading_that_went_through_closes_the_finding_about_the_ones_that_did_not() {
     let mut it = watching("failed-then-read", Health::Ok, Vec::new());
-    let mut said = Said::about([("ports", "ok".to_string())]);
+    let mut said = Said::about([("network", "ok".to_string())]);
     for _ in 0..3 {
         it.round.read(0, &mut said);
     }
@@ -93,10 +93,10 @@ fn a_reading_that_went_through_closes_the_finding_about_the_ones_that_did_not() 
 #[test]
 fn a_reason_that_changed_is_written_down_without_alerting_a_second_time() {
     let mut it = watching("two-reasons", Health::Ok, Vec::new());
-    let mut said = Said::about([("ports", "ok".to_string())]);
+    let mut said = Said::about([("network", "ok".to_string())]);
     it.round.read(0, &mut said);
 
-    said.failing("ports", "something else entirely");
+    said.failing("network", "something else entirely");
     it.round.read(0, &mut said);
 
     assert_eq!(
@@ -119,10 +119,10 @@ fn a_reason_that_changed_is_written_down_without_alerting_a_second_time() {
 #[test]
 fn a_complaint_a_previous_run_left_open_is_closed_by_the_first_reading_that_goes_through() {
     let mut it = watching("from-the-last-run", Health::Ok, vec![snapshot(&[443])]);
-    let mut said = Said::about([("ports", "ok".to_string())]);
+    let mut said = Said::about([("network", "ok".to_string())]);
     said.opened(
-        "ports",
-        "the reading failed — ports: /proc/net/tcp: permission denied".to_string(),
+        "network",
+        "the reading failed — network: /proc/net/tcp: permission denied".to_string(),
     );
 
     it.round.read(0, &mut said);
@@ -148,8 +148,8 @@ fn a_collector_that_came_back_is_reported_once_and_not_on_every_reading_after_it
         Health::Ok,
         vec![snapshot(&[443]), snapshot(&[443]), snapshot(&[443])],
     );
-    let mut said = Said::about([("ports", "ok".to_string())]);
-    said.opened("ports", "degraded — one socket had no owner".to_string());
+    let mut said = Said::about([("network", "ok".to_string())]);
+    said.opened("network", "degraded — one socket had no owner".to_string());
 
     it.round.read(0, &mut said);
     it.round.read(0, &mut said);
@@ -172,7 +172,7 @@ fn a_collector_that_goes_unwell_while_the_agent_runs_is_reported_and_then_closed
         Health::Ok,
         vec![snapshot(&[443]), snapshot(&[443])],
     );
-    let mut said = Said::about([("ports", "ok".to_string())]);
+    let mut said = Said::about([("network", "ok".to_string())]);
     it.round.read(0, &mut said);
 
     *it.collector.health.lock().expect("not poisoned") =

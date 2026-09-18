@@ -50,7 +50,7 @@ fn keys_a_socket_by_protocol_address_and_port() {
         ),
     );
 
-    assert_eq!(snapshot.source, "ports");
+    assert_eq!(snapshot.source, "network");
     assert!(snapshot.items.contains_key("tcp|0.0.0.0:4444"));
 }
 

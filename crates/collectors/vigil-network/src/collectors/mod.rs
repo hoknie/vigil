@@ -2,4 +2,4 @@
 mod linux;
 
 #[cfg(target_os = "linux")]
-pub use linux::PortsCollector;
+pub use linux::NetworkCollector;

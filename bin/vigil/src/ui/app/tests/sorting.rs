@@ -49,11 +49,11 @@ fn a_sort_belongs_to_the_list_it_was_chosen_in() {
     press(&mut app, number(Screen::FINDINGS));
     chose(&mut app, 4);
 
-    into(&mut app, screen("ports"), 120, 30);
-    let ports = drawn_at(&app, 120, 30);
+    into(&mut app, screen("network"), 120, 30);
+    let network = drawn_at(&app, 120, 30);
     assert!(
-        !ports.contains("sorted by"),
-        "the order chosen on another list followed the reader here: {ports}"
+        !network.contains("sorted by"),
+        "the order chosen on another list followed the reader here: {network}"
     );
 
     press(&mut app, number(Screen::FINDINGS));
@@ -107,7 +107,7 @@ fn what_a_script_is_given_is_the_order_the_agent_sent_and_says_nothing_about_an_
 #[test]
 fn the_grouped_view_is_an_order_already_and_says_where_the_sorting_is_done() {
     let mut app = app();
-    press(&mut app, number(screen("ports")));
+    press(&mut app, number(screen("network")));
     press(&mut app, KeyCode::Right);
     press(&mut app, KeyCode::Down);
 

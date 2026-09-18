@@ -22,34 +22,96 @@ fn main() {
 #[cfg(target_os = "linux")]
 fn reading() {
     let settings = Settings::plain(|| TAKEN_AT.to_string());
-    let collector = match vigil_files::Files.collector(&settings) {
-        Ok(collector) => collector,
-        Err(why) => {
-            println!("files: {why}");
-            return;
-        }
-    };
+    match vigil_files::Files.collector(&settings) {
+        Ok(collector) => measured_reading("files (the six shipped paths)", collector.as_ref()),
+        Err(why) => println!("files: {why}"),
+    }
 
+    let bench = std::env::temp_dir().join(format!("vigil-files-measure-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&bench);
+    for (name, count) in [("six", 6), ("thousand", 1_000), ("ten-thousand", 10_000)] {
+        let tree = bench.join(name);
+        planted(&tree, count);
+        let list = bench.join(format!("{name}.yaml"));
+        let entries = match name {
+            "six" => (0..count)
+                .map(|at| format!("  - {}\n", tree.join(file_name(at)).display()))
+                .collect::<String>(),
+            _ => format!("  - {}\n", tree.display()),
+        };
+        std::fs::write(&list, format!("files:\n{entries}")).expect("writes the list");
+
+        let collector = vigil_files::FilesCollector::listed(
+            || TAKEN_AT.to_string(),
+            vigil_files::Listing {
+                watched_path: list,
+                max_file_size: vigil_files::CEILING_BYTES,
+                devices: vigil_files::Devices::default(),
+                max_files: vigil_files::MAX_FILES,
+            },
+        );
+        measured_reading(&format!("files ({count} paths, {name})"), &collector);
+    }
+    let _ = std::fs::remove_dir_all(&bench);
+}
+
+#[cfg(target_os = "linux")]
+fn planted(tree: &std::path::Path, count: usize) {
+    for at in 0..count {
+        let path = tree.join(file_name(at));
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).expect("a directory to plant in");
+        }
+        std::fs::write(&path, "x".repeat(512 + at % 3_584)).expect("plants");
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn file_name(at: usize) -> String {
+    format!("{:02}/file-{at:05}.conf", at % 20)
+}
+
+#[cfg(target_os = "linux")]
+fn measured_reading(what: &str, collector: &dyn vigil_collect::Collector) {
     let started = Instant::now();
     let Ok(first) = collector.collect() else {
-        println!("files: nothing to read here: {:?}", collector.available());
+        println!("{what}: nothing to read here: {:?}", collector.available());
         return;
     };
     println!(
-        "files: first reading {:.2} ms, {} items, {} bytes as the baseline",
+        "{what}: first reading {:.2} ms, {} items, {} bytes as the baseline",
         started.elapsed().as_secs_f64() * 1000.0,
         first.items.len(),
         serde_json::to_string(&first).expect("serialises").len()
     );
 
+    let rounds = match first.items.len() {
+        0..=100 => ROUNDS,
+        _ => 20,
+    };
     let started = Instant::now();
-    for _ in 0..ROUNDS {
+    for _ in 0..rounds {
         let _ = collector.collect();
     }
     println!(
-        "files: {:.2} ms per reading over {ROUNDS}",
-        started.elapsed().as_secs_f64() * 1000.0 / f64::from(ROUNDS)
+        "{what}: {:.2} ms per reading over {rounds}, the most resident so far {}, health {:?}",
+        started.elapsed().as_secs_f64() * 1000.0 / f64::from(rounds),
+        resident(),
+        collector.available()
     );
+}
+
+#[cfg(target_os = "linux")]
+fn resident() -> String {
+    std::fs::read_to_string("/proc/self/status")
+        .ok()
+        .and_then(|status| {
+            status
+                .lines()
+                .find(|line| line.starts_with("VmHWM:"))
+                .map(|line| line["VmHWM:".len()..].trim().to_string())
+        })
+        .unwrap_or_else(|| "unknown".to_string())
 }
 
 #[cfg(not(target_os = "linux"))]

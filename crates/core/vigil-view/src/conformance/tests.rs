@@ -28,7 +28,7 @@ impl Pane for Listening {
     }
 
     fn reads(&self) -> &'static str {
-        "ports"
+        "network"
     }
 
     fn columns(&self, _room: Room) -> Vec<Column> {
@@ -107,7 +107,7 @@ fn listening() -> Listening {
 }
 
 fn reading() -> Snapshot {
-    Snapshot::new("ports", "2026-09-12T10:00:00.000Z".to_string()).with(
+    Snapshot::new("network", "2026-09-12T10:00:00.000Z".to_string()).with(
         "tcp|0.0.0.0:443",
         json!({ "protocol": "tcp", "address": "0.0.0.0", "port": 443 }),
     )

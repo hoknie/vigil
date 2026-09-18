@@ -86,24 +86,24 @@ fn the_key_says_so_on_a_list_that_draws_a_path_and_says_nothing_on_one_that_does
     assert!(interfaces.contains("P path"), "{interfaces}");
 
     let mut elsewhere = app();
-    press(&mut elsewhere, number(screen("ports")));
+    press(&mut elsewhere, number(screen("network")));
     drawn_at(&elsewhere, 120, 30);
     while elsewhere.level != Level::List {
         press(&mut elsewhere, KeyCode::Down);
     }
-    let ports = drawn_at(&elsewhere, 120, 30);
+    let network = drawn_at(&elsewhere, 120, 30);
 
     assert!(
-        !ports.contains("P path"),
+        !network.contains("P path"),
         "a key drawn on a list where it does nothing is a key a reader learns to ignore: \
-         {ports}"
+         {network}"
     );
 }
 
 #[test]
 fn p_on_a_list_that_draws_no_path_says_where_the_key_works_instead_of_doing_nothing() {
     let mut app = app();
-    press(&mut app, number(screen("ports")));
+    press(&mut app, number(screen("network")));
     drawn_at(&app, 120, 30);
     while app.level != Level::List {
         press(&mut app, KeyCode::Down);

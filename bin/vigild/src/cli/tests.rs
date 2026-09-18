@@ -35,11 +35,11 @@ fn both_ways_round_are_spelled_the_same_and_take_the_same_flags() {
 
 #[test]
 fn the_file_it_edits_can_be_named_so_a_check_need_not_write_the_real_one() {
-    let asked = collector(&["collector", "ports", "enable", "--config", "/tmp/v.yaml"]);
+    let asked = collector(&["collector", "network", "enable", "--config", "/tmp/v.yaml"]);
 
     assert_eq!(asked.switching().config, "/tmp/v.yaml");
     assert_eq!(asked.options().path, "/tmp/v.yaml");
-    assert_eq!(asked.options().name, "ports");
+    assert_eq!(asked.options().name, "network");
 }
 
 #[test]

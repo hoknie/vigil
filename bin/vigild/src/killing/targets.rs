@@ -1,7 +1,7 @@
 use vigil_model::{Killed, Killing, Snapshot};
 use vigil_network::SocketView;
 
-pub const READING: &str = "ports";
+pub const READING: &str = "network";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Target {

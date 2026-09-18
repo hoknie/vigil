@@ -34,12 +34,12 @@ mod tests {
     #[test]
     fn a_reading_that_names_no_items_at_all_is_a_reading_of_an_empty_host() {
         let from_an_agent_that_left_the_map_out =
-            r#"{"source": "ports", "taken_at": "2026-09-09T09:00:00.000Z"}"#;
+            r#"{"source": "network", "taken_at": "2026-09-09T09:00:00.000Z"}"#;
 
         let snapshot: Snapshot =
             serde_json::from_str(from_an_agent_that_left_the_map_out).expect("reads");
 
         assert!(snapshot.items.is_empty());
-        assert_eq!(snapshot.source, "ports");
+        assert_eq!(snapshot.source, "network");
     }
 }

@@ -55,7 +55,7 @@ fn the_row_that_is_off_is_told_apart_without_any_colour_at_all() {
         .expect("the row that is off");
     let reading = lines
         .iter()
-        .find(|line| line.contains("ports") && line.contains("ok"))
+        .find(|line| line.contains("network") && line.contains("ok"))
         .expect("a row that is reading");
 
     assert!(off.contains("off"), "{off}");
@@ -77,7 +77,7 @@ fn a_collector_that_does_not_report_a_period_is_not_a_collector_with_a_period_of
 
     let row = page
         .lines()
-        .find(|line| line.contains("ports") && line.contains("ok"))
+        .find(|line| line.contains("network") && line.contains("ok"))
         .expect("the row for the collector that says nothing");
     assert!(
         row.contains("not reported"),
@@ -143,7 +143,7 @@ fn a_reason_is_folded_away_until_it_is_asked_for_and_the_row_says_there_is_one()
     assert!(
         folded
             .lines()
-            .any(|line| line.contains("ports") && line.contains('!')),
+            .any(|line| line.contains("network") && line.contains('!')),
         "the row has to say there is something to read, or folding it away hides it: {folded}"
     );
     assert!(

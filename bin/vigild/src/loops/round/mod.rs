@@ -16,7 +16,7 @@ use vigil_model::Finding;
 use vigil_store::FileStore;
 
 use crate::budget::Meter;
-use crate::config::Followed;
+use crate::config::{Followed, Silences};
 use crate::helpers::health as health_words;
 use crate::socket::Shared;
 use crate::types::{Delivery, Due, Policy, Said, Schedule};
@@ -40,6 +40,7 @@ pub struct Round {
     pub opening: Vec<Finding>,
     pub standing: Vec<(&'static str, String)>,
     pub followed: Followed,
+    pub silences: Silences,
 }
 
 impl Round {

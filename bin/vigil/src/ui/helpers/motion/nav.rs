@@ -61,8 +61,8 @@ mod tests {
     fn escape_after_a_jump_comes_back_to_the_row_it_was_pressed_on() {
         let mut nav = Nav::opening(Screen::FINDINGS);
 
-        nav.jump(screen("ports"), from_a_finding());
-        assert_eq!(nav.at(), screen("ports"));
+        nav.jump(screen("network"), from_a_finding());
+        assert_eq!(nav.at(), screen("network"));
 
         let back = nav.came_back().expect("somewhere to come back to");
         assert_eq!(nav.at(), Screen::FINDINGS);
@@ -73,7 +73,7 @@ mod tests {
     fn a_jump_remembers_one_place_and_forgets_it_once_it_has_been_used() {
         let mut nav = Nav::opening(Screen::FINDINGS);
 
-        nav.jump(screen("ports"), from_a_finding());
+        nav.jump(screen("network"), from_a_finding());
         nav.came_back();
 
         assert!(
@@ -95,7 +95,7 @@ mod tests {
     #[test]
     fn changing_section_by_its_number_forgets_where_the_jump_came_from() {
         let mut nav = Nav::opening(Screen::FINDINGS);
-        nav.jump(screen("ports"), from_a_finding());
+        nav.jump(screen("network"), from_a_finding());
 
         nav.visit(screen("accounts"));
 
@@ -105,9 +105,9 @@ mod tests {
 
     #[test]
     fn jumping_into_the_section_already_open_records_nothing_to_come_back_from() {
-        let mut nav = Nav::opening(screen("ports"));
+        let mut nav = Nav::opening(screen("network"));
 
-        nav.jump(screen("ports"), from_a_finding());
+        nav.jump(screen("network"), from_a_finding());
 
         assert!(nav.came_back().is_none());
     }

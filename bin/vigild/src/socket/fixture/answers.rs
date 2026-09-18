@@ -79,7 +79,7 @@ pub fn every_state() -> State {
             started_at: "2026-09-09T08:00:00.000Z".into(),
             interval_seconds: 30,
             periods: [
-                "ports",
+                "network",
                 "users",
                 "persistence",
                 "processes",
@@ -94,7 +94,7 @@ pub fn every_state() -> State {
             units_from_the_console: false,
         },
         &[
-            ("ports", Health::Ok),
+            ("network", Health::Ok),
             ("users", Health::Degraded(DEGRADED.to_string())),
             ("processes", Health::Unavailable(UNAVAILABLE.to_string())),
             ("persistence", Health::Ok),
@@ -105,7 +105,7 @@ pub fn every_state() -> State {
             ("files", Health::Ok),
         ],
         &["ndjson".to_string(), "webhook".to_string()],
-        &["launches".to_string()],
+        &crate::socket::switched_off_reasons(&crate::Config::default(), &["launches".to_string()]),
     );
 
     state.record_reading(reading(snapshot()));

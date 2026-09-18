@@ -1,22 +1,29 @@
+use std::collections::BTreeMap;
+
 use super::narrowing::Narrowing;
-use super::offered::{floor_named, looking_in, offered, showing_only};
+use super::offered::{EVERY_KIND, floor_named, kind_chosen, looking_in, offered, showing_only};
 use crate::ui::app::App;
 use crate::ui::{Choosing, Column, Level, Reading, Screen, holding};
 
 const NOTHING_FILTERS: &str = "Nothing to filter on this screen: it is one page, not a list of \
                                rows to narrow.";
 
-const EVERY_KIND: &str = "every kind";
-
 impl App {
     pub(in crate::ui::app) fn narrowing(&mut self) {
         match self.nav.at() {
+            Screen::FINDINGS if self.on_the_silenced() => {
+                self.message = Some(crate::ui::app::silences::IN_THE_ORDER_OF_THE_FILES.to_string())
+            }
             Screen::FINDINGS => {
-                let at = offered()
-                    .iter()
-                    .position(|option| option == &self.filtered())
-                    .unwrap_or(0);
-                self.chooser.open(Choosing::Filter, offered(), at);
+                let offered = offered(&self.kinds_held());
+                let at = match self.filter.kind() {
+                    Some(kind) => offered
+                        .iter()
+                        .position(|option| kind_chosen(option).flatten().as_deref() == Some(kind)),
+                    None => offered.iter().position(|option| option == &self.filtered()),
+                }
+                .unwrap_or(0);
+                self.chooser.open(Choosing::Filter, offered, at);
                 self.level = Level::List;
             }
             screen if holding(screen.name()).is_some() => self.narrowing_a_list(),
@@ -139,6 +146,14 @@ impl App {
                 panes.toggle(&name);
             }
         }
+    }
+
+    pub(in crate::ui::app) fn kinds_held(&self) -> Vec<(String, usize)> {
+        let mut held: BTreeMap<String, usize> = BTreeMap::new();
+        for finding in &self.view.found.findings {
+            *held.entry(finding.kind.as_str().to_string()).or_default() += 1;
+        }
+        held.into_iter().collect()
     }
 
     pub(in crate::ui::app) fn filtered(&self) -> String {

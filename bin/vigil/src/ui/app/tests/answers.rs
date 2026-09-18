@@ -92,8 +92,8 @@ fn the_main_screen_asks_for_no_reading_at_all() {
 fn the_console_asks_for_the_reading_behind_the_section_it_is_showing_and_no_other() {
     let mut app = app();
 
-    press(&mut app, number(screen("ports")));
-    assert_eq!(app.wanted_reading().as_deref(), Some("ports"));
+    press(&mut app, number(screen("network")));
+    assert_eq!(app.wanted_reading().as_deref(), Some("network"));
 
     press(&mut app, number(screen("accounts")));
     assert_eq!(app.wanted_reading().as_deref(), Some("users"));
@@ -182,7 +182,7 @@ fn with_nothing_ever_answered_the_page_says_so_instead_of_drawing_empty_tables()
 #[test]
 fn an_agent_that_stops_answering_keeps_its_last_reading_on_screen_and_marks_it_old() {
     let mut app = app();
-    into(&mut app, screen("ports"), 80, 30);
+    into(&mut app, screen("network"), 80, 30);
 
     app.refresh();
 

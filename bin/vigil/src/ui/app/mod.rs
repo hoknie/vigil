@@ -17,6 +17,7 @@ mod page;
 mod pane;
 mod rows;
 mod session;
+mod silences;
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -30,7 +31,7 @@ use std::collections::BTreeMap;
 use crate::ui::types::cache::{Listed, Remembered, Shown};
 use crate::ui::{
     Asking, Chooser, Dismissed, Editing, Filter, Gone, Graph, History, Level, Look, Nav, Paper,
-    Picked, Pointer, Screen, Sorting, View,
+    Picked, Pointer, Screen, Silences, Sorting, View,
 };
 
 type RowsAsked = (u64, Screen, usize, String);
@@ -54,6 +55,7 @@ pub struct App {
     editing: Option<Editing>,
     graph: Option<Graph>,
     history: Option<History>,
+    silences: Option<Silences>,
     named_configuration: Option<String>,
     detail_open: bool,
     level: Level,

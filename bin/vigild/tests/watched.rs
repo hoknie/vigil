@@ -1,8 +1,8 @@
 use std::fs;
 use std::path::PathBuf;
 
-use vigil_config::{Edit, Watch, put, stop};
-use vigil_files::{Files, Watched, Watching};
+use vigil_config::{Edit, Watch, blocks_in, put, put_listed, stop, stop_listed};
+use vigil_files::{Files, Watched, Watching, watch_list_in};
 use vigil_module::{Module, Settings};
 
 const SHIPPED: &str = "\
@@ -67,11 +67,11 @@ fn the_paths_this_console_writes_into_the_file_are_the_paths_the_daemon_reads_ou
 
     assert_eq!(
         watching.paths,
-        vec![
+        Some(vec![
             Watched::of("/etc/hosts", None),
             Watched::of("/etc/sudoers", None),
             Watched::of("/etc/ssl/certs/ca-certificates.crt", Some(8_388_608)),
-        ],
+        ]),
         "the console and the daemon read one file, and an entry one of them writes that the \
          other does not read back is a path an operator believes is watched and is not"
     );
@@ -92,8 +92,11 @@ fn a_path_this_console_takes_out_of_the_file_is_one_the_daemon_no_longer_reads()
 
     let watching = as_the_daemon_reads_it(&after);
 
-    assert_eq!(watching.paths, vec![Watched::of("/etc/sudoers", None)]);
-    assert_eq!(watching.ceiling_bytes, 1_048_576);
+    assert_eq!(
+        watching.paths,
+        Some(vec![Watched::of("/etc/sudoers", None)])
+    );
+    assert_eq!(watching.ceiling_bytes, Some(1_048_576));
 }
 
 #[test]
@@ -107,7 +110,7 @@ fn a_file_with_no_files_block_at_all_gains_one_the_daemon_loads_without_complain
 
     assert_eq!(
         watching.paths,
-        vec![Watched::of("/etc/sudoers", Some(4096))]
+        Some(vec![Watched::of("/etc/sudoers", Some(4096))])
     );
 }
 
@@ -122,5 +125,83 @@ fn what_the_agent_reads_out_of_the_file_is_what_that_module_would_hash_on_the_ne
         vec![("/etc/hosts".to_string(), 2048)],
         "a ceiling written beside one path is the ceiling that path is hashed to, and every \
          other path stays on the one the block names"
+    );
+}
+
+const WATCH_LIST: &str = "\
+# The files watched for a changed content.
+files:
+  - /etc/ssh/sshd_config
+  - /etc/pam.d
+devices:
+  include: []
+  exclude: []
+";
+
+#[test]
+fn the_entries_this_console_writes_into_a_watch_list_are_the_ones_the_collector_reads_out_of_it() {
+    let added = changed(put_listed(WATCH_LIST, &Watch::of("/etc/ssh/*.conf", None)));
+    let sized = changed(put_listed(
+        &added,
+        &Watch::of("/etc/ssl/certs/ca.crt", Some(8_388_608)),
+    ));
+    let stopped = changed(stop_listed(&sized, "/etc/pam.d"));
+
+    assert_eq!(
+        watch_list_in(&stopped)
+            .expect("the collector reads it")
+            .files,
+        vec![
+            Watched::of("/etc/ssh/sshd_config", None),
+            Watched::of("/etc/ssh/*.conf", None),
+            Watched::of("/etc/ssl/certs/ca.crt", Some(8_388_608)),
+        ],
+        "the console and the collector read one list, and an entry one of them writes that \
+         the other does not read back is a path an operator believes is watched and is not"
+    );
+}
+
+#[test]
+fn the_files_block_this_product_ships_is_one_the_module_accepts_once_the_daemon_takes_its_own_keys()
+{
+    let shipped = fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../config/collectors/files.yaml"),
+    )
+    .expect("the shipped block is readable");
+    let written = blocks_in(std::path::Path::new("files.yaml"), &shipped).expect("reads");
+    let block = written
+        .iter()
+        .find(|block| block.name == "files")
+        .expect("the shipped file holds the files block");
+    let settings = Settings::of(
+        at_noon,
+        "files",
+        serde_json::to_value(&block.settings).expect("plain data"),
+    );
+
+    Files
+        .check(&settings)
+        .expect("the block this product ships is one its own module accepts");
+    let watching: Watching = settings.read().expect("parses");
+    assert_eq!(
+        watching.watched_path.as_deref(),
+        Some("/etc/vigil/watch_fs.yaml")
+    );
+}
+
+#[test]
+fn the_watch_list_this_product_ships_is_one_the_collector_reads() {
+    let shipped = fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../config/watch_fs.yaml"),
+    )
+    .expect("the shipped list is readable");
+
+    let list = watch_list_in(&shipped).expect("the collector reads it");
+
+    assert!(
+        list.files
+            .contains(&Watched::of("/etc/ssh/sshd_config", None)),
+        "{:?}",
+        list.files
     );
 }

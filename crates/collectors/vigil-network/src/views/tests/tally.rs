@@ -3,7 +3,7 @@ use vigil_view::{Facet, Pane, Section, Showing};
 
 use super::super::Listening;
 use super::index::{KINDS_SWITCHED_OFF, scaled};
-use crate::fixture::ports;
+use crate::fixture::network;
 
 fn panes() -> Vec<Box<dyn Pane>> {
     Listening.panes()
@@ -12,7 +12,7 @@ fn panes() -> Vec<Box<dyn Pane>> {
 #[test]
 fn the_footer_of_either_list_with_kinds_switched_off_says_what_the_whole_reading_says() {
     for pane in panes() {
-        for reading in [ports(), scaled(4)] {
+        for reading in [network(), scaled(4)] {
             the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_in(
                 pane.as_ref(),
                 &reading,
@@ -65,7 +65,7 @@ fn a_facet_or_an_arrangement_the_console_keeps_writes_the_same_footer_either_way
         ] {
             the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_in(
                 pane.as_ref(),
-                &ports(),
+                &network(),
                 around,
             );
         }

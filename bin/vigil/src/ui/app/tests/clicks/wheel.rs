@@ -9,7 +9,7 @@ const WIDE: (u16, u16) = (120, 20);
 
 fn with_a_detail_beside_the_list() -> App {
     let mut app = app();
-    into(&mut app, screen("ports"), WIDE.0, WIDE.1);
+    into(&mut app, screen("network"), WIDE.0, WIDE.1);
     press(&mut app, KeyCode::Enter);
     press(&mut app, KeyCode::Enter);
     drawn_at(&app, WIDE.0, WIDE.1);

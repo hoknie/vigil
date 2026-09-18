@@ -77,7 +77,7 @@ mod tests {
 
     fn park(base: Instant) -> Schedule {
         Schedule::of(vec![
-            Due::new("ports", 30, at(base, 4)),
+            Due::new("network", 30, at(base, 4)),
             Due::new("launches", 15, at(base, 9)),
             Due::new("persistence", 300, at(base, 175)),
         ])
@@ -100,7 +100,7 @@ mod tests {
         assert_eq!(
             woken,
             vec![
-                "ports", "launches", "launches", "ports", "launches", "launches"
+                "network", "launches", "launches", "network", "launches", "launches"
             ],
             "launches reads four times while persistence has not read once"
         );
@@ -110,7 +110,7 @@ mod tests {
     fn the_schedule_hands_out_one_collector_at_a_time_and_never_a_set() {
         let base = Instant::now();
         let mut schedule = Schedule::of(vec![
-            Due::new("ports", 30, base),
+            Due::new("network", 30, base),
             Due::new("processes", 30, base),
         ]);
 
@@ -140,15 +140,15 @@ mod tests {
             "the wait is until the first collector, not a period of its own"
         );
 
-        let ports = schedule
+        let network = schedule
             .due_now(at(base, 4))
-            .expect("ports at four seconds");
-        schedule.advance(ports, at(base, 4));
+            .expect("network at four seconds");
+        schedule.advance(network, at(base, 4));
 
         assert_eq!(
             schedule.rest(at(base, 4)),
             Some(Duration::from_secs(5)),
-            "launches at nine seconds is next, not ports at thirty-four"
+            "launches at nine seconds is next, not network at thirty-four"
         );
         assert_eq!(schedule.rest(at(base, 200)), Some(Duration::ZERO));
     }
@@ -166,7 +166,7 @@ mod tests {
     fn the_most_overdue_collector_is_read_first() {
         let base = Instant::now();
         let mut schedule = Schedule::of(vec![
-            Due::new("ports", 30, at(base, 20)),
+            Due::new("network", 30, at(base, 20)),
             Due::new("launches", 15, at(base, 10)),
         ]);
 

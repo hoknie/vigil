@@ -7,11 +7,11 @@ use crate::ui::fixture::screen;
 #[test]
 fn the_same_key_narrows_a_list_of_findings_and_a_list_of_a_reading() {
     let mut app = app();
-    into(&mut app, screen("ports"), 120, 24);
+    into(&mut app, screen("network"), 120, 24);
 
     press(&mut app, KeyCode::Char('f'));
 
-    assert_eq!(app.nav.at(), screen("ports"));
+    assert_eq!(app.nav.at(), screen("network"));
     let page = drawn_at(&app, 120, 24);
     assert!(
         page.contains("\u{25b8} every kind") && page.contains("only tcp"),
@@ -48,14 +48,14 @@ fn a_screen_that_is_one_page_and_not_a_list_says_there_is_nothing_to_put_in_an_o
 }
 
 #[test]
-fn the_ports_and_the_accounts_have_a_search_of_their_own() {
+fn the_network_and_the_accounts_have_a_search_of_their_own() {
     let mut app = app();
-    into(&mut app, screen("ports"), 120, 24);
+    into(&mut app, screen("network"), 120, 24);
 
     press(&mut app, KeyCode::Char('/'));
     assert_eq!(
         app.nav.at(),
-        screen("ports"),
+        screen("network"),
         "it stays on the screen it was on"
     );
     typed(&mut app, "nginx q");
@@ -86,8 +86,8 @@ fn the_ports_and_the_accounts_have_a_search_of_their_own() {
     assert!(
         !app.nav
             .lists
-            .of("ports")
-            .expect("the ports section")
+            .of("network")
+            .expect("the network section")
             .search()
             .holding_back(),
         "a search typed into one section is not a search in another"
@@ -121,7 +121,7 @@ fn the_severity_floor_is_one_of_the_filters_now_and_is_reached_through_f() {
 #[test]
 fn a_choice_a_reader_left_alone_changes_nothing_at_all() {
     let mut app = app();
-    press(&mut app, super::harness::number(Screen::FINDINGS));
+    super::harness::into(&mut app, Screen::FINDINGS, 80, 30);
     let before = drawn(&app);
 
     press(&mut app, KeyCode::Char('f'));
@@ -151,7 +151,7 @@ fn a_search_belongs_to_the_list_it_was_typed_into_and_the_others_say_they_are_na
         "the search narrowed the list it was typed into"
     );
 
-    press(&mut app, super::harness::number(screen("ports")));
+    press(&mut app, super::harness::number(screen("network")));
     press(&mut app, super::harness::number(screen("accounts")));
     press(&mut app, KeyCode::Left);
     assert_eq!(app.panes().expect("a section").showing(), 0);

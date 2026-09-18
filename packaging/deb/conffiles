@@ -1,4 +1,14 @@
 /etc/vigil/vigil.yaml
+/etc/vigil/collectors/containers.yaml
+/etc/vigil/collectors/files.yaml
+/etc/vigil/collectors/firewall.yaml
+/etc/vigil/collectors/launches.yaml
+/etc/vigil/collectors/network.yaml
+/etc/vigil/collectors/persistence.yaml
+/etc/vigil/collectors/processes.yaml
+/etc/vigil/collectors/resources.yaml
+/etc/vigil/collectors/users.yaml
+/etc/vigil/watch_fs.yaml
 /etc/logrotate.d/vigil
 /etc/audit/rules.d/vigil-exec.rules
 /etc/audit/plugins.d/vigil.conf

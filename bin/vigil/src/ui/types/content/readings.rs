@@ -57,13 +57,13 @@ mod tests {
     fn a_collector_nobody_has_asked_about_is_not_a_collector_that_read_nothing() {
         let mut readings = Readings::default();
         readings.put(
-            "ports",
-            Reading::Taken(Snapshot::new("ports", "2026-09-09T09:00:00.000Z")),
+            "network",
+            Reading::Taken(Snapshot::new("network", "2026-09-09T09:00:00.000Z")),
         );
 
         assert!(matches!(readings.of("users"), Reading::Unknown));
         assert!(
-            matches!(readings.of("ports"), Reading::Taken(_)),
+            matches!(readings.of("network"), Reading::Taken(_)),
             "and one that was asked and answered empty is an empty host, not a silence"
         );
     }

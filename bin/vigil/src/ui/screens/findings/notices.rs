@@ -9,8 +9,8 @@ pub(super) fn notice(view: &View, filter: &Filter, hidden: usize) -> Notice {
         (None, _, hidden) if hidden > 0 => {
             Notice::plain("Nothing is on this screen: what the agent raised is silenced from here.")
                 .saying(format!(
-                    "{hidden} row(s) hidden here, and the agent goes on raising them until it is \
-             restarted. Press u to take the entry out of the configuration again."
+                    "{hidden} row(s) hidden here; the agent stops raising them on its next round. \
+                     Press u to take the entry out again."
                 ))
         }
         (None, true, _) => Notice::plain(format!("Nothing here is {}.", filter.describe())).saying(

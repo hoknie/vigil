@@ -4,5 +4,6 @@ pub mod graph;
 pub mod history;
 pub mod home;
 pub mod pane;
+pub mod silences;
 pub mod summary;
 pub mod unknown;

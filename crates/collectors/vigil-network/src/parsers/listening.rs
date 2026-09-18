@@ -16,7 +16,7 @@ pub struct ProcessOwner {
     pub uid: Option<u32>,
 }
 
-pub const SOURCE: &str = "ports";
+pub const SOURCE: &str = "network";
 
 const UNNAMED_KEY: &str = "unix|unnamed";
 

@@ -6,6 +6,9 @@ use crate::ui::{Level, Offset, Origin, Rungs, Screen};
 
 impl App {
     pub(in crate::ui::app) fn rungs(&self) -> Rungs {
+        if self.nav.at() == Screen::FINDINGS {
+            return Rungs::new(false, true, !self.on_the_silenced() && self.has_detail());
+        }
         let Some(section) = self.section() else {
             return Rungs::new(false, false, self.has_detail());
         };
@@ -27,6 +30,7 @@ impl App {
 
     pub(in crate::ui::app) fn arrive(&mut self) {
         self.picked.clear();
+        self.read_the_silences_again();
         self.level = Level::top(self.rungs());
         self.detail_open = false;
         self.gone = None;
@@ -239,6 +243,7 @@ impl App {
             return;
         }
         match self.nav.at() {
+            Screen::FINDINGS => self.step_the_findings_lists(by),
             screen if screen.draws_a_reading() => {
                 let shown = self.shown_panes();
                 if let Some(panes) = self.panes_mut() {

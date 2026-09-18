@@ -6,20 +6,25 @@ cd "$(dirname "$0")/../.."
 say() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 
 CONFIG=/tmp/vigil-kill-smoke.yaml
+COLLECTORS=/tmp/vigil-kill-smoke-collectors.yaml
 SOCKET=/tmp/vigil-kill-smoke.sock
 STATE=/tmp/vigil-kill-smoke-state
 PORT=4444
 
 rm -rf "$STATE" "$SOCKET"
 mkdir -p "$STATE"
+cat > "$COLLECTORS" <<YAML
+network:
+  schedule: 2
+processes:
+  schedule: 2
+  killing:
+    from_the_console: true
+YAML
 cat > "$CONFIG" <<YAML
 state_dir: $STATE
 socket_path: $SOCKET
-collectors: [ports]
-schedule:
-  ports: 2
-killing:
-  from_the_console: true
+collectors_path: $COLLECTORS
 reporters: []
 YAML
 
@@ -60,7 +65,7 @@ daemon=$!
 sleep 6
 
 say "the agent read the pid holding it"
-reading=$(ask '{"query":"snapshot","collector":"ports"}')
+reading=$(ask '{"query":"snapshot","collector":"network"}')
 wants "the socket is in the reading" "$reading" "tcp|0.0.0.0:$PORT"
 wants "and it carries the pid" "$reading" "\"pid\":$listener"
 

@@ -11,7 +11,7 @@ fn a_module_names_the_reading_it_takes_and_how_often_it_takes_it() {
     assert_eq!(Engines.name(), "containers-engines");
     assert_eq!(Engines.every_seconds(), 120);
     assert_eq!(Engines.unit(), Some("vigil-containers.timer"));
-    assert_eq!(Engines.settings_key(), Some("containers"));
+    assert_eq!(Engines.settings_key(), Some("containers-engines"));
 }
 
 #[test]
@@ -61,7 +61,7 @@ fn a_block_naming_an_engine_this_build_does_not_read_stops_the_daemon_at_the_doo
     let refusal = Engines
         .check(&Settings::of(
             at_noon,
-            "containers",
+            "containers-engines",
             serde_json::json!({"engines": ["docker", "containerd"]}),
         ))
         .expect_err("must not be accepted");
@@ -74,7 +74,11 @@ fn a_configuration_that_names_nothing_at_all_is_a_module_on_its_own_values() {
     assert!(Engines.check(&Settings::plain(at_noon)).is_ok());
     assert!(
         Engines
-            .check(&Settings::of(at_noon, "containers", serde_json::json!({})))
+            .check(&Settings::of(
+                at_noon,
+                "containers-engines",
+                serde_json::json!({})
+            ))
             .is_ok()
     );
 }
@@ -85,7 +89,7 @@ fn every_switch_in_report_takes_one_subject_out_and_the_dangerous_settings_never
     let quiet = Engines
         .rules(&Settings::of(
             at_noon,
-            "containers",
+            "containers-engines",
             serde_json::json!({"report": {
                 "images": false, "volumes": false, "networks": false,
                 "projects": false, "pods": false, "secrets": false,

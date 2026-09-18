@@ -25,6 +25,13 @@ pub(super) fn keys(hints: &Hints<'_>, screen: Screen, width: u16) -> String {
             .unwrap_or(LAST_TWO_OF_A_FORM)
             .to_string();
     }
+    if hints.silences {
+        return [SILENCES, SILENCES_SHORT, LAST_TWO_OF_A_FORM]
+            .into_iter()
+            .find(|line| line.chars().count() <= width as usize)
+            .unwrap_or(LAST_TWO_OF_A_FORM)
+            .to_string();
+    }
     if hints.graph {
         return [GRAPH, GRAPH_SHORT, LAST_TWO_OF_A_FORM]
             .into_iter()
@@ -134,6 +141,11 @@ const LAST_TWO_OF_A_FORM: &str = " Esc back";
 const HISTORY: &str = " j/k ↑↓ PgUp/PgDn scroll · ← or Esc back to the list · q quit";
 
 const HISTORY_SHORT: &str = " ↑↓ scroll · Esc back to the list";
+
+const SILENCES: &str =
+    " j/k ↑↓ move · u report it again · r read the files again · ← or Esc the lists · ? keys";
+
+const SILENCES_SHORT: &str = " ↑↓ move · u report it again · Esc the lists";
 
 const GRAPH: &str =
     " j/k ↑↓ scroll · w count what goes through · ← or Esc back to the list · q quit";

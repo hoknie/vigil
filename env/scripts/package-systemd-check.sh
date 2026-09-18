@@ -10,9 +10,9 @@ DEB="${DEB:-$(ls -t /work/dist/vigil_*_amd64.deb 2>/dev/null | grep -v -- '-upgr
 DROPIN=/etc/systemd/system/vigild.service.d
 
 ask()   { printf '%s\n' "$1" | nc -U -q 2 /run/vigil/vigil.sock 2>/dev/null; }
-ports() { ask '{"query":"snapshot","collector":"ports"}'; }
+network() { ask '{"query":"snapshot","collector":"network"}'; }
 users() { ask '{"query":"snapshot","collector":"users"}'; }
-listener() { ports | sed 's/"tcp|/\n"tcp|/g' | grep '^"tcp|0.0.0.0:4444"'; }
+listener() { network | sed 's/"tcp|/\n"tcp|/g' | grep '^"tcp|0.0.0.0:4444"'; }
 
 say "the machine"
 systemctl --version | head -1
@@ -112,36 +112,43 @@ systemctl unmask vigil-firewall.timer >/dev/null 2>&1
 
 say "vigild collector firewall enable|disable, the command an operator types"
 systemctl disable --now vigil-firewall.timer >/dev/null 2>&1
-SWITCH=/tmp/vigil-switch.yaml
-cp /work/config/vigil.example.yaml "$SWITCH"
-sed -i '/  - firewall/d;/  firewall: 60/d' "$SWITCH"
-printf '\n# a line of the administrator\x27s own, which this command must not move\n' >> "$SWITCH"
-kept="$(md5sum < "$SWITCH")"
+SWITCH=/tmp/vigil-switch
+rm -rf "$SWITCH"
+mkdir -p "$SWITCH/collectors"
+sed 's#/etc/vigil/#'"$SWITCH"'/#g' /work/config/vigil.example.yaml > "$SWITCH/vigil.yaml"
+for shipped in /work/config/collectors/*.yaml; do
+    sed 's#/etc/vigil/#'"$SWITCH"'/#g' "$shipped" > "$SWITCH/collectors/$(basename "$shipped")"
+done
+cp /work/config/watch_fs.yaml "$SWITCH/watch_fs.yaml"
+BLOCK="$SWITCH/collectors/firewall.yaml"
+sed -i 's/^firewall:$/firewall:\n  enabled: false/' "$BLOCK"
+printf '\n# a line of the administrator\x27s own, which this command must not move\n' >> "$BLOCK"
+kept="$(md5sum < "$BLOCK")"
 
-/usr/sbin/vigild collector firewall enable --config "$SWITCH" 2>&1 | sed 's/^/  /'
-grep -q '^  - firewall$' "$SWITCH" \
-    && ok "the line is in collectors:" || bad "no line in collectors:"
-grep -q '^  firewall: 60$' "$SWITCH" \
-    && ok "and the period is in schedule:" || bad "no period in schedule:"
-grep -q "administrator" "$SWITCH" \
+/usr/sbin/vigild collector firewall enable --config "$SWITCH/vigil.yaml" 2>&1 | sed 's/^/  /'
+grep -q '^  enabled: true$' "$BLOCK" \
+    && ok "the block says enabled: true" || bad "the block does not say enabled: true"
+grep -q '^  schedule: 60$' "$BLOCK" \
+    && ok "and its period is where it was" || bad "the period of the block moved"
+grep -q "administrator" "$BLOCK" \
     && ok "and the administrator's own line is untouched" \
     || bad "a line this command did not write is gone"
 [ "$(systemctl is-enabled vigil-firewall.timer)" = enabled ] \
     && ok "the timer is enabled" || bad "the timer is $(systemctl is-enabled vigil-firewall.timer)"
-[ -f "$SWITCH.previous" ] \
-    && ok "and what was there is kept as $SWITCH.previous" \
+[ -f "$BLOCK.previous" ] \
+    && ok "and what was there is kept as $BLOCK.previous" \
     || bad "the previous file was not kept"
 
-after="$(md5sum < "$SWITCH")"
-/usr/sbin/vigild collector firewall enable --config "$SWITCH" 2>&1 | sed 's/^/  /'
-if [ "$(md5sum < "$SWITCH")" = "$after" ]; then
+after="$(md5sum < "$BLOCK")"
+/usr/sbin/vigild collector firewall enable --config "$SWITCH/vigil.yaml" 2>&1 | sed 's/^/  /'
+if [ "$(md5sum < "$BLOCK")" = "$after" ]; then
     ok "running it again changes not one byte"
 else
     bad "a second run edited the file again"
 fi
 
 systemctl mask vigil-firewall.timer >/dev/null 2>&1
-if /usr/sbin/vigild collector firewall enable --config "$SWITCH" >/tmp/masked.out 2>&1; then
+if /usr/sbin/vigild collector firewall enable --config "$SWITCH/vigil.yaml" >/tmp/masked.out 2>&1; then
     bad "it walked past a masked unit: $(cat /tmp/masked.out)"
 else
     grep -q "masked" /tmp/masked.out \
@@ -153,13 +160,13 @@ fi
     || bad "the mask is gone"
 systemctl unmask vigil-firewall.timer >/dev/null 2>&1
 
-/usr/sbin/vigild collector firewall disable --config "$SWITCH" 2>&1 | sed 's/^/  /'
-grep -q 'firewall' "$SWITCH" \
-    && bad "disable left the collector named in the file" \
-    || ok "disable took out exactly what enable put in"
-[ "$(md5sum < "$SWITCH")" = "$kept" ] \
+/usr/sbin/vigild collector firewall disable --config "$SWITCH/vigil.yaml" 2>&1 | sed 's/^/  /'
+grep -q '^  enabled: false$' "$BLOCK" \
+    && ok "disable wrote enabled: false back into the block" \
+    || bad "disable left the block switched on"
+[ "$(md5sum < "$BLOCK")" = "$kept" ] \
     && ok "and the file is byte for byte the one it started as" \
-    || { bad "disable left the file different from how enable found it"; diff <(echo "$kept") <(md5sum < "$SWITCH"); }
+    || { bad "disable left the file different from how enable found it"; diff "$BLOCK" "$BLOCK.previous"; }
 [ "$(systemctl is-enabled vigil-firewall.timer)" = disabled ] \
     && ok "the timer is disabled again" \
     || bad "the timer is $(systemctl is-enabled vigil-firewall.timer)"

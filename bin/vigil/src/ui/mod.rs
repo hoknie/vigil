@@ -52,4 +52,5 @@ pub use types::focus::position::levels::{Arrows, Level, Rungs};
 pub use types::focus::position::motion::Motion;
 pub use types::focus::position::offset::Offset;
 pub use types::focus::position::origin::Origin;
+pub use types::focus::silences::Silences;
 pub use types::focus::sorting::{AS_READ, Sorting};

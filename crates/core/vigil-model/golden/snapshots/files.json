@@ -40,6 +40,18 @@
         ],
         "always": true
       },
+      "complete": {
+        "types": [
+          "boolean"
+        ],
+        "always": false
+      },
+      "found_by": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
       "gid": {
         "types": [
           "null",
@@ -91,12 +103,68 @@
         ],
         "always": true
       },
+      "target": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "type": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
       "uid": {
         "types": [
           "null",
           "number"
         ],
         "always": true
+      }
+    },
+    "walk": {
+      "complete": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "entry": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "kind": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "matched": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "max_file_size": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "not_entered": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "not_entered/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
       }
     }
   }

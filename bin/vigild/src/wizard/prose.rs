@@ -1,27 +1,8 @@
-pub const WIDTH: usize = 92;
-
-pub fn comment(paragraph: &str) -> String {
-    if paragraph.is_empty() {
-        return "#\n".to_string();
-    }
-    wrap(paragraph, WIDTH)
-        .into_iter()
-        .map(|line| format!("# {line}\n"))
-        .collect()
-}
-
-pub fn indented_comment(paragraph: &str) -> String {
-    wrap(paragraph, WIDTH - 4)
-        .into_iter()
-        .map(|line| format!("  # {line}\n"))
-        .collect()
-}
-
 pub fn wrap(text: &str, width: usize) -> Vec<String> {
     let mut lines = Vec::new();
     let mut line = String::new();
     for word in text.split_whitespace() {
-        if !line.is_empty() && line.len() + 1 + word.len() > width {
+        if !line.is_empty() && line.chars().count() + 1 + word.chars().count() > width {
             lines.push(std::mem::take(&mut line));
         }
         if !line.is_empty() {

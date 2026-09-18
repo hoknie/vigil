@@ -145,7 +145,7 @@ fn what_the_console_rehearses_on() -> String {
 fn the_console_does_not_quote_the_daemon_word_for_word() {
     let rehearsal = what_the_console_rehearses_on();
     let mut said = every_state().agent().limitations;
-    said.push(switched_off_reason("launches"));
+    said.push(switched_off_reason(&crate::Config::default(), "launches"));
 
     for sentence in said {
         assert!(

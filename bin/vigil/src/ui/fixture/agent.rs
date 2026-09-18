@@ -118,7 +118,7 @@ pub fn agent() -> AgentStatus {
             resident_kb: Some(12_288),
         },
         collectors: vec![
-            collector("ports", 30, 2, 0),
+            collector("network", 30, 2, 0),
             collector("users", 300, 11, 2),
             collector("processes", 30, 4, 0),
             collector("persistence", 300, 7, 0),

@@ -5,8 +5,9 @@ use crate::helpers::uuid7;
 use crate::killing::{carry_out, findings, reading_of};
 
 const OFF: &str = "This agent does not close sockets or stop programs. Killing from the console \
-                   is off until vigil.yaml says otherwise, and the daemon reads that key once, \
-                   at start-up.";
+                   is off until killing.from_the_console in the processes block says otherwise \
+                   (collectors/processes.yaml, or vigil.yaml on a host of the former layout), and \
+                   the daemon reads that key once, at start-up.";
 
 pub fn kill(
     sockets: &[String],
@@ -84,7 +85,11 @@ mod tests {
             match kill(&sockets, &programs, Killing::Kill, &shared, now()) {
                 Response::Error { error } => {
                     assert_eq!(error.code, ProtocolError::NOT_ALLOWED);
-                    assert!(error.message.contains("vigil.yaml"), "{error}");
+                    assert!(
+                        error.message.contains("killing.from_the_console")
+                            && error.message.contains("collectors/processes.yaml"),
+                        "the refusal names the key and the file it lives in: {error}"
+                    );
                 }
                 other => panic!("it answered {other:?}"),
             }

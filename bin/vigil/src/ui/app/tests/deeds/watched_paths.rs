@@ -59,6 +59,7 @@ fn held(path: &str) -> Vec<(String, Option<u64>)> {
             vigil_files::watching_in(&text)
                 .expect("the daemon would read it")
                 .paths
+                .unwrap_or_default()
                 .iter()
                 .map(|watched| (watched.path().to_string(), watched.ceiling_bytes()))
                 .collect::<Vec<(String, Option<u64>)>>(),
@@ -164,18 +165,18 @@ fn a_path_the_agent_could_never_read_back_is_refused_on_the_form_and_nothing_is_
 }
 
 #[test]
-fn a_ceiling_that_is_not_a_number_of_bytes_is_said_in_words_on_the_form() {
+fn a_size_that_is_not_a_size_is_said_in_words_on_the_form() {
     let file = a_configuration();
     let mut app = on_the_watched_files(&file);
 
     press(&mut app, KeyCode::Char('n'));
     typed(&mut app, "/etc/sudoers");
     press(&mut app, KeyCode::Down);
-    typed(&mut app, "8 MB");
+    typed(&mut app, "8 megabytes");
     saved(&mut app);
 
     let page = drawn_at(&app, 120, 40);
-    assert!(page.contains("not a number of bytes"), "{page}");
+    assert!(page.contains("is not a size"), "{page}");
     assert!(held(&file).is_empty(), "{:?}", held(&file));
 }
 
@@ -294,4 +295,73 @@ fn the_keys_that_write_the_configuration_are_drawn_on_the_list_that_writes_it() 
              from {page}"
         );
     }
+}
+
+fn a_host_with_a_watch_list() -> (String, std::path::PathBuf) {
+    let configuration = std::path::PathBuf::from(a_configuration());
+    let directory = configuration.parent().expect("a directory").to_path_buf();
+    let collectors = directory.join("collectors");
+    let list = directory.join("watch_fs.yaml");
+    std::fs::create_dir_all(&collectors).expect("a directory of collectors");
+    std::fs::write(
+        &configuration,
+        format!(
+            "state_dir: /var/lib/vigil\ncollectors_path: {}\n",
+            collectors.display()
+        ),
+    )
+    .expect("writes");
+    std::fs::write(
+        collectors.join("files.yaml"),
+        format!(
+            "files:\n  schedule: 300\n  watched_path: {}\n",
+            list.display()
+        ),
+    )
+    .expect("writes");
+    std::fs::write(&list, "files:\n  - /etc/hosts\n").expect("writes");
+    (configuration.display().to_string(), list)
+}
+
+#[test]
+fn on_a_host_that_keeps_a_watch_list_the_form_writes_into_that_list_with_its_size() {
+    let (configuration, list) = a_host_with_a_watch_list();
+    let mut app = on_the_watched_files(&configuration);
+
+    press(&mut app, KeyCode::Char('n'));
+    typed(&mut app, "/etc/ssh/*.conf");
+    press(&mut app, KeyCode::Down);
+    typed(&mut app, "8mb");
+    saved(&mut app);
+
+    assert!(
+        app.editing.is_none(),
+        "the form closed on a write that went through"
+    );
+    let written = std::fs::read_to_string(&list).expect("readable");
+    assert_eq!(
+        vigil_files::watch_list_in(&written)
+            .expect("the collector reads it")
+            .files,
+        vec![
+            vigil_files::Watched::of("/etc/hosts", None),
+            vigil_files::Watched::of("/etc/ssh/*.conf", Some(8 * 1024 * 1024)),
+        ]
+    );
+    assert!(written.contains("max_file_size: 8mb"), "{written}");
+}
+
+#[test]
+fn on_a_host_that_keeps_a_watch_list_shift_d_takes_the_path_out_of_that_list() {
+    let (configuration, list) = a_host_with_a_watch_list();
+    let mut app = on_the_watched_files(&configuration);
+    cursor_to(&mut app, HOSTS);
+
+    press(&mut app, KeyCode::Char('D'));
+    press(&mut app, KeyCode::Char('D'));
+
+    assert_eq!(
+        std::fs::read_to_string(&list).expect("readable"),
+        "files: []\n"
+    );
 }

@@ -2,7 +2,7 @@ use vigil_model::Snapshot;
 use vigil_view::{Pane, Room, RowKey, Section, Showing, conformance};
 
 use super::super::Listening;
-use crate::fixture::{ports, socket, socket_without_owner};
+use crate::fixture::{network, socket, socket_without_owner};
 
 fn panes() -> Vec<Box<dyn Pane>> {
     Listening.panes()
@@ -11,13 +11,13 @@ fn panes() -> Vec<Box<dyn Pane>> {
 #[test]
 fn every_pane_of_this_section_answers_about_its_own_reading_and_answers_whole() {
     for pane in panes() {
-        conformance::run_all(pane.as_ref(), &ports());
+        conformance::run_all(pane.as_ref(), &network());
     }
 }
 
 #[test]
 fn a_socket_is_shown_as_the_reading_recorded_it_and_not_as_a_key_taken_apart() {
-    let reading = ports();
+    let reading = network();
     let pane = &panes()[0];
     let row = pane
         .rows(&reading, &Showing::default())
@@ -57,7 +57,7 @@ fn a_narrow_terminal_drops_the_command_and_never_a_column_the_reader_needs() {
 
 #[test]
 fn the_kind_the_reader_switched_off_is_the_only_kind_missing_from_the_rows() {
-    let reading = ports();
+    let reading = network();
     let pane = &panes()[0];
 
     let whole = pane.rows(&reading, &Showing::default());
@@ -72,7 +72,7 @@ fn the_kind_the_reader_switched_off_is_the_only_kind_missing_from_the_rows() {
 
 #[test]
 fn a_word_the_reader_typed_narrows_by_everything_recorded_about_a_socket() {
-    let reading = ports();
+    let reading = network();
     let pane = &panes()[0];
 
     let matching = pane.rows(&reading, &Showing::searching("sshd"));
@@ -89,7 +89,7 @@ fn a_word_the_reader_typed_narrows_by_everything_recorded_about_a_socket() {
 
 #[test]
 fn grouping_by_program_opens_on_the_programs_alone_and_not_on_every_socket_of_each() {
-    let reading = ports();
+    let reading = network();
     let pane = &panes()[1];
 
     let closed = pane.rows(&reading, &Showing::default());
@@ -117,7 +117,7 @@ fn grouping_by_program_opens_on_the_programs_alone_and_not_on_every_socket_of_ea
 
 #[test]
 fn a_program_the_reader_opened_shows_its_sockets_and_the_ones_beside_it_stay_shut() {
-    let reading = ports();
+    let reading = network();
     let pane = &panes()[1];
 
     let closed = pane.rows(&reading, &Showing::default());
@@ -149,7 +149,7 @@ fn a_program_the_reader_opened_shows_its_sockets_and_the_ones_beside_it_stay_shu
 
 #[test]
 fn what_the_detail_of_a_socket_says_is_what_a_reader_can_act_on() {
-    let reading = ports();
+    let reading = network();
     let pane = &panes()[0];
     let row = pane
         .rows(&reading, &Showing::default())
@@ -168,7 +168,7 @@ fn what_the_detail_of_a_socket_says_is_what_a_reader_can_act_on() {
 }
 
 fn two_programs_named_alike() -> Snapshot {
-    let mut reading = Snapshot::new("ports", "2026-09-14T09:00:00.000Z".to_string());
+    let mut reading = Snapshot::new("network", "2026-09-14T09:00:00.000Z".to_string());
     for (key, item) in [
         (
             "tcp|0.0.0.0:80",
@@ -202,7 +202,7 @@ fn a_heading_from_the_listing_draws_and_explains_itself_as_one_worked_out_from_t
     let pane = &panes()[1];
     let opened = ["program|/usr/sbin/nginx", "unresolved"];
 
-    for reading in [two_programs_named_alike(), ports()] {
+    for reading in [two_programs_named_alike(), network()] {
         let rows = pane.rows(&reading, &Showing::default().opening(&opened));
         let headings: Vec<&RowKey> = rows.iter().filter(|row| !row.of_the_reading).collect();
 

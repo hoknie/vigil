@@ -25,6 +25,7 @@ fn every_key_the_console_uses_is_in_here() {
         "s / f",
         "shift",
         "d silence them",
+        "reported \u{b7} silenced",
         "Esc",
         "r",
         "as a tree",

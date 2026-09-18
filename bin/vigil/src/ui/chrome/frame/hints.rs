@@ -7,6 +7,7 @@ pub struct Hints<'a> {
     pub editing: bool,
     pub listing: bool,
     pub history: bool,
+    pub silences: bool,
     pub histories: bool,
     pub graph: bool,
     pub graphs: bool,

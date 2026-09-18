@@ -1,0 +1,34 @@
+# The containers running on this host, what they may do and what of this host they hold.
+# Without this block, or with `enabled: false` in it, nothing watches them.
+containers:
+  # How often this collector reads: a number of seconds, or 30s, 5m, 1h.
+  schedule: 60
+---
+# The images, volumes, networks, projects and secrets the container engines of this host
+# hold, from what vigil-containers.timer asks the engines. Without this block, or with
+# `enabled: false` in it, nothing watches them.
+containers-engines:
+  # How often this collector reads: a number of seconds, or 30s, 5m, 1h.
+  schedule: 120
+  # The container engines whose images, volumes, networks, projects, pods and secrets are
+  # read. An engine that is not installed here is recorded as absent, which is not the same
+  # answer as an engine that did not reply.
+  engines: [docker, podman]
+  # How often vigil-containers.timer runs the engine commands. A reading older than twice
+  # this is reported as stale rather than passed off as current.
+  dump_seconds: 120
+  # Which changes to what the engines hold are reported as findings.
+  report:
+    # Whether an image appearing, going or moving to another digest is reported.
+    images: true
+    # Whether a volume appearing, going or changing its driver or its point is reported.
+    volumes: true
+    # Whether a network appearing, going or changing its subnet or driver is reported.
+    networks: true
+    # Whether a compose project appearing, going or changing its services is reported.
+    projects: true
+    # Whether a podman pod appearing, going or changing the containers it holds is reported.
+    pods: true
+    # Whether a secret of an engine appearing, going or being replaced is reported. Its value
+    # is never read.
+    secrets: true

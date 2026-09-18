@@ -8,7 +8,7 @@ fn every_reading_the_console_draws_is_the_one_the_module_that_took_it_publishes(
     for (collector, drawn) in [
         ("resources", vigil_resources::fixture::resources()),
         ("files", vigil_files::fixture::files()),
-        ("ports", vigil_network::fixture::ports()),
+        ("network", vigil_network::fixture::network()),
         ("containers", vigil_containers::fixture::containers()),
         ("containers-engines", vigil_engines::fixture::engines()),
     ] {
