@@ -23,12 +23,14 @@ fn at_noon() -> vigil_model::Rfc3339 {
 }
 
 fn a_file(text: &str) -> PathBuf {
+    static NAMES_GIVEN: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     let directory = std::env::temp_dir().join(format!(
         "vigild-watched-{}-{}",
         std::process::id(),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .map(|since| since.as_nanos())
+            .map(|since| since.as_nanos()
+                + NAMES_GIVEN.fetch_add(1, std::sync::atomic::Ordering::Relaxed) as u128)
             .unwrap_or(0)
     ));
     fs::create_dir_all(&directory).expect("a directory to write in");

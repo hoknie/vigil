@@ -5,12 +5,14 @@ use super::{Options, RESTART, add, list, remove};
 const SHIPPED: &str = "state_dir: /var/lib/vigil\nsuppressions: []\nreporters: []\n";
 
 fn temporary(name: &str) -> String {
+    static NAMES_GIVEN: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     let directory = std::env::temp_dir().join(format!(
         "vigil-silence-{}-{}",
         std::process::id(),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .map(|since| since.as_nanos())
+            .map(|since| since.as_nanos()
+                + NAMES_GIVEN.fetch_add(1, std::sync::atomic::Ordering::Relaxed) as u128)
             .unwrap_or(0)
     ));
     std::fs::create_dir_all(&directory).expect("temp dir");

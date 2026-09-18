@@ -49,12 +49,14 @@ mod tests {
 
     #[test]
     fn a_spool_is_readable_by_its_owner_and_nobody_else_however_it_was_created() {
+        static NAMES_GIVEN: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
         let path = std::env::temp_dir().join(format!(
             "vigil-spool-private-{}-{}",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .map(|since| since.as_nanos())
+                .map(|since| since.as_nanos()
+                    + NAMES_GIVEN.fetch_add(1, std::sync::atomic::Ordering::Relaxed) as u128)
                 .unwrap_or(0)
         ));
         std::fs::write(&path, b"type=SYSCALL\n").expect("writes");

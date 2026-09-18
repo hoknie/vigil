@@ -112,9 +112,13 @@ fn a_first_key_for_an_account_whose_ssh_directory_points_elsewhere_is_refused_be
         return;
     }
     let gid = rustix::process::getgid().as_raw();
+    static NAMES_GIVEN: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     let stamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map(|since| since.as_nanos())
+        .map(|since| {
+            since.as_nanos()
+                + NAMES_GIVEN.fetch_add(1, std::sync::atomic::Ordering::Relaxed) as u128
+        })
         .unwrap_or(0);
     let home = std::env::temp_dir().join(format!("vigild-plan-home-{stamp}"));
     let elsewhere = std::env::temp_dir().join(format!("vigild-plan-elsewhere-{stamp}"));
