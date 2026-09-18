@@ -4,7 +4,7 @@ use vigil_rules::RuleSet;
 use vigil_view::Section;
 
 use crate::rules::file_rules;
-use crate::types::Watching;
+use crate::types::{Layout, Watching};
 use crate::views::TheHostAndItsFiles;
 
 const FAMILIES: &[&str] = &["file", "directory"];
@@ -67,18 +67,25 @@ impl Module for Files {
 fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
     let watching: Watching = settings.read().map_err(|refusal| refusal.to_string())?;
 
-    Ok(Box::new(crate::FilesCollector::new(
-        settings.now(),
-        &watching.hashed(),
-    )))
+    Ok(Box::new(match watching.layout() {
+        Layout::Named(named) => crate::FilesCollector::new(settings.now(), &named.hashed()),
+        Layout::Listed(listing) => crate::FilesCollector::listed(settings.now(), listing),
+    }))
 }
 
 #[cfg(not(target_os = "linux"))]
 fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
     let watching: Watching = settings.read().map_err(|refusal| refusal.to_string())?;
 
-    Err(format!(
-        "the {} file(s) this host is configured by are read with a Linux stat and a hash",
-        watching.hashed().len()
-    ))
+    Err(match watching.layout() {
+        Layout::Named(named) => format!(
+            "the {} file(s) this host is configured by are read with a Linux stat and a hash",
+            named.paths.len()
+        ),
+        Layout::Listed(listing) => format!(
+            "the paths {} names are read with a Linux stat and a hash, and walked over the \
+             Linux mount table",
+            listing.watched_path.display()
+        ),
+    })
 }

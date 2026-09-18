@@ -1,0 +1,19 @@
+# The paths watched for a changed content, changed permissions and a new suid bit. An entry is
+# a file, a directory or a mask such as /etc/ssh/*.conf. A directory is walked whole and links
+# are not followed; a mask matches inside one name (*, ?, [...]). An edit is read at the next
+# reading, with no restart. An entry may name its own size:
+#   - path: /etc/ssl/certs/ca.crt
+#     max_file_size: 8mb
+files:
+  - /etc/ssh/sshd_config
+  - /etc/pam.d/sshd
+  - /etc/pam.d/su
+  - /etc/nsswitch.conf
+  - /etc/login.defs
+  - /etc/hosts
+# Added to the devices of the files block, for the directories and masks of this list.
+devices:
+  # The filesystems a walk may enter. Empty: every one that is not excluded.
+  include: []
+  # The filesystems a walk never enters, whatever include says.
+  exclude: []

@@ -9,7 +9,7 @@ use together::together;
 
 pub fn modules() -> Vec<Box<dyn Module>> {
     vec![
-        Box::new(vigil_network::Ports),
+        Box::new(vigil_network::Network),
         Box::new(vigil_users::Users),
         Box::new(vigil_processes::Processes),
         Box::new(vigil_launches::Launches),

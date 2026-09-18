@@ -1,0 +1,30 @@
+# What the host starts by itself: units, timers, cron, shell profiles. Without this block, or
+# with `enabled: false` in it, nothing watches them.
+persistence:
+  # How often this collector reads: a number of seconds, or 30s, 5m, 1h.
+  schedule: 300
+
+  # Whether a person at the console of this host may ask the agent to start and stop what this
+  # host starts by itself.
+  #
+  # Off by default, and a key of its own: a host where a program may be signalled has not
+  # thereby agreed that a service may be disabled until somebody notices. On, the console can
+  # ask for one of six things against the units and timers a person marked on the startup
+  # screen (stop, start, disable, enable, mask, unmask), each of which the same band undoes,
+  # and for one of two against a cron job: comment its line out, or take the # off again. The
+  # agent hands systemctl the word and the unit name it read off this host, and nothing else:
+  # no flags, no shell, no restart, no reboot, no daemon-reload.
+  #
+  # A crontab is rewritten in place, by a new file renamed over it, keeping its owner and its
+  # mode, following no symbolic link, and only when the line the console marked is still in
+  # it, byte for byte. A job that is a whole file of /etc/cron.daily and its neighbours has no
+  # line to comment out and is refused by name.
+  #
+  # Everything it does, and everything it refuses to do, is a finding of its own. The agent
+  # will not stop itself, nor a unit one of its own readings needs.
+  #
+  # Nothing reaches this from the network. The console socket is 0600 and local; turning this
+  # on gives whoever can read it the services of this host.
+  units:
+    # true lets the console ask. false, the default, refuses every such request.
+    from_the_console: false

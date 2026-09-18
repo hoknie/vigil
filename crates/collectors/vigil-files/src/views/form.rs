@@ -1,26 +1,27 @@
 use vigil_model::{Changing, Snapshot};
 use vigil_view::{Field, Form, RowKey};
 
-use super::fields::text;
-use crate::types::{Family, MOST_HASHED_BYTES, Watched};
+use super::fields::what;
+use crate::types::{Family, MOST_HASHED_BYTES, Size, Watched};
 
 pub const PATH: &str = "path";
 
-pub const HASHED_TO: &str = "hashed to";
+pub const MAX_FILE_SIZE: &str = "max file size";
 
-const ABOUT: &str = "This writes the path into files.paths in vigil.yaml on this host. Nothing \
-                     on the host itself is touched, and the agent reads the list when it next \
-                     starts.";
+const ABOUT: &str = "This writes the path into the watch list of this host: the list \
+                     watched_path names, or files.paths in vigil.yaml where the configuration \
+                     keeps it. Nothing on the host itself is touched, and the agent reads the \
+                     list again at its next reading.";
 
 const A_DIRECTORY: &str = "the directories a program could be dropped into are watched by this \
                            agent itself and are named in no configuration file, so there is \
                            nothing here to change";
 
-const HASHED_HINT: &str = "bytes, or empty to leave it on the ceiling the files block names; a \
-                           file over its ceiling is watched by its mode and its owner alone";
+const SIZE_HINT: &str = "bytes, or 512kb, 30mb; empty leaves it on the max_file_size the files \
+                         block names. A file past it is watched by its mode and its owner alone";
 
-const PATH_HINT: &str = "an absolute path to one file; a directory here would be a walk that \
-                         hashes everything under it";
+const PATH_HINT: &str = "an absolute path: a file, a directory walked whole, or a mask such as \
+                         /etc/ssh/*.conf. A list kept inside vigil.yaml takes files alone";
 
 const STAYS: &str = "the path stays as it is: a path that changed is another file, watched by \
                      stopping this one and adding that one";
@@ -35,27 +36,35 @@ pub fn form(reading: &Snapshot, row: Option<&RowKey>, changing: Changing) -> Res
 
 pub fn path_watched(key: &str) -> Option<&str> {
     match Family::of(key)? {
-        Family::File => key.split_once('|').map(|(_, path)| path),
+        Family::File | Family::Walk => key.split_once('|').map(|(_, path)| path),
         Family::Directory => None,
     }
 }
 
 pub fn asked_for(form: &Form) -> Result<Watched, String> {
     let path = form.text(PATH).unwrap_or_default().trim().to_string();
-    let said = form.text(HASHED_TO).unwrap_or_default().trim().to_string();
+    let said = form
+        .text(MAX_FILE_SIZE)
+        .unwrap_or_default()
+        .trim()
+        .to_string();
 
     let ceiling_bytes = match said.is_empty() {
         true => None,
-        false => Some(said.parse::<u64>().map_err(|_| {
-            format!(
-                "{HASHED_TO}: {said:?} is not a number of bytes, and a ceiling this agent \
-                 cannot read is a file it would stop hashing without saying so"
-            )
-        })?),
+        false => Some(
+            Size::read(&said)
+                .map_err(|why| {
+                    format!(
+                        "{MAX_FILE_SIZE}: {why}, and a size this agent cannot read is a file it \
+                         would stop hashing without saying so"
+                    )
+                })?
+                .bytes(),
+        ),
     };
 
     let watched = Watched::of(path, ceiling_bytes);
-    watched.check()?;
+    watched.check_listed()?;
     Ok(watched)
 }
 
@@ -63,7 +72,7 @@ fn fresh() -> Form {
     Form::new("WATCH A PATH ON THIS HOST")
         .saying(ABOUT)
         .with(Field::text(PATH, PATH, "").hinted(PATH_HINT))
-        .with(Field::text(HASHED_TO, HASHED_TO, "").hinted(HASHED_HINT))
+        .with(Field::text(MAX_FILE_SIZE, MAX_FILE_SIZE, "").hinted(SIZE_HINT))
 }
 
 fn held(reading: &Snapshot, row: Option<&RowKey>) -> Result<Form, String> {
@@ -73,23 +82,31 @@ fn held(reading: &Snapshot, row: Option<&RowKey>) -> Result<Form, String> {
         .items
         .get(&row.key)
         .ok_or_else(|| format!("{path} is no longer in the reading"))?;
+    if let Some(by) = item["found_by"].as_str() {
+        return Err(format!(
+            "{path} is watched because {by} is in the watch list, so it is changed there: open \
+             that entry instead"
+        ));
+    }
+    let size = match Family::of(&row.key) {
+        Some(Family::Walk) => item["max_file_size"].as_u64(),
+        _ => item["ceiling_bytes"].as_u64(),
+    };
 
     Ok(Form::new(format!("HOW {path} IS WATCHED"))
         .saying(ABOUT)
         .saying(format!(
-            "The most this agent hashes on one pass is {MOST_HASHED_BYTES} bytes."
+            "The most this agent hashes of one file on one pass is {}.",
+            Size::shown(MOST_HASHED_BYTES)
         ))
-        .with(Field::fixed(PATH, PATH, text(item, "path")).hinted(STAYS))
+        .with(Field::fixed(PATH, PATH, what(item)).hinted(STAYS))
         .with(
             Field::text(
-                HASHED_TO,
-                HASHED_TO,
-                item["ceiling_bytes"]
-                    .as_u64()
-                    .map(|bytes| bytes.to_string())
-                    .unwrap_or_default(),
+                MAX_FILE_SIZE,
+                MAX_FILE_SIZE,
+                size.map(Size::shown).unwrap_or_default(),
             )
-            .hinted(HASHED_HINT),
+            .hinted(SIZE_HINT),
         ))
 }
 
@@ -107,7 +124,11 @@ mod tests {
         let form = opened("file|/etc/ssl/certs/ca-certificates.crt").expect("opens");
 
         assert_eq!(form.text(PATH), Some("/etc/ssl/certs/ca-certificates.crt"));
-        assert_eq!(form.text(HASHED_TO), Some("8388608"));
+        assert_eq!(
+            form.text(MAX_FILE_SIZE),
+            Some("8mb"),
+            "the size is shown the way an operator writes it in the watch list"
+        );
         assert!(
             !form
                 .field(PATH)
@@ -139,10 +160,10 @@ mod tests {
         let form = form(&files(), None, Changing::Create).expect("opens");
 
         assert_eq!(form.text(PATH), Some(""));
-        assert_eq!(form.text(HASHED_TO), Some(""));
+        assert_eq!(form.text(MAX_FILE_SIZE), Some(""));
         assert_eq!(
             asked_for(&form).expect_err("an empty path watches nothing"),
-            Watched::of("", None).check().expect_err("refused")
+            Watched::of("", None).check_listed().expect_err("refused")
         );
     }
 
@@ -162,17 +183,55 @@ mod tests {
     }
 
     #[test]
-    fn a_ceiling_that_is_not_a_number_of_bytes_is_refused_before_anything_is_written() {
+    fn a_size_that_is_not_a_size_is_refused_before_anything_is_written() {
         let mut form = form(&files(), None, Changing::Create).expect("opens");
         if let Some(field) = form.field_mut(PATH) {
             field.entry = vigil_view::Entry::Text("/etc/sudoers".into());
         }
-        if let Some(field) = form.field_mut(HASHED_TO) {
-            field.entry = vigil_view::Entry::Text("8 MB".into());
+        if let Some(field) = form.field_mut(MAX_FILE_SIZE) {
+            field.entry = vigil_view::Entry::Text("8 megabytes".into());
         }
 
         let refusal = asked_for(&form).expect_err("must not be accepted");
 
-        assert!(refusal.contains("not a number of bytes"), "{refusal}");
+        assert!(refusal.contains("is not a size"), "{refusal}");
+    }
+
+    #[test]
+    fn a_size_written_with_a_unit_is_read_back_as_the_bytes_it_names() {
+        let mut form = form(&files(), None, Changing::Create).expect("opens");
+        for (field, said) in [(PATH, "/etc/ssh/*.conf"), (MAX_FILE_SIZE, "8mb")] {
+            if let Some(field) = form.field_mut(field) {
+                field.entry = vigil_view::Entry::Text(said.into());
+            }
+        }
+
+        assert_eq!(
+            asked_for(&form).expect("reads"),
+            Watched::of("/etc/ssh/*.conf", Some(8 * 1024 * 1024))
+        );
+    }
+
+    #[test]
+    fn a_path_found_by_a_walk_is_changed_through_the_entry_that_found_it() {
+        let refusal = opened("file|/etc/ssh/sshd_config.d/50-cloud-init.conf")
+            .expect_err("must not open a form");
+
+        assert!(
+            refusal.contains("/etc/ssh/sshd_config.d is in the watch list"),
+            "{refusal}"
+        );
+    }
+
+    #[test]
+    fn an_entry_of_the_watch_list_opens_on_the_size_it_walks_with() {
+        let form = opened("walk|/etc/ssh/ssh_config.d/*.conf").expect("opens");
+
+        assert_eq!(form.text(PATH), Some("/etc/ssh/ssh_config.d/*.conf"));
+        assert_eq!(form.text(MAX_FILE_SIZE), Some("1mb"));
+        assert_eq!(
+            path_watched("walk|/etc/ssh/ssh_config.d/*.conf"),
+            Some("/etc/ssh/ssh_config.d/*.conf")
+        );
     }
 }

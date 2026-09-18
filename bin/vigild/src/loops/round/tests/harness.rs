@@ -33,7 +33,7 @@ impl Scripted {
 
 impl Collector for Scripted {
     fn name(&self) -> &'static str {
-        "ports"
+        "network"
     }
 
     fn available(&self) -> Health {
@@ -51,7 +51,7 @@ impl Collector for Scripted {
 }
 
 pub fn snapshot(ports: &[u64]) -> Snapshot {
-    let mut snapshot = Snapshot::new("ports", "2026-09-11T09:00:00.000Z");
+    let mut snapshot = Snapshot::new("network", "2026-09-11T09:00:00.000Z");
     for port in ports {
         snapshot.items.insert(
             format!("tcp|0.0.0.0:{port}"),
@@ -113,12 +113,12 @@ pub fn watching(name: &str, health: Health, readings: Vec<Snapshot>) -> Watching
             host: crate::socket::fixture::host(),
             started_at: "2026-09-11T09:00:00.000Z".into(),
             interval_seconds: 30,
-            periods: [("ports".to_string(), 30)].into_iter().collect(),
+            periods: [("network".to_string(), 30)].into_iter().collect(),
             killing_from_the_console: false,
             accounts_from_the_console: false,
             units_from_the_console: false,
         },
-        &[("ports", health)],
+        &[("network", health)],
         &[],
         &[],
     ));
@@ -127,7 +127,7 @@ pub fn watching(name: &str, health: Health, readings: Vec<Snapshot>) -> Watching
         round: Round {
             watches: vec![Watch::new(
                 Box::new(Handed(collector.clone())),
-                vigil_network::Ports
+                vigil_network::Network
                     .rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
             )],
             store: FileStore::open(&directory).expect("opens"),
@@ -139,7 +139,7 @@ pub fn watching(name: &str, health: Health, readings: Vec<Snapshot>) -> Watching
                 shared.clone(),
             ),
             shared,
-            schedule: Schedule::of(vec![Due::new("ports", 30, Instant::now())]),
+            schedule: Schedule::of(vec![Due::new("network", 30, Instant::now())]),
             meter: Meter::default(),
             opening: Vec::new(),
             standing: Vec::new(),
@@ -161,7 +161,7 @@ pub fn shown(round: &Round) -> CollectorState {
             .agent()
             .collectors
             .into_iter()
-            .find(|collector| collector.name == "ports")
+            .find(|collector| collector.name == "network")
             .expect("the collector the round watches")
             .state
     })
@@ -172,6 +172,6 @@ pub fn open_in_the_journal(round: &Round) -> Option<Finding> {
 
     round
         .store
-        .open_finding("agent.collector|ports", "agent.collector.degraded")
+        .open_finding("agent.collector|network", "agent.collector.degraded")
         .expect("readable")
 }

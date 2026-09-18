@@ -31,16 +31,16 @@
         "from": "the period launches is declared with among the collectors this build ships"
       }
     },
+    "network": {
+      "every_seconds": {
+        "value": 30,
+        "from": "the period network is declared with among the collectors this build ships"
+      }
+    },
     "persistence": {
       "every_seconds": {
         "value": 300,
         "from": "the period persistence is declared with among the collectors this build ships"
-      }
-    },
-    "ports": {
-      "every_seconds": {
-        "value": 30,
-        "from": "the period ports is declared with among the collectors this build ships"
       }
     },
     "processes": {

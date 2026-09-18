@@ -52,6 +52,50 @@
       "size": 53,
       "uid": 0
     },
+    "file|/etc/ssh/sshd_config.d": {
+      "ceiling_bytes": 1048576,
+      "gid": 0,
+      "mode": "0755",
+      "over_the_ceiling": false,
+      "path": "/etc/ssh/sshd_config.d",
+      "present": true,
+      "readable": true,
+      "sha256": null,
+      "size": 0,
+      "type": "directory",
+      "uid": 0
+    },
+    "file|/etc/ssh/sshd_config.d/50-cloud-init.conf": {
+      "ceiling_bytes": 1048576,
+      "complete": true,
+      "found_by": "/etc/ssh/sshd_config.d",
+      "gid": 0,
+      "mode": "0600",
+      "over_the_ceiling": false,
+      "path": "/etc/ssh/sshd_config.d/50-cloud-init.conf",
+      "present": true,
+      "readable": true,
+      "sha256": "474ef6932d6b998ec97b122a9d86af024b988d64c243f3caf01dd9e5ed41618e",
+      "size": 26,
+      "type": "file",
+      "uid": 0
+    },
+    "file|/etc/ssh/sshd_config.d/60-hardening.conf": {
+      "ceiling_bytes": 1048576,
+      "complete": true,
+      "found_by": "/etc/ssh/sshd_config.d",
+      "gid": 0,
+      "mode": "0777",
+      "over_the_ceiling": false,
+      "path": "/etc/ssh/sshd_config.d/60-hardening.conf",
+      "present": true,
+      "readable": true,
+      "sha256": null,
+      "size": 22,
+      "target": "/usr/share/ssh/hardening.conf",
+      "type": "symlink",
+      "uid": 0
+    },
     "file|/etc/ssl/certs/ca-certificates.crt": {
       "ceiling_bytes": 8388608,
       "gid": 0,
@@ -63,6 +107,24 @@
       "sha256": "8010bfcee1842b2a4ce8f67c3e9455f0188f7a15bf39ec61a26feb75cd785821",
       "size": 59,
       "uid": 0
+    },
+    "walk|/etc/ssh/ssh_config.d/*.conf": {
+      "complete": true,
+      "entry": "/etc/ssh/ssh_config.d/*.conf",
+      "kind": "mask",
+      "matched": 0,
+      "max_file_size": 1048576,
+      "not_entered": [
+        "/etc/ssh/ssh_config.d/mnt (nfs4)"
+      ]
+    },
+    "walk|/etc/ssh/sshd_config.d": {
+      "complete": true,
+      "entry": "/etc/ssh/sshd_config.d",
+      "kind": "tree",
+      "matched": 2,
+      "max_file_size": 1048576,
+      "not_entered": []
     }
   }
 }

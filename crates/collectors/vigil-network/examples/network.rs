@@ -118,21 +118,21 @@ fn drawing() {
 #[cfg(target_os = "linux")]
 fn reading() {
     use vigil_collect::Collector;
-    use vigil_network::PortsCollector;
+    use vigil_network::NetworkCollector;
 
     let rounds: u32 = 500;
-    let collector = PortsCollector::new(|| TAKEN_AT.to_string());
+    let collector = NetworkCollector::new(|| TAKEN_AT.to_string());
 
     let started = Instant::now();
     let Ok(first) = collector.collect() else {
         println!(
-            "ports: nothing to read on this host: {:?}",
+            "network: nothing to read on this host: {:?}",
             collector.available()
         );
         return;
     };
     println!(
-        "ports: first reading {:.2} ms, {} items, {} bytes as the baseline",
+        "network: first reading {:.2} ms, {} items, {} bytes as the baseline",
         started.elapsed().as_secs_f64() * 1000.0,
         first.items.len(),
         serde_json::to_string(&first).expect("serialises").len()
@@ -143,14 +143,14 @@ fn reading() {
         let _ = collector.collect();
     }
     println!(
-        "ports: {:.2} ms per reading over {rounds}",
+        "network: {:.2} ms per reading over {rounds}",
         started.elapsed().as_secs_f64() * 1000.0 / f64::from(rounds)
     );
 }
 
 #[cfg(not(target_os = "linux"))]
 fn reading() {
-    println!("ports: the reading walks a Linux /proc; nothing to measure here");
+    println!("network: the reading walks a Linux /proc; nothing to measure here");
 }
 
 fn judging() {
@@ -167,7 +167,7 @@ fn judging() {
 
         for moved in CHANGES {
             let after = host(*size, *moved);
-            let rules = vigil_network::Ports.rules(&Settings::plain(|| TAKEN_AT.to_string()));
+            let rules = vigil_network::Network.rules(&Settings::plain(|| TAKEN_AT.to_string()));
 
             let started = Instant::now();
             let mut changes = Vec::new();
@@ -207,7 +207,7 @@ fn judge(rules: &RuleSet, changes: &[Change]) -> Vec<Finding> {
 }
 
 fn host(items: usize, moved: usize) -> Snapshot {
-    let mut snapshot = Snapshot::new("ports", TAKEN_AT);
+    let mut snapshot = Snapshot::new("network", TAKEN_AT);
 
     for number in moved..items + moved {
         let octet = number / 250;

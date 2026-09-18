@@ -93,7 +93,7 @@ fn the_console_asks_for_the_reading_behind_the_section_it_is_showing_and_no_othe
     let mut app = app();
 
     press(&mut app, number(screen("network")));
-    assert_eq!(app.wanted_reading().as_deref(), Some("ports"));
+    assert_eq!(app.wanted_reading().as_deref(), Some("network"));
 
     press(&mut app, number(screen("accounts")));
     assert_eq!(app.wanted_reading().as_deref(), Some("users"));

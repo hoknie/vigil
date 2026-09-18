@@ -109,7 +109,7 @@ mod tests {
     #[test]
     fn a_console_one_version_older_still_reads_a_status_it_did_not_expect() {
         let from_a_daemon_that_has_no_schedule = r#"{
-            "name": "ports", "state": "ok", "items": 4, "readings": 9, "failures": 0,
+            "name": "network", "state": "ok", "items": 4, "readings": 9, "failures": 0,
             "baseline": true
         }"#;
 
@@ -124,7 +124,7 @@ mod tests {
     #[test]
     fn a_collector_that_does_not_report_a_period_is_not_a_collector_with_a_period_of_zero() {
         let silent = CollectorStatus {
-            name: "ports".into(),
+            name: "network".into(),
             state: CollectorState::Ok,
             reason: None,
             last_run_at: None,

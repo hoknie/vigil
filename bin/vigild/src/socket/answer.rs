@@ -101,7 +101,7 @@ mod tests {
 
         match answer(
             &Request::Snapshot {
-                collector: "ports".into(),
+                collector: "network".into(),
             },
             &state,
             now(),
@@ -126,13 +126,13 @@ mod tests {
     fn a_collector_that_could_not_read_says_why_in_the_answer_about_its_reading() {
         let mut state = fixture::state();
         state.record_health(
-            "ports",
+            "network",
             &Health::Unavailable("/proc/net/tcp cannot be read".into()),
         );
 
         match answer(
             &Request::Snapshot {
-                collector: "ports".into(),
+                collector: "network".into(),
             },
             &state,
             now(),
@@ -154,13 +154,13 @@ mod tests {
         let mut state = fixture::state();
         state.record_reading(fixture::reading(fixture::snapshot()));
         state.record_health(
-            "ports",
+            "network",
             &Health::Degraded("no owner for 2 socket(s)".into()),
         );
 
         match answer(
             &Request::Snapshot {
-                collector: "ports".into(),
+                collector: "network".into(),
             },
             &state,
             now(),
@@ -182,18 +182,18 @@ mod tests {
     fn every_way_a_collector_can_fall_into_trouble_leaves_words_to_show_the_reader() {
         let failed = |mut state: State| {
             state.record_failure(
-                "ports",
+                "network",
                 now(),
                 "/proc/net/tcp is not present on this system",
             );
             state
         };
         let unwell = |mut state: State| {
-            state.record_health("ports", &Health::Degraded("a partial reading".into()));
+            state.record_health("network", &Health::Degraded("a partial reading".into()));
             state
         };
         let unavailable = |mut state: State| {
-            state.record_health("ports", &Health::Unavailable("nothing to read".into()));
+            state.record_health("network", &Health::Unavailable("nothing to read".into()));
             state
         };
 
@@ -203,7 +203,7 @@ mod tests {
             unavailable(fixture::state()),
             failed(unavailable(fixture::state())),
         ] {
-            let refusal = state.refusal("ports").expect("trouble is never mute");
+            let refusal = state.refusal("network").expect("trouble is never mute");
             assert!(refusal.state.is_trouble());
             assert!(!refusal.reason.is_empty(), "{:?}", refusal);
         }
@@ -212,9 +212,9 @@ mod tests {
     #[test]
     fn a_collector_reading_normally_is_refused_nothing_and_says_nothing() {
         let mut state = fixture::state();
-        state.record_health("ports", &Health::Ok);
+        state.record_health("network", &Health::Ok);
 
-        assert!(state.refusal("ports").is_none());
+        assert!(state.refusal("network").is_none());
         assert!(
             state.refusal("files").is_none(),
             "and a name this agent does not watch is answered elsewhere, by its own refusal"
@@ -234,7 +234,7 @@ mod tests {
         ) {
             Response::Error { error } => {
                 assert_eq!(error.code, ProtocolError::UNKNOWN_COLLECTOR);
-                assert!(error.message.contains("ports"), "{error}");
+                assert!(error.message.contains("network"), "{error}");
             }
             other => panic!("answered with {other:?}"),
         }

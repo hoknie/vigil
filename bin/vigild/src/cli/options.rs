@@ -51,8 +51,11 @@ pub enum Command {
         about = "Ask this host what it can be watched with, and write the configuration for it",
         long_about = "\
 Ask every collector what it can read on THIS host: the kernel it has, the files it may open,
-the privileges it was started with. The configuration names what it found and what it could not.
-A collector that cannot read here is written out switched off, with the reason beside it."
+the privileges it was started with, and say the answer here, one line per collector.
+
+Then write the configuration: PATH, a file under collectors/ beside it for every collector that
+can run here, and watch_fs.yaml, the files watched. A collector that cannot run here gets no
+file, and the line above says why."
     )]
     Configure(Configure),
 
@@ -133,29 +136,35 @@ impl Collector {
 #[derive(Debug, Clone, PartialEq, Eq, Parser)]
 #[command(styles = style::HELP)]
 pub struct Configure {
-    #[arg(value_name = "PATH", default_value = DEFAULT_PATH)]
+    #[arg(
+        value_name = "PATH",
+        default_value = DEFAULT_PATH,
+        help = "The configuration file to write; the rest is written beside it"
+    )]
     pub path: String,
 
     #[arg(
         short,
         long,
-        help = "Replace a file that is already there",
+        help = "Replace the files that are already there",
         long_help = "\
-Replace a file that is already there.
+Replace the files that are already there.
 
-Without it an existing file is not touched. With it, what was there is kept
-beside the new one as PATH.previous."
+Without it an existing file is not touched, and the command says which. With it,
+what was there is kept beside the new file as <file>.previous, and the file of a
+collector that cannot run here is set aside the same way."
     )]
     pub force: bool,
 
     #[arg(
         short = 'd',
         long,
-        help = "Print what would be written, to stdout, and write nothing",
+        help = "Print the files that would be written, to stdout, and write nothing",
         long_help = "\
-Print what would be written, to stdout, and write nothing.
+Print the files that would be written, to stdout, and write nothing.
 
-The output names which collectors would be switched off here."
+What each collector answered, and what a run would do with each file, is said
+on stderr."
     )]
     pub dry_run: bool,
 }

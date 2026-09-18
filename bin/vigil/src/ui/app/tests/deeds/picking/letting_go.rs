@@ -85,7 +85,7 @@ fn nothing_is_picked_on_a_screen_that_is_not_the_findings() {
     let mut app = app();
     into(
         &mut app,
-        Screen::parse("ports").expect("a section"),
+        Screen::parse("network").expect("a section"),
         200,
         30,
     );

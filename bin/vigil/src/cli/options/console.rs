@@ -33,7 +33,7 @@ paths and the suppressions from it again on its next round; everything else is r
         value_parser = screen,
         help = "Which screen to open it on",
         long_help = "\
-Which screen to open it on: home, ports, accounts, programs, startup,
+Which screen to open it on: home, network, accounts, programs, startup,
 firewall, summary, findings. `vigil ui` opens on home, `vigil capture` prints
 summary."
     )]

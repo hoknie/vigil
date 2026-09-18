@@ -22,4 +22,4 @@ pub use ring::Ring;
 pub use session::serve;
 pub use shared::Shared;
 pub use state::State;
-pub use switched_off::switched_off_reason;
+pub use switched_off::{switched_off_reason, switched_off_reasons};

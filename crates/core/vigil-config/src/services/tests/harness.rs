@@ -5,7 +5,7 @@ state_dir: /var/lib/vigil
 retention_days: 90
 
 collectors:
-  - ports
+  - network
 
 # What this host is expected to do.
 suppressions: []

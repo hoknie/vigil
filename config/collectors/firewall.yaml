@@ -1,0 +1,11 @@
+# The rules by which this host lets network in and drops it, from the nftables ruleset that
+# vigil-firewall.timer reads with nft. Without this block, or with `enabled: false` in it,
+# nothing watches them.
+firewall:
+  # How often this collector reads: a number of seconds, or 30s, 5m, 1h.
+  schedule: 60
+  # Whether the packet counters of this host's interfaces are part of the reading. Off keeps
+  # the reading still: a counter moves on every pass, so a host that carries one reports a
+  # change once a minute for as long as it runs. On is what fills the numbers under the path
+  # a packet takes, on the firewall screen of the console.
+  monitoring: false

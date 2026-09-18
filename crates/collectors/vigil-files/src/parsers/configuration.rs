@@ -24,8 +24,10 @@ mod tests {
     fn a_file_that_names_no_files_block_watches_the_list_this_product_ships() {
         let held = watching_in("state_dir: /var/lib/vigil\n").expect("reads");
 
-        assert_eq!(held.paths.len(), WATCHED.len());
-        assert_eq!(held.ceiling_bytes, crate::types::CEILING_BYTES);
+        assert_eq!(held.hashed().len(), WATCHED.len());
+        for (_, ceiling_bytes) in held.hashed() {
+            assert_eq!(ceiling_bytes, crate::types::CEILING_BYTES);
+        }
     }
 
     const WATCHED: &[&str] = crate::types::WATCHED_BY_DEFAULT;
@@ -39,12 +41,18 @@ mod tests {
 
         assert_eq!(
             held.paths,
-            vec![
+            Some(vec![
                 Watched::of("/etc/hosts", None),
                 Watched::of("/etc/sudoers", Some(4096)),
+            ])
+        );
+        assert_eq!(
+            held.hashed(),
+            vec![
+                ("/etc/hosts".to_string(), 2048),
+                ("/etc/sudoers".to_string(), 4096),
             ]
         );
-        assert_eq!(held.ceiling_bytes, 2048);
     }
 
     #[test]

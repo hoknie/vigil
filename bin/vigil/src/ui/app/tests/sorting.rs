@@ -50,10 +50,10 @@ fn a_sort_belongs_to_the_list_it_was_chosen_in() {
     chose(&mut app, 4);
 
     into(&mut app, screen("network"), 120, 30);
-    let ports = drawn_at(&app, 120, 30);
+    let network = drawn_at(&app, 120, 30);
     assert!(
-        !ports.contains("sorted by"),
-        "the order chosen on another list followed the reader here: {ports}"
+        !network.contains("sorted by"),
+        "the order chosen on another list followed the reader here: {network}"
     );
 
     press(&mut app, number(Screen::FINDINGS));

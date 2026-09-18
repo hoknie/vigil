@@ -1,0 +1,5 @@
+# The sockets this host listens on, and the process holding each one. Without this block, or
+# with `enabled: false` in it, nothing watches them.
+network:
+  # How often this collector reads: a number of seconds, or 30s, 5m, 1h.
+  schedule: 30

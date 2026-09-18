@@ -17,13 +17,13 @@ impl Rule for FilePermissionsChanged {
         };
         let was = FileView::new(key, before);
         let now = FileView::new(key, after);
-        if now.family().is_none() || !was.present() || !now.present() {
+        if now.family().is_none() || now.is(Family::Walk) || !was.present() || !now.present() {
             return None;
         }
         if was.mode() == now.mode() && was.owner() == now.owner() {
             return None;
         }
-        if !was.runs_as_its_owner() && now.runs_as_its_owner() {
+        if !was.runs_as_its_owner() && now.runs_as_its_owner() && !now.is_a_directory() {
             return None;
         }
         if now.is(Family::Directory) && !was.writable_by_anyone() && now.writable_by_anyone() {
@@ -63,7 +63,7 @@ impl Rule for FilePermissionsChanged {
 }
 
 fn object(view: &FileView<'_>) -> &'static str {
-    match view.is(Family::Directory) {
+    match view.is(Family::Directory) || view.is_a_directory() {
         true => "directory",
         false => "file",
     }
@@ -192,5 +192,23 @@ mod tests {
             "a file that is gone has no mode, and the reading that says it is gone is the one \
              a reader needs rather than a mode that went from 0600 to nothing"
         );
+    }
+
+    #[test]
+    fn a_directory_found_by_a_walk_that_gains_the_sgid_bit_is_a_mode_that_changed() {
+        let mut before = fixture::walked_file("/srv/shared", "/srv", "0755");
+        before["type"] = serde_json::json!("directory");
+        let mut after = before.clone();
+        after["mode"] = serde_json::json!("2775");
+
+        let finding = apply(&Change::Changed {
+            key: "file|/srv/shared".into(),
+            before,
+            after,
+        })
+        .expect("the rule about programs leaves directories alone, so this one speaks");
+
+        assert_eq!(finding.subject.object, "directory");
+        assert!(finding.title.contains("2775"), "{}", finding.title);
     }
 }

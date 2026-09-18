@@ -5,7 +5,7 @@ use crate::ui::fixture::screen;
 use crate::ui::{Level, Screen};
 
 #[test]
-fn the_ports_screen_hides_and_shows_kinds_of_socket() {
+fn the_network_screen_hides_and_shows_kinds_of_socket() {
     let mut app = app();
     into(&mut app, screen("network"), 120, 24);
 
@@ -22,7 +22,7 @@ fn the_ports_screen_hides_and_shows_kinds_of_socket() {
 }
 
 #[test]
-fn the_ports_views_are_a_submenu_and_the_filter_holds_across_both_of_them() {
+fn the_network_views_are_a_submenu_and_the_filter_holds_across_both_of_them() {
     let mut app = app();
     press(&mut app, super::harness::number(screen("network")));
     assert_eq!(app.level, Level::Menu);
@@ -53,7 +53,7 @@ fn the_ports_views_are_a_submenu_and_the_filter_holds_across_both_of_them() {
 }
 
 #[test]
-fn a_search_on_one_ports_view_does_not_narrow_the_other() {
+fn a_search_on_one_network_view_does_not_narrow_the_other() {
     let mut app = app();
     into(&mut app, screen("network"), 120, 24);
 
@@ -94,7 +94,7 @@ fn a_letter_that_belongs_to_one_screen_does_nothing_on_another() {
         !app.nav
             .lists
             .of("network")
-            .expect("the ports section")
+            .expect("the network section")
             .hiding()
     );
 }

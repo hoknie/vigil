@@ -131,7 +131,7 @@ fn there_is_one_caret_on_the_page_and_the_row_of_screen_names_is_gone() {
         "the caret is in the panel of the open section: {page}"
     );
     assert!(
-        !page.contains("1 summary") && !page.contains("2 ports"),
+        !page.contains("1 summary") && !page.contains("2 network"),
         "the row of screen names along the top is gone: {page}"
     );
 }
@@ -222,7 +222,7 @@ fn a_printed_startup_page_holds_every_list_of_the_reading_and_not_only_the_first
 }
 
 #[test]
-fn the_accounts_screen_draws_the_users_reading_and_not_the_ports_one() {
+fn the_accounts_screen_draws_the_users_reading_and_not_the_network_one() {
     let mut app = app();
     press(&mut app, number(screen("accounts")));
 

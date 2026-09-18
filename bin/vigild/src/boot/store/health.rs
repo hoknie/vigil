@@ -1,6 +1,7 @@
 use vigil_model::{Finding, KnownKind};
 use vigil_store::Store;
 
+use crate::config::former_name;
 use crate::loops::Watch;
 
 pub fn standing(store: &dyn Store, watches: &[Watch]) -> Vec<(&'static str, String)> {
@@ -20,6 +21,27 @@ pub fn standing(store: &dyn Store, watches: &[Watch]) -> Vec<(&'static str, Stri
     }
 
     complaints
+}
+
+pub fn renamed(store: &dyn Store, now: &str) -> Vec<String> {
+    let mut said = Vec::new();
+
+    for current in crate::modules::names() {
+        let Some(former) = former_name(current) else {
+            continue;
+        };
+        let key = format!("agent.collector|{former}");
+        match store.resolve(&key, KnownKind::AgentCollectorDegraded.as_str(), now) {
+            Ok(true) => said.push(format!(
+                "  history: {key} closed — the collector is called {current} now, and its health \
+                 is reported under that name"
+            )),
+            Ok(false) => {}
+            Err(error) => said.push(format!("  history: {key} could not be closed ({error})")),
+        }
+    }
+
+    said
 }
 
 fn what_it_was(open: &Finding) -> String {
@@ -142,6 +164,40 @@ mod tests {
         assert!(
             complaints.is_empty(),
             "a collector that came back before the restart came back once"
+        );
+        let _ = fs::remove_dir_all(&directory);
+    }
+
+    #[test]
+    fn a_health_finding_left_open_under_the_former_name_ports_is_closed_at_start_and_not_left_open_for_ever()
+     {
+        let directory = temporary_directory("renamed");
+        let store = FileStore::open(&directory).expect("opens");
+        store
+            .record(&agent_finding::collector_degraded(
+                "ports",
+                "/proc/net/tcp6 unreadable",
+                false,
+            ))
+            .expect("records");
+
+        let said = renamed(&store, "2026-09-18T09:00:00.000Z");
+
+        assert!(
+            store
+                .open_finding(
+                    "agent.collector|ports",
+                    KnownKind::AgentCollectorDegraded.as_str()
+                )
+                .expect("readable")
+                .is_none(),
+            "no collector of this build reads as ports, so nothing would ever say it recovered"
+        );
+        assert_eq!(said.len(), 1, "{said:?}");
+        assert!(said[0].contains("network"), "{said:?}");
+        assert!(
+            renamed(&store, "2026-09-18T09:01:00.000Z").is_empty(),
+            "a second start has nothing left to close and says nothing"
         );
         let _ = fs::remove_dir_all(&directory);
     }

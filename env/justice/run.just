@@ -1,7 +1,7 @@
-# Run the daemon against CONFIG (defaults to the shipped example)
+# Run the daemon against CONFIG, or against config/ copied to target/vigil-config
 [group('run')]
 daemon:
-    {{ CARGO }} run --bin vigild -- {{ CONFIG }}
+    {{ CARGO }} run --bin vigild -- {{ if CONFIG == "" { "\"$(./env/scripts/config-here.sh)\"" } else { CONFIG } }}
 
 # Run the terminal console (q or Esc to leave)
 [group('run')]

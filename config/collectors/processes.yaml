@@ -1,0 +1,25 @@
+# The programs running on this host. Without this block, or with `enabled: false` in it,
+# nothing watches them.
+processes:
+  # How often this collector reads: a number of seconds, or 30s, 5m, 1h.
+  schedule: 30
+
+  # Whether a person at the console of this host may ask the agent to close a listening socket
+  # or stop a program.
+  #
+  # Off by default, and one of the three keys that let the agent change anything on a host it
+  # did not set up. On, the console can ask for one of three things against the sockets or the
+  # programs a person marked there: SIGTERM to the process, SIGKILL to it, or, for a socket,
+  # closing the socket itself and leaving the process running. The console asks the person to
+  # confirm; the agent asks nothing and does what it was told.
+  #
+  # Everything it does, and everything it refuses to do, is a finding of its own, so what
+  # happened is in the journal and at every reporter. The agent will not signal pid 1 and will
+  # not signal itself.
+  #
+  # Nothing reaches this from the network. The console socket is 0600 and local; whoever can
+  # read it can already read every process on this host. Turning this on gives that account
+  # one more thing: it can stop them.
+  killing:
+    # true lets the console ask. false, the default, refuses every such request.
+    from_the_console: false

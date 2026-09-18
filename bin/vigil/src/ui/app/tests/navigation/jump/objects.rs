@@ -5,7 +5,7 @@ use crate::ui::fixture::screen;
 use crate::ui::{Anchor, Level, Reading, Screen, View};
 
 #[test]
-fn o_on_a_finding_about_a_socket_opens_the_ports_section_on_that_socket() {
+fn o_on_a_finding_about_a_socket_opens_the_network_section_on_that_socket() {
     let mut app = app();
     into(&mut app, Screen::FINDINGS, 80, 30);
 
@@ -44,13 +44,13 @@ fn a_jump_asks_for_the_reading_that_holds_the_object_because_the_findings_screen
 
     assert_eq!(
         app.reading_needed(&anchor),
-        Some("ports".to_string()),
+        Some("network".to_string()),
         "with no reading held, the jump has to fetch the one that holds the object"
     );
 
     app.view = crate::ui::fixture::view();
     assert!(
-        !matches!(app.view.reading("ports"), Reading::Unknown),
+        !matches!(app.view.reading("network"), Reading::Unknown),
         "the fixture holds that reading"
     );
     assert_eq!(

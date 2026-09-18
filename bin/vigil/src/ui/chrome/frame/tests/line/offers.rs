@@ -191,14 +191,14 @@ fn the_two_keys_that_order_and_narrow_a_list_are_on_the_line_and_it_fits_eighty(
         Screen::FINDINGS,
         80,
     );
-    let ports = keys(&sorting(Level::List, Back::MainScreen), a_section(), 80);
+    let network = keys(&sorting(Level::List, Back::MainScreen), a_section(), 80);
 
     assert_eq!(
-        findings, ports,
+        findings, network,
         "the findings and a list of a reading are the same kind of thing, and a reader \
          who learned the keys on one has learned them on the other"
     );
-    for line in [&findings, &ports] {
+    for line in [&findings, &network] {
         assert!(line.contains("s sort"), "{line}");
         assert!(line.contains("f filter"), "{line}");
         assert!(

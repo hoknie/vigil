@@ -109,10 +109,13 @@ mod tests {
     fn a_written_baseline_is_read_back_whole() {
         let directory = temporary_directory("round-trip");
         let baselines = Baselines::open(directory.clone()).expect("opens");
-        let snapshot = crate::conformance::snapshot("ports", "2026-09-09T10:00:00.000Z", 443);
+        let snapshot = crate::conformance::snapshot("network", "2026-09-09T10:00:00.000Z", 443);
 
         baselines.write(&snapshot).expect("writes");
-        let read = baselines.read("ports").expect("readable").expect("present");
+        let read = baselines
+            .read("network")
+            .expect("readable")
+            .expect("present");
 
         assert_eq!(read, snapshot);
         let _ = fs::remove_dir_all(&directory);

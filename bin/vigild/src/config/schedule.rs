@@ -80,7 +80,7 @@ mod tests {
         let config = load(path.to_str().expect("utf-8")).expect("parses");
 
         assert_eq!(config.every_seconds("persistence"), 600);
-        assert_eq!(config.every_seconds("ports"), 10);
+        assert_eq!(config.every_seconds("network"), 10);
     }
 
     #[test]
@@ -101,7 +101,7 @@ mod tests {
         let dir = std::env::temp_dir().join("vigil-config-test");
         std::fs::create_dir_all(&dir).expect("temp dir");
         let path = dir.join("schedule-off.yaml");
-        std::fs::write(&path, "collectors: [ports]\nschedule:\n  users: 60\n").expect("write");
+        std::fs::write(&path, "collectors: [network]\nschedule:\n  users: 60\n").expect("write");
 
         let error = load(path.to_str().expect("utf-8")).expect_err("must not be accepted");
 
@@ -114,7 +114,7 @@ mod tests {
         let dir = std::env::temp_dir().join("vigil-config-test");
         std::fs::create_dir_all(&dir).expect("temp dir");
         let path = dir.join("schedule-zero.yaml");
-        std::fs::write(&path, "schedule:\n  ports: 0\n").expect("write");
+        std::fs::write(&path, "schedule:\n  network: 0\n").expect("write");
 
         let error = load(path.to_str().expect("utf-8")).expect_err("must not be accepted");
 

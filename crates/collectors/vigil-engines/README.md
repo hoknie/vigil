@@ -170,8 +170,12 @@ subject the engine did not answer for says so instead of claiming the engine hol
 
 ## Configuration
 
+The block is named after the module, like every other one: `containers-engines`, in the
+collectors' files (`/etc/vigil/collectors/containers.yaml`, as the second document).
+
 ```yaml
-containers:
+containers-engines:
+  schedule: 120
   engines: [docker, podman]
   dump_seconds: 120
   report:
@@ -190,6 +194,9 @@ Declared through `settings_key()` and checked at start-up: an engine this build 
 an engine named twice, a `dump_seconds` of zero and a key nobody declares are all refused by
 name before the daemon starts. `dump_seconds` is the period `vigil-containers.timer` runs at;
 change one and change the other, or the agent calls a current reading stale.
+
+A `vigil.yaml` of the former layout, which holds its collectors itself, still configures the
+engines under a top-level `containers:` block: the daemon reads that key as `containers-engines`.
 
 ## The fixture
 

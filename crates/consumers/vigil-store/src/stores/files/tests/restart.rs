@@ -13,7 +13,7 @@ fn a_restart_remembers_the_baseline_and_the_history() {
         let store = FileStore::open(&directory).expect("opens");
         store
             .set_baseline(&conformance::snapshot(
-                "ports",
+                "network",
                 "2026-09-09T10:00:00.000Z",
                 443,
             ))
@@ -25,7 +25,10 @@ fn a_restart_remembers_the_baseline_and_the_history() {
 
     let store = FileStore::open(&directory).expect("reopens");
 
-    let baseline = store.baseline("ports").expect("readable").expect("present");
+    let baseline = store
+        .baseline("network")
+        .expect("readable")
+        .expect("present");
     assert_eq!(baseline.taken_at, "2026-09-09T10:00:00.000Z");
     assert_eq!(
         store

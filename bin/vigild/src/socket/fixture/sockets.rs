@@ -2,7 +2,7 @@ use serde_json::json;
 use vigil_model::Snapshot;
 
 pub fn snapshot() -> Snapshot {
-    Snapshot::new("ports", "2026-09-09T09:00:00.000Z")
+    Snapshot::new("network", "2026-09-09T09:00:00.000Z")
         .with(
             "tcp|0.0.0.0:443",
             json!({

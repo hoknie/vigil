@@ -17,7 +17,7 @@ impl Rule for FileSuidNew {
         };
         let was = FileView::new(key, before);
         let now = FileView::new(key, after);
-        if !now.is(Family::File) || !now.present() {
+        if !now.is(Family::File) || !now.present() || now.is_a_directory() {
             return None;
         }
         if was.runs_as_its_owner() || !now.runs_as_its_owner() {
@@ -109,6 +109,26 @@ mod tests {
             apply(&change).is_none(),
             "every host ships with setuid programs, and the first reading of one of them is \
              the baseline this product is quiet because of"
+        );
+    }
+
+    #[test]
+    fn a_directory_found_by_a_walk_that_gains_the_sgid_bit_is_not_a_program_that_runs_as_its_owner()
+    {
+        let mut before = fixture::walked_file("/srv/shared", "/srv", "0755");
+        before["type"] = serde_json::json!("directory");
+        let mut after = before.clone();
+        after["mode"] = serde_json::json!("2775");
+
+        assert!(
+            apply(&Change::Changed {
+                key: "file|/srv/shared".into(),
+                before,
+                after,
+            })
+            .is_none(),
+            "the sgid bit on a directory makes new files inherit its group, and calling that a \
+             program running as its owner would send a reader looking for a program"
         );
     }
 }

@@ -5,8 +5,10 @@ use crate::helpers::uuid7;
 use crate::units::{READING, carry_out, findings};
 
 const OFF: &str = "This agent starts and stops nothing on this host. Controlling what this host \
-                   starts by itself from the console is off until vigil.yaml says otherwise, and \
-                   the daemon reads that key once, at start-up.";
+                   starts by itself from the console is off until units.from_the_console in the \
+                   persistence block says otherwise (collectors/persistence.yaml, or vigil.yaml \
+                   on a host of the former layout), and the daemon reads that key once, at \
+                   start-up.";
 
 pub fn control(
     keys: &[String],
@@ -77,7 +79,11 @@ mod tests {
             match control(&nginx(), Controlling::Stop, &shared, now()) {
                 Response::Error { error } => {
                     assert_eq!(error.code, ProtocolError::NOT_ALLOWED);
-                    assert!(error.message.contains("vigil.yaml"), "{error}");
+                    assert!(
+                        error.message.contains("units.from_the_console")
+                            && error.message.contains("collectors/persistence.yaml"),
+                        "the refusal names the key and the file it lives in: {error}"
+                    );
                 }
                 other => panic!(
                     "it answered {other:?}: a host where a program may be stopped or an \

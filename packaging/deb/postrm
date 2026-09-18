@@ -14,7 +14,12 @@ remove)
     fi
     ;;
 purge)
-    rmdir /etc/vigil 2>/dev/null || true
+    rmdir /etc/vigil/collectors /etc/vigil/suppressions /etc/vigil/reporters /etc/vigil 2>/dev/null || true
+    if [ -d /etc/vigil ]; then
+        echo "vigil: /etc/vigil is kept: it still holds files written on this host, suppressions,"
+        echo "vigil: reporters and kept .previous files among them. Remove it deliberately if you"
+        echo "vigil: want it gone."
+    fi
 
     if command -v auditctl >/dev/null 2>&1; then
         echo "vigil: the vigil_exec audit rule stays loaded in the kernel until the rules are"

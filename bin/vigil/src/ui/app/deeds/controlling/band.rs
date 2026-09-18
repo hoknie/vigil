@@ -123,7 +123,7 @@ fn key_of(controlling: Controlling) -> char {
 fn refusal_advice(code: &str) -> String {
     match code {
         vigil_model::ProtocolError::NOT_ALLOWED => {
-            "This is off until vigil.yaml says units.from_the_console: true, and the daemon \
+            "This is off until collectors/persistence.yaml says units.from_the_console: true, and the daemon \
              reads that key once, at start-up. It is a key of its own: switching killing or \
              accounts on does not switch this on."
                 .to_string()

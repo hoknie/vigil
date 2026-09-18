@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use vigil_collect::Health;
 use vigil_model::{CollectorState, CollectorStatus, ReporterStatus, Silence};
 
-use crate::socket::{Ring, switched_off_reason};
+use crate::socket::Ring;
 use crate::types::Startup;
 
 use super::State;
@@ -16,7 +16,7 @@ impl State {
         startup: Startup,
         collectors: &[(&str, Health)],
         reporters: &[String],
-        switched_off: &[String],
+        switched_off: &[(String, String)],
     ) -> Self {
         let watching: Vec<CollectorStatus> = collectors
             .iter()
@@ -43,10 +43,10 @@ impl State {
                 baseline: false,
             })
             .collect();
-        let told_not_to = switched_off.iter().map(|name| CollectorStatus {
+        let told_not_to = switched_off.iter().map(|(name, reason)| CollectorStatus {
             name: name.clone(),
             state: CollectorState::Off,
-            reason: Some(switched_off_reason(name)),
+            reason: Some(reason.clone()),
             last_run_at: None,
             duration_ms: None,
             items: 0,

@@ -101,7 +101,7 @@ mod tests {
 
     fn cheap() -> Meter {
         let mut meter = Meter::default();
-        meter.record(&reading("ports", 30, 4));
+        meter.record(&reading("network", 30, 4));
         meter.record(&reading("processes", 30, 1));
         meter.record(&reading("launches", 15, 1));
         meter
@@ -125,7 +125,7 @@ mod tests {
     #[test]
     fn the_cost_of_the_agent_is_the_sum_of_its_collectors_and_not_the_worst_of_them() {
         let mut meter = Meter::default();
-        meter.record(&reading("ports", 30, 150));
+        meter.record(&reading("network", 30, 150));
         meter.record(&reading("processes", 30, 150));
 
         let duty = meter.duty_percent().expect("two readings");
@@ -153,12 +153,12 @@ mod tests {
     #[test]
     fn going_over_the_ceiling_is_said_and_the_way_back_is_a_period_a_person_can_copy() {
         let mut meter = Meter::default();
-        meter.record(&reading("ports", 30, 600));
+        meter.record(&reading("network", 30, 600));
 
         assert_eq!(meter.check_cpu(), Some(Crossing::Exceeded));
         assert_eq!(
             meter.schedule_line(),
-            "schedule:\n  ports: 60\n",
+            "schedule:\n  network: 60\n",
             "600 ms every 30 s is 2 % of a core; twice the period is the way back under 1 %"
         );
     }
@@ -168,7 +168,7 @@ mod tests {
         let line = cheap().schedule_line();
 
         assert!(line.starts_with("schedule:\n"), "{line}");
-        for name in ["ports", "processes", "launches"] {
+        for name in ["network", "processes", "launches"] {
             assert!(line.contains(&format!("  {name}: ")), "{line}");
         }
     }

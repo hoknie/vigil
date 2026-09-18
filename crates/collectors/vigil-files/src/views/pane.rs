@@ -5,7 +5,7 @@ use vigil_view::{
     Sorting, Width, every_field, haystack,
 };
 
-use super::fields::{digest, held, means, mode, owner, sort_key, standing, what};
+use super::fields::{digest, held, kind, means, mode, owner, sort_key, standing, what};
 use super::footer::footer;
 use super::form::form;
 use super::notices;
@@ -32,8 +32,8 @@ impl Pane for WatchedFiles {
     }
 
     fn about(&self) -> &str {
-        "the files this host is configured by, and the directories on PATH a program could be \
-         dropped into"
+        "the files this host is configured by, the directories and masks its watch list walks, \
+         and the directories on PATH a program could be dropped into"
     }
 
     fn reads(&self) -> &str {
@@ -98,7 +98,7 @@ impl Pane for WatchedFiles {
         };
 
         let mut cells = vec![
-            Cell::plain(family.name()),
+            Cell::plain(kind(family, item)),
             Cell::plain(what(item)),
             Cell::plain(mode(item)),
             Cell::plain(owner(item)),
@@ -118,7 +118,7 @@ impl Pane for WatchedFiles {
         };
 
         every_field(
-            family.name(),
+            &kind(family, item),
             &what(item),
             &row.key,
             item,
@@ -193,7 +193,7 @@ fn sorted_on(reading: &Snapshot, key: &str, by: usize) -> String {
         return String::new();
     };
     match by {
-        1 => family.name().to_string(),
+        1 => kind(family, item),
         2 => what(item),
         3 => mode(item),
         4 => owner(item),

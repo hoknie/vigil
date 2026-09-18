@@ -98,7 +98,7 @@ mod tests {
 
     impl Collector for Scripted {
         fn name(&self) -> &'static str {
-            "ports"
+            "network"
         }
         fn available(&self) -> Health {
             Health::Ok
@@ -113,7 +113,7 @@ mod tests {
     }
 
     fn snapshot(items: &[(&str, serde_json::Value)]) -> Snapshot {
-        let mut snapshot = Snapshot::new("ports", "2026-09-08T12:00:00.000Z");
+        let mut snapshot = Snapshot::new("network", "2026-09-08T12:00:00.000Z");
         for (key, value) in items {
             snapshot.items.insert((*key).to_string(), value.clone());
         }
@@ -147,7 +147,8 @@ mod tests {
         ];
         let mut watch = Watch::new(
             Box::new(Scripted(Mutex::new(script))),
-            vigil_network::Ports.rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
+            vigil_network::Network
+                .rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
         );
 
         let baseline = watch.tick().expect("first reading");
@@ -178,7 +179,8 @@ mod tests {
         ])];
         let mut watch = Watch::new(
             Box::new(Scripted(Mutex::new(script))),
-            vigil_network::Ports.rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
+            vigil_network::Network
+                .rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
         );
         watch.restore(snapshot(&[("tcp|0.0.0.0:443", nginx())]));
 
@@ -197,7 +199,8 @@ mod tests {
         ];
         let mut watch = Watch::new(
             Box::new(Scripted(Mutex::new(script))),
-            vigil_network::Ports.rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
+            vigil_network::Network
+                .rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
         );
 
         watch.tick().expect("baseline");
@@ -216,6 +219,6 @@ mod tests {
 
         let error = watch.tick().expect_err("must not be silence");
 
-        assert!(error.contains("ports"), "{error}");
+        assert!(error.contains("network"), "{error}");
     }
 }

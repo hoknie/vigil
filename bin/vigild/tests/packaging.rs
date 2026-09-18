@@ -5,6 +5,8 @@ const RUN_BY_SYSTEMD: [&str; 4] = ["ExecStart", "ExecStartPre", "ExecStartPost",
 
 const PREFIXES: [char; 5] = ['-', '+', '!', '@', ':'];
 
+const ASKED_FOR: &str = "\"collector\":\"";
+
 fn units() -> Vec<(String, String)> {
     let directory = workspace().join("packaging/systemd");
     let mut read = Vec::new();
@@ -218,6 +220,119 @@ fn the_file_the_reading_is_written_to_is_the_one_the_collector_opens() {
         "the directory the unit writes into is created by the packaging or the first run \
          fails with nothing to say"
     );
+}
+
+fn shipped_configuration() -> Vec<String> {
+    let directory = workspace().join("config/collectors");
+    let mut collectors: Vec<String> = fs::read_dir(&directory)
+        .unwrap_or_else(|error| panic!("{}: {error}", directory.display()))
+        .map(|entry| {
+            format!(
+                "/etc/vigil/collectors/{}",
+                entry.expect("an entry").file_name().to_string_lossy()
+            )
+        })
+        .collect();
+    collectors.sort();
+    assert!(!collectors.is_empty(), "config/collectors holds nothing");
+
+    let mut every = vec!["/etc/vigil/vigil.yaml".to_string()];
+    every.extend(collectors);
+    every.push("/etc/vigil/watch_fs.yaml".to_string());
+    every
+}
+
+fn shipped_collectors() -> Vec<String> {
+    let directory = workspace().join("config/collectors");
+    let mut names = Vec::new();
+    for entry in fs::read_dir(&directory).expect("config/collectors") {
+        let text = fs::read_to_string(entry.expect("an entry").path()).expect("a file");
+        for document in serde_yaml::Deserializer::from_str(&text) {
+            let value = <serde_yaml::Value as serde::Deserialize>::deserialize(document)
+                .expect("a document");
+            if let Some(mapping) = value.as_mapping() {
+                names.extend(
+                    mapping
+                        .keys()
+                        .filter_map(|key| key.as_str().map(str::to_string)),
+                );
+            }
+        }
+    }
+    names
+}
+
+#[test]
+fn every_shipped_configuration_file_is_a_conffile_of_both_packages() {
+    let debian =
+        fs::read_to_string(workspace().join("packaging/deb/conffiles")).expect("conffiles");
+    let listed: Vec<&str> = debian
+        .lines()
+        .filter(|line| line.starts_with("/etc/vigil/"))
+        .collect();
+    let spec = fs::read_to_string(workspace().join("packaging/rpm/vigil.spec")).expect("the spec");
+    let noreplace: Vec<&str> = spec
+        .lines()
+        .filter_map(|line| line.strip_prefix("%config(noreplace) %attr(0600,root,root) "))
+        .filter(|path| path.starts_with("/etc/vigil/"))
+        .collect();
+
+    assert_eq!(
+        listed,
+        shipped_configuration(),
+        "a file under config/ that is not a conffile is overwritten by the next upgrade, and \
+         the operator's edit with it"
+    );
+    assert_eq!(noreplace, shipped_configuration());
+    assert!(
+        spec.contains("%dir %attr(0700,root,root) /etc/vigil/collectors"),
+        "the collectors directory may name a file with a token in it, so it is root's alone"
+    );
+}
+
+#[test]
+fn the_package_installs_every_file_config_ships_owner_only() {
+    let script =
+        fs::read_to_string(workspace().join("env/scripts/package.sh")).expect("package.sh");
+
+    for line in [
+        "install -d -m 0700 \"$tree/etc/vigil/collectors\"",
+        "for collectors in \"$ROOT\"/config/collectors/*.yaml; do",
+        "install -m 0600 \"$collectors\" \"$tree/etc/vigil/collectors/$(basename \"$collectors\")\"",
+        "install -m 0600 \"$ROOT/config/watch_fs.yaml\" \"$tree/etc/vigil/watch_fs.yaml\"",
+    ] {
+        assert!(script.contains(line), "package.sh does not say: {line}");
+    }
+}
+
+#[test]
+fn the_scripts_ask_the_agent_for_readings_by_names_this_build_has() {
+    let known = shipped_collectors();
+    let mut asked = 0;
+
+    for directory in ["env/docker", "env/scripts"] {
+        for entry in fs::read_dir(workspace().join(directory)).expect("a directory") {
+            let path = entry.expect("an entry").path();
+            let Ok(text) = fs::read_to_string(&path) else {
+                continue;
+            };
+            for (at, question) in text.match_indices(ASKED_FOR) {
+                let name = text[at + question.len()..]
+                    .split('"')
+                    .next()
+                    .unwrap_or_default();
+                assert!(
+                    known.iter().any(|known| known == name),
+                    "{} asks for the reading of {name:?}, and no collector of this build is \
+                     called that: the answer is an error the script reads as an empty reading",
+                    path.display()
+                );
+                asked += 1;
+            }
+        }
+    }
+
+    assert!(asked >= 3, "only {asked} question(s) were checked");
 }
 
 fn named(unit: &str) -> String {

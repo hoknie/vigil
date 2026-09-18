@@ -1,0 +1,3 @@
+reporters:
+  - kind: ndjson
+    path: /var/log/vigil/findings.ndjson

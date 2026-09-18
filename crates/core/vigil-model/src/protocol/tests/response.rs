@@ -67,13 +67,13 @@ fn an_answer_round_trips_through_its_line() {
 #[test]
 fn a_collector_that_has_not_read_yet_is_not_an_empty_host() {
     let never_read = Response::Snapshot {
-        collector: "ports".into(),
+        collector: "network".into(),
         snapshot: None,
         refusal: None,
     };
     let empty = Response::Snapshot {
-        collector: "ports".into(),
-        snapshot: Some(Snapshot::new("ports", "2026-09-09T09:00:00.000Z")),
+        collector: "network".into(),
+        snapshot: Some(Snapshot::new("network", "2026-09-09T09:00:00.000Z")),
         refusal: None,
     };
 

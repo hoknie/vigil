@@ -58,7 +58,7 @@ mod tests {
     }
 
     #[test]
-    fn a_finding_about_a_socket_points_at_that_socket_on_the_ports_screen() {
+    fn a_finding_about_a_socket_points_at_that_socket_on_the_network_screen() {
         let anchor = onto("port.listen|tcp|0.0.0.0:4444");
 
         assert_eq!(anchor.screen, screen("network"));
@@ -84,7 +84,7 @@ mod tests {
     #[test]
     fn every_family_of_rules_has_a_section_that_holds_its_object() {
         for (key, named) in [
-            ("port.listen|tcp|0.0.0.0:443", "ports"),
+            ("port.listen|tcp|0.0.0.0:443", "network"),
             ("user|account|deploy", "accounts"),
             ("process|exec|/bin/sh|www-data", "programs"),
             ("persistence|cron|/etc/crontab|root|/x", "startup"),
@@ -170,7 +170,7 @@ mod tests {
 
     #[test]
     fn a_finding_about_the_agent_itself_has_no_object_on_this_host_to_walk_to() {
-        assert_eq!(Anchor::of(&keyed("agent.collector|ports")), None);
+        assert_eq!(Anchor::of(&keyed("agent.collector|network")), None);
         assert_eq!(Anchor::of(&keyed("agent.budget|cpu")), None);
         assert_eq!(Anchor::of(&keyed("agent.store|findings")), None);
         assert_eq!(Anchor::of(&keyed("nothing-shaped-like-a-key")), None);

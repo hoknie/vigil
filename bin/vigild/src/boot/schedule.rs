@@ -48,7 +48,7 @@ mod tests {
     }
 
     fn watches() -> Vec<Watch> {
-        ["ports", "users", "launches"]
+        ["network", "users", "launches"]
             .into_iter()
             .map(|name| Watch::new(Box::new(Named(name)), RuleSet::of(Vec::new())))
             .collect()
@@ -60,7 +60,7 @@ mod tests {
 
         assert_eq!(
             schedule.periods(),
-            vec![("ports", 30), ("users", 300), ("launches", 15)],
+            vec![("network", 30), ("users", 300), ("launches", 15)],
             "the daemon reads both lists by one index"
         );
     }
@@ -77,7 +77,7 @@ mod tests {
 
         assert_eq!(
             schedule.periods(),
-            vec![("ports", 10), ("users", 600), ("launches", 10)]
+            vec![("network", 10), ("users", 600), ("launches", 10)]
         );
     }
 

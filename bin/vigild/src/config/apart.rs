@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
-use vigil_config::{Source, files_in, gathered, resolved};
+use vigil_config::{Block, Source, files_in, gathered, resolved};
 use vigil_report::SyslogFacility;
 
 use super::settings::Receiver;
@@ -12,6 +12,14 @@ pub struct Apart {
     pub suppressions: Vec<Source>,
     pub reporters_at: Option<PathBuf>,
     pub reporters: Vec<Reporters>,
+    pub collectors_at: Option<PathBuf>,
+    pub collectors: Vec<Block>,
+}
+
+impl Apart {
+    pub fn block(&self, name: &str) -> Option<&Block> {
+        self.collectors.iter().find(|block| block.name == name)
+    }
 }
 
 #[derive(Debug, Clone)]

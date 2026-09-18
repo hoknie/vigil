@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 
-use serde_json::Value;
+use serde_json::{Value, json};
+use vigil_config::files_in;
 use vigil_module::{Module, Settings};
 
 use super::follower::Follower;
@@ -12,9 +14,12 @@ use crate::helpers::rfc3339;
 const KEPT: &str = "what is watched stays what the file said when it last loaded, and nothing is \
                     raised about it until the file loads again";
 
+type Seen = Vec<(PathBuf, Result<Stamp, String>)>;
+
 pub struct Followed {
     path: String,
-    seen: Result<Stamp, String>,
+    at: Option<PathBuf>,
+    seen: Seen,
     read_at_start_up: BTreeMap<String, Value>,
     followers: Vec<Follower>,
     broken: bool,
@@ -25,7 +30,8 @@ impl Followed {
     pub fn nothing() -> Followed {
         Followed {
             path: String::new(),
-            seen: Err(String::new()),
+            at: None,
+            seen: Vec::new(),
             read_at_start_up: BTreeMap::new(),
             followers: Vec::new(),
             broken: false,
@@ -51,12 +57,14 @@ impl Followed {
                 })
             })
             .collect();
-        let keys: Vec<&str> = followers.iter().map(|follower| follower.key).collect();
+        let named = named(&followers);
+        let at = config.apart.collectors_at.clone();
 
         Followed {
             path: path.to_string(),
-            seen,
-            read_at_start_up: read_at_start_up(config, &keys),
+            seen: seen_with(path, seen, at.as_deref()),
+            at,
+            read_at_start_up: read_at_start_up(config, &named),
             followers,
             broken: false,
         }
@@ -82,13 +90,13 @@ impl Followed {
             return looked;
         }
 
-        let stamp = Stamp::of(&self.path);
-        if stamp == self.seen {
+        let now = seen_with(&self.path, Stamp::of(&self.path), self.at.as_deref());
+        if now == self.seen {
             return looked;
         }
-        self.seen = stamp.clone();
+        self.seen = now;
 
-        if let Err(why) = stamp {
+        if let Some((_, Err(why))) = self.seen.first() {
             self.broken = true;
             looked.said.push(format!(
                 "configuration {}: cannot be read now ({why}); {KEPT}",
@@ -111,6 +119,10 @@ impl Followed {
                 self.path
             ));
         }
+        if config.apart.collectors_at != self.at {
+            self.at = config.apart.collectors_at.clone();
+            self.seen = seen_with(&self.path, Stamp::of(&self.path), self.at.as_deref());
+        }
         self.say_what_waits_for_a_restart(&config, &mut looked);
 
         for follower in &mut self.followers {
@@ -129,8 +141,7 @@ impl Followed {
     }
 
     fn say_what_waits_for_a_restart(&self, config: &Config, looked: &mut Looked) {
-        let keys: Vec<&str> = self.followers.iter().map(|follower| follower.key).collect();
-        let now = read_at_start_up(config, &keys);
+        let now = read_at_start_up(config, &named(&self.followers));
 
         let mut waiting: Vec<&str> = self
             .read_at_start_up
@@ -145,16 +156,44 @@ impl Followed {
             return;
         }
 
+        let place = match &self.at {
+            Some(at) => format!("{}, {}", self.path, at.display()),
+            None => self.path.clone(),
+        };
         looked.said.push(format!(
-            "configuration {}: {} changed and is read at start-up only, so this daemon goes on \
-             as it started until {RESTART}",
-            self.path,
+            "configuration {place}: {} changed and is read at start-up only, so this daemon goes \
+             on as it started until {RESTART}",
             waiting.join(", ")
         ));
     }
 }
 
-fn read_at_start_up(config: &Config, followed: &[&str]) -> BTreeMap<String, Value> {
+fn named(followers: &[Follower]) -> Vec<(&'static str, &'static str)> {
+    followers
+        .iter()
+        .map(|follower| (follower.module.name(), follower.key))
+        .collect()
+}
+
+fn seen_with(path: &str, stamp: Result<Stamp, String>, at: Option<&Path>) -> Seen {
+    let mut seen = vec![(PathBuf::from(path), stamp)];
+    let Some(at) = at else {
+        return seen;
+    };
+    seen.push((at.to_path_buf(), Stamp::of(&at.display().to_string())));
+    for file in files_in(at).unwrap_or_default() {
+        if file.as_path() != at {
+            let stamp = Stamp::of(&file.display().to_string());
+            seen.push((file, stamp));
+        }
+    }
+    seen
+}
+
+fn read_at_start_up(
+    config: &Config,
+    followed: &[(&'static str, &'static str)],
+) -> BTreeMap<String, Value> {
     let mut read: BTreeMap<String, Value> = match serde_json::to_value(config) {
         Ok(Value::Object(fields)) => fields.into_iter().collect(),
         _ => BTreeMap::new(),
@@ -162,11 +201,32 @@ fn read_at_start_up(config: &Config, followed: &[&str]) -> BTreeMap<String, Valu
     for taken_up in [vigil_config::SUPPRESSIONS_PATH, "suppressions"] {
         read.remove(taken_up);
     }
-    for (key, block) in &config.of_the_modules {
-        if !followed.contains(&key.as_str()) {
-            read.insert(key.clone(), block.clone());
+
+    if config.apart.collectors_at.is_none() {
+        for (key, block) in &config.of_the_modules {
+            if !followed.iter().any(|(_, followed)| followed == key) {
+                read.insert(key.clone(), block.clone());
+            }
         }
+        return read;
     }
 
+    for of_the_blocks in ["collectors", "schedule", "interval_seconds"] {
+        read.remove(of_the_blocks);
+    }
+    for block in &config.apart.collectors {
+        let settings = match followed.iter().any(|(name, _)| *name == block.name) {
+            true => Value::Null,
+            false => serde_json::to_value(&block.settings).unwrap_or(Value::Null),
+        };
+        read.insert(
+            block.name.clone(),
+            json!({
+                "enabled": block.enabled,
+                "schedule": block.schedule,
+                "settings": settings,
+            }),
+        );
+    }
     read
 }

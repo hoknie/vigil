@@ -100,7 +100,7 @@ fn a_reading_this_build_has_a_section_for_is_never_listed_here() {
     let view = fixture::view();
     let listed = unknown_readings(&view);
 
-    for drawn in ["ports", "users", "firewall", "containers", "files"] {
+    for drawn in ["network", "users", "firewall", "containers", "files"] {
         assert!(
             !listed.contains(&drawn.to_string()),
             "{drawn} has a screen of its own and is listed here as well, which is the same \

@@ -1,0 +1,25 @@
+# The files this host is expected to keep as they are: their content, their permissions and a
+# new suid bit, for every path the watch list names. Without this block, or with
+# `enabled: false` in it, nothing watches them.
+files:
+  # How often this collector reads: a number of seconds, or 30s, 5m, 1h.
+  schedule: 300
+  # The watch list: one file, or a directory whose .yaml and .yml files are read in the order
+  # of their names. The console writes to console.yaml there. An edit is read at the next reading.
+  watched_path: /etc/vigil/watch_fs.yaml
+  # A file above this size is watched by its permissions alone and its content is not hashed:
+  # a number of bytes, or 512kb, 30mb, 1gb. An entry of the watch list may name its own.
+  max_file_size: 30mb
+  # How many paths one reading walks, over every directory and mask in the watch list. A walk
+  # that reaches it stops, and the reading says what it left unwalked. 10000 at most.
+  max_files: 10000
+
+  # The filesystems a directory or a mask in the watch list is walked into. An empty include is
+  # every filesystem; an entry is a device (/dev/sda1), a mount point (/mnt/nfs) or a kind of
+  # filesystem (nfs); exclude wins over include. /proc, /sys and the other kernel filesystems
+  # are never walked.
+  devices:
+    # The filesystems a walk may enter. Empty: every one that is not excluded.
+    include: []
+    # The filesystems a walk never enters, whatever include says.
+    exclude: []

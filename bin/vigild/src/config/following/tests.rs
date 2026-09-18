@@ -236,7 +236,7 @@ fn only_the_watched_paths_are_taken_from_the_file_while_the_daemon_runs() {
 #[test]
 fn a_host_where_the_files_collector_is_off_looks_at_nothing_on_any_round() {
     let bench = Bench::new("off", WATCHING_HOSTS);
-    let mut followed = bench.followed(&["ports", "users"]);
+    let mut followed = bench.followed(&["network", "users"]);
     bench.write(WATCHING_SUDOERS);
 
     let looked = followed.look();
@@ -402,4 +402,119 @@ fn a_directory_the_configuration_names_for_the_first_time_is_read_on_the_next_lo
         2,
         "the directory named since start-up is watched from then on"
     );
+}
+
+const COLLECTORS_APART: &str = "collectors_path: collectors\n";
+
+impl Bench {
+    fn collectors(&self, name: &str, text: &str) {
+        let file = self.directory.join("collectors").join(name);
+        vigil_config::write(&file, text, true).expect("writes the way the command writes");
+    }
+
+    fn apart(named: &str) -> Bench {
+        let bench = Bench::new(named, COLLECTORS_APART);
+        bench.collectors("files.yaml", WATCHING_HOSTS);
+        bench.collectors("resources.yaml", "resources:\n  disk_free_percent: 10\n");
+        bench
+    }
+}
+
+#[test]
+fn an_edit_to_the_files_block_in_the_collectors_directory_is_taken_up_on_the_next_look() {
+    let bench = Bench::apart("apart-files");
+    let mut followed = bench.followed(&["files", "resources"]);
+
+    bench.collectors("files.yaml", WATCHING_SUDOERS);
+    let looked = followed.look();
+
+    assert_eq!(
+        looked
+            .refollowed
+            .iter()
+            .map(|(name, settings)| (*name, settings.said().clone()))
+            .collect::<Vec<_>>(),
+        vec![("files", json!({"paths": ["/etc/hosts", "/etc/sudoers"]}))],
+        "a block kept in a file of its own is followed as closely as one kept in vigil.yaml: {:?}",
+        looked.said
+    );
+    assert!(looked.said.is_empty(), "{:?}", looked.said);
+}
+
+#[test]
+fn an_edit_to_another_collectors_block_waits_for_a_restart_and_is_said_to_by_name() {
+    let bench = Bench::apart("apart-resources");
+    let mut followed = bench.followed(&["files", "resources"]);
+
+    bench.collectors("resources.yaml", "resources:\n  disk_free_percent: 20\n");
+    let looked = followed.look();
+
+    assert!(looked.refollowed.is_empty(), "{:?}", looked.said);
+    assert_eq!(looked.said.len(), 1, "{:?}", looked.said);
+    for said in ["resources", "collectors", "try-restart"] {
+        assert!(
+            looked.said[0].contains(said),
+            "the line names the block and where it is: {}",
+            looked.said[0]
+        );
+    }
+    assert!(
+        !looked.said[0].contains("files"),
+        "what is taken up on this round is not also said to wait: {}",
+        looked.said[0]
+    );
+}
+
+#[test]
+fn a_block_switched_off_while_the_daemon_runs_waits_for_a_restart_like_every_switch() {
+    let bench = Bench::apart("apart-switched");
+    let mut followed = bench.followed(&["files", "resources"]);
+
+    bench.collectors("files.yaml", &format!("{WATCHING_HOSTS}  enabled: false\n"));
+    let looked = followed.look();
+
+    assert!(looked.refollowed.is_empty(), "{:?}", looked.said);
+    assert_eq!(looked.said.len(), 1, "{:?}", looked.said);
+    assert!(looked.said[0].contains("files"), "{}", looked.said[0]);
+}
+
+#[test]
+fn a_file_of_collectors_added_to_the_directory_is_seen_on_the_next_look() {
+    let bench = Bench::apart("apart-added");
+    let mut followed = bench.followed(&["files", "resources"]);
+
+    bench.collectors("users.yaml", "users:\n");
+    let looked = followed.look();
+
+    assert_eq!(looked.said.len(), 1, "{:?}", looked.said);
+    assert!(looked.said[0].contains("users"), "{}", looked.said[0]);
+}
+
+#[test]
+fn a_bad_edit_to_a_file_of_collectors_keeps_what_is_watched_and_is_said_once() {
+    let bench = Bench::apart("apart-bad");
+    let mut followed = bench.followed(&["files", "resources"]);
+
+    bench.collectors("resources.yaml", "resources:\n  disk_free_percent: [\n");
+    let broken = followed.look();
+    let again = followed.look();
+
+    assert!(broken.refollowed.is_empty());
+    assert_eq!(broken.said.len(), 1, "{:?}", broken.said);
+    assert!(
+        broken.said[0].contains("resources.yaml") && broken.said[0].contains("last loaded"),
+        "{}",
+        broken.said[0]
+    );
+    assert!(again.said.is_empty() && again.refollowed.is_empty());
+
+    bench.collectors("resources.yaml", "resources:\n  disk_free_percent: 10\n");
+    bench.collectors("files.yaml", WATCHING_SUDOERS);
+    let mended = followed.look();
+    assert!(
+        mended.said.iter().any(|line| line.contains("loads again")),
+        "{:?}",
+        mended.said
+    );
+    assert_eq!(mended.refollowed.len(), 1, "{:?}", mended.said);
 }

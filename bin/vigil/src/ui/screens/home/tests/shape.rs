@@ -19,11 +19,11 @@ fn what_the_agent_reads_comes_before_what_it_makes_of_it() {
 
     let reads = page.find("WHAT IT READS").expect("the first group");
     let concludes = page.find("WHAT IT CONCLUDES").expect("the second group");
-    let ports = page.find("network").expect("a reading");
+    let network = page.find("network").expect("a reading");
     let findings = page.find("findings").expect("a conclusion");
 
     assert!(
-        reads < ports && ports < concludes && concludes < findings,
+        reads < network && network < concludes && concludes < findings,
         "{page}"
     );
 }

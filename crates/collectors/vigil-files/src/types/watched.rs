@@ -1,5 +1,11 @@
 use serde::{Deserialize, Serialize};
 
+use crate::helpers::check_mask;
+
+const CEILING_BYTES: &str = "ceiling_bytes";
+
+const MAX_FILE_SIZE: &str = "max_file_size";
+
 pub const LONGEST_PATH: usize = 4096;
 
 pub const MOST_HASHED_BYTES: u64 = 64 * 1024 * 1024;
@@ -42,6 +48,26 @@ impl Watched {
     }
 
     pub fn check(&self) -> Result<(), String> {
+        self.readable()?;
+        let path = self.path();
+        if path.len() > 1 && path.ends_with('/') {
+            return Err(format!(
+                "{path:?} is a directory, and a directory in this list is a walk that hashes \
+                 everything under it: name the file itself"
+            ));
+        }
+
+        self.hashed(CEILING_BYTES)
+    }
+
+    pub fn check_listed(&self) -> Result<(), String> {
+        self.readable()?;
+        check_mask(self.path())?;
+
+        self.hashed(MAX_FILE_SIZE)
+    }
+
+    fn readable(&self) -> Result<(), String> {
         let path = self.path();
         if path.trim().is_empty() {
             return Err(
@@ -54,12 +80,6 @@ impl Watched {
             return Err(format!(
                 "{path:?} is not an absolute path, and this agent reads no working directory of \
                  its own"
-            ));
-        }
-        if path.len() > 1 && path.ends_with('/') {
-            return Err(format!(
-                "{path:?} is a directory, and a directory in this list is a walk that hashes \
-                 everything under it: name the file itself"
             ));
         }
         if path.chars().any(char::is_control) {
@@ -75,20 +95,19 @@ impl Watched {
                 path.len()
             ));
         }
-
-        self.hashed()
+        Ok(())
     }
 
-    fn hashed(&self) -> Result<(), String> {
+    fn hashed(&self, key: &str) -> Result<(), String> {
         match self.ceiling_bytes() {
             None => Ok(()),
             Some(0) => Err(format!(
-                "ceiling_bytes: 0 for {:?} hashes nothing, and a file nobody hashes is a file \
+                "{key}: 0 for {:?} hashes nothing, and a file nobody hashes is a file \
                  whose content nobody watches",
                 self.path()
             )),
             Some(ceiling) if ceiling > MOST_HASHED_BYTES => Err(format!(
-                "ceiling_bytes: {ceiling} for {:?} is over the {MOST_HASHED_BYTES} this agent \
+                "{key}: {ceiling} for {:?} is over the {MOST_HASHED_BYTES} this agent \
                  hashes on one pass, and a reading that takes longer than the pass it belongs \
                  to is the agent an operator turns off first",
                 self.path()
@@ -163,5 +182,34 @@ mod tests {
             "writing a ceiling against every path would rewrite a file the operator keeps in \
              version control for a change nobody asked for"
         );
+    }
+
+    #[test]
+    fn a_directory_or_a_mask_in_a_watch_list_is_a_walk_it_asks_for_and_not_a_mistake() {
+        for watched in [
+            Watched::of("/etc/pam.d", None),
+            Watched::of("/etc/pam.d/", None),
+            Watched::of("/etc/ssh/*.conf", Some(4096)),
+            Watched::of("/etc/[a-z]*.d/sshd", None),
+        ] {
+            assert_eq!(watched.check_listed(), Ok(()), "{watched:?}");
+        }
+    }
+
+    #[test]
+    fn a_watch_list_refuses_what_the_old_list_refused_and_says_it_in_the_key_it_is_written_in() {
+        for (watched, said) in [
+            (Watched::of("etc/hosts", None), "absolute"),
+            (Watched::of("/etc/ho\nsts", None), "cannot carry"),
+            (Watched::of("/etc/hosts", Some(0)), "max_file_size: 0"),
+            (Watched::of("/etc/[ab", None), "never closed"),
+            (
+                Watched::of("/etc/hosts", Some(MOST_HASHED_BYTES + 1)),
+                "max_file_size",
+            ),
+        ] {
+            let refusal = watched.check_listed().expect_err("must not be accepted");
+            assert!(refusal.contains(said), "{watched:?}: {refusal}");
+        }
     }
 }

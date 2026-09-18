@@ -39,8 +39,8 @@ mod tests {
 
     use super::diff;
 
-    fn ports(items: &[(&str, serde_json::Value)]) -> Snapshot {
-        let mut snapshot = Snapshot::new("ports", "2026-09-08T12:00:00.000Z");
+    fn network(items: &[(&str, serde_json::Value)]) -> Snapshot {
+        let mut snapshot = Snapshot::new("network", "2026-09-08T12:00:00.000Z");
         for (key, value) in items {
             snapshot.items.insert((*key).to_string(), value.clone());
         }
@@ -49,11 +49,11 @@ mod tests {
 
     #[test]
     fn reports_new_gone_and_altered_keys_and_nothing_else() {
-        let before = ports(&[
+        let before = network(&[
             ("tcp|127.0.0.1:5432", json!({"process": "postgres"})),
             ("tcp|0.0.0.0:80", json!({"process": "nginx"})),
         ]);
-        let after = ports(&[
+        let after = network(&[
             ("tcp|0.0.0.0:80", json!({"process": "nginx"})),
             ("tcp|0.0.0.0:4444", json!({"process": "nc"})),
             ("tcp|0.0.0.0:5432", json!({"process": "postgres"})),
@@ -69,8 +69,8 @@ mod tests {
 
     #[test]
     fn a_value_change_under_the_same_key_is_a_change_not_a_pair() {
-        let before = ports(&[("tcp|0.0.0.0:80", json!({"process": "nginx"}))]);
-        let after = ports(&[("tcp|0.0.0.0:80", json!({"process": "nc"}))]);
+        let before = network(&[("tcp|0.0.0.0:80", json!({"process": "nginx"}))]);
+        let after = network(&[("tcp|0.0.0.0:80", json!({"process": "nc"}))]);
 
         let changes = diff(&before, &after);
 
@@ -80,15 +80,15 @@ mod tests {
 
     #[test]
     fn the_first_reading_of_a_host_is_not_a_hundred_findings() {
-        let empty = ports(&[]);
-        let first = ports(&[("tcp|0.0.0.0:80", json!({"process": "nginx"}))]);
+        let empty = network(&[]);
+        let first = network(&[("tcp|0.0.0.0:80", json!({"process": "nginx"}))]);
 
         assert_eq!(diff(&empty, &first).len(), 1);
     }
 
     #[test]
     fn diffing_two_identical_snapshots_of_ten_thousand_items_finds_nothing() {
-        let mut before = Snapshot::new("ports", "2026-09-10T12:00:00.000Z");
+        let mut before = Snapshot::new("network", "2026-09-10T12:00:00.000Z");
         for number in 0..10_000u32 {
             before.items.insert(
                 format!("tcp|10.0.0.{}:{}", number / 250, 1_024 + number % 250),

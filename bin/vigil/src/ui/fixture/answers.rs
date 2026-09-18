@@ -25,7 +25,7 @@ macro_rules! value {
 pub fn watching() -> AgentStatus {
     let mut watching = agent();
     watching.collectors = vec![
-        collector("ports", 30, 2, 0),
+        collector("network", 30, 2, 0),
         collector_degraded("users", 300, SEES_LESS),
         collector_unavailable("processes"),
         collector_failing("persistence"),

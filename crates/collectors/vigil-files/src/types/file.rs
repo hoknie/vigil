@@ -2,9 +2,12 @@ use serde_json::Value;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Family {
+    Walk,
     File,
     Directory,
 }
+
+const WALK: &str = "walk";
 
 const FILE: &str = "file";
 
@@ -21,6 +24,7 @@ const STICKY: u32 = 0o1000;
 impl Family {
     pub fn of(key: &str) -> Option<Family> {
         match key.split('|').next()? {
+            WALK => Some(Family::Walk),
             FILE => Some(Family::File),
             DIRECTORY => Some(Family::Directory),
             _ => None,
@@ -29,6 +33,7 @@ impl Family {
 
     pub fn name(self) -> &'static str {
         match self {
+            Family::Walk => WALK,
             Family::File => FILE,
             Family::Directory => DIRECTORY,
         }
@@ -81,6 +86,26 @@ impl<'a> FileView<'a> {
         (self.value["uid"].as_u64(), self.value["gid"].as_u64())
     }
 
+    pub fn is_a_directory(&self) -> bool {
+        self.value["type"].as_str() == Some(DIRECTORY)
+    }
+
+    pub fn target(&self) -> Option<&'a str> {
+        self.value["target"].as_str()
+    }
+
+    pub fn found_by(&self) -> Option<&'a str> {
+        self.value["found_by"].as_str()
+    }
+
+    pub fn complete(&self) -> bool {
+        self.value["complete"].as_bool().unwrap_or(true)
+    }
+
+    pub fn not_entered(&self) -> &'a Value {
+        &self.value["not_entered"]
+    }
+
     pub fn runs_as_its_owner(&self) -> bool {
         self.bits()
             .is_some_and(|bits| bits & (SETUID | SETGID) != 0)
@@ -104,6 +129,10 @@ mod tests {
 
         assert_eq!(FileView::new("tcp|0.0.0.0:443", &socket).family(), None);
         assert_eq!(FileView::new("fs|/var", &socket).family(), None);
+        assert_eq!(
+            FileView::new("walk|/etc/pam.d", &socket).family(),
+            Some(Family::Walk)
+        );
     }
 
     #[test]

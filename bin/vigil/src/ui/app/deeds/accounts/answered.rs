@@ -19,7 +19,7 @@ pub(super) fn answered(answer: Option<Response>) -> Asked {
 fn advice(code: &str) -> Option<String> {
     match code {
         ProtocolError::NOT_ALLOWED => Some(
-            "Changing accounts from the console is off until vigil.yaml says \
+            "Changing accounts from the console is off until collectors/users.yaml says \
              accounts.from_the_console: true, and the daemon reads that key once, at start-up."
                 .to_string(),
         ),

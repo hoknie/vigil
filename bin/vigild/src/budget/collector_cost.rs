@@ -62,13 +62,13 @@ mod tests {
 
     fn reading(duration_ms: u64) -> Reading {
         Reading {
-            collector: "ports",
+            collector: "network",
             at: "2026-09-10T12:00:00.000Z".into(),
             duration_ms,
             every_seconds: 30,
             next_run_at: "2026-09-10T12:00:30.000Z".into(),
             skipped: 0,
-            snapshot: Snapshot::new("ports", "2026-09-10T12:00:00.000Z"),
+            snapshot: Snapshot::new("network", "2026-09-10T12:00:00.000Z"),
         }
     }
 

@@ -152,11 +152,11 @@ mod tests {
         let path = temporary("replaced.yaml");
         fs::write(&path, "# a year of somebody's suppressions\n").expect("writes");
 
-        let written = write(&path, "collectors: [ports]\n", true).expect("writes");
+        let written = write(&path, "collectors: [network]\n", true).expect("writes");
 
         assert_eq!(
             fs::read_to_string(&path).expect("readable"),
-            "collectors: [ports]\n"
+            "collectors: [network]\n"
         );
         let kept = written.previous.expect("the previous file is kept");
         assert_eq!(

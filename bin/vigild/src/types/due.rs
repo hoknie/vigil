@@ -67,7 +67,7 @@ mod tests {
     #[test]
     fn a_missed_slot_is_skipped_and_counted_rather_than_run_twice() {
         let base = Instant::now();
-        let mut due = Due::new("ports", 30, base);
+        let mut due = Due::new("network", 30, base);
 
         due.advance(at(base, 95));
 
@@ -82,7 +82,7 @@ mod tests {
     #[test]
     fn a_reading_taken_on_time_loses_no_slot() {
         let base = Instant::now();
-        let mut due = Due::new("ports", 30, base);
+        let mut due = Due::new("network", 30, base);
 
         due.advance(base);
         assert_eq!(due.skipped, 0);
@@ -141,7 +141,7 @@ mod tests {
     #[test]
     fn a_period_of_zero_seconds_is_read_as_one_rather_than_spun_on() {
         let base = Instant::now();
-        let mut due = Due::new("ports", 0, base);
+        let mut due = Due::new("network", 0, base);
 
         assert_eq!(due.every_seconds(), 1);
         due.advance(base);

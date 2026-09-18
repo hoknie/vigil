@@ -37,3 +37,22 @@ pub fn watched_directory(path: &str, mode: &str) -> Value {
         "gid": 0,
     })
 }
+
+pub fn walked_file(path: &str, by: &str, mode: &str) -> Value {
+    let mut row = watched_file(path, mode, "c3");
+    row["type"] = json!("file");
+    row["found_by"] = json!(by);
+    row["complete"] = json!(true);
+    row
+}
+
+pub fn walk(entry: &str, matched: usize, complete: bool) -> Value {
+    json!({
+        "entry": entry,
+        "kind": "tree",
+        "matched": matched,
+        "complete": complete,
+        "not_entered": [],
+        "max_file_size": 1_048_576,
+    })
+}

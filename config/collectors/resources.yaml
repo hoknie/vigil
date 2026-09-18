@@ -1,0 +1,11 @@
+# The boot this host is running, the moment it started, its clock and the room left on its
+# filesystems. Without this block, or with `enabled: false` in it, nothing watches them.
+resources:
+  # How often this collector reads: a number of seconds, or 30s, 5m, 1h.
+  schedule: 60
+  # A step of the wall clock this wide is reported as a finding.
+  clock_skew_seconds: 300
+  # A filesystem with free space under this percentage is reported as a finding.
+  disk_free_percent: 10
+  # A filesystem with free inodes under this percentage is reported as a finding.
+  inode_free_percent: 10

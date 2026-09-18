@@ -63,7 +63,7 @@ mod tests {
 
     fn about_a_degraded_collector() -> Said {
         Said::about([
-            ("ports", "ok".to_string()),
+            ("network", "ok".to_string()),
             (
                 "launches",
                 "degraded:auditd has brought nothing".to_string(),
@@ -83,10 +83,10 @@ mod tests {
              what closes it quotes what it was"
         );
         assert!(
-            !said.standing("ports"),
+            !said.standing("network"),
             "a collector that was well has nothing standing to close"
         );
-        assert_eq!(said.closed("ports"), None);
+        assert_eq!(said.closed("network"), None);
     }
 
     #[test]
@@ -94,12 +94,12 @@ mod tests {
         let mut said = Said::default();
 
         said.opened(
-            "ports",
+            "network",
             "the reading failed — /proc/net/tcp: permission denied".into(),
         );
 
         assert_eq!(
-            said.closed("ports").as_deref(),
+            said.closed("network").as_deref(),
             Some("the reading failed — /proc/net/tcp: permission denied"),
             "a collector whose reading broke did not become degraded, and the closing half has \
              to say which of the two it closes"
@@ -110,7 +110,7 @@ mod tests {
     fn health_that_did_not_move_is_not_news_and_health_that_moved_names_what_it_was() {
         let mut said = about_a_degraded_collector();
 
-        assert_eq!(said.health_moved("ports", "ok".to_string()), None);
+        assert_eq!(said.health_moved("network", "ok".to_string()), None);
         assert_eq!(
             said.health_moved("launches", "ok".to_string()).as_deref(),
             Some("degraded:auditd has brought nothing"),
@@ -135,15 +135,15 @@ mod tests {
     fn the_same_failure_twice_is_logged_once_and_a_different_one_is_logged_again() {
         let mut said = Said::default();
 
-        assert!(said.failing("ports", "/proc/net/tcp: permission denied"));
-        assert!(!said.failing("ports", "/proc/net/tcp: permission denied"));
-        assert!(said.failing("ports", "/proc/net/tcp: no such file"));
+        assert!(said.failing("network", "/proc/net/tcp: permission denied"));
+        assert!(!said.failing("network", "/proc/net/tcp: permission denied"));
+        assert!(said.failing("network", "/proc/net/tcp: no such file"));
         assert!(
-            said.reading_again("ports"),
+            said.reading_again("network"),
             "a collector that failed and read again is worth one line"
         );
         assert!(
-            !said.reading_again("ports"),
+            !said.reading_again("network"),
             "and the readings after that are not"
         );
     }

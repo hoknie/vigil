@@ -131,8 +131,8 @@ fn key_of(killing: Killing) -> char {
 fn refusal_advice(code: &str) -> String {
     match code {
         vigil_model::ProtocolError::NOT_ALLOWED => {
-            "This is off until the configuration says otherwise. It is a key in vigil.yaml, \
-             beside suppressions, and the daemon reads it at start-up."
+            "This is off until killing.from_the_console: true in collectors/processes.yaml \
+             says otherwise, and the daemon reads that key at start-up."
                 .to_string()
         }
         _ => "The agent refused and said why above.".to_string(),

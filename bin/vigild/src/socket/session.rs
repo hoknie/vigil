@@ -98,7 +98,7 @@ mod tests {
     fn one_question_per_line_gets_one_answer_per_line() {
         let answers = talk(
             "{\"query\":\"status\"}\n\
-             {\"query\":\"snapshot\",\"collector\":\"ports\"}\n\
+             {\"query\":\"snapshot\",\"collector\":\"network\"}\n\
              {\"query\":\"findings\",\"limit\":10}\n",
         );
 

@@ -1,0 +1,7 @@
+files:
+  - /etc/ssh/sshd_config
+  - /etc/pam.d/sshd
+  - /etc/pam.d/su
+  - /etc/nsswitch.conf
+  - /etc/login.defs
+  - /etc/hosts

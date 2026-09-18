@@ -118,18 +118,18 @@ mod tests {
 
     fn periods() -> Settled {
         Settled::new("status").pinning(
-            "collector-ok|ports",
+            "collector-ok|network",
             "every_seconds",
             30,
-            "the period the collector declares for ports",
+            "the period the collector declares for network",
         )
     }
 
     #[test]
     fn an_answer_that_carries_every_settled_value_complains_about_nothing() {
         let missed = periods().missed(&answer(&[(
-            "collector-ok|ports",
-            json!({"name": "ports", "every_seconds": 30}),
+            "collector-ok|network",
+            json!({"name": "network", "every_seconds": 30}),
         )]));
 
         assert!(missed.is_empty(), "{missed:?}");
@@ -138,15 +138,15 @@ mod tests {
     #[test]
     fn a_value_that_drifted_names_the_right_one_and_where_it_comes_from() {
         let missed = periods().missed(&answer(&[(
-            "collector-ok|ports",
-            json!({"name": "ports", "every_seconds": 15}),
+            "collector-ok|network",
+            json!({"name": "network", "every_seconds": 15}),
         )]));
 
         assert_eq!(missed.len(), 1, "{missed:?}");
         assert!(missed[0].contains("is 15"), "{}", missed[0]);
         assert!(missed[0].contains("it is 30"), "{}", missed[0]);
         assert!(
-            missed[0].contains("the period the collector declares for ports"),
+            missed[0].contains("the period the collector declares for network"),
             "a value named without its source is a value nobody knows where to correct: {}",
             missed[0]
         );
@@ -154,7 +154,10 @@ mod tests {
 
     #[test]
     fn a_field_the_row_does_not_carry_at_all_is_named_rather_than_passed() {
-        let missed = periods().missed(&answer(&[("collector-ok|ports", json!({"name": "ports"}))]));
+        let missed = periods().missed(&answer(&[(
+            "collector-ok|network",
+            json!({"name": "network"}),
+        )]));
 
         assert_eq!(missed.len(), 1, "{missed:?}");
         assert!(missed[0].contains("says nothing about"), "{}", missed[0]);
@@ -231,7 +234,7 @@ mod tests {
             "agent|watching",
             "collectors/every_seconds",
             30,
-            "the period the collector declares for ports",
+            "the period the collector declares for network",
         );
 
         let missed = pinned.missed(&answer(&[(
@@ -260,11 +263,11 @@ mod tests {
     #[test]
     fn the_same_pins_are_written_the_same_way_twice() {
         let first = Settled::new("status")
-            .pinning("collector-ok|ports", "name", "ports", "the collector")
-            .pinning("collector-ok|ports", "every_seconds", 30, "the collector");
+            .pinning("collector-ok|network", "name", "network", "the collector")
+            .pinning("collector-ok|network", "every_seconds", 30, "the collector");
         let again = Settled::new("status")
-            .pinning("collector-ok|ports", "every_seconds", 30, "the collector")
-            .pinning("collector-ok|ports", "name", "ports", "the collector");
+            .pinning("collector-ok|network", "every_seconds", 30, "the collector")
+            .pinning("collector-ok|network", "name", "network", "the collector");
 
         assert_eq!(first.written(), again.written());
         assert!(first.written().ends_with("}\n"));

@@ -5,11 +5,16 @@ fn three_requests_do_something_on_the_host_and_all_three_are_named_here() {
     assert_eq!(Request::READING, &["status", "snapshot", "findings"]);
     for name in Request::READING {
         assert!(
-            Request::parse(&format!("{{\"query\":\"{name}\",\"collector\":\"ports\"}}")).is_ok(),
+            Request::parse(&format!(
+                "{{\"query\":\"{name}\",\"collector\":\"network\"}}"
+            ))
+            .is_ok(),
             "{name} is listed but does not parse"
         );
-        let request = Request::parse(&format!("{{\"query\":\"{name}\",\"collector\":\"ports\"}}"))
-            .expect("parses");
+        let request = Request::parse(&format!(
+            "{{\"query\":\"{name}\",\"collector\":\"network\"}}"
+        ))
+        .expect("parses");
         assert!(
             !request.acts_on_the_host(),
             "{name} answers a question and must never grow a side effect"
@@ -158,7 +163,7 @@ fn a_request_round_trips_through_its_line() {
     for request in [
         Request::Status,
         Request::Snapshot {
-            collector: "ports".into(),
+            collector: "network".into(),
         },
         Request::Findings { limit: Some(20) },
         Request::Findings { limit: None },

@@ -8,98 +8,28 @@ socket_path: /run/vigil/vigil.sock
 # How long a finding stays in the local journal before it is dropped.
 retention_days: 90
 
-# What this host is watched for.
-collectors:
-  - ports
-  - users
-  - processes
-  - launches
-  - persistence
-  - firewall
-  - resources
-  - files
-  - containers
-  - containers-engines
+# What this host is watched for: a file, or a directory whose .yaml and .yml files are read
+# in the order of their names, each holding the block of one or more collectors. A collector
+# runs when its block is there and does not say `enabled: false`; one with no block does not
+# run. `vigild collector <name> enable` and `disable` edit these files.
+collectors_path: /etc/vigil/collectors
 
-# How often each collector reads, in seconds.
-schedule:
-  ports: 30
-  users: 300
-  processes: 30
-  launches: 15
-  persistence: 300
-  firewall: 60
-  resources: 60
-  files: 300
-  containers: 60
-  containers-engines: 120
+# What this host is expected to do, written out so the agent stays quiet about it: every
+# .yaml or .yml file in this directory, read in the order of their names, each holding a
+# `suppressions:` list. Every entry needs a reason, in your words. The console writes to
+# console.yaml there.
+#
+#   suppressions:
+#     - finding_key: "port.listen|tcp|0.0.0.0:8080"
+#       reason: the staging api, expected on this host
+suppressions_path: /etc/vigil/suppressions
 
-# What this host is expected to do, written out so the agent stays quiet about it.
-suppressions: []
-
-killing:
-  from_the_console: false
-
-accounts:
-  from_the_console: false
-
-units:
-  from_the_console: false
-
-resources:
-  # A step of the wall clock this wide is reported as a finding.
-  clock_skew_seconds: 300
-  # A filesystem with free space under this percentage is reported as a finding.
-  disk_free_percent: 10
-  # A filesystem with free inodes under this percentage is reported as a finding.
-  inode_free_percent: 10
-
-firewall:
-  # Whether the packet counters of this host's interfaces are part of the reading. Off keeps
-  # the reading still: a counter moves on every pass, so a host that carries one reports a
-  # change once a minute for as long as it runs. On is what fills the numbers under the path
-  # a packet takes, on the firewall screen of the console.
-  monitoring: false
-
-files:
-  # The files watched for a changed content, changed permissions and a new suid bit.
-  paths:
-    - /etc/ssh/sshd_config
-    - /etc/pam.d/sshd
-    - /etc/pam.d/su
-    - /etc/nsswitch.conf
-    - /etc/login.defs
-    - /etc/hosts
-  # A file above this size is watched by its permissions alone and its content is not hashed.
-  ceiling_bytes: 1048576
-
-containers:
-  # The container engines whose images, volumes, networks, projects, pods and secrets are
-  # read. An engine that is not installed here is recorded as absent, which is not the same
-  # answer as an engine that did not reply.
-  engines: [docker, podman]
-  # How often vigil-containers.timer runs the engine commands. A reading older than twice
-  # this is reported as stale rather than passed off as current.
-  dump_seconds: 120
-  report:
-    # Whether an image appearing, going or moving to another digest is reported.
-    images: true
-    # Whether a volume appearing, going or changing its driver or its point is reported.
-    volumes: true
-    # Whether a network appearing, going or changing its subnet or driver is reported.
-    networks: true
-    # Whether a compose project appearing, going or changing its services is reported.
-    projects: true
-    # Whether a podman pod appearing, going or changing the containers it holds is reported.
-    pods: true
-    # Whether a secret of an engine appearing, going or being replaced is reported. Its value
-    # is never read.
-    secrets: true
-
-launches:
-  # Whether the arguments a program was launched with are kept.
-  record_arguments: false
-
-# Where findings go. An empty list keeps them on this host, in the journal under state_dir.
-# An entry names a kind: ndjson, syslog, webhook or host_findings.
-reporters: []
+# Where findings go: every .yaml or .yml file in this directory, each holding a `reporters:`
+# list. None keeps them on this host, in the journal under state_dir. An entry names a kind:
+# ndjson, syslog, webhook or host_findings. A file there may name a file with a token in it,
+# so the directory is root's alone.
+#
+#   reporters:
+#     - kind: ndjson
+#       path: /var/log/vigil/findings.ndjson
+reporters_path: /etc/vigil/reporters

@@ -1,0 +1,5 @@
+suppressions:
+  - finding_key_prefix: "port.listen|tcp|127.0.0.11:"
+    reason: docker's embedded dns resolver, ephemeral ports by design
+  - finding_key_prefix: "port.listen|udp|127.0.0.11:"
+    reason: docker's embedded dns resolver, ephemeral ports by design

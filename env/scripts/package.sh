@@ -66,6 +66,13 @@ stage() {
 
     install -d -m 0700 "$tree/etc/vigil"
     install -m 0600 "$ROOT/config/vigil.example.yaml" "$tree/etc/vigil/vigil.yaml"
+    install -d -m 0700 "$tree/etc/vigil/collectors"
+    for collectors in "$ROOT"/config/collectors/*.yaml; do
+        install -m 0600 "$collectors" "$tree/etc/vigil/collectors/$(basename "$collectors")"
+    done
+    install -m 0600 "$ROOT/config/watch_fs.yaml" "$tree/etc/vigil/watch_fs.yaml"
+    install -d -m 0700 "$tree/etc/vigil/suppressions"
+    install -d -m 0700 "$tree/etc/vigil/reporters"
 
     install -D -m 0644 "$ROOT/packaging/systemd/vigild.service" \
         "$tree/usr/lib/systemd/system/vigild.service"

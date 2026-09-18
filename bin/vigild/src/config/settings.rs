@@ -18,6 +18,7 @@ pub struct Config {
     pub interval_seconds: Option<u32>,
     pub schedule: BTreeMap<String, u32>,
     pub collectors: Option<Vec<String>>,
+    pub collectors_path: Option<String>,
     pub reporters: Vec<Receiver>,
     pub reporters_path: Option<String>,
     pub suppressions: Vec<Suppression>,
@@ -40,6 +41,7 @@ impl Default for Config {
             interval_seconds: None,
             schedule: BTreeMap::new(),
             collectors: None,
+            collectors_path: None,
             reporters: Vec::new(),
             reporters_path: None,
             suppressions: Vec::new(),
@@ -187,7 +189,7 @@ mod tests {
         let config = Config::default();
 
         assert_eq!(config.every_seconds("launches"), 15);
-        assert_eq!(config.every_seconds("ports"), 30);
+        assert_eq!(config.every_seconds("network"), 30);
         assert_eq!(config.every_seconds("persistence"), 300);
     }
 
@@ -200,7 +202,7 @@ mod tests {
         config.schedule.insert("persistence".into(), 600);
 
         assert_eq!(config.every_seconds("persistence"), 600);
-        assert_eq!(config.every_seconds("ports"), 10);
+        assert_eq!(config.every_seconds("network"), 10);
     }
 
     #[test]

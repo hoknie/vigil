@@ -39,6 +39,19 @@ cp -a %{vigil_stage}/. %{buildroot}/
 %attr(0755,root,root) /usr/sbin/vigil-container-dump
 %dir %attr(0700,root,root) /etc/vigil
 %config(noreplace) %attr(0600,root,root) /etc/vigil/vigil.yaml
+%dir %attr(0700,root,root) /etc/vigil/collectors
+%config(noreplace) %attr(0600,root,root) /etc/vigil/collectors/containers.yaml
+%config(noreplace) %attr(0600,root,root) /etc/vigil/collectors/files.yaml
+%config(noreplace) %attr(0600,root,root) /etc/vigil/collectors/firewall.yaml
+%config(noreplace) %attr(0600,root,root) /etc/vigil/collectors/launches.yaml
+%config(noreplace) %attr(0600,root,root) /etc/vigil/collectors/network.yaml
+%config(noreplace) %attr(0600,root,root) /etc/vigil/collectors/persistence.yaml
+%config(noreplace) %attr(0600,root,root) /etc/vigil/collectors/processes.yaml
+%config(noreplace) %attr(0600,root,root) /etc/vigil/collectors/resources.yaml
+%config(noreplace) %attr(0600,root,root) /etc/vigil/collectors/users.yaml
+%config(noreplace) %attr(0600,root,root) /etc/vigil/watch_fs.yaml
+%dir %attr(0700,root,root) /etc/vigil/suppressions
+%dir %attr(0700,root,root) /etc/vigil/reporters
 %config(noreplace) %attr(0644,root,root) /etc/logrotate.d/vigil
 %dir %attr(0750,root,root) /etc/audit
 %dir %attr(0750,root,root) /etc/audit/rules.d
@@ -98,9 +111,10 @@ vigil is installed and is not running yet.
 
   1. vigild configure --dry-run  — ask THIS host what it can watch, and print the
      configuration for it without writing anything. `vigild configure --force` then
-     writes it to /etc/vigil/vigil.yaml, keeping the current file as .previous;
-  2. read /etc/vigil/vigil.yaml — every value in it is already the default, so the
-     file this package installed is a working configuration as it stands;
+     writes /etc/vigil/vigil.yaml and a file in /etc/vigil/collectors for each
+     collector that can run here, keeping every file it replaces as .previous;
+  2. read /etc/vigil/vigil.yaml and /etc/vigil/collectors — every value in them is
+     already the default, so the files this package installed work as they stand;
   3. systemctl enable --now vigild
   4. vigil ui                    — the console, once the daemon is up
 
@@ -112,9 +126,6 @@ What this host's container engines hold is read the same way, by vigil-container
 runs /usr/sbin/vigil-container-dump. To stop that one:  systemctl mask vigil-containers.timer
 
 NOTICE
-# A first installation writes the line and starts the timer; an upgrade never touches the
-# administrator's file, for the same reason this package does not load audit rules or restart
-# auditd on a running host. Neither outcome may fail the installation.
 for collector in firewall containers-engines; do
     if /usr/sbin/vigild collector "$collector" enable > /tmp/vigil-enable.$$ 2>&1; then
         sed 's/^/  /' /tmp/vigil-enable.$$
@@ -131,6 +142,20 @@ echo "vigil: this is an upgrade, so /etc/vigil/vigil.yaml was not touched. To sw
 echo "vigil: the firewall collector on:  vigild collector firewall enable"
 echo "vigil: the container engines on:   vigild collector containers-engines enable"
 echo
+if ! grep -q '^collectors_path:' /etc/vigil/vigil.yaml 2>/dev/null; then
+    echo "vigil: /etc/vigil/vigil.yaml names its collectors itself and is read as it always was."
+    echo "vigil: Each collector now has a file of its own in /etc/vigil/collectors. To move to"
+    echo "vigil: them, take collectors, schedule, interval_seconds, killing, accounts, units and"
+    echo "vigil: every collector's block out of vigil.yaml, carry what you changed into those"
+    echo "vigil: files, and add to vigil.yaml:"
+    echo "vigil:   collectors_path: /etc/vigil/collectors"
+    for kept in suppressions reporters; do
+        grep -q "^${kept}_path:" /etc/vigil/vigil.yaml 2>/dev/null \
+            || echo "vigil:   ${kept}_path: /etc/vigil/$kept"
+    done
+    echo "vigil: \`vigild configure --dry-run\` prints the whole layout for this host."
+    echo
+fi
 fi
 
 %preun

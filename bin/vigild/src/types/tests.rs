@@ -281,7 +281,7 @@ fn a_buffer_holds_only_what_its_own_receiver_asked_for() {
     let receiver = std::sync::Arc::new(receiver);
     let delivery = delivery(receiver.clone(), buffer(&path, Limits::outgoing()));
 
-    let mut other = found("agent.collector|ports");
+    let mut other = found("agent.collector|network");
     other.kind = Kind::Known(KnownKind::AgentCollectorDegraded);
     delivery.send(&[found("port.listen|tcp|0.0.0.0:4444"), other]);
 

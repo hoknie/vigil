@@ -11,13 +11,13 @@ use crate::types::Reading;
 fn expensive() -> Meter {
     let mut meter = Meter::default();
     meter.record(&Reading {
-        collector: "ports",
+        collector: "network",
         at: "2026-09-10T12:00:00.000Z".into(),
         duration_ms: 600,
         every_seconds: 30,
         next_run_at: "2026-09-10T12:00:30.000Z".into(),
         skipped: 0,
-        snapshot: Snapshot::new("ports", "2026-09-10T12:00:00.000Z"),
+        snapshot: Snapshot::new("network", "2026-09-10T12:00:00.000Z"),
     });
     meter
 }
@@ -32,7 +32,7 @@ fn the_finding_carries_the_schedule_line_that_fixes_it() {
         .find(|evidence| evidence.kind == "schedule")
         .expect("the way out is in the finding, not in a document");
     assert!(
-        schedule.value.contains("schedule:\n  ports: 60"),
+        schedule.value.contains("schedule:\n  network: 60"),
         "{schedule:?}"
     );
     assert!(
@@ -40,7 +40,7 @@ fn the_finding_carries_the_schedule_line_that_fixes_it() {
             .evidence
             .iter()
             .any(|evidence| evidence.kind == "cost"
-                && evidence.value.contains("ports")
+                && evidence.value.contains("network")
                 && evidence.value.contains("every 30 s")),
         "the table names the collector, its share and its period"
     );

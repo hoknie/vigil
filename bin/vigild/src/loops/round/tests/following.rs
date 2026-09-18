@@ -18,13 +18,13 @@ struct Listed(Value);
 
 impl Collector for Listed {
     fn name(&self) -> &'static str {
-        "ports"
+        "network"
     }
     fn available(&self) -> Health {
         Health::Ok
     }
     fn collect(&self) -> Result<Snapshot, CollectError> {
-        let mut reading = Snapshot::new("ports", "2026-09-17T12:00:00.000Z");
+        let mut reading = Snapshot::new("network", "2026-09-17T12:00:00.000Z");
         for path in self.0["paths"].as_array().into_iter().flatten() {
             reading.items.insert(
                 format!("file|{}", path.as_str().unwrap_or_default()),
@@ -39,7 +39,7 @@ struct FollowingTheFile;
 
 impl Module for FollowingTheFile {
     fn name(&self) -> &'static str {
-        "ports"
+        "network"
     }
     fn subject(&self) -> &'static str {
         "a module that takes its list from the file while the daemon runs"
@@ -73,7 +73,7 @@ fn written(path: &std::path::Path, text: &str) {
 fn read_now(round: &crate::loops::Round) -> Vec<String> {
     round.shared.with(|state| {
         state
-            .snapshot("ports")
+            .snapshot("network")
             .map(|reading| reading.items.keys().cloned().collect())
             .unwrap_or_default()
     })
@@ -92,9 +92,9 @@ fn a_path_written_into_the_file_is_read_on_the_round_after_it_and_not_after_a_re
         Stamp::of(name),
         &load(name).expect("loads"),
         vec![Box::new(FollowingTheFile)],
-        &["ports"],
+        &["network"],
     );
-    let mut said = Said::about([("ports", "ok".to_string())]);
+    let mut said = Said::about([("network", "ok".to_string())]);
     it.round.read(0, &mut said);
     it.round.schedule.advance(0, Instant::now());
 
@@ -133,9 +133,9 @@ fn a_bad_edit_leaves_the_collector_that_was_running_in_place_and_raises_nothing(
         Stamp::of(name),
         &load(name).expect("loads"),
         vec![Box::new(FollowingTheFile)],
-        &["ports"],
+        &["network"],
     );
-    let mut said = Said::about([("ports", "ok".to_string())]);
+    let mut said = Said::about([("network", "ok".to_string())]);
     it.round.read(0, &mut said);
     let before = raised(&it.round).len();
 
@@ -182,7 +182,7 @@ fn an_object_silenced_in_the_directory_is_not_reported_from_the_next_round_on() 
     written(&path, "suppressions_path: suppressions\n");
     let name = path.to_str().expect("utf-8");
     it.round.silences = crate::config::Silences::of(name, &load(name).expect("loads"));
-    let mut said = Said::about([("ports", "ok".to_string())]);
+    let mut said = Said::about([("network", "ok".to_string())]);
 
     written(
         &directory.join("suppressions").join("console.yaml"),

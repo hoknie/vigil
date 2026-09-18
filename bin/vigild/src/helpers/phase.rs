@@ -31,7 +31,7 @@ mod tests {
 
     #[test]
     fn the_phase_of_a_host_is_the_same_after_a_restart() {
-        assert_eq!(seconds(A_HOST, "ports", 30), 4);
+        assert_eq!(seconds(A_HOST, "network", 30), 12);
         assert_eq!(seconds(A_HOST, "processes", 30), 7);
         assert_eq!(seconds(A_HOST, "launches", 15), 9);
         assert_eq!(seconds(A_HOST, "users", 300), 108);
@@ -41,7 +41,7 @@ mod tests {
     #[test]
     fn two_collectors_of_the_same_period_do_not_wake_up_in_the_same_second() {
         assert_ne!(
-            seconds(A_HOST, "ports", 30),
+            seconds(A_HOST, "network", 30),
             seconds(A_HOST, "processes", 30)
         );
     }
@@ -49,7 +49,7 @@ mod tests {
     #[test]
     fn five_hundred_hosts_of_one_park_do_not_all_report_in_the_same_second() {
         let park: Vec<u32> = (0..500)
-            .map(|number| seconds(&format!("host-{number:04}"), "ports", 30))
+            .map(|number| seconds(&format!("host-{number:04}"), "network", 30))
             .collect();
 
         let mut spread = park.clone();
@@ -76,6 +76,6 @@ mod tests {
                 assert!(seconds(A_HOST, collector, every_seconds) < every_seconds);
             }
         }
-        assert_eq!(seconds(A_HOST, "ports", 0), 0);
+        assert_eq!(seconds(A_HOST, "network", 0), 0);
     }
 }

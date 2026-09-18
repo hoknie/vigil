@@ -1,0 +1,23 @@
+network:
+  schedule: 10
+users:
+  schedule: 10
+processes:
+  schedule: 10
+  killing:
+    from_the_console: true
+launches:
+  schedule: 10
+persistence:
+  schedule: 10
+firewall:
+  schedule: 10
+resources:
+  schedule: 10
+files:
+  schedule: 10
+  watched_path: /work/env/docker/container/watch_fs.yaml
+containers:
+  schedule: 10
+containers-engines:
+  schedule: 10

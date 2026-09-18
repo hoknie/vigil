@@ -48,7 +48,7 @@ fn a_screen_that_is_one_page_and_not_a_list_says_there_is_nothing_to_put_in_an_o
 }
 
 #[test]
-fn the_ports_and_the_accounts_have_a_search_of_their_own() {
+fn the_network_and_the_accounts_have_a_search_of_their_own() {
     let mut app = app();
     into(&mut app, screen("network"), 120, 24);
 
@@ -87,7 +87,7 @@ fn the_ports_and_the_accounts_have_a_search_of_their_own() {
         !app.nav
             .lists
             .of("network")
-            .expect("the ports section")
+            .expect("the network section")
             .search()
             .holding_back(),
         "a search typed into one section is not a search in another"

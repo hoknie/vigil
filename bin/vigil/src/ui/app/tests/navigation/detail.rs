@@ -99,7 +99,7 @@ fn on_a_terminal_with_room_for_one_half_the_detail_is_shown_only_while_it_has_th
 }
 
 #[test]
-fn the_ports_screen_has_a_detail_of_its_own() {
+fn the_network_screen_has_a_detail_of_its_own() {
     let mut app = app();
     into(&mut app, screen("network"), 200, 24);
 

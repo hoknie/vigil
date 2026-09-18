@@ -56,6 +56,11 @@ build_archive() {
     install -m 0755 "$BINARIES/vigil-audit-plugin" "$tree/vigil-audit-plugin"
     install -m 0755 "$BINARIES/vigil-container-dump" "$tree/vigil-container-dump"
     install -m 0644 "$ROOT/config/vigil.example.yaml" "$tree/vigil.example.yaml"
+    mkdir -p "$tree/collectors"
+    for collectors in "$ROOT"/config/collectors/*.yaml; do
+        install -m 0644 "$collectors" "$tree/collectors/$(basename "$collectors")"
+    done
+    install -m 0644 "$ROOT/config/watch_fs.yaml" "$tree/watch_fs.yaml"
     install -m 0644 "$ROOT/packaging/systemd/vigild.service" "$tree/vigild.service"
     install -m 0644 "$ROOT/packaging/systemd/vigil-containers.service" "$tree/vigil-containers.service"
     install -m 0644 "$ROOT/packaging/systemd/vigil-containers.timer" "$tree/vigil-containers.timer"
@@ -118,6 +123,7 @@ checksums() {
 section() {
     awk -v want="$1" '
         /^## / { if (inside) exit; if (index($0, want) == 1) { inside = 1; next } }
+        /^\[[^]]+\]: / { if (inside) exit }
         inside { print }
     ' "$ROOT/CHANGELOG.md"
 }

@@ -11,10 +11,11 @@ SOCKET=/tmp/vigil-smoke.sock
 RULESET=/var/lib/vigil/firewall/ruleset.json
 PORT=4444
 
+SHIPPED="$(SCHEDULE=3 ./env/scripts/config-here.sh /tmp/vigil-smoke-config)"
 cat > "$CONFIG" <<YAML
 state_dir: /tmp/vigil-smoke-state
 socket_path: $SOCKET
-interval_seconds: 3
+collectors_path: $(dirname "$SHIPPED")/collectors
 reporters:
   - kind: ndjson
     path: $FINDINGS

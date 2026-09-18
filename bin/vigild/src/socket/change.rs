@@ -5,8 +5,9 @@ use crate::accounts::{READING, carry_out, findings};
 use crate::helpers::uuid7;
 
 const OFF: &str = "This agent changes no account on this host. Changing accounts from the console \
-                   is off until vigil.yaml says otherwise, and the daemon reads that key once, \
-                   at start-up.";
+                   is off until accounts.from_the_console in the users block says otherwise \
+                   (collectors/users.yaml, or vigil.yaml on a host of the former layout), and the \
+                   daemon reads that key once, at start-up.";
 
 pub fn change(changes: &[AccountChange], shared: &Shared, now: Rfc3339) -> Response {
     if !shared.with(|state| state.accounts_from_the_console()) {
@@ -65,7 +66,11 @@ mod tests {
             match change(&root(), &shared, now()) {
                 Response::Error { error } => {
                     assert_eq!(error.code, ProtocolError::NOT_ALLOWED);
-                    assert!(error.message.contains("vigil.yaml"), "{error}");
+                    assert!(
+                        error.message.contains("accounts.from_the_console")
+                            && error.message.contains("collectors/users.yaml"),
+                        "the refusal names the key and the file it lives in: {error}"
+                    );
                 }
                 other => panic!(
                     "it answered {other:?}: a host where programs may be stopped has not \

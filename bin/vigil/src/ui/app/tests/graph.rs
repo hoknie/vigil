@@ -91,12 +91,12 @@ fn the_key_says_so_on_a_list_that_draws_a_path_and_says_nothing_on_one_that_does
     while elsewhere.level != Level::List {
         press(&mut elsewhere, KeyCode::Down);
     }
-    let ports = drawn_at(&elsewhere, 120, 30);
+    let network = drawn_at(&elsewhere, 120, 30);
 
     assert!(
-        !ports.contains("P path"),
+        !network.contains("P path"),
         "a key drawn on a list where it does nothing is a key a reader learns to ignore: \
-         {ports}"
+         {network}"
     );
 }
 
