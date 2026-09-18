@@ -125,6 +125,7 @@ pub fn agent() -> AgentStatus {
             collector("firewall", 60, 8, 0),
             collector("resources", 60, 5, 0),
             collector("containers", 60, 3, 0),
+            collector("containers-engines", 120, 31, 0),
             collector("files", 300, 6, 0),
             collector_off(),
         ],

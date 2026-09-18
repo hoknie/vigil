@@ -61,3 +61,17 @@ fn the_detail_of_a_container_holds_every_field_the_agent_wrote_down() {
         "the row says which object it is: {said}"
     );
 }
+
+#[test]
+fn what_proc_and_the_cgroups_show_is_the_host_group_of_the_containers_screen() {
+    let pane = pane();
+
+    assert_eq!(
+        pane.belongs_to(),
+        Some("host"),
+        "the reading of /proc sees a container of any runtime, the ones no engine answers for \
+         among them, so it is a group of its own beside the engines and not one of them"
+    );
+    assert_eq!(WhatRunsInContainers.groups(), vec!["host"]);
+    conformance::run_all_of_the_section(&WhatRunsInContainers);
+}

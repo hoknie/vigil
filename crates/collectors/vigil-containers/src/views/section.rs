@@ -1,6 +1,6 @@
 use vigil_view::{Pane, Section};
 
-use super::pane::Contained;
+use super::pane::{Contained, HOST};
 
 pub struct WhatRunsInContainers;
 
@@ -19,5 +19,9 @@ impl Section for WhatRunsInContainers {
 
     fn panes(&self) -> Vec<Box<dyn Pane>> {
         vec![Box::new(Contained)]
+    }
+
+    fn groups(&self) -> Vec<&'static str> {
+        vec![HOST]
     }
 }

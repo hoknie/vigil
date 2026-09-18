@@ -4,4 +4,5 @@ use ratatui::layout::Rect;
 pub struct Placed {
     pub rows: Vec<(usize, Rect)>,
     pub names: Vec<(usize, Rect)>,
+    pub groups: Vec<(usize, Rect)>,
 }

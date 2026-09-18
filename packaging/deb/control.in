@@ -9,6 +9,8 @@ Description: vigil reads the host it is installed on — listening sockets, acco
  logins, and the files that decide who may enter — compares each reading with the
  previous one, and turns the difference into findings.
  .
- This package installs three programs: vigild, the daemon systemd runs, vigil,
- the terminal console that reads its local socket, and vigil-audit-plugin, which
- auditd starts to hand this host's program launches over.
+ This package installs four programs: vigild, the daemon systemd runs, vigil,
+ the terminal console that reads its local socket, vigil-audit-plugin, which
+ auditd starts to hand this host's program launches over, and
+ vigil-container-dump, which a timer runs to ask this host's container engines
+ what they hold.

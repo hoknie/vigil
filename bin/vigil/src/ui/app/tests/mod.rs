@@ -3,6 +3,7 @@ mod buttons;
 mod clicks;
 mod deeds;
 mod drawing;
+mod engines;
 mod graph;
 mod harness;
 mod history;

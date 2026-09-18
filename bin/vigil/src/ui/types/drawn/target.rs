@@ -8,6 +8,7 @@ pub enum Target {
     Counting,
     Row(usize),
     Pane(usize),
+    Group(usize),
     List,
     Detail,
 }

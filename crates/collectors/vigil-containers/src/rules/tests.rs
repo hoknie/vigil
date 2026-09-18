@@ -121,8 +121,9 @@ fn the_image_a_container_was_started_from_is_named_by_no_rule_here() {
 
     assert!(
         containers(&change).is_empty(),
-        "container.image_unknown is in the vocabulary and nothing produces it: the name of an \
-         image is held by the daemon of the runtime and by no file this agent reads, and a \
-         rule guessing at it would be worse than the silence"
+        "container.image_unknown is in the vocabulary and nothing produces it: /proc does not \
+         name the image a process was started from, and the engines reading, which does, lists \
+         every image its containers run from, so an image it does not know is only the race \
+         between two of its commands. A rule guessing at it would be worse than the silence"
     );
 }

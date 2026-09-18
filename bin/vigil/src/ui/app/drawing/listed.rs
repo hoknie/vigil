@@ -103,7 +103,7 @@ impl App {
     pub(in crate::ui::app) fn draw_list(&self, area: Rect, buffer: &mut Buffer) {
         match self.nav.at() {
             screen if screen.draws_a_reading() => {
-                if !self.look.interactive() && self.shown_panes().len() > 1 {
+                if !self.look.interactive() && self.every_shown_pane().len() > 1 {
                     self.print_every_list(area, buffer);
                     return;
                 }
@@ -121,6 +121,9 @@ impl App {
                         area,
                         buffer,
                     );
+                    for (at, drawn) in placed.groups {
+                        self.pointer.put(drawn, Target::Group(at));
+                    }
                     for (at, drawn) in placed.names {
                         self.pointer.put(drawn, Target::Pane(at));
                     }

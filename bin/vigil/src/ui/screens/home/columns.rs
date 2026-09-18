@@ -26,7 +26,7 @@ const OBJECTS_WIDTH: usize = 7;
 
 const READ_WIDTH: usize = 8;
 
-const COLLECTOR_WIDTH: usize = 22;
+const COLLECTOR_WIDTH: usize = 31;
 
 const NAME_LEAST: usize = SECTION.len();
 
@@ -97,6 +97,20 @@ mod tests {
              worse than none"
         );
         assert!(cramped.iter().any(|(named, _)| *named == STATE));
+    }
+
+    #[test]
+    fn the_readings_of_every_section_are_named_whole_in_the_column_that_names_them() {
+        for screen in Screen::all() {
+            let named = screen.collectors().join(" \u{b7} ");
+            assert!(
+                named.chars().count() <= COLLECTOR_WIDTH,
+                "{} reads {named:?}, which is {} characters in a column of {COLLECTOR_WIDTH}: \
+                 the name of a reading cut in half is a reading the reader cannot look up",
+                screen.name(),
+                named.chars().count()
+            );
+        }
     }
 
     #[test]

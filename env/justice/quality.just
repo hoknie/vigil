@@ -29,6 +29,7 @@ cost:
     {{ CARGO }} run --release --example users -p vigil-users
     {{ CARGO }} run --release --example firewall -p vigil-firewall
     {{ CARGO }} run --release --example containers -p vigil-containers
+    {{ CARGO }} run --release --example engines -p vigil-engines
     {{ CARGO }} run --release --example persistence -p vigil-persistence
     {{ CARGO }} run --release --example processes -p vigil-processes
     {{ CARGO }} run --release --example launches -p vigil-launches

@@ -1,0 +1,73 @@
+[Unit]
+# This unit asks this host's container engines what they hold and writes what each one
+# printed to a file, and vigild reads those files. The agent never starts a program of its
+# own: talking to /run/docker.sock is root on this host in one step, and the daemon neither
+# holds that socket nor runs the client. The privileged half is declared here, where you can
+# read it and switch it off the way you switch anything off:
+#
+#     systemctl mask vigil-containers.timer    stop the reading, keep the package
+#     systemctl status vigil-containers        what the last run said
+#     cat /var/lib/vigil/containers/docker.json    what it wrote
+#
+# With this masked, vigild says so on its own health line: what the engines of this host hold
+# is unknown. That is not the same answer as "this host runs no containers", and the agent
+# never turns one into the other. An engine that is not installed is written down as absent,
+# which is again a different answer from an engine that did not reply.
+Description=vigil: write what this host's container engines hold where the agent reads it
+Documentation=file:/usr/share/doc/vigil/README.md
+After=docker.service podman.service
+
+[Service]
+Type=oneshot
+
+# The absolute path of this package's own binary. It runs `docker`/`podman` with a fixed list
+# of listing commands — image ls, volume ls, network ls, ps -a, system info, and for podman
+# pod ls and secret ls — and writes what they printed. It removes nothing, starts nothing and
+# takes no argument from this host.
+ExecStart=/usr/sbin/vigil-container-dump --directory /var/lib/vigil/containers
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=vigil-containers
+
+# Each command is given ten seconds of its own by the program; this is the ceiling over all of
+# them together. A run that hangs leaves the previous reading in place and the agent reports
+# its age.
+TimeoutStartSec=90s
+
+StateDirectory=vigil/containers
+StateDirectoryMode=0700
+UMask=0077
+
+User=root
+CapabilityBoundingSet=CAP_DAC_OVERRIDE
+NoNewPrivileges=yes
+
+ProtectHome=yes
+ProtectSystem=strict
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+
+PrivateTmp=yes
+PrivateDevices=yes
+PrivateNetwork=no
+PrivateUsers=no
+
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+
+# The engine clients speak to a unix socket, and podman in remote mode to a tcp one. Nothing
+# here reaches the kernel's netlink, which is the firewall reading's business and not this one.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+MemoryMax=128M
+TasksMax=16

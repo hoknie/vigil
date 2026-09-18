@@ -67,7 +67,7 @@ fn escape_leaves_every_section_and_the_left_arrow_leaves_the_ones_with_no_row_of
 
     for screen in Screen::all() {
         let mut app = opened_on(screen);
-        let along_a_row_of_names = app.rungs().menu;
+        let along_a_row_of_names = app.rungs().menu || app.rungs().groups;
 
         for _ in 0..6 {
             press(&mut app, KeyCode::Left);

@@ -1,0 +1,13 @@
+[package]
+name = "vigil-container-dump"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "vigil-container-dump"
+path = "src/main.rs"
+
+[dependencies]
+vigil-engines = { path = "../../crates/collectors/vigil-engines" }
+serde_json.workspace = true

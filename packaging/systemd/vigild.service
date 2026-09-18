@@ -10,6 +10,11 @@ After=systemd-journald-dev-log.socket syslog.socket
 # reading without stopping the agent: systemctl mask vigil-firewall.timer
 Wants=vigil-firewall.timer
 
+# What this host's container engines hold is read by a unit of its own, for the same reason:
+# a docker or podman client is root on this host in one step, and the daemon runs neither.
+# To stop that reading without stopping the agent: systemctl mask vigil-containers.timer
+Wants=vigil-containers.timer
+
 StartLimitIntervalSec=60
 StartLimitBurst=5
 

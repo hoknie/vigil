@@ -19,7 +19,7 @@ fn a_reading_that_is_incomplete_is_marked_and_carries_the_reason_the_agent_gave(
         persistence.reason = Some("/etc/cron.d cannot be read: not running as root".into());
     }
 
-    let page = drawn(&view, 80, 30);
+    let page = drawn(&view, 160, 32);
 
     assert!(
         page.lines()

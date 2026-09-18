@@ -12,7 +12,7 @@ impl App {
         let page = body.height as usize;
 
         match self.level {
-            Level::Menu => self.along_the_row(motion),
+            Level::Groups | Level::Menu => self.along_the_row(motion),
             Level::Detail if self.climbing_out_of_the_detail(motion) => self.leave_the_row(),
             Level::Detail => {
                 if let Some(area) = self.detail_area() {
@@ -80,8 +80,14 @@ impl App {
 
     fn along_the_row(&mut self, motion: Motion) {
         match motion {
-            Motion::Down | Motion::PageDown => self.level = Level::List,
-            Motion::Up | Motion::PageUp => self.leave_the_row(),
+            Motion::Down | Motion::PageDown => self.level = self.level.deeper(self.rungs()),
+            Motion::Up | Motion::PageUp => match self.level.shallower(self.rungs()) {
+                Some(level) => self.level = level,
+                None => self.leave_the_row(),
+            },
+            Motion::First | Motion::Last if self.level == Level::Groups => {
+                self.end_of_the_groups(motion == Motion::Last);
+            }
             Motion::First | Motion::Last => {
                 let ends = |count: usize| match motion {
                     Motion::First => 0,

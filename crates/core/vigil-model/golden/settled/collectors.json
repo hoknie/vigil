@@ -7,6 +7,12 @@
         "from": "the period containers is declared with among the collectors this build ships"
       }
     },
+    "containers-engines": {
+      "every_seconds": {
+        "value": 120,
+        "from": "the period containers-engines is declared with among the collectors this build ships"
+      }
+    },
     "files": {
       "every_seconds": {
         "value": 300,

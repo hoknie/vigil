@@ -8,7 +8,7 @@ use vigil_view::{Pane, Room, Section};
 
 use super::chooser;
 use super::columns::{constraints, header};
-use super::menu::row_of_names;
+use super::menu;
 use super::notices::{gone, missing, nothing_here, said};
 use super::regions::{split_about, split_bottom, split_menu, split_top};
 use super::showing::{Showing, asked};
@@ -40,13 +40,6 @@ pub fn render(
         return placed;
     };
 
-    let shown: Vec<usize> = match view.reading(pane.reads()) {
-        Reading::Taken(reading) => (0..panes.len())
-            .filter(|index| panes[*index].shown(reading))
-            .collect(),
-        _ => (0..panes.len()).collect(),
-    };
-
     let area = match showing.gone {
         None => area,
         Some(missing) => {
@@ -63,23 +56,23 @@ pub fn render(
         }
     };
 
-    let (menu, rest) = split_menu(area);
-    if let Some(menu) = menu
-        && shown.len() > 1
-    {
-        let (names, places) = row_of_names(look, &panes, &shown, showing.at, showing.arrows);
-        Paragraph::new(names).render(menu, buffer);
-        placed.names = places
-            .into_iter()
-            .map(|(at, x, wide)| {
-                (
-                    at,
-                    Rect::new(menu.x + x, menu.y, wide, 1).intersection(menu),
-                )
-            })
-            .collect();
+    let groups = section.groups();
+    let (over, rest) = split_menu(area, menu::rows(&groups));
+    let menu = menu::render(look, view, showing, &panes, &groups, over, buffer);
+    placed.groups = menu.groups;
+    placed.names = menu.names;
+    if menu.said_nothing_to_show {
+        return placed;
     }
+    let of_the_group = menu.of_the_group;
 
+    let pane = match groups.is_empty() || of_the_group.contains(&showing.at) {
+        true => pane,
+        false => of_the_group
+            .first()
+            .and_then(|at| panes.get(*at))
+            .unwrap_or(pane),
+    };
     let arrangements = pane.arrangements();
 
     if let Some(notice) = missing(view, pane.as_ref()) {
@@ -148,7 +141,11 @@ pub fn render(
     if rows.is_empty() {
         match snapshot.items.is_empty() {
             true => nothing_here(pane.as_ref(), &snapshot.taken_at).render(look, table, buffer),
-            false => said(pane.empty(&asked)).render(look, table, buffer),
+            false => said(
+                pane.why_nothing_is_listed(snapshot, &asked)
+                    .unwrap_or_else(|| pane.empty(&asked)),
+            )
+            .render(look, table, buffer),
         }
     } else {
         let widths = constraints(&pane.columns(room), marking);
@@ -220,7 +217,7 @@ pub fn printed_height(
     let table = (rows.max(2) as u16).saturating_add(1);
     let _ = look;
 
-    1 + about + table + 1 + 1
+    menu::rows(&section.groups()) + about + table + 1 + 1
 }
 
 fn drawn(

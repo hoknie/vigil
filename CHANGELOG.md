@@ -24,6 +24,7 @@ Format:
 - the filesystems of this host are drawn as a tree of the disks and volumes they
 - watched paths edited in `vigil.yaml`, from the console or by hand
 - `env/scripts/install.sh` installs and updates vigil via cli
+- added support for docker and podman
 
 ### Fixed
 - double suppresion for one item

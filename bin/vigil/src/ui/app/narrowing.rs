@@ -1,6 +1,6 @@
 use super::App;
 
-use crate::ui::{Cursor, Level, Offset, Panes, Screen, Search, holding};
+use crate::ui::{Cursor, Offset, Panes, Screen, Search, holding};
 
 use super::deeds::{
     CONTROL, DELETE, EDIT, MARK, NEW, NOTHING_TO_CHANGE, NOTHING_TO_CONTROL, SUPPRESS, UNMARK_EVERY,
@@ -144,7 +144,7 @@ impl App {
     }
 
     pub(super) fn narrowed(&self) -> bool {
-        let everything = self.level == Level::Menu;
+        let everything = self.level.is_a_row_of_names();
         match self.nav.at() {
             Screen::FINDINGS => self.filter.holding_back(),
             screen if screen.draws_a_reading() => self.panes().is_some_and(|panes| {
@@ -161,7 +161,7 @@ impl App {
                 self.nav.findings = Cursor::default();
             }
             screen if screen.draws_a_reading() => {
-                let menu = self.level == Level::Menu;
+                let menu = self.level.is_a_row_of_names();
                 if let Some(panes) = self.panes_mut() {
                     panes.widen();
                     if menu {

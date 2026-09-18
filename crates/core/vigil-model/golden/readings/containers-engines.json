@@ -1,0 +1,442 @@
+{
+  "source": "containers-engines",
+  "taken_at": "2026-09-17T09:00:01.000Z",
+  "items": {
+    "docker|container|metrics-agent-1": {
+      "host_network": true,
+      "id": "a1d4c7b0e935",
+      "image": "5f0c1ad8b29e",
+      "image_id": null,
+      "labels": {
+        "com.docker.compose.project": "metrics",
+        "com.docker.compose.project.config_files": "/srv/metrics/compose.yaml",
+        "com.docker.compose.project.working_dir": "/srv/metrics",
+        "com.docker.compose.service": "agent"
+      },
+      "labels_redacted": false,
+      "mounts": [
+        "/proc",
+        "/sys"
+      ],
+      "mounts_truncated": false,
+      "name": "metrics-agent-1",
+      "networks": [
+        "host"
+      ],
+      "pod": null,
+      "ports": [],
+      "project": "metrics",
+      "service": "agent",
+      "subject": "container"
+    },
+    "docker|container|shop-api-1": {
+      "host_network": false,
+      "id": "3b6d9e0a1f52",
+      "image": "shop/api:2026.09.1",
+      "image_id": null,
+      "labels": {
+        "com.docker.compose.project": "shop",
+        "com.docker.compose.project.config_files": "/srv/shop/compose.yaml",
+        "com.docker.compose.project.working_dir": "/srv/shop",
+        "com.docker.compose.service": "api"
+      },
+      "labels_redacted": false,
+      "mounts": [
+        "shop_database"
+      ],
+      "mounts_truncated": false,
+      "name": "shop-api-1",
+      "networks": [
+        "shop_default"
+      ],
+      "pod": null,
+      "ports": [],
+      "project": "shop",
+      "service": "api",
+      "subject": "container"
+    },
+    "docker|container|shop-web-1": {
+      "host_network": false,
+      "id": "0f72b16f7cc6",
+      "image": "nginx:1.27-alpine",
+      "image_id": null,
+      "labels": {
+        "com.docker.compose.project": "shop",
+        "com.docker.compose.project.config_files": "/srv/shop/compose.yaml",
+        "com.docker.compose.project.working_dir": "/srv/shop",
+        "com.docker.compose.service": "web",
+        "com.shop.api-token": "[redacted]"
+      },
+      "labels_redacted": true,
+      "mounts": [
+        "/etc",
+        "shop_database"
+      ],
+      "mounts_truncated": false,
+      "name": "shop-web-1",
+      "networks": [
+        "shop_default"
+      ],
+      "pod": null,
+      "ports": [
+        "0.0.0.0:443->443/tcp"
+      ],
+      "project": "shop",
+      "service": "web",
+      "subject": "container"
+    },
+    "docker|engine|docker": {
+      "cgroup_driver": "systemd",
+      "cgroup_version": "2",
+      "dump_read": true,
+      "engine": "docker",
+      "logging_driver": "json-file",
+      "present": true,
+      "read": true,
+      "root_directory": "/var/lib/docker",
+      "rootless": null,
+      "security_options": [
+        "name=cgroupns",
+        "name=seccomp,profile=builtin"
+      ],
+      "storage_driver": "overlay2",
+      "subject": "engine",
+      "unanswered": [],
+      "version": "27.1.1"
+    },
+    "docker|image|sha256:18ad9bdc4c87": {
+      "digest": "sha256:9a7f6e5d4c3b2a190807f6e5d4c3b2a1908070605040302010f0e0d0c0b0a090",
+      "id": "sha256:18ad9bdc4c87",
+      "size": "78.5MB",
+      "subject": "image",
+      "tags": [
+        "nginx:1.27-alpine"
+      ],
+      "untagged": false
+    },
+    "docker|image|sha256:5f0c1ad8b29e": {
+      "digest": null,
+      "id": "sha256:5f0c1ad8b29e",
+      "size": "1.02GB",
+      "subject": "image",
+      "tags": [],
+      "untagged": true
+    },
+    "docker|image|sha256:c4b2e1f09a33": {
+      "digest": null,
+      "id": "sha256:c4b2e1f09a33",
+      "size": "412MB",
+      "subject": "image",
+      "tags": [
+        "shop/api:2026.09.1"
+      ],
+      "untagged": false
+    },
+    "docker|network|bridge": {
+      "driver": "bridge",
+      "id": "bd8aceefd293",
+      "interface": null,
+      "internal": false,
+      "ipv6": false,
+      "labels": {},
+      "labels_redacted": false,
+      "name": "bridge",
+      "project": null,
+      "subject": "network",
+      "subnets": []
+    },
+    "docker|network|host": {
+      "driver": "host",
+      "id": "b60b79f81273",
+      "interface": null,
+      "internal": false,
+      "ipv6": false,
+      "labels": {},
+      "labels_redacted": false,
+      "name": "host",
+      "project": null,
+      "subject": "network",
+      "subnets": []
+    },
+    "docker|network|shop_default": {
+      "driver": "bridge",
+      "id": "71c05aa4e8d1",
+      "interface": null,
+      "internal": false,
+      "ipv6": false,
+      "labels": {
+        "com.docker.compose.network": "default",
+        "com.docker.compose.project": "shop"
+      },
+      "labels_redacted": false,
+      "name": "shop_default",
+      "project": "shop",
+      "subject": "network",
+      "subnets": []
+    },
+    "docker|project|metrics": {
+      "configuration_files": [
+        "/srv/metrics/compose.yaml"
+      ],
+      "containers": [
+        "metrics-agent-1"
+      ],
+      "name": "metrics",
+      "services": [
+        "agent"
+      ],
+      "subject": "project",
+      "working_directory": "/srv/metrics"
+    },
+    "docker|project|shop": {
+      "configuration_files": [
+        "/srv/shop/compose.yaml"
+      ],
+      "containers": [
+        "shop-api-1",
+        "shop-web-1"
+      ],
+      "name": "shop",
+      "services": [
+        "api",
+        "web"
+      ],
+      "subject": "project",
+      "working_directory": "/srv/shop"
+    },
+    "docker|registry|mirror.example.com": {
+      "from": "/etc/docker/daemon.json",
+      "host": "mirror.example.com",
+      "insecure": false,
+      "role": "mirror",
+      "subject": "registry"
+    },
+    "docker|registry|registry.local:5000": {
+      "from": "/etc/docker/daemon.json",
+      "host": "registry.local:5000",
+      "insecure": true,
+      "role": "configured",
+      "subject": "registry"
+    },
+    "docker|volume|2e10970a75cc": {
+      "device": null,
+      "driver": "local",
+      "labels": {
+        "com.docker.volume.anonymous": ""
+      },
+      "labels_redacted": false,
+      "mountpoint": "/var/lib/docker/volumes/2e10970a75cc/_data",
+      "name": "2e10970a75cc",
+      "project": null,
+      "scope": "local",
+      "subject": "volume"
+    },
+    "docker|volume|shop_database": {
+      "device": null,
+      "driver": "local",
+      "labels": {
+        "com.docker.compose.project": "shop",
+        "com.docker.compose.volume": "database"
+      },
+      "labels_redacted": false,
+      "mountpoint": "/var/lib/docker/volumes/shop_database/_data",
+      "name": "shop_database",
+      "project": "shop",
+      "scope": "local",
+      "subject": "volume"
+    },
+    "podman|container|tools-infra": {
+      "host_network": false,
+      "id": "6d1e9f4a0c73b852a1908070605040302010fedcba9876543210fedcba987654",
+      "image": "localhost/podman-pause:5.1.1-1",
+      "image_id": "aa11bb22cc33dd44ee55ff6677889900aabbccddeeff00112233445566778899",
+      "labels": {},
+      "labels_redacted": false,
+      "mounts": [],
+      "mounts_truncated": false,
+      "name": "tools-infra",
+      "networks": [
+        "podman1"
+      ],
+      "pod": "tools",
+      "ports": [],
+      "project": null,
+      "service": null,
+      "subject": "container"
+    },
+    "podman|container|tools-shell": {
+      "host_network": false,
+      "id": "9a0b1c2d3e4f5061728394a5b6c7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e8f",
+      "image": "quay.io/podman/hello:latest",
+      "image_id": "7c8f3a1b5d2e4906f8a7b6c5d4e3f2a1908070605040302010fedcba98765432",
+      "labels": {
+        "com.corp.vault-token": "[redacted]",
+        "role": "shell"
+      },
+      "labels_redacted": true,
+      "mounts": [
+        "/etc",
+        "tools_home"
+      ],
+      "mounts_truncated": false,
+      "name": "tools-shell",
+      "networks": [
+        "podman1"
+      ],
+      "pod": "tools",
+      "ports": [
+        "127.0.0.1:2222->2222/tcp"
+      ],
+      "project": null,
+      "service": null,
+      "subject": "container"
+    },
+    "podman|engine|podman": {
+      "cgroup_driver": "systemd",
+      "cgroup_version": "v2",
+      "dump_read": true,
+      "engine": "podman",
+      "logging_driver": "journald",
+      "present": true,
+      "read": true,
+      "root_directory": "/var/lib/containers/storage",
+      "rootless": true,
+      "security_options": [],
+      "storage_driver": "overlay",
+      "subject": "engine",
+      "unanswered": [],
+      "version": "5.1.1"
+    },
+    "podman|image|sha256:7c8f3a1b5d2e4906f8a7b6c5d4e3f2a1908070605040302010fedcba98765432": {
+      "digest": "sha256:1f0d2c3b4a59687756453423121f0e0d0c0b0a0908070605040302010fedcba9",
+      "id": "sha256:7c8f3a1b5d2e4906f8a7b6c5d4e3f2a1908070605040302010fedcba98765432",
+      "size": "579328",
+      "subject": "image",
+      "tags": [
+        "quay.io/podman/hello:latest"
+      ],
+      "untagged": false
+    },
+    "podman|image|sha256:b2d6e4f80a1c3957e6d5c4b3a2918070f6e5d4c3b2a1908070605040302010fe": {
+      "digest": null,
+      "id": "sha256:b2d6e4f80a1c3957e6d5c4b3a2918070f6e5d4c3b2a1908070605040302010fe",
+      "size": "214958080",
+      "subject": "image",
+      "tags": [],
+      "untagged": true
+    },
+    "podman|network|podman": {
+      "driver": "bridge",
+      "id": "2f259bab93aaaaa2542ba43ef33eb990d0999ee1b9924b557b7be53c0b7a1bb9",
+      "interface": "podman0",
+      "internal": false,
+      "ipv6": false,
+      "labels": {},
+      "labels_redacted": false,
+      "name": "podman",
+      "project": null,
+      "subject": "network",
+      "subnets": [
+        "10.88.0.0/16"
+      ]
+    },
+    "podman|network|podman1": {
+      "driver": "bridge",
+      "id": "8e4d1c0b7a396584f3e2d1c0b9a8978675645342312f0e0d0c0b0a0908070605",
+      "interface": "podman1",
+      "internal": true,
+      "ipv6": false,
+      "labels": {
+        "role": "tools"
+      },
+      "labels_redacted": false,
+      "name": "podman1",
+      "project": null,
+      "subject": "network",
+      "subnets": [
+        "10.89.0.0/24"
+      ]
+    },
+    "podman|pod|tools": {
+      "cgroup": "machine.slice",
+      "containers": [
+        "tools-infra",
+        "tools-shell"
+      ],
+      "id": "3f2e1d0c9b8a7766554433221100ffeeddccbbaa99887766554433221100ffee",
+      "infra_id": "6d1e9f4a0c73b852a1908070605040302010fedcba9876543210fedcba987654",
+      "labels": {
+        "role": "tools"
+      },
+      "labels_redacted": false,
+      "name": "tools",
+      "networks": [
+        "podman1"
+      ],
+      "subject": "pod"
+    },
+    "podman|registry|docker.io": {
+      "from": "/etc/containers/registries.conf",
+      "host": "docker.io",
+      "insecure": false,
+      "role": "search",
+      "subject": "registry"
+    },
+    "podman|registry|quay.io": {
+      "from": "/etc/containers/registries.conf",
+      "host": "quay.io",
+      "insecure": false,
+      "role": "search",
+      "subject": "registry"
+    },
+    "podman|registry|registry.internal": {
+      "from": "/etc/containers/registries.conf",
+      "host": "registry.internal",
+      "insecure": false,
+      "role": "configured",
+      "subject": "registry"
+    },
+    "podman|registry|registry.local:5000": {
+      "from": "/etc/containers/registries.conf",
+      "host": "registry.local:5000",
+      "insecure": true,
+      "role": "configured",
+      "subject": "registry"
+    },
+    "podman|secret|shop-database-password": {
+      "created_at": "2026-09-02T06:28:00Z",
+      "driver": "file",
+      "id": "4c1a9e7b3d05f286a190807060504030",
+      "labels": {},
+      "labels_redacted": false,
+      "name": "shop-database-password",
+      "subject": "secret",
+      "updated_at": "2026-09-02T06:28:00Z",
+      "value_redacted": true
+    },
+    "podman|volume|etc_backup": {
+      "device": "/etc",
+      "driver": "local",
+      "labels": {
+        "role": "backup"
+      },
+      "labels_redacted": false,
+      "mountpoint": "/var/lib/containers/storage/volumes/etc_backup/_data",
+      "name": "etc_backup",
+      "project": null,
+      "scope": "local",
+      "subject": "volume"
+    },
+    "podman|volume|tools_home": {
+      "device": null,
+      "driver": "local",
+      "labels": {},
+      "labels_redacted": false,
+      "mountpoint": "/var/lib/containers/storage/volumes/tools_home/_data",
+      "name": "tools_home",
+      "project": null,
+      "scope": "local",
+      "subject": "volume"
+    }
+  }
+}

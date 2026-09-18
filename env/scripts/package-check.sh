@@ -40,7 +40,7 @@ echo "arch: $(uname -m)   kernel: $(uname -r)"
 echo "package: $PACKAGE"
 [ -f "$PACKAGE" ] || { echo "no such package — build it first" >&2; exit 2; }
 
-for leftover in /usr/sbin/vigild /usr/bin/vigil /usr/sbin/vigil-audit-plugin /etc/vigil /var/lib/vigil; do
+for leftover in /usr/sbin/vigild /usr/bin/vigil /usr/sbin/vigil-audit-plugin /usr/sbin/vigil-container-dump /etc/vigil /var/lib/vigil; do
     [ -e "$leftover" ] && { echo "this machine is not clean: $leftover exists" >&2; exit 2; }
 done
 
@@ -54,12 +54,16 @@ say "what it put where"
 expect_mode /usr/sbin/vigild 755
 expect_mode /usr/bin/vigil 755
 expect_mode /usr/sbin/vigil-audit-plugin 755
+expect_mode /usr/sbin/vigil-container-dump 755
 expect_mode /etc/vigil 700
 expect_mode /etc/vigil/vigil.yaml 600
 expect_mode /etc/logrotate.d/vigil 644
 expect_mode /usr/lib/systemd/system/vigild.service 644
+expect_mode /usr/lib/systemd/system/vigil-containers.service 644
+expect_mode /usr/lib/systemd/system/vigil-containers.timer 644
 expect_mode /usr/lib/tmpfiles.d/vigil.conf 644
 expect_mode /var/lib/vigil 700
+expect_mode /var/lib/vigil/containers 700
 expect_mode /var/log/vigil 700
 expect_mode /run/vigil 700
 expect_mode /etc/audit 750
@@ -74,6 +78,20 @@ if [ "$(md5sum < config/vigil.example.yaml)" = "$(md5sum < /etc/vigil/vigil.yaml
 else
     bad "the installed configuration is not the shipped example"
 fi
+
+say "the container dump, on a machine with no engine installed"
+if /usr/sbin/vigil-container-dump --version | grep -q "vigil-container-dump $VERSION"; then
+    ok "$(/usr/sbin/vigil-container-dump --version)"
+else
+    bad "vigil-container-dump --version says '$(/usr/sbin/vigil-container-dump --version 2>&1)'"
+fi
+if /usr/sbin/vigil-container-dump >/dev/null 2>&1 \
+    && grep -q '"state": "absent"' /var/lib/vigil/containers/docker.json; then
+    ok "an engine that is not here is written down as absent rather than left out"
+else
+    bad "the dump wrote no document for an engine this machine does not have"
+fi
+expect_mode /var/lib/vigil/containers/docker.json 600
 
 say "the audit plugin, fed a recorded event the way auditd would feed a live one"
 if /usr/sbin/vigil-audit-plugin --version | grep -q "vigil-audit-plugin $VERSION"; then
@@ -155,6 +173,7 @@ wait "$daemon" 2>/dev/null
 
 say "the state directory has something in it, and it is 0600"
 expect_mode /var/lib/vigil 700
+expect_mode /var/lib/vigil/containers 700
 expect_mode /var/lib/vigil/install_id 600
 expect_mode /var/lib/vigil/audit-spool.cursor 600
 install_id="$(cat /var/lib/vigil/install_id 2>/dev/null || true)"
@@ -205,6 +224,7 @@ deb)
     expect_absent /usr/sbin/vigild
     expect_absent /usr/bin/vigil
     expect_absent /usr/sbin/vigil-audit-plugin
+    expect_absent /usr/sbin/vigil-container-dump
     expect_present /etc/vigil/vigil.yaml
     expect_present /etc/audit/rules.d/vigil-exec.rules
     expect_present /var/lib/vigil/install_id

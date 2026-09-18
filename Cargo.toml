@@ -11,6 +11,7 @@ members = [
     "crates/collectors/vigil-users",
     "crates/collectors/vigil-firewall",
     "crates/collectors/vigil-containers",
+    "crates/collectors/vigil-engines",
     "crates/collectors/vigil-files",
     "crates/collectors/vigil-persistence",
     "crates/collectors/vigil-processes",
@@ -21,11 +22,12 @@ members = [
     "bin/vigild",
     "bin/vigil",
     "bin/vigil-audit-plugin",
+    "bin/vigil-container-dump",
 ]
 
 [workspace.package]
 edition = "2024"
-version = "1.0.7"
+version = "1.0.8"
 license = "Apache-2.0"
 
 [workspace.dependencies]

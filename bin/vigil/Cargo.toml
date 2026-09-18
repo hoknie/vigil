@@ -17,6 +17,7 @@ vigil-network = { path = "../../crates/collectors/vigil-network" }
 vigil-users = { path = "../../crates/collectors/vigil-users" }
 vigil-firewall = { path = "../../crates/collectors/vigil-firewall" }
 vigil-containers = { path = "../../crates/collectors/vigil-containers" }
+vigil-engines = { path = "../../crates/collectors/vigil-engines" }
 vigil-persistence = { path = "../../crates/collectors/vigil-persistence" }
 vigil-processes = { path = "../../crates/collectors/vigil-processes" }
 vigil-launches = { path = "../../crates/collectors/vigil-launches" }

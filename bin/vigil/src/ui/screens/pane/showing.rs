@@ -13,6 +13,7 @@ pub struct Showing<'a> {
     pub hidden: &'a [String],
     pub cursor: usize,
     pub arrows: Arrows,
+    pub group: Option<&'a str>,
     pub sorting: Sorting,
     pub note: Option<&'a str>,
     pub elsewhere: usize,

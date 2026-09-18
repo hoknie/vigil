@@ -19,6 +19,7 @@ collectors:
   - resources
   - files
   - containers
+  - containers-engines
 
 # How often each collector reads, in seconds.
 schedule:
@@ -31,6 +32,7 @@ schedule:
   resources: 60
   files: 300
   containers: 60
+  containers-engines: 120
 
 # What this host is expected to do, written out so the agent stays quiet about it.
 suppressions: []
@@ -70,6 +72,29 @@ files:
     - /etc/hosts
   # A file above this size is watched by its permissions alone and its content is not hashed.
   ceiling_bytes: 1048576
+
+containers:
+  # The container engines whose images, volumes, networks, projects, pods and secrets are
+  # read. An engine that is not installed here is recorded as absent, which is not the same
+  # answer as an engine that did not reply.
+  engines: [docker, podman]
+  # How often vigil-containers.timer runs the engine commands. A reading older than twice
+  # this is reported as stale rather than passed off as current.
+  dump_seconds: 120
+  report:
+    # Whether an image appearing, going or moving to another digest is reported.
+    images: true
+    # Whether a volume appearing, going or changing its driver or its point is reported.
+    volumes: true
+    # Whether a network appearing, going or changing its subnet or driver is reported.
+    networks: true
+    # Whether a compose project appearing, going or changing its services is reported.
+    projects: true
+    # Whether a podman pod appearing, going or changing the containers it holds is reported.
+    pods: true
+    # Whether a secret of an engine appearing, going or being replaced is reported. Its value
+    # is never read.
+    secrets: true
 
 launches:
   # Whether the arguments a program was launched with are kept.

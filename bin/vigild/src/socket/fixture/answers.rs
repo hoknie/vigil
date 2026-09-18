@@ -101,6 +101,7 @@ pub fn every_state() -> State {
             ("firewall", Health::Degraded(NO_RULESET_YET.to_string())),
             ("resources", Health::Ok),
             ("containers", Health::Ok),
+            ("containers-engines", Health::Ok),
             ("files", Health::Ok),
         ],
         &["ndjson".to_string(), "webhook".to_string()],
@@ -111,6 +112,7 @@ pub fn every_state() -> State {
     state.record_reading(reading_of("persistence", snapshot()));
     state.record_reading(reading_of("resources", snapshot()));
     state.record_reading(reading_of("containers", snapshot()));
+    state.record_reading(reading_of("containers-engines", snapshot()));
     state.record_reading(reading_of("files", snapshot()));
     state.record_failure("persistence", "2026-09-09T09:00:30.000Z".into(), FAILED);
     state.record_budget(Some(0.02), Some(12_288));
