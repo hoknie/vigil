@@ -26,6 +26,7 @@ impl Greeting<'_> {
             self.config.state_dir,
             self.reporters
         );
+        self.say_reporters();
         self.say_collectors();
         self.say_health();
         if self.damaged > 0 {
@@ -63,6 +64,24 @@ impl Greeting<'_> {
         }
 
         findings
+    }
+
+    fn say_reporters(&self) {
+        for file in &self.config.apart.reporters {
+            eprintln!(
+                "  reporters: {} from {}",
+                file.receivers.len(),
+                file.path.display()
+            );
+        }
+        if let Some(at) = &self.config.apart.reporters_at
+            && !at.exists()
+        {
+            eprintln!(
+                "  reporters: {} is not there, so no reporter is read from it",
+                at.display()
+            );
+        }
     }
 
     fn say_collectors(&self) {

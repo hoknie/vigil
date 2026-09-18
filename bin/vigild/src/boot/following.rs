@@ -16,14 +16,13 @@ pub fn of(
 }
 
 fn said(names: &[&str]) -> String {
-    match names.is_empty() {
-        true => "read at start-up only".to_string(),
-        false => format!(
-            "{} taken from the file again on the round after it changes; everything else, \
-             the console switches among it, is read at start-up only",
-            names.join(", ")
-        ),
-    }
+    let mut again = vec!["suppressions"];
+    again.extend(names);
+    format!(
+        "{} taken from the files again on the round after they change; everything else, \
+         the console switches among it, is read at start-up only",
+        again.join(", ")
+    )
 }
 
 #[cfg(test)]
@@ -42,6 +41,10 @@ mod tests {
         assert!(
             said(&[]).contains("start-up only"),
             "a host that watches no files still reads the rest of its file once"
+        );
+        assert!(
+            said(&[]).contains("suppressions"),
+            "and takes up what it is told to silence without a restart"
         );
     }
 }

@@ -23,8 +23,7 @@ says it read.
 
 The daemon answers with the file it was started with, and that is the file the findings screen
 and the watched files write to. Name one here to edit another. The daemon takes the watched
-paths from it again on its next round; everything else, suppressions among it, is read at
-start, so a restart is named after those changes."
+paths and the suppressions from it again on its next round; everything else is read at start."
     )]
     pub config: Option<String>,
 

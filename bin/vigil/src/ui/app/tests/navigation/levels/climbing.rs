@@ -135,7 +135,7 @@ fn the_main_screen_is_the_top_and_the_arrow_up_on_its_first_row_goes_nowhere() {
 fn no_screen_hands_the_arrows_to_the_panel_on_the_first_press() {
     for screen in [
         Screen::FINDINGS,
-        screen("ports"),
+        screen("network"),
         screen("accounts"),
         screen("programs"),
         screen("startup"),

@@ -38,7 +38,7 @@ fn the_right_arrow_opens_a_section_the_way_enter_does() {
 
     press(&mut app, KeyCode::Right);
 
-    assert_eq!(app.nav.at(), screen("ports"));
+    assert_eq!(app.nav.at(), screen("network"));
 }
 
 #[test]
@@ -107,18 +107,18 @@ fn a_digit_leaves_the_submenu_the_way_it_leaves_every_other_level() {
     press(&mut app, number(screen("accounts")));
     assert_eq!(app.level, Level::Menu);
 
-    press(&mut app, number(screen("ports")));
+    press(&mut app, number(screen("network")));
 
-    assert_eq!(app.nav.at(), screen("ports"));
+    assert_eq!(app.nav.at(), screen("network"));
     assert_eq!(app.level, Level::Menu);
 }
 
 #[test]
 fn a_number_with_no_section_behind_it_changes_nothing() {
     let mut app = app();
-    press(&mut app, number(screen("ports")));
+    press(&mut app, number(screen("network")));
 
     press(&mut app, KeyCode::Char('0'));
 
-    assert_eq!(app.nav.at(), screen("ports"));
+    assert_eq!(app.nav.at(), screen("network"));
 }

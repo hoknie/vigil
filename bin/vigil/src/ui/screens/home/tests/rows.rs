@@ -64,7 +64,7 @@ fn a_collector_this_console_has_no_section_for_is_still_a_row() {
     let mut view = fixture::view();
     if let Some(status) = view.status.as_mut() {
         status.agent.collectors.push(CollectorStatus {
-            name: "network".into(),
+            name: "wireguard".into(),
             state: CollectorState::Ok,
             reason: None,
             items: 9,
@@ -74,31 +74,32 @@ fn a_collector_this_console_has_no_section_for_is_still_a_row() {
 
     let page = drawn(&view, 80, 30);
 
-    assert!(page.contains("network"), "{page}");
+    assert!(page.contains("wireguard"), "{page}");
     assert!(
         !page.contains("No screen in this console draws"),
         "the sentence moved to the panel: {page}"
     );
     assert!(
-        note(&view, "network").is_some_and(|note| note.contains("No screen in this console draws")),
+        note(&view, "wireguard")
+            .is_some_and(|note| note.contains("No screen in this console draws")),
         "and the row still carries it, for the panel to draw"
     );
     assert!(
-        note(&view, "network").is_some_and(|note| !note.contains("newer")),
+        note(&view, "wireguard").is_some_and(|note| !note.contains("newer")),
         "the console and the agent ship in one package, so a reading nobody drew a screen for \
          is not an agent that ran ahead"
     );
     assert!(
         rows(&view)
             .iter()
-            .any(|row| row.name == "network" && row.opens == Screen::UNKNOWN),
+            .any(|row| row.name == "wireguard" && row.opens == Screen::UNKNOWN),
         "a reading this console has no screen for opens as a plain list: accepting what it \
          does not know beats drawing nothing"
     );
     assert!(
         !rows(&view)
             .iter()
-            .any(|row| row.name == "network" && row.is_a_section_of_its_own()),
+            .any(|row| row.name == "wireguard" && row.is_a_section_of_its_own()),
         "and it is still counted apart from the sections this build has screens for"
     );
 }

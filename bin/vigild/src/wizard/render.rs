@@ -104,29 +104,39 @@ fn collectors(taken_at: &str, survey: &[Surveyed]) -> String {
 }
 
 const REPORTERS: &str = "\
-# Where findings go. An empty list is supported: the console reads the local history, and on a
-# host with no network out nothing else is needed. Uncomment one. This file is 0600 because
-# a receiver here may name a file with a token in it.
+# Where findings go. They are kept apart from this file, in the files under reporters_path, so
+# that writing this file again never loses a receiver somebody set up. Every file there that
+# ends in .yaml or .yml is read, in the order of their names, and each holds a list of its own;
+# a list written in this file is read as well. None at all is supported: the console reads the
+# local history, and on a host with no network out nothing else is needed. A file there may
+# name a file with a token in it, so the directory is root's alone.
 #
-#   - kind: ndjson
-#     path: /var/log/vigil/findings.ndjson
-#   - kind: syslog
-#     facility: local0
-reporters: []
+#   /etc/vigil/reporters/journal.yaml:
+#     reporters:
+#       - kind: ndjson
+#         path: /var/log/vigil/findings.ndjson
+#       - kind: syslog
+#         facility: local0
+reporters_path: /etc/vigil/reporters
 ";
 
 const SUPPRESSIONS: &str = "\
 # What this host is expected to do, and therefore what not to report. There is no learning
 # window and no grace period: the first reading of a collector is a baseline and produces
-# nothing, and everything after it is reported unless a line here says otherwise. Each entry
+# nothing, and everything after it is reported unless an entry says otherwise. Each entry
 # needs a reason, in your words.
 #
-#   - finding_key: \"port.listen|tcp|0.0.0.0:8080\"
-#     reason: the staging api, expected on this host
+# The entries are kept apart from this file, in the files under suppressions_path, so that
+# writing this file again never loses a year of them. Every file there that ends in .yaml or
+# .yml is read, in the order of their names; keep one per purpose if that helps. The console
+# and `vigil suppress add` write to console.yaml there, `vigil suppress list` reads every
+# file back, `vigil suppress remove` takes an entry out of whichever file holds it.
 #
-# `vigil suppress add \"<object>\" --reason \"...\"` writes one of these without editing this
-# file by hand, `vigil suppress list` reads them back, `vigil suppress remove` takes one out.
-suppressions: []
+#   /etc/vigil/suppressions/deploy.yaml:
+#     suppressions:
+#       - finding_key: \"port.listen|tcp|0.0.0.0:8080\"
+#         reason: the staging api, expected on this host
+suppressions_path: /etc/vigil/suppressions
 ";
 
 fn killing(defaults: &Config) -> String {

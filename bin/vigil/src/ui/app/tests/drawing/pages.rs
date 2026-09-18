@@ -14,6 +14,7 @@ use crate::ui::fixture::screen;
 fn where_the_arrows_are_is_on_the_screen_and_readable_with_no_colour() {
     let mut app = app();
     press(&mut app, number(Screen::FINDINGS));
+    press(&mut app, KeyCode::Down);
 
     let on_the_list = drawn_at(&app, 200, 24);
     assert!(

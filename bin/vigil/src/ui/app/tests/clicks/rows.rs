@@ -9,7 +9,7 @@ const WIDE: (u16, u16) = (120, 40);
 
 fn on_the_ports() -> App {
     let mut app = app();
-    into(&mut app, screen("ports"), WIDE.0, WIDE.1);
+    into(&mut app, screen("network"), WIDE.0, WIDE.1);
     app
 }
 
@@ -87,7 +87,7 @@ fn what_a_click_on_a_row_does_is_what_the_arrows_and_the_arrow_key_do() {
 #[test]
 fn a_click_on_the_name_of_another_list_of_the_section_opens_that_list() {
     let mut app = app();
-    into(&mut app, screen("ports"), WIDE.0, WIDE.1);
+    into(&mut app, screen("network"), WIDE.0, WIDE.1);
     let page = drawn_at(&app, WIDE.0, WIDE.1);
     let showing = app.panes().map(|panes| panes.showing()).unwrap_or_default();
     let (column, row) = where_it_says(&page, "by program");

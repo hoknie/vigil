@@ -108,7 +108,7 @@ fn on_a_list_that_starts_nothing_the_key_says_where_the_rows_it_acts_on_live() {
 #[test]
 fn the_key_does_nothing_on_a_list_that_starts_and_stops_nothing() {
     let mut app = app();
-    press(&mut app, number(screen("ports")));
+    press(&mut app, number(screen("network")));
     drawn_at(&app, 120, 30);
     while app.level != Level::List {
         press(&mut app, KeyCode::Down);

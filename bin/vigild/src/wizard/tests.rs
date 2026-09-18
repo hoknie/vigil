@@ -61,7 +61,27 @@ fn what_it_writes_is_a_file_the_daemon_reads() {
         "only what can run here is switched on"
     );
     assert_eq!(config.state_dir, Config::default().state_dir);
-    assert!(config.reporters.is_empty());
+    assert_eq!(
+        config.reporters.len(),
+        config
+            .apart
+            .reporters
+            .iter()
+            .map(|file| file.receivers.len())
+            .sum::<usize>(),
+        "the file this command writes names no receiver of its own"
+    );
+    assert!(config.suppressions.is_empty());
+    assert_eq!(
+        config.reporters_path.as_deref(),
+        Some("/etc/vigil/reporters")
+    );
+    assert_eq!(
+        config.suppressions_path.as_deref(),
+        Some("/etc/vigil/suppressions"),
+        "what the console silences lands in a file this command never writes, so \
+         `vigild configure --force` cannot take it away"
+    );
     let _ = std::fs::remove_file(&path);
 }
 

@@ -249,3 +249,157 @@ fn a_host_where_the_files_collector_is_off_looks_at_nothing_on_any_round() {
         looked.said
     );
 }
+
+const POINTING: &str = "suppressions_path: suppressions\n";
+
+const DOCKER: &str = "suppressions:\n  - finding_key: \"user|group|docker\"\n    reason: the deploy user belongs there\n";
+
+impl Bench {
+    fn silences(&self) -> super::Silences {
+        let config = load(&self.path).expect("the file the daemon started from loads");
+        super::Silences::of(&self.path, &config)
+    }
+
+    fn silenced(&self, name: &str, text: &str) {
+        let file = self.directory.join("suppressions").join(name);
+        vigil_config::write(&file, text, true).expect("writes the way the console writes");
+    }
+}
+
+fn keys(heard: &super::silences::Heard) -> Vec<String> {
+    heard
+        .suppressions
+        .as_ref()
+        .expect("a new set of suppressions")
+        .iter()
+        .filter_map(|suppression| suppression.finding_key.clone())
+        .collect()
+}
+
+#[test]
+fn an_entry_written_into_the_directory_is_in_force_on_the_next_look_without_a_restart() {
+    let bench = Bench::new("silence-added", POINTING);
+    let mut silences = bench.silences();
+
+    bench.silenced("console.yaml", DOCKER);
+    let heard = silences.look();
+
+    assert_eq!(keys(&heard), ["user|group|docker"]);
+    assert_eq!(heard.said.len(), 1, "{:?}", heard.said);
+    assert!(heard.said[0].contains("1 new"), "{:?}", heard.said);
+}
+
+#[test]
+fn an_entry_taken_out_of_its_file_stops_silencing_on_the_next_look() {
+    let bench = Bench::new("silence-taken-out", POINTING);
+    bench.silenced("deploy.yaml", DOCKER);
+    let mut silences = bench.silences();
+
+    bench.silenced("deploy.yaml", "suppressions: []\n");
+    let heard = silences.look();
+
+    assert!(keys(&heard).is_empty());
+    assert!(heard.said[0].contains("1 taken out"), "{:?}", heard.said);
+}
+
+#[test]
+fn a_file_removed_from_the_directory_takes_its_entries_with_it() {
+    let bench = Bench::new("silence-removed", POINTING);
+    bench.silenced("deploy.yaml", DOCKER);
+    let mut silences = bench.silences();
+
+    fs::remove_file(bench.directory.join("suppressions").join("deploy.yaml")).expect("removes");
+    let heard = silences.look();
+
+    assert!(keys(&heard).is_empty());
+}
+
+#[test]
+fn files_nobody_touched_are_not_read_again_and_nothing_is_said() {
+    let bench = Bench::new("silence-untouched", POINTING);
+    bench.silenced("deploy.yaml", DOCKER);
+    let mut silences = bench.silences();
+
+    for _ in 0..3 {
+        let heard = silences.look();
+        assert!(
+            heard.suppressions.is_none() && heard.said.is_empty(),
+            "a round with nothing changed costs a stat per file and nothing more: {:?}",
+            heard.said
+        );
+    }
+}
+
+#[test]
+fn a_bad_entry_keeps_what_was_silenced_and_is_said_once_until_the_file_is_mended() {
+    let bench = Bench::new("silence-bad", POINTING);
+    bench.silenced("deploy.yaml", DOCKER);
+    let mut silences = bench.silences();
+
+    bench.silenced(
+        "typo.yaml",
+        "suppressions:\n  - finding_key: \"a|b\"\n    raeson: x\n",
+    );
+    let broken = silences.look();
+    let again = silences.look();
+
+    assert!(broken.suppressions.is_none(), "{:?}", broken.said);
+    assert_eq!(broken.said.len(), 1, "{:?}", broken.said);
+    assert!(
+        broken.said[0].contains("typo.yaml") && broken.said[0].contains("last loaded"),
+        "{}",
+        broken.said[0]
+    );
+    assert!(again.said.is_empty() && again.suppressions.is_none());
+
+    bench.silenced(
+        "typo.yaml",
+        "suppressions:\n  - finding_key: \"a|b\"\n    reason: mended\n",
+    );
+    let mended = silences.look();
+    assert!(
+        mended.said.iter().any(|line| line.contains("loads again")),
+        "{:?}",
+        mended.said
+    );
+    assert_eq!(keys(&mended), ["user|group|docker", "a|b"]);
+}
+
+#[test]
+fn an_entry_written_into_the_configuration_itself_is_taken_up_as_well() {
+    let bench = Bench::new("silence-inline", "suppressions: []\n");
+    let mut silences = bench.silences();
+    let mut followed = bench.followed(&[]);
+
+    bench.write(DOCKER);
+
+    assert_eq!(keys(&silences.look()), ["user|group|docker"]);
+    assert!(
+        followed
+            .look()
+            .said
+            .iter()
+            .all(|line| !line.contains("suppressions")),
+        "what is taken up on the next round is not also said to wait for a restart"
+    );
+}
+
+#[test]
+fn a_directory_the_configuration_names_for_the_first_time_is_read_on_the_next_look() {
+    let bench = Bench::new("silence-pointed", "state_dir: /var/lib/vigil\n");
+    let mut silences = bench.silences();
+    bench.silenced("console.yaml", DOCKER);
+
+    bench.write(&format!("state_dir: /var/lib/vigil\n{POINTING}"));
+    assert_eq!(keys(&silences.look()), ["user|group|docker"]);
+
+    bench.silenced(
+        "more.yaml",
+        "suppressions:\n  - kind: port.listen.removed\n    reason: ours\n",
+    );
+    assert_eq!(
+        silences.look().suppressions.expect("a new set").len(),
+        2,
+        "the directory named since start-up is watched from then on"
+    );
+}

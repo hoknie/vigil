@@ -100,7 +100,7 @@ fn the_list_of_running_programs_says_at_the_bottom_that_k_stops_them() {
 #[test]
 fn the_sockets_still_offer_all_three_ways_and_say_they_close_them() {
     let mut app = app();
-    into(&mut app, screen("ports"), 120, 30);
+    into(&mut app, screen("network"), 120, 30);
 
     press(&mut app, KeyCode::Char('K'));
 

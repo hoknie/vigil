@@ -1,3 +1,4 @@
+mod apart;
 mod following;
 mod load;
 mod put;
@@ -7,7 +8,7 @@ mod split;
 #[cfg(test)]
 mod tests;
 
-pub use following::{Followed, Stamp};
+pub use following::{Followed, Silences, Stamp};
 pub use load::{ConfigError, load};
 pub use put::{put, restart_note};
 #[cfg(test)]

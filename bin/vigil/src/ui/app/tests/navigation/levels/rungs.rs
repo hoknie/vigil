@@ -38,6 +38,9 @@ fn one_level_in_per_press_and_one_level_out_per_press() {
     assert!(!app.detail_open);
 
     press(&mut app, KeyCode::Esc);
+    assert_eq!(app.level, Level::Menu, "then the row of lists");
+
+    press(&mut app, KeyCode::Esc);
     assert_eq!(app.nav.at(), Screen::HOME);
 }
 
@@ -82,7 +85,7 @@ fn the_second_press_back_puts_the_panel_away_and_gives_the_list_the_whole_width(
 }
 
 #[test]
-fn the_third_press_back_is_the_one_that_leaves_the_section() {
+fn the_third_press_back_is_the_one_that_reaches_the_row_of_lists_and_escape_leaves_from_there() {
     let mut app = app();
     into(&mut app, Screen::FINDINGS, 140, 24);
     press(&mut app, KeyCode::Right);
@@ -91,9 +94,11 @@ fn the_third_press_back_is_the_one_that_leaves_the_section() {
     for _ in 0..3 {
         press(&mut app, KeyCode::Left);
     }
-
-    assert_eq!(app.nav.at(), Screen::HOME);
+    assert_eq!(app.level, Level::Menu);
     assert!(!app.detail_open);
+
+    press(&mut app, KeyCode::Esc);
+    assert_eq!(app.nav.at(), Screen::HOME);
 }
 
 #[test]
@@ -115,7 +120,7 @@ fn a_terminal_too_narrow_for_both_halves_puts_the_panel_away_on_the_first_press(
     assert_eq!(app.nav.at(), Screen::FINDINGS);
 
     press(&mut app, KeyCode::Left);
-    assert_eq!(app.nav.at(), Screen::HOME, "and the next press is the rung");
+    assert_eq!(app.level, Level::Menu, "and the next press is the rung");
 }
 
 #[test]
@@ -129,6 +134,9 @@ fn the_left_arrow_and_escape_mean_the_same_thing_on_every_rung() {
         press(&mut escape, KeyCode::Right);
 
         for step in 0..3 {
+            if arrow.level == Level::Menu {
+                break;
+            }
             press(&mut arrow, KeyCode::Left);
             press(&mut escape, KeyCode::Esc);
 

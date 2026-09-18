@@ -8,6 +8,7 @@ pub struct Options {
     pub until: Option<String>,
     pub prefix: bool,
     pub path: String,
+    pub file: Option<String>,
     pub dry_run: bool,
 }
 
@@ -20,6 +21,7 @@ impl Default for Options {
             until: None,
             prefix: false,
             path: DEFAULT_PATH.to_string(),
+            file: None,
             dry_run: false,
         }
     }

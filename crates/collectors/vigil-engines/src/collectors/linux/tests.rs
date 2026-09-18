@@ -71,22 +71,113 @@ fn a_host_where_the_timer_has_never_run_says_the_reading_is_unknown_rather_than_
     let _ = fs::remove_dir_all(&at);
 }
 
+fn not_installed(engine: Engine) -> Dump {
+    Dump::absent(
+        engine.name(),
+        AT,
+        10,
+        format!(
+            "{} is not on this host (looked in {})",
+            engine.name(),
+            engine.places().join(", ")
+        ),
+    )
+}
+
 #[test]
-fn an_engine_that_is_not_installed_is_a_reading_and_an_engine_that_did_not_answer_is_a_complaint() {
+fn an_engine_that_is_not_installed_leaves_the_reading_healthy() {
     let at = workspace("absent");
     written(&at, &docker::dump());
-    written(
-        &at,
-        &Dump::absent(Engine::Podman.name(), AT, 10, "no podman here".to_string()),
-    );
+    written(&at, &not_installed(Engine::Podman));
 
     let collector = reading(&at);
     let read = collector.collect().expect("reads");
 
     assert_eq!(read.items["podman|engine|podman"]["present"], false);
+    assert_eq!(
+        collector.available(),
+        Health::Ok,
+        "an engine this host does not have is an answer, recorded as a row with present: \
+         false, and not a failure of the reading"
+    );
+    let _ = fs::remove_dir_all(&at);
+}
+
+#[test]
+fn docker_that_is_not_installed_leaves_the_reading_healthy_as_podman_does() {
+    let at = workspace("absent-docker");
+    written(&at, &not_installed(Engine::Docker));
+    written(&at, &podman::dump());
+
+    let collector = reading(&at);
+    let read = collector.collect().expect("reads");
+
+    assert_eq!(read.items["docker|engine|docker"]["present"], false);
+    assert_eq!(collector.available(), Health::Ok);
+    let _ = fs::remove_dir_all(&at);
+}
+
+#[test]
+fn a_host_where_none_of_the_listed_engines_is_installed_is_healthy_and_holds_no_engine() {
+    let at = workspace("none-installed");
+    written(&at, &not_installed(Engine::Docker));
+    written(&at, &not_installed(Engine::Podman));
+
+    let collector = reading(&at);
+    let read = collector.collect().expect("reads");
+
+    assert_eq!(read.items["docker|engine|docker"]["present"], false);
+    assert_eq!(read.items["podman|engine|podman"]["present"], false);
+    assert_eq!(collector.available(), Health::Ok);
+    let _ = fs::remove_dir_all(&at);
+}
+
+#[test]
+fn an_installed_engine_that_did_not_reply_still_degrades_it_beside_one_that_is_not_installed() {
+    let at = workspace("silent-beside-absent");
+    let mut broken = docker::dump();
+    let answer = broken.asked.get_mut("container").expect("asked for");
+    answer.state = crate::types::TIMED_OUT.to_string();
+    answer.printed = String::new();
+    written(&at, &broken);
+    written(&at, &not_installed(Engine::Podman));
+
+    let collector = reading(&at);
+
     match collector.available() {
-        Health::Degraded(why) => assert!(why.contains("podman is not installed"), "{why}"),
-        other => panic!("an engine this host does not have is not a failure: {other:?}"),
+        Health::Degraded(why) => {
+            assert!(why.contains("docker did not answer for container"), "{why}");
+            assert!(
+                !why.contains("podman"),
+                "the engine that is not installed has nothing to complain about: {why}"
+            );
+        }
+        other => panic!("an installed engine that did not reply is a failure: {other:?}"),
+    }
+    let _ = fs::remove_dir_all(&at);
+}
+
+#[test]
+fn an_engine_that_is_not_installed_but_whose_dump_is_stale_still_degrades_it() {
+    let at = workspace("absent-stale");
+    written(&at, &docker::dump());
+    written(&at, &not_installed(Engine::Podman));
+    let long_ago = std::time::SystemTime::now() - std::time::Duration::from_secs(4_000);
+    fs::File::options()
+        .write(true)
+        .open(at.join(Engine::Podman.dump_file()))
+        .expect("the dump")
+        .set_times(fs::FileTimes::new().set_modified(long_ago))
+        .expect("an older mtime");
+
+    let collector = reading(&at);
+
+    match collector.available() {
+        Health::Degraded(why) => assert!(why.contains("podman.json was written"), "{why}"),
+        other => panic!(
+            "an old answer of absent may no longer be true, and the timer that should have \
+             renewed it is not firing: {other:?}"
+        ),
     }
     let _ = fs::remove_dir_all(&at);
 }

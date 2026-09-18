@@ -27,8 +27,8 @@ fn removing_a_finding_writes_it_into_the_configuration_and_takes_it_off_the_scre
         "the reason is what the file carries, and it is the reader's own words: {held:#?}"
     );
     assert!(
-        page.contains("systemctl try-restart"),
-        "the daemon reads that file at start, and a reader who is not told will watch the \
+        page.contains("next round"),
+        "the agent takes it up on its next round, and a reader who is not told when will watch the \
          same finding come back: {page}"
     );
 }

@@ -9,7 +9,7 @@ use crate::ui::chrome::help;
 use crate::ui::chrome::paper;
 use crate::ui::helpers::words::unreachable;
 use crate::ui::screens::{form, graph, history, summary};
-use crate::ui::{Aim, Screen, Target};
+use crate::ui::{Aim, Level, Screen, Target};
 
 impl App {
     pub fn draw(&self, area: Rect, buffer: &mut Buffer) {
@@ -32,6 +32,7 @@ impl App {
                     .as_ref()
                     .is_some_and(|editing| editing.dropdown().is_some()),
                 history: self.history.is_some(),
+                silences: self.on_the_silenced() && self.level == Level::List,
                 histories: self.pane().is_some_and(|pane| pane.offers().history),
                 graph: self.graph.is_some(),
                 graphs: self.pane().is_some_and(|pane| pane.offers().graph),
@@ -54,7 +55,7 @@ impl App {
                     .choosing()
                     .is_some_and(crate::ui::Choosing::asks_before_acting),
                 sorts: !self.sortable().is_empty(),
-                filters: self.nav.at() == Screen::FINDINGS
+                filters: (self.nav.at() == Screen::FINDINGS && !self.on_the_silenced())
                     || !self.pane_kinds().is_empty()
                     || !self.facets_offered().is_empty(),
                 marks: self.marking_offered(),

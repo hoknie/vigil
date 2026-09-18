@@ -17,6 +17,7 @@ pub fn watch(file: &str, entry: &Watch) -> Result<Done, String> {
                 file, entry.path
             )],
             entries: 0,
+            ..Done::default()
         }),
         Edit::Changed { text: after, .. } => {
             let said = vec![
@@ -28,7 +29,11 @@ pub fn watch(file: &str, entry: &Watch) -> Result<Done, String> {
                 hashed(entry),
                 applied(),
             ];
-            Ok(Done { said, entries: 1 })
+            Ok(Done {
+                said,
+                entries: 1,
+                ..Done::default()
+            })
         }
     }
 }
@@ -44,6 +49,7 @@ pub fn unwatch(file: &str, path: &str) -> Result<Done, String> {
                  nothing this console can take away"
             )],
             entries: 0,
+            ..Done::default()
         }),
         Edit::Changed { text: after, .. } => {
             let said = vec![
@@ -51,7 +57,11 @@ pub fn unwatch(file: &str, path: &str) -> Result<Done, String> {
                 format!("{path} is no longer watched"),
                 applied(),
             ];
-            Ok(Done { said, entries: 1 })
+            Ok(Done {
+                said,
+                entries: 1,
+                ..Done::default()
+            })
         }
     }
 }

@@ -15,7 +15,9 @@ fn escape_lets_go_of_what_is_picked_before_it_leaves_the_screen() {
     assert!(!drawn(&app).contains("picked"), "{}", drawn(&app));
 
     press(&mut app, KeyCode::Esc);
+    assert_eq!(app.level, Level::Menu, "then up to the row of lists");
 
+    press(&mut app, KeyCode::Esc);
     assert_eq!(app.nav.at(), Screen::HOME);
 }
 

@@ -61,7 +61,7 @@ mod tests {
     fn a_finding_about_a_socket_points_at_that_socket_on_the_ports_screen() {
         let anchor = onto("port.listen|tcp|0.0.0.0:4444");
 
-        assert_eq!(anchor.screen, screen("ports"));
+        assert_eq!(anchor.screen, screen("network"));
         assert_eq!(
             anchor.key, "tcp|0.0.0.0:4444",
             "the key is the collector's, so the row on the far screen is found by it"

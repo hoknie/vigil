@@ -1,5 +1,6 @@
 use vigil_model::Severity;
 
+use super::offered::kind_chosen;
 use crate::ui::app::App;
 use crate::ui::{Choosing, Column, Sorting, holding};
 
@@ -9,6 +10,7 @@ impl App {
             return;
         };
         let at = self.chooser.at();
+        let said = self.chooser.offered().get(at).cloned().unwrap_or_default();
         self.chooser.close();
 
         match what {
@@ -42,6 +44,7 @@ impl App {
             }
             Choosing::Filter => {
                 match at < Severity::KNOWN.len() {
+                    _ if let Some(kind) = kind_chosen(&said) => self.filter.only_kind(kind),
                     true => {
                         self.filter.set_floor(Severity::KNOWN[at].clone());
                         self.filter.look_in(Column::Any);

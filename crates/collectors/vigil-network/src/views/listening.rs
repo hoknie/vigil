@@ -7,7 +7,7 @@ pub struct Listening;
 
 impl Section for Listening {
     fn name(&self) -> &'static str {
-        "ports"
+        "network"
     }
 
     fn title(&self) -> &'static str {

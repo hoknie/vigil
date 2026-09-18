@@ -80,7 +80,7 @@ fn the_console_opens_on_the_main_screen_and_a_script_still_gets_the_summary() {
 fn the_sections_a_script_could_already_ask_for_still_mean_what_they_meant() {
     for (asked, expected) in [
         ("summary", Screen::SUMMARY),
-        ("ports", screen("ports")),
+        ("ports", screen("network")),
         ("accounts", screen("accounts")),
         ("findings", Screen::FINDINGS),
         ("programs", screen("programs")),

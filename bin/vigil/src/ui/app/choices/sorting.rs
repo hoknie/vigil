@@ -11,6 +11,7 @@ const GROUPS_ARE_THE_ORDER: &str =
 impl App {
     pub(in crate::ui::app) fn sortable(&self) -> Vec<&'static str> {
         match self.nav.at() {
+            Screen::FINDINGS if self.on_the_silenced() => Vec::new(),
             Screen::FINDINGS => findings::SORTED_BY.to_vec(),
             screen if screen.draws_a_reading() => self.pane_sortable(),
             _ => Vec::new(),
@@ -25,6 +26,10 @@ impl App {
     }
 
     pub(in crate::ui::app) fn sorting(&mut self) {
+        if self.on_the_silenced() {
+            self.message = Some(crate::ui::app::silences::IN_THE_ORDER_OF_THE_FILES.to_string());
+            return;
+        }
         if self.nav.at().draws_a_reading() && self.pane_sortable().is_empty() {
             self.message = Some(GROUPS_ARE_THE_ORDER.to_string());
             return;

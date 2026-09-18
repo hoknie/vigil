@@ -11,7 +11,7 @@ fn o_on_a_finding_about_a_socket_opens_the_ports_section_on_that_socket() {
 
     press(&mut app, KeyCode::Char('o'));
 
-    assert_eq!(app.nav.at(), screen("ports"));
+    assert_eq!(app.nav.at(), screen("network"));
     assert_eq!(
         app.level,
         Level::List,
@@ -38,7 +38,7 @@ fn a_jump_asks_for_the_reading_that_holds_the_object_because_the_findings_screen
 
     app.view = View::nothing_yet("/nonexistent/vigil.sock");
     let anchor = Anchor {
-        screen: screen("ports"),
+        screen: screen("network"),
         key: "tcp|0.0.0.0:4444".into(),
     };
 

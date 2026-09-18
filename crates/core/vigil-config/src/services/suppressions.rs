@@ -1,5 +1,6 @@
 use crate::helpers::quoting::unquoted;
 use crate::types::entry::Entry;
+use crate::types::suppression::Suppression;
 
 const HEADING: &str = "suppressions:";
 
@@ -47,7 +48,9 @@ pub fn add(text: &str, entries: &[Entry]) -> Edit {
             while out.last().is_some_and(|line| line.trim().is_empty()) {
                 out.pop();
             }
-            out.push(String::new());
+            if !out.is_empty() {
+                out.push(String::new());
+            }
             out.push(HEADING.to_string());
             out.extend(written);
         }
@@ -66,6 +69,25 @@ pub fn add(text: &str, entries: &[Entry]) -> Edit {
 }
 
 pub fn remove(text: &str, keys: &[String]) -> Edit {
+    taken_out(text, |item| {
+        item.key
+            .as_ref()
+            .is_some_and(|(key, _)| keys.iter().any(|wanted| wanted == key))
+    })
+}
+
+pub fn remove_one(text: &str, suppression: &Suppression) -> Edit {
+    let key = match (&suppression.finding_key, &suppression.finding_key_prefix) {
+        (Some(exact), _) => Some((exact.clone(), false)),
+        (_, Some(prefix)) => Some((prefix.clone(), true)),
+        _ => None,
+    };
+    taken_out(text, |item| {
+        item.key == key && item.kind == suppression.kind
+    })
+}
+
+fn taken_out(text: &str, doomed_if: impl Fn(&Item) -> bool) -> Edit {
     let lines: Vec<&str> = text.lines().collect();
     let heading = match shape(&lines) {
         Shape::NotOurs => return Edit::NotOurs(shape_we_do_not_edit()),
@@ -74,14 +96,7 @@ pub fn remove(text: &str, keys: &[String]) -> Edit {
     };
 
     let held = items(&lines, heading);
-    let doomed: Vec<&Item> = held
-        .iter()
-        .filter(|item| {
-            item.key
-                .as_ref()
-                .is_some_and(|(key, _)| keys.iter().any(|wanted| wanted == key))
-        })
-        .collect();
+    let doomed: Vec<&Item> = held.iter().filter(|item| doomed_if(item)).collect();
     if doomed.is_empty() {
         return Edit::AlreadySo;
     }

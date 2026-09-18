@@ -144,9 +144,12 @@ impl App {
                         self.configuration_path()
                     ),
                     written => format!(
-                        "{written} object(s) silenced \u{b7} {} applies it \u{b7} written to {}",
-                        config::RESTART,
-                        self.configuration_path()
+                        "{written} object(s) silenced \u{b7} {} \u{b7} written to {}",
+                        config::NEXT_ROUND,
+                        done.file
+                            .as_ref()
+                            .map(|file| file.display().to_string())
+                            .unwrap_or_else(|| self.configuration_path())
                     ),
                 });
             }
@@ -178,8 +181,8 @@ impl App {
             Ok(_) => {
                 self.dismissed.bring_back();
                 self.message = Some(format!(
-                    "{count} object(s) no longer silenced \u{b7} {} applies it",
-                    config::RESTART
+                    "{count} object(s) no longer silenced \u{b7} {}",
+                    config::NEXT_ROUND
                 ));
                 true
             }

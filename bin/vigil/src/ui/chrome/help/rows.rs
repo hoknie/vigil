@@ -22,7 +22,7 @@ pub(super) fn rows() -> Vec<(&'static str, &'static str)> {
         ),
         (
             "t T u U X, a",
-            "show / hide kinds of socket, or all (ports)",
+            "show / hide kinds of socket, or all (network)",
         ),
         (
             "t / d",
@@ -46,11 +46,11 @@ pub(super) fn rows() -> Vec<(&'static str, &'static str)> {
         ),
         (
             "",
-            "THE LISTS OF A SECTION: \u{2190} \u{2192} along them, \u{2193} into one",
+            "THE LISTS: \u{2190} \u{2192} along them, \u{2193} into one  \u{b7}  findings: reported \u{b7} silenced",
         ),
         (
             "",
-            "  ports: sockets \u{b7} by program   \u{b7}   system: the host \u{b7} watched files",
+            "  network: sockets \u{b7} by program   \u{b7}   system: the host \u{b7} watched files",
         ),
         (
             "",

@@ -27,10 +27,12 @@ cannot be drawn into."
         long_about = "\
 Write down what this host is expected to do, so the agent stays quiet about it.
 
-An entry goes into `suppressions:` in the daemon's configuration. What it covers is judged the
-moment a finding is raised: it reaches neither the local journal nor a receiver, and the
-summary says how many were silenced. Every entry needs a reason, in your words. The daemon
-reads the file at start, so a restart is named after every change."
+An entry goes into console.yaml under the directory `suppressions_path` names in the daemon's
+configuration, or into a file of your choosing there with --file; a configuration that names
+no such directory gets it under its own `suppressions:`. What it covers is judged the moment a
+finding is raised: it reaches neither the local journal nor a receiver, and the summary says
+how many were silenced. Every entry needs a reason, in your words. The daemon takes its
+suppressions up again on its next round, with no restart."
     )]
     Suppress(Suppress),
 

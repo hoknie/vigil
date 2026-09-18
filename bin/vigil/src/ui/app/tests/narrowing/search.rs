@@ -48,6 +48,9 @@ fn escape_takes_a_search_off_before_it_takes_the_screen_away() {
     );
 
     press(&mut app, KeyCode::Esc);
+    assert_eq!(app.level, Level::Menu, "then up to the row of lists");
+
+    press(&mut app, KeyCode::Esc);
     assert_eq!(app.nav.at(), Screen::HOME, "then out of the section");
 
     press(&mut app, KeyCode::Esc);
@@ -56,7 +59,7 @@ fn escape_takes_a_search_off_before_it_takes_the_screen_away() {
 
 #[test]
 fn the_search_opens_on_the_screen_the_reader_is_on_and_never_moves_them() {
-    for screen in [screen("ports"), screen("accounts"), Screen::FINDINGS] {
+    for screen in [screen("network"), screen("accounts"), Screen::FINDINGS] {
         let mut app = app();
         press(&mut app, super::harness::number(screen));
         assert_ne!(

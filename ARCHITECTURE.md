@@ -48,7 +48,7 @@ Everything else in this document follows from four principles.
 ```
 crates/core/              LAYER 1 — vocabulary and ports; knows nothing about any subject
   vigil-model/            VOCABULARY: finding, host, snapshot, contract, socket protocol
-  vigil-config/           CONFIGURATION FILE: suppression entry, its block, safe file writes
+  vigil-config/           CONFIGURATION FILE: suppression entry, its block, the files it points at, safe writes
   vigil-rules/            DECISION: rule ports, snapshot differ, rule set
   vigil-collect/          READING: Collector port, Health, CollectError, pure helpers
   vigil-module/           MODULE: Module port — how a subject presents itself to the binaries
@@ -331,7 +331,7 @@ daemon **from outside the host** is data: `host-findings/v1` defines no reverse 
 guarantee comes from the contract itself.
 
 **The local console protocol has exactly three verbs, each added by a decision of the owner's
-own.** `kill` closes a socket that a person has marked on the ports screen, either by
+own.** `kill` closes a socket that a person has marked on the network screen, either by
 signalling the process that holds it or by destroying the socket itself. The same verb stops a
 program marked in the list of running programs, by signalling each of its processes found in
 `/proc` at the moment of the request. It is enabled in `vigil.yaml`
@@ -639,7 +639,7 @@ unrecorded violation.
 | Where | What | Why |
 |---|---|---|
 | `crates/collectors/vigil-<subject>/src/fixture/`, `crates/core/vigil-rules/src/fixture/`, `bin/vigil/src/ui/fixture/`, `bin/vigild/src/socket/fixture/` | the kind is named in the singular, contrary to §3.3.1 | The name predates the definition of the kind and is shared by all sides of the wire: `fixture::` appears in more than sixty console source files. Renaming is a purely mechanical edit, and combining it with a substantive change would hide that change in noise. The rename should land as a standalone edit; until then the debt is recorded here. |
-| `crates/core/vigil-config/src/helpers/write.rs` | io in `core/`, the only io in that layer | The crate exists to own a **file on disk**. Both programs write suppressions (`vigil suppress` and a key on the findings screen), and `vigild configure` and `vigild collector` write the same file. Without a shared crate, the same 0600 write ("write to a temporary file, rename it, keep the previous version as `.previous`") would live in two binaries that must stay byte-identical and would drift apart on the first edit. Its dependencies keep the boundary tight: `vigil-config` links none of our crates, performs exactly one io operation (`write`), and is invisible to `vigil-model` and `vigil-rules`. |
+| `crates/core/vigil-config/src/helpers/write.rs`, `helpers/places.rs`, `services/sources.rs` | io in `core/`, the only io in that layer | The crate exists to own a **file on disk**, and the files that file points at: the daemon and the console read suppressions from the same `suppressions_path` and must agree on which files that means. Both programs write suppressions (`vigil suppress` and a key on the findings screen), and `vigild configure` and `vigild collector` write the same file. Without a shared crate, the same 0600 write ("write to a temporary file, rename it, keep the previous version as `.previous`") would live in two binaries that must stay byte-identical and would drift apart on the first edit. Its dependencies keep the boundary tight: `vigil-config` links none of our crates, performs two kinds of io (`write`, and reading the files a path names: `files_in`, `gathered`, `sources`), and is invisible to `vigil-model` and `vigil-rules`. |
 
 ---
 

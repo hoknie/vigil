@@ -168,3 +168,40 @@ fn a_bad_edit_leaves_the_collector_that_was_running_in_place_and_raises_nothing(
     );
     let _ = std::fs::remove_dir_all(&directory);
 }
+
+#[test]
+fn an_object_silenced_in_the_directory_is_not_reported_from_the_next_round_on() {
+    let mut it = watching(
+        "following-silence",
+        Health::Ok,
+        vec![snapshot(&[443]), snapshot(&[443, 8080])],
+    );
+    let directory = temporary_directory("following-silence-configuration");
+    std::fs::create_dir_all(directory.join("suppressions")).expect("a directory");
+    let path = directory.join("vigil.yaml");
+    written(&path, "suppressions_path: suppressions\n");
+    let name = path.to_str().expect("utf-8");
+    it.round.silences = crate::config::Silences::of(name, &load(name).expect("loads"));
+    let mut said = Said::about([("ports", "ok".to_string())]);
+
+    written(
+        &directory.join("suppressions").join("console.yaml"),
+        "suppressions:\n  - finding_key_prefix: \"port.listen|\"\n    reason: every port is expected here\n",
+    );
+    it.round.follow_the_file(&mut said);
+
+    let silence = it.round.shared.with(|state| state.agent().silence);
+    assert_eq!(
+        silence.suppressions,
+        vec!["port.listen|* — every port is expected here".to_string()],
+        "the console reads what is in force from the status, and it is in force now"
+    );
+    it.round.read(0, &mut said);
+    it.round.read(0, &mut said);
+    assert!(
+        raised(&it.round).is_empty(),
+        "the port that opened after the entry was written is covered by it: {:?}",
+        raised(&it.round)
+    );
+    assert_eq!(it.round.policy.suppressed(), 1);
+}

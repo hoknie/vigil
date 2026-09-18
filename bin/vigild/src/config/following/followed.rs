@@ -159,6 +159,9 @@ fn read_at_start_up(config: &Config, followed: &[&str]) -> BTreeMap<String, Valu
         Ok(Value::Object(fields)) => fields.into_iter().collect(),
         _ => BTreeMap::new(),
     };
+    for taken_up in [vigil_config::SUPPRESSIONS_PATH, "suppressions"] {
+        read.remove(taken_up);
+    }
     for (key, block) in &config.of_the_modules {
         if !followed.contains(&key.as_str()) {
             read.insert(key.clone(), block.clone());

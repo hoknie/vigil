@@ -10,7 +10,7 @@ pub(super) const BY_PROGRAM: usize = 1;
 
 pub(super) fn on_the_sockets(pane: usize) -> crate::ui::App {
     let mut app = app();
-    press(&mut app, number(screen("ports")));
+    press(&mut app, number(screen("network")));
     drawn_at(&app, 120, 30);
     for _ in 0..pane {
         press(&mut app, KeyCode::Right);

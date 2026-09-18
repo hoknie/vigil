@@ -1,9 +1,10 @@
 use std::fmt;
+use std::path::Path;
 
 use vigil_module::Settings;
 use vigil_report::SyslogFacility;
 
-use super::{Config, Receiver, split};
+use super::{Config, Receiver, apart, split};
 use crate::helpers::rfc3339;
 
 pub fn load(path: &str) -> Result<Config, ConfigError> {
@@ -78,8 +79,42 @@ pub fn load(path: &str) -> Result<Config, ConfigError> {
         }
     }
 
+    read_apart(path, &mut config).map_err(|cause| ConfigError {
+        path: path.to_string(),
+        cause,
+    })?;
+
     Ok(config)
 }
+
+fn read_apart(path: &str, config: &mut Config) -> Result<(), String> {
+    let configuration = Path::new(path);
+
+    if let Some(at) = apart::place(
+        configuration,
+        vigil_config::SUPPRESSIONS_PATH,
+        config.suppressions_path.as_deref(),
+    )? {
+        config.apart.suppressions = apart::suppressions(&at)?;
+        config.apart.suppressions_at = Some(at);
+    }
+
+    if let Some(at) = apart::place(
+        configuration,
+        REPORTERS_PATH,
+        config.reporters_path.as_deref(),
+    )? {
+        config.apart.reporters = apart::reporters(&at)?;
+        for file in &config.apart.reporters {
+            config.reporters.extend(file.receivers.iter().cloned());
+        }
+        config.apart.reporters_at = Some(at);
+    }
+
+    Ok(())
+}
+
+const REPORTERS_PATH: &str = "reporters_path";
 
 fn keys() -> Vec<&'static str> {
     crate::modules::modules()

@@ -34,6 +34,7 @@ impl App {
             editing: None,
             graph: None,
             history: None,
+            silences: None,
             named_configuration: options.config.clone(),
             detail_open: opening.difference,
             level: Level::default(),

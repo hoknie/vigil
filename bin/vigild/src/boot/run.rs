@@ -75,6 +75,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
 
     console::listen(&config, &schedule, &shared)?;
     let followed = following::of(config_path, stamp, &config, &watches);
+    let silences = config::Silences::of(config_path, &config);
 
     Round {
         watches,
@@ -87,6 +88,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         opening,
         standing,
         followed,
+        silences,
     }
     .run()
 }

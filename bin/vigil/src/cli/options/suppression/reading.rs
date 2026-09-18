@@ -10,7 +10,7 @@ pub struct Reading {
         long,
         value_name = "PATH",
         default_value = config::DEFAULT_PATH,
-        help = "The configuration file to read"
+        help = "The daemon's configuration, which says where suppressions are kept"
     )]
     pub config: String,
 }

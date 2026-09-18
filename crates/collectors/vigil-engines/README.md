@@ -88,7 +88,7 @@ accident. On top of that:
 | a dump is not the document this build reads | `Degraded`, naming the file; the reading fails rather than publishing an empty host |
 | a dump is larger than 16 MiB | `Degraded` (`CollectError::Budget`) |
 | a dump is older than `dump_seconds` × 2 | `Degraded`, saying how old; the reading is still taken, because an old answer is still the last one known |
-| the engine is not installed | `Degraded`, naming the engine; the reading has a row for it with `present: false` |
+| the engine is not installed | `Ok` — an answer, not a failure: the reading has a row for it with `present: false`, and its lists say "not installed on this host". A host where no engine named in `engines:` is installed is `Ok` too, and is a host with no container engines |
 | the engine answered some commands and not others | `Degraded`, naming the subject and what the engine said; the subjects that failed contribute no rows |
 | a registries file cannot be read | `Degraded`, saying which registries are unknown |
 

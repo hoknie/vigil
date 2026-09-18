@@ -19,7 +19,7 @@ fn what_the_agent_reads_comes_before_what_it_makes_of_it() {
 
     let reads = page.find("WHAT IT READS").expect("the first group");
     let concludes = page.find("WHAT IT CONCLUDES").expect("the second group");
-    let ports = page.find("ports").expect("a reading");
+    let ports = page.find("network").expect("a reading");
     let findings = page.find("findings").expect("a conclusion");
 
     assert!(
@@ -36,7 +36,7 @@ fn where_the_cursor_is_readable_with_no_colour_at_all() {
     assert!(
         first
             .lines()
-            .any(|line| line.starts_with(" \u{25b8}   1 ports")),
+            .any(|line| line.starts_with(" \u{25b8}   1 network")),
         "{first}"
     );
     assert!(

@@ -14,7 +14,7 @@ const BETWEEN: u16 = 3;
 
 const FOLDED: u16 = 2;
 
-pub(super) type Places = Vec<(usize, u16, u16)>;
+pub(in crate::ui) type Places = Vec<(usize, u16, u16)>;
 
 pub(super) struct Menu {
     pub of_the_group: Vec<usize>,
@@ -120,7 +120,7 @@ fn put(places: Places, over: Rect) -> Vec<(usize, Rect)> {
         .collect()
 }
 
-pub(super) fn row(
+pub(in crate::ui) fn row(
     look: Look,
     named: &[(usize, String)],
     at: usize,

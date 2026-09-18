@@ -17,6 +17,7 @@ impl App {
 
     pub(super) fn search(&self) -> Option<&Search> {
         match self.nav.at() {
+            Screen::FINDINGS if self.on_the_silenced() => None,
             Screen::FINDINGS => Some(self.filter.search()),
             screen if screen.draws_a_reading() => self.panes().map(Panes::search),
             _ => None,
@@ -25,6 +26,7 @@ impl App {
 
     pub(super) fn search_mut(&mut self) -> Option<&mut Search> {
         match self.nav.at() {
+            Screen::FINDINGS if self.silences.is_some() => None,
             Screen::FINDINGS => Some(self.filter.search_mut()),
             screen if screen.draws_a_reading() => self.panes_mut().map(Panes::search_mut),
             _ => None,
@@ -37,6 +39,7 @@ impl App {
                 self.detail_open = !self.detail_open;
                 true
             }
+            Screen::FINDINGS if self.on_the_silenced() => self.silenced_letter(key),
             Screen::FINDINGS => self.picking_key(key),
             screen if holding(screen.name()).is_some() => match key {
                 MARK => self.mark_under_the_cursor(),
@@ -146,7 +149,7 @@ impl App {
     pub(super) fn narrowed(&self) -> bool {
         let everything = self.level.is_a_row_of_names();
         match self.nav.at() {
-            Screen::FINDINGS => self.filter.holding_back(),
+            Screen::FINDINGS => !self.on_the_silenced() && self.filter.holding_back(),
             screen if screen.draws_a_reading() => self.panes().is_some_and(|panes| {
                 panes.search().holding_back() || (everything && panes.hiding())
             }),

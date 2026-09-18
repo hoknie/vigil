@@ -10,7 +10,7 @@ use crate::ui::{Audience, Look, Screen, fixture};
 
 #[test]
 fn the_frame_names_the_host_the_open_section_the_facts_and_the_keys() {
-    let (page, body) = drawn(fixture::look(), screen("ports"), &fixture::view(), 80, 24);
+    let (page, body) = drawn(fixture::look(), screen("network"), &fixture::view(), 80, 24);
 
     assert!(page.contains("app-01"), "{page}");
     assert!(page.contains("alpine"), "{page}");
@@ -23,7 +23,7 @@ fn the_frame_names_the_host_the_open_section_the_facts_and_the_keys() {
 
 #[test]
 fn the_row_of_screen_names_is_gone_and_the_panel_has_the_band_it_took() {
-    let (page, body) = drawn(fixture::look(), screen("ports"), &fixture::view(), 80, 24);
+    let (page, body) = drawn(fixture::look(), screen("network"), &fixture::view(), 80, 24);
 
     assert!(
         !page.contains("1 summary"),
@@ -97,7 +97,7 @@ fn the_frame_of_a_section_is_thick_while_the_arrows_are_its_own_and_a_plain_line
         let mut buffer = Buffer::empty(Rect::new(0, 0, 80, 24));
         let body = render(
             fixture::look(),
-            screen("ports"),
+            screen("network"),
             &fixture::view(),
             Hints { panes, ..quiet() },
             buffer.area,

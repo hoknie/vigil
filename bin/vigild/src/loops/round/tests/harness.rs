@@ -9,7 +9,7 @@ use vigil_module::{Module, Settings};
 use vigil_store::FileStore;
 
 use crate::budget::Meter;
-use crate::config::Followed;
+use crate::config::{Followed, Silences};
 use crate::socket::{Shared, State};
 use crate::types::{Delivery, Due, Policy, Schedule, Startup};
 
@@ -144,6 +144,7 @@ pub fn watching(name: &str, health: Health, readings: Vec<Snapshot>) -> Watching
             opening: Vec::new(),
             standing: Vec::new(),
             followed: Followed::nothing(),
+            silences: Silences::nothing(),
         },
         collector,
         directory,

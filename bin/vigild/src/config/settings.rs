@@ -5,6 +5,8 @@ use serde_json::Value;
 
 use vigil_config::Suppression;
 
+use super::apart::Apart;
+
 const WHEN_NOTHING_SAYS_OTHERWISE: u32 = 30;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,12 +19,16 @@ pub struct Config {
     pub schedule: BTreeMap<String, u32>,
     pub collectors: Option<Vec<String>>,
     pub reporters: Vec<Receiver>,
+    pub reporters_path: Option<String>,
     pub suppressions: Vec<Suppression>,
+    pub suppressions_path: Option<String>,
     pub killing: Killing,
     pub accounts: Accounts,
     pub units: Units,
     #[serde(skip)]
     pub of_the_modules: BTreeMap<String, Value>,
+    #[serde(skip)]
+    pub apart: Apart,
 }
 
 impl Default for Config {
@@ -35,11 +41,14 @@ impl Default for Config {
             schedule: BTreeMap::new(),
             collectors: None,
             reporters: Vec::new(),
+            reporters_path: None,
             suppressions: Vec::new(),
+            suppressions_path: None,
             killing: Killing::default(),
             accounts: Accounts::default(),
             units: Units::default(),
             of_the_modules: BTreeMap::new(),
+            apart: Apart::default(),
         }
     }
 }
@@ -57,6 +66,14 @@ impl Config {
 
     pub fn of_the_module(&self, key: &str) -> Value {
         self.of_the_modules.get(key).cloned().unwrap_or(Value::Null)
+    }
+
+    pub fn every_suppression(&self) -> Vec<Suppression> {
+        let mut every = self.suppressions.clone();
+        for source in &self.apart.suppressions {
+            every.extend(source.suppressions.iter().cloned());
+        }
+        every
     }
 
     pub fn every_seconds_by_default(&self) -> u32 {

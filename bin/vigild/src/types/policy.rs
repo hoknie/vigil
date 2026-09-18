@@ -21,6 +21,10 @@ impl Policy {
         }
     }
 
+    pub fn replace(&mut self, suppressions: Vec<Suppression>) {
+        self.suppressions = suppressions;
+    }
+
     pub fn suppression_count(&self) -> usize {
         self.suppressions.len()
     }

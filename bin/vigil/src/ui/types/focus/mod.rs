@@ -6,4 +6,5 @@ pub mod history;
 pub mod picking;
 pub mod pointer;
 pub mod position;
+pub mod silences;
 pub mod sorting;

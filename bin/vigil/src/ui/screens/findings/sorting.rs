@@ -2,7 +2,16 @@ use vigil_model::{Finding, Severity};
 
 use crate::ui::{AS_READ, Sorting};
 
-pub const SORTED_BY: &[&str] = &[AS_READ, "TIME", "SEVERITY", "KIND", "TITLE", "OBJECT"];
+pub const SORTED_BY: &[&str] = &[
+    AS_READ,
+    "TIME",
+    "SEVERITY",
+    "KIND",
+    "TITLE",
+    "OBJECT",
+    "SEEN",
+    "FIRST SEEN",
+];
 
 pub fn sort(passing: &mut [&Finding], sorting: Sorting) {
     if sorting.as_read() {
@@ -24,6 +33,8 @@ fn key(finding: &Finding, by: usize) -> String {
         3 => finding.kind.as_str().to_lowercase(),
         4 => finding.title.to_lowercase(),
         5 => finding.finding_key.to_lowercase(),
+        6 => format!("{:020}", finding.occurrences),
+        7 => finding.first_seen_at.to_string(),
         _ => String::new(),
     }
 }
@@ -56,6 +67,12 @@ mod tests {
         middling.finding_key = "m|middle".into();
         middling.kind = vigil_model::Kind::from("user.account.new".to_string());
         quiet.kind = vigil_model::Kind::from("exec.from_writable_path".to_string());
+        quiet.occurrences = 2;
+        loud.occurrences = 11;
+        middling.occurrences = 1;
+        quiet.first_seen_at = "2026-09-08T12:00:00.000Z".into();
+        loud.first_seen_at = "2026-09-09T09:00:01.000Z".into();
+        middling.first_seen_at = "2026-09-01T07:00:00.000Z".into();
         vec![quiet, loud, middling]
     }
 
@@ -102,6 +119,33 @@ mod tests {
             vec!["b quiet one", "c middling one", "a loud one"],
             "alphabetically critical would come before low, and a reader looking for the \
              worst would be shown the quietest"
+        );
+    }
+
+    #[test]
+    fn how_often_a_finding_was_seen_sorts_as_a_number_and_not_as_the_digits_of_one() {
+        let all = findings();
+
+        let by_seen = titles(&all, Sorting::of(12));
+
+        assert_eq!(
+            by_seen,
+            vec!["a loud one", "b quiet one", "c middling one"],
+            "as text 11 comes before 2, and the finding that keeps coming back would sink \
+             below the one seen twice"
+        );
+    }
+
+    #[test]
+    fn the_oldest_standing_finding_is_first_when_sorted_by_when_it_was_first_seen() {
+        let all = findings();
+
+        let by_first_seen = titles(&all, Sorting::of(13));
+
+        assert_eq!(
+            by_first_seen,
+            vec!["c middling one", "b quiet one", "a loud one"],
+            "the last time a finding was raised says nothing of how long it has stood"
         );
     }
 

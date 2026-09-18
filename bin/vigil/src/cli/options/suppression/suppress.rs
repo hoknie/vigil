@@ -21,6 +21,7 @@ impl Suppress {
                 until: asked.until.clone(),
                 prefix: asked.prefix,
                 path: asked.config.clone(),
+                file: asked.file.clone(),
                 dry_run: asked.dry_run,
             },
             Silencing::Remove(asked) => config::Options {

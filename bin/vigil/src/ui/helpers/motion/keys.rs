@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn the_digits_name_the_sections_in_the_order_the_main_screen_lists_them() {
-        assert_eq!(plain(KeyCode::Char('1')), Action::Go(screen("ports")));
+        assert_eq!(plain(KeyCode::Char('1')), Action::Go(screen("network")));
         assert_eq!(plain(KeyCode::Char('5')), Action::Go(screen("firewall")));
         assert_eq!(plain(KeyCode::Char('7')), Action::Go(screen("containers")));
         assert_eq!(plain(KeyCode::Char('9')), Action::Go(Screen::FINDINGS));

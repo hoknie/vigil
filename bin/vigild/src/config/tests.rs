@@ -217,3 +217,150 @@ fn a_misspelled_field_is_refused_by_name_instead_of_ignored() {
     assert!(error.cause.contains("retention_dayz"), "{error}");
     assert!(error.to_string().contains("typo.yaml"), "{error}");
 }
+
+fn bench(named: &str) -> std::path::PathBuf {
+    static NAMES_GIVEN: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let directory = std::env::temp_dir().join(format!(
+        "vigil-config-apart-{named}-{}-{}",
+        std::process::id(),
+        NAMES_GIVEN.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    ));
+    let _ = std::fs::remove_dir_all(&directory);
+    std::fs::create_dir_all(&directory).expect("temp dir");
+    directory
+}
+
+#[test]
+fn suppressions_kept_in_a_directory_of_their_own_are_in_force_beside_the_configurations_own() {
+    let directory = bench("suppressions");
+    let path = directory.join("vigil.yaml");
+    std::fs::write(
+        &path,
+        "suppressions:\n  - finding_key: \"user|group|docker\"\n    reason: ours\nsuppressions_path: suppressions\n",
+    )
+    .expect("write");
+    std::fs::create_dir_all(directory.join("suppressions")).expect("a directory");
+    std::fs::write(
+        directory.join("suppressions").join("deploy.yaml"),
+        "suppressions:\n  - finding_key_prefix: \"port.listen|tcp|10.0.0.5:\"\n    reason: staging\n",
+    )
+    .expect("write");
+
+    let config = load(path.to_str().expect("utf-8")).expect("parses");
+
+    assert_eq!(config.suppressions.len(), 1);
+    assert_eq!(config.every_suppression().len(), 2);
+    assert_eq!(
+        config.apart.suppressions_at,
+        Some(directory.join("suppressions")),
+        "a relative path is read beside the configuration, not beside wherever the daemon was started"
+    );
+}
+
+#[test]
+fn a_bad_entry_in_a_file_of_suppressions_stops_the_daemon_at_the_door_and_names_the_file() {
+    let directory = bench("bad-suppression");
+    let path = directory.join("vigil.yaml");
+    std::fs::write(&path, "suppressions_path: suppressions\n").expect("write");
+    std::fs::create_dir_all(directory.join("suppressions")).expect("a directory");
+    std::fs::write(
+        directory.join("suppressions").join("console.yaml"),
+        "suppressions:\n  - reason: covers nothing\n",
+    )
+    .expect("write");
+
+    let error = load(path.to_str().expect("utf-8")).expect_err("must not be accepted");
+
+    assert!(error.cause.contains("console.yaml"), "{error}");
+    assert!(error.cause.contains("suppression #1"), "{error}");
+}
+
+#[test]
+fn a_directory_of_suppressions_nobody_made_yet_is_an_empty_one_and_the_daemon_starts() {
+    let directory = bench("unmade");
+    let path = directory.join("vigil.yaml");
+    std::fs::write(
+        &path,
+        "suppressions_path: suppressions\nreporters_path: reporters\n",
+    )
+    .expect("write");
+
+    let config = load(path.to_str().expect("utf-8")).expect("parses");
+
+    assert!(config.every_suppression().is_empty());
+    assert!(config.reporters.is_empty());
+}
+
+#[test]
+fn a_path_key_written_as_nothing_is_refused_rather_than_read_as_the_directory_of_the_file() {
+    let directory = bench("empty-path");
+    let path = directory.join("vigil.yaml");
+    std::fs::write(&path, "reporters_path: \"\"\n").expect("write");
+
+    let error = load(path.to_str().expect("utf-8")).expect_err("must not be accepted");
+
+    assert!(error.cause.contains("reporters_path is empty"), "{error}");
+}
+
+#[test]
+fn reporters_kept_in_a_file_of_their_own_are_added_to_the_ones_the_configuration_names() {
+    let directory = bench("reporters");
+    let path = directory.join("vigil.yaml");
+    std::fs::write(
+        &path,
+        "reporters:\n  - kind: syslog\n    facility: local4\nreporters_path: /REPLACED\n".replace(
+            "/REPLACED",
+            &directory.join("reporters").display().to_string(),
+        ),
+    )
+    .expect("write");
+    std::fs::create_dir_all(directory.join("reporters")).expect("a directory");
+    std::fs::write(
+        directory.join("reporters").join("journal.yaml"),
+        "reporters:\n  - kind: ndjson\n    path: /var/log/vigil/findings.ndjson\n",
+    )
+    .expect("write");
+
+    let config = load(path.to_str().expect("utf-8")).expect("parses");
+
+    assert_eq!(config.reporters.len(), 2);
+    assert!(matches!(
+        config.reporters[0],
+        crate::Receiver::Syslog { .. }
+    ));
+    assert!(matches!(
+        config.reporters[1],
+        crate::Receiver::Ndjson { .. }
+    ));
+    assert_eq!(config.apart.reporters.len(), 1);
+}
+
+#[test]
+fn a_file_of_reporters_is_held_to_the_rules_the_configuration_is_and_names_itself() {
+    let directory = bench("bad-reporter");
+    let path = directory.join("vigil.yaml");
+    std::fs::write(&path, "reporters_path: reporters\n").expect("write");
+    std::fs::create_dir_all(directory.join("reporters")).expect("a directory");
+    std::fs::write(
+        directory.join("reporters").join("syslog.yaml"),
+        "reporters:\n  - kind: syslog\n    facility: lokal0\n",
+    )
+    .expect("write");
+    std::fs::write(
+        directory.join("reporters").join("typo.yml"),
+        "reporter:\n  - kind: ndjson\n    path: /tmp/x\n",
+    )
+    .expect("write");
+
+    let error = load(path.to_str().expect("utf-8")).expect_err("must not be accepted");
+
+    assert!(error.cause.contains("syslog.yaml"), "{error}");
+    assert!(error.cause.contains("reporter #1"), "{error}");
+
+    std::fs::remove_file(directory.join("reporters").join("syslog.yaml")).expect("removes");
+    let error = load(path.to_str().expect("utf-8")).expect_err("must not be accepted");
+    assert!(
+        error.cause.contains("typo.yml") && error.cause.contains("reporter"),
+        "a misspelled key in a file of reporters is a receiver somebody believes is sent to: {error}"
+    );
+}

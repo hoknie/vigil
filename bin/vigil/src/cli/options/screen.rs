@@ -19,7 +19,7 @@ pub(super) fn screen(name: &str) -> Result<Opening, String> {
 const DIFFERENCE: &str = "difference";
 
 const SCREEN_NAMES: &str = "\
-\n  the sections are ports, accounts, programs, startup, firewall, summary and\
+\n  the sections are network, accounts, programs, startup, firewall, summary and\
 \n  findings,\
 \n  and `home` is the screen that lists them\
 \n  (`difference` too: the findings with the detail panel already open)";

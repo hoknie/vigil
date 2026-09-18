@@ -1,5 +1,5 @@
 use super::harness::{SHIPPED, changed, entry};
-use crate::{Edit, add, remove};
+use crate::{Edit, Suppression, add, remove, remove_one};
 
 #[test]
 fn a_shape_this_command_did_not_write_is_left_alone_and_named() {
@@ -70,4 +70,82 @@ suppressions:
     );
     assert!(after.contains("0.0.0.0:8080"), "{after}");
     assert!(!after.contains("docker"), "{after}");
+}
+
+#[test]
+fn one_entry_taken_out_by_what_it_says_leaves_the_narrower_one_about_the_same_object() {
+    let by_hand = "\
+suppressions:
+  - finding_key: \"port.listen|tcp|0.0.0.0:8080\"
+    reason: staging
+  - finding_key: \"port.listen|tcp|0.0.0.0:8080\"
+    kind: port.listen.removed
+    reason: nobody minds it going
+";
+
+    let after = changed(remove_one(
+        by_hand,
+        &Suppression {
+            finding_key: Some("port.listen|tcp|0.0.0.0:8080".into()),
+            reason: "whatever it said".into(),
+            ..Suppression::default()
+        },
+    ));
+
+    assert_eq!(
+        after,
+        "\
+suppressions:
+  - finding_key: \"port.listen|tcp|0.0.0.0:8080\"
+    kind: port.listen.removed
+    reason: nobody minds it going
+"
+    );
+}
+
+#[test]
+fn an_entry_that_names_only_a_kind_can_be_taken_out_as_well() {
+    let by_hand = "\
+suppressions:
+  - kind: port.listen.removed
+    reason: nobody minds a service stopping here
+";
+
+    let after = changed(remove_one(
+        by_hand,
+        &Suppression {
+            kind: Some("port.listen.removed".into()),
+            reason: "any".into(),
+            ..Suppression::default()
+        },
+    ));
+
+    assert_eq!(after, "suppressions: []\n");
+}
+
+#[test]
+fn a_prefix_is_not_taken_out_by_asking_for_the_exact_key_spelled_the_same() {
+    let by_hand = "suppressions:\n  - finding_key_prefix: \"user|group|\"\n    reason: ours\n";
+
+    assert_eq!(
+        remove_one(
+            by_hand,
+            &Suppression {
+                finding_key: Some("user|group|".into()),
+                reason: "ours".into(),
+                ..Suppression::default()
+            }
+        ),
+        Edit::AlreadySo
+    );
+}
+
+#[test]
+fn the_first_entry_of_a_file_that_was_empty_starts_it_without_a_blank_line() {
+    let after = changed(add("", &[entry("user|group|docker")]));
+
+    assert!(
+        after.starts_with("suppressions:\n  - finding_key:"),
+        "{after:?}"
+    );
 }

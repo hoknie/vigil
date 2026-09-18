@@ -17,7 +17,7 @@ pub struct Naming {
         long,
         value_name = "PATH",
         default_value = config::DEFAULT_PATH,
-        help = "The configuration file to edit"
+        help = "The daemon's configuration, which says where suppressions are kept"
     )]
     pub config: String,
 

@@ -1,4 +1,5 @@
 use crate::ui::app::App;
+use crate::ui::app::silences::LISTS;
 
 use crate::ui::screens::unknown::unknown_readings;
 use crate::ui::screens::{findings, home, summary};
@@ -48,6 +49,7 @@ impl App {
                     self.nav.difference = Offset::default();
                     self.rest_the_buttons();
                 }
+                Screen::FINDINGS if self.on_the_silenced() => self.move_along_the_silenced(motion),
                 Screen::FINDINGS => {
                     let keys = findings::keys(&self.passing());
                     self.nav.findings.step(motion, &keys, rows);
@@ -72,6 +74,7 @@ impl App {
         match self.nav.at() {
             Screen::HOME => self.nav.sections.at() == 0,
             Screen::SUMMARY => self.nav.summary.top() == 0,
+            Screen::FINDINGS if self.on_the_silenced() => self.silenced_at_the_top(),
             Screen::FINDINGS => self.nav.findings.at() == 0,
             screen if screen.draws_a_reading() => self.panes().is_some_and(|panes| panes.at() == 0),
             _ => true,
@@ -94,6 +97,7 @@ impl App {
                     _ => count.saturating_sub(1),
                 };
                 match self.nav.at() {
+                    Screen::FINDINGS => self.choose_the_findings_list(ends(LISTS.len())),
                     screen if screen.draws_a_reading() => {
                         let shown = self.shown_panes();
                         let at = ends(shown.len());

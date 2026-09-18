@@ -12,7 +12,7 @@ const WIDE: (u16, u16) = (120, 40);
 
 fn on_a_marked_socket() -> App {
     let mut app = app();
-    into(&mut app, screen("ports"), WIDE.0, WIDE.1);
+    into(&mut app, screen("network"), WIDE.0, WIDE.1);
     press(&mut app, KeyCode::Char('x'));
     press(&mut app, KeyCode::Char('S'));
     drawn_at(&app, WIDE.0, WIDE.1);
@@ -46,7 +46,7 @@ fn a_sheet_opened_to_be_copied_lets_the_mouse_go_and_takes_it_back_when_it_close
 #[test]
 fn the_m_key_turns_the_mouse_off_and_on_and_the_status_line_says_which_it_is() {
     let mut app = app();
-    into(&mut app, screen("ports"), WIDE.0, WIDE.1);
+    into(&mut app, screen("network"), WIDE.0, WIDE.1);
     assert!(app.wants_the_mouse());
     assert!(drawn_at(&app, WIDE.0, WIDE.1).contains("mouse on"));
 
@@ -75,7 +75,7 @@ fn the_m_key_turns_the_mouse_off_and_on_and_the_status_line_says_which_it_is() {
 #[test]
 fn the_m_key_is_a_letter_typed_into_a_search_box_and_not_a_switch() {
     let mut app = app();
-    into(&mut app, screen("ports"), WIDE.0, WIDE.1);
+    into(&mut app, screen("network"), WIDE.0, WIDE.1);
     press(&mut app, KeyCode::Char('/'));
     press(&mut app, KeyCode::Char(MOUSE));
 
@@ -110,7 +110,7 @@ fn the_console_starts_without_the_mouse_when_it_is_asked_to() {
 #[test]
 fn a_click_that_arrives_before_the_screen_was_drawn_again_lands_on_nothing() {
     let mut app = app();
-    into(&mut app, screen("ports"), WIDE.0, WIDE.1);
+    into(&mut app, screen("network"), WIDE.0, WIDE.1);
     let page = drawn_at(&app, WIDE.0, WIDE.1);
     let (column, row) = where_it_says(&page, "sshd");
     let before = app.panes().map(|panes| panes.at());
@@ -137,7 +137,7 @@ fn a_click_that_arrives_before_the_screen_was_drawn_again_lands_on_nothing() {
 #[test]
 fn a_click_before_the_first_frame_of_a_new_size_does_not_even_close_an_open_band() {
     let mut app = app();
-    into(&mut app, screen("ports"), WIDE.0, WIDE.1);
+    into(&mut app, screen("network"), WIDE.0, WIDE.1);
     press(&mut app, KeyCode::Char('s'));
     drawn_at(&app, WIDE.0, WIDE.1);
 
@@ -180,7 +180,7 @@ fn a_console_that_has_drawn_nothing_yet_answers_no_click() {
 #[test]
 fn every_click_target_of_a_screen_is_somewhere_the_keys_can_reach_as_well() {
     let mut app = app();
-    into(&mut app, screen("ports"), WIDE.0, WIDE.1);
+    into(&mut app, screen("network"), WIDE.0, WIDE.1);
     drawn_at(&app, WIDE.0, WIDE.1);
 
     assert!(
