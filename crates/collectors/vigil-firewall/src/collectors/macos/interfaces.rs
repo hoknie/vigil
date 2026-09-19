@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::ffi::CStr;
 use std::net::{Ipv4Addr, Ipv6Addr};
-use std::ptr;
+use std::ptr::{self, NonNull};
 
 use vigil_collect::sysctl_numbered;
 
@@ -17,10 +17,10 @@ pub(super) fn interfaces() -> Vec<Interface> {
         return Vec::new();
     }
 
-    let mut at = listed;
-    while !at.is_null() {
-        let entry = unsafe { &*at };
-        at = entry.ifa_next;
+    let mut at = NonNull::new(listed);
+    while let Some(node) = at {
+        let entry = unsafe { node.as_ref() };
+        at = NonNull::new(entry.ifa_next);
         if entry.ifa_name.is_null() || entry.ifa_addr.is_null() {
             continue;
         }
@@ -32,9 +32,9 @@ pub(super) fn interfaces() -> Vec<Interface> {
             ..Interface::default()
         });
 
-        match i32::from(unsafe { (*entry.ifa_addr).sa_family }) {
+        match i32::from(unsafe { ptr::read_unaligned(entry.ifa_addr) }.sa_family) {
             libc::AF_LINK if !entry.ifa_data.is_null() => {
-                let data = unsafe { &*(entry.ifa_data as *const libc::if_data) };
+                let data = unsafe { ptr::read_unaligned(entry.ifa_data as *const libc::if_data) };
                 interface.traffic = Some(Traffic {
                     packets_in: u64::from(data.ifi_ipackets),
                     bytes_in: u64::from(data.ifi_ibytes),
@@ -45,17 +45,21 @@ pub(super) fn interfaces() -> Vec<Interface> {
                 });
             }
             libc::AF_INET => {
-                let address = unsafe { &*(entry.ifa_addr as *const libc::sockaddr_in) };
+                let address =
+                    unsafe { ptr::read_unaligned(entry.ifa_addr as *const libc::sockaddr_in) };
                 interface
                     .addresses
                     .push(Ipv4Addr::from(u32::from_be(address.sin_addr.s_addr)).to_string());
             }
             libc::AF_INET6 => {
-                let address = unsafe { &*(entry.ifa_addr as *const libc::sockaddr_in6) };
+                let address =
+                    unsafe { ptr::read_unaligned(entry.ifa_addr as *const libc::sockaddr_in6) };
                 let prefix = match entry.ifa_netmask.is_null() {
                     true => 128,
                     false => {
-                        let mask = unsafe { &*(entry.ifa_netmask as *const libc::sockaddr_in6) };
+                        let mask = unsafe {
+                            ptr::read_unaligned(entry.ifa_netmask as *const libc::sockaddr_in6)
+                        };
                         mask.sin6_addr
                             .s6_addr
                             .iter()

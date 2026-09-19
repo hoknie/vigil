@@ -95,11 +95,11 @@ fn account(uid: u32) -> Option<Account> {
             buffer.resize(buffer.len() * 4, 0);
             continue;
         }
-        if answer != 0 || found.is_null() {
+        if answer != 0 || found.is_null() || found != entry.as_mut_ptr() {
             return None;
         }
 
-        let entry = unsafe { &*found };
+        let entry = unsafe { entry.assume_init_ref() };
         return Some(Account {
             uid,
             gid: entry.pw_gid,

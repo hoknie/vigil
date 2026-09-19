@@ -27,11 +27,11 @@ pub fn name_of_user(uid: u32) -> Option<String> {
             buffer.resize(buffer.len() * 4, 0);
             continue;
         }
-        if answer != 0 || found.is_null() {
+        if answer != 0 || found.is_null() || found != entry.as_mut_ptr() {
             return None;
         }
 
-        let name = unsafe { (*found).pw_name };
+        let name = unsafe { entry.assume_init_ref() }.pw_name;
         if name.is_null() {
             return None;
         }

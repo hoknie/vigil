@@ -115,7 +115,7 @@ mod tests {
     fn an_account_the_directory_and_the_flat_file_both_hold_is_read_once_as_found_first() {
         let (entries, facts) = merged_accounts(vec![
             account("root", 0, "*"),
-            account("yclients", 501, "********"),
+            account("alice", 501, "********"),
             account("root", 0, "********"),
         ]);
 
@@ -124,19 +124,19 @@ mod tests {
                 .iter()
                 .map(|entry| entry.name.as_str())
                 .collect::<Vec<_>>(),
-            vec!["root", "yclients"],
+            vec!["root", "alice"],
             "macOS answers from its directory first and from /etc/passwd after it, and the \
              directory is what it logs in against"
         );
         assert_eq!(facts["root"].password, PasswordState::Disabled);
-        assert_eq!(facts["yclients"].password, PasswordState::Set);
+        assert_eq!(facts["alice"].password, PasswordState::Set);
         assert_eq!(facts["root"].last_change_day, None);
     }
 
     #[test]
     fn a_group_both_sources_hold_is_one_group_with_the_members_of_both() {
         let groups = merged_groups(vec![
-            group("admin", 80, &["root", "yclients"]),
+            group("admin", 80, &["root", "alice"]),
             group("staff", 20, &["root"]),
             group("admin", 80, &["root", "intruder"]),
         ]);
@@ -144,7 +144,7 @@ mod tests {
         assert_eq!(groups.len(), 2);
         assert_eq!(
             groups[0].members,
-            vec!["root", "yclients", "intruder"],
+            vec!["root", "alice", "intruder"],
             "a member written only into /etc/group is still a member the day this Mac boots \
              into single-user mode, and a privileged group is read at its widest"
         );
