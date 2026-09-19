@@ -30,6 +30,11 @@ docker-smoke:
 docker-kill-smoke:
     {{ RUN }} ./env/docker/kill-smoke.sh
 
+# Test coverage on Linux, where the Linux-only code is compiled too; HTML in target/llvm-cov-linux
+[group('docker')]
+docker-coverage:
+    {{ RUN }} bash -c 'cargo llvm-cov --workspace --html --output-dir target/llvm-cov-linux && cargo llvm-cov report --summary-only | tail -1'
+
 # The whole gate, on musl, inside the container
 [group('docker')]
 docker-check:

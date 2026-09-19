@@ -7,6 +7,8 @@ RUN cd /work && rustup show active-toolchain
 
 RUN rustup target add x86_64-unknown-linux-musl
 
+RUN rustup component add llvm-tools-preview && cargo install cargo-llvm-cov --locked
+
 RUN printf 'export PATH=/build/target/debug:/usr/local/cargo/bin:$PATH\n' > /etc/profile.d/00-rust.sh
 
 RUN mkdir -p /var/lib/vigil/firewall /run/vigil /var/log/vigil \

@@ -22,6 +22,16 @@ fmt-check:
 [group('quality')]
 check: fmt-check clippy test
 
+# Test coverage, one line per file and a total; only the code this machine compiles
+[group('quality')]
+coverage:
+    {{ CARGO }} llvm-cov --workspace --summary-only
+
+# Test coverage as an HTML report, opened in the browser
+[group('quality')]
+coverage-html:
+    {{ CARGO }} llvm-cov --workspace --html --open
+
 # What a reading, a diff and a judgement cost on this machine
 [group('quality')]
 cost:
