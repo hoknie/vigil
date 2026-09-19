@@ -106,10 +106,15 @@ mod tests {
             return;
         }
         assert_eq!(dump.state, "absent");
-        assert!(
-            dump.why.is_some_and(|why| why.contains("/usr/bin/docker")),
-            "the document says where it looked, because a reader of it cannot look again"
-        );
+        let why = dump.why.clone().unwrap_or_default();
+        for place in vigil_engines::Engine::Docker.places() {
+            assert!(
+                why.contains(place),
+                "the document says every place it looked, because a reader of it cannot look \
+                 again, and the places are the ones of the system it ran on: {place} is missing \
+                 from {why:?}"
+            );
+        }
         assert!(dump.asked.is_empty());
         let _ = fs::remove_dir_all(&at);
     }
