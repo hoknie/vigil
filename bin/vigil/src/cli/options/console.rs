@@ -1,11 +1,12 @@
 use clap::Args;
+use vigil_config::Installation;
 
 use super::opening::Opening;
 use super::screen::screen;
 use crate::cli::style;
 use crate::ui::Screen;
 
-pub const DEFAULT_SOCKET: &str = "/run/vigil/vigil.sock";
+pub const DEFAULT_SOCKET: &str = Installation::here().socket;
 
 #[derive(Debug, Clone, PartialEq, Eq, Args)]
 #[command(styles = style::HELP)]

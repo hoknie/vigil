@@ -9,7 +9,8 @@ mod settled;
 mod sockets;
 
 pub use agent::{
-    reading, reading_of, state, state_that_may_change, state_that_may_control, state_that_may_kill,
+    mac_that_may_change_and_control, reading, reading_of, state, state_that_may_change,
+    state_that_may_control, state_that_may_kill,
 };
 pub use answers::{buffers, refusals, statuses, stores};
 pub use findings::{finding, finding_of};

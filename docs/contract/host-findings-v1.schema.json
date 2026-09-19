@@ -202,6 +202,7 @@
             "persistence.preload_changed",
             "persistence.kernel_module.loaded",
             "persistence.shell_profile_changed",
+            "persistence.launchd.new",
             "firewall.disabled",
             "firewall.enabled",
             "firewall.ruleset_flushed",

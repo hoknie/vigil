@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.8",
+  "batch_id": "0193a1c2-5e10-7b22-9c04-6e1d2a8b4f77",
+  "sent_at": "2026-09-19T09:05:02.311Z",
+  "producer": {
+    "name": "vigil",
+    "version": "1.0.10"
+  },
+  "host": {
+    "host_id": "4c2a9e71d0b84f5ea6c3b19d7e20f851",
+    "install_id": "0193a0f1-2b44-7c10-8e21-5f0a2b6c9d33",
+    "boot_id": "9d1e7c42-3b6a-4f08-a1c5-7e2f0b9d4a61",
+    "hostname": "build-mac-02",
+    "os": {
+      "family": "macos",
+      "distro": "macos",
+      "version": "27.0",
+      "kernel": "27.0.0",
+      "arch": "aarch64"
+    },
+    "addresses": [
+      "10.0.4.21"
+    ],
+    "tags": {
+      "host_id_source": "IOPlatformUUID"
+    }
+  },
+  "findings": [
+    {
+      "event_id": "0193a1c2-6b31-7c08-8a17-3d5b9c0e2f91",
+      "finding_key": "persistence|launchd|/Library/LaunchDaemons/com.example.updater.plist",
+      "kind": "persistence.launchd.new",
+      "severity": "critical",
+      "state": "open",
+      "observed_at": "2026-09-19T09:05:00.104Z",
+      "first_seen_at": "2026-09-19T09:05:00.104Z",
+      "occurrences": 1,
+      "title": "New launchd daemon com.example.updater running /Library/Application Support/Example/updater --daemon --password [redacted] as root",
+      "subject": {
+        "type": "launchd_job",
+        "key": {
+          "name": "com.example.updater",
+          "path": "/Library/LaunchDaemons/com.example.updater.plist"
+        }
+      },
+      "after": {
+        "commands": [
+          "/Library/Application Support/Example/updater --daemon --password [redacted]"
+        ],
+        "commands_redacted": true,
+        "disabled": false,
+        "domain": "daemon",
+        "inserted_libraries": [
+          "/private/tmp/.x/libhook.dylib",
+          "/usr/local/lib/libother.dylib"
+        ],
+        "name": "com.example.updater",
+        "owner": null,
+        "path": "/Library/LaunchDaemons/com.example.updater.plist",
+        "program": "/Library/Application Support/Example/updater",
+        "readable": true,
+        "refusal": null,
+        "run_as": "root",
+        "schedule": "at load, kept alive, every 3600 s, on a calendar, when /etc/hosts changes, on a connection",
+        "scope": "system",
+        "understood": true,
+        "writable_path": true
+      },
+      "evidence": [
+        {
+          "kind": "path",
+          "value": "/Library/LaunchDaemons/com.example.updater.plist"
+        },
+        {
+          "kind": "cmdline",
+          "value": "/Library/Application Support/Example/updater --daemon --password [redacted]"
+        },
+        {
+          "kind": "note",
+          "value": "DYLD_INSERT_LIBRARIES loads /private/tmp/.x/libhook.dylib, /usr/local/lib/libother.dylib into the program before its own code runs"
+        }
+      ],
+      "redacted": [
+        "/after/commands"
+      ],
+      "rule": "new_launchd_job"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 mod advice;
+mod auditd;
 mod chunk;
 mod health;
 mod reading;

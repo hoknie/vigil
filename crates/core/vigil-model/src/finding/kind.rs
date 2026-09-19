@@ -96,6 +96,7 @@ kinds! {
     PersistencePreloadChanged => "persistence.preload_changed",
     PersistenceKernelModuleLoaded => "persistence.kernel_module.loaded",
     PersistenceShellProfileChanged => "persistence.shell_profile_changed",
+    PersistenceLaunchdNew => "persistence.launchd.new",
     FirewallDisabled => "firewall.disabled",
     FirewallEnabled => "firewall.enabled",
     FirewallRulesetFlushed => "firewall.ruleset_flushed",

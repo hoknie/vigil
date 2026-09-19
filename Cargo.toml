@@ -23,11 +23,13 @@ members = [
     "bin/vigil",
     "bin/vigil-audit-plugin",
     "bin/vigil-container-dump",
+    "bin/vigil-firewall-dump",
+    "bin/vigil-launches-spool",
 ]
 
 [workspace.package]
 edition = "2024"
-version = "1.0.9"
+version = "1.0.10"
 license = "Apache-2.0"
 
 [workspace.dependencies]

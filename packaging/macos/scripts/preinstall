@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+
+ROOT="${3%/}"
+SHIPPED="$ROOT/usr/local/share/vigil/defaults"
+BEFORE="$ROOT/usr/local/share/vigil/defaults.before"
+
+rm -rf "$BEFORE"
+if [ -d "$SHIPPED" ]; then
+    cp -Rp "$SHIPPED" "$BEFORE"
+fi
+
+exit 0

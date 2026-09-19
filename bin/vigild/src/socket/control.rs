@@ -1,8 +1,9 @@
-use vigil_model::{Controlling, ProtocolError, Response, Rfc3339};
+use vigil_model::{ControlTarget, Controlling, ProtocolError, Response, Rfc3339};
 
 use super::Shared;
 use crate::helpers::uuid7;
-use crate::units::{READING, carry_out, findings};
+use crate::types::System;
+use crate::units::{READING, carry_out, findings, refused as refused_here};
 
 const OFF: &str = "This agent starts and stops nothing on this host. Controlling what this host \
                    starts by itself from the console is off until units.from_the_console in the \
@@ -26,8 +27,16 @@ pub fn control(
         );
     }
 
-    let reading = shared.with(|state| state.snapshot(READING).cloned());
-    let report = carry_out(keys, controlling, reading.as_ref(), now);
+    let (system, reading) = shared.with(|state| {
+        (
+            System::of(&state.host().os.family),
+            state.snapshot(READING).cloned(),
+        )
+    });
+    let report = match (controlling.target(), system.controls_units()) {
+        (ControlTarget::Unit, Err(why)) => refused_here(keys, controlling, now, why),
+        _ => carry_out(keys, controlling, reading.as_ref(), now),
+    };
     let raised = findings(&report, &mut uuid7::mint);
     shared.with(|state| {
         state.record_what_the_console_did(&raised);
@@ -152,5 +161,43 @@ mod tests {
             raised[0].finding_key,
             "agent.unit.control|unit|nginx.service"
         );
+    }
+
+    #[test]
+    fn on_a_mac_a_unit_is_refused_by_name_and_the_refusal_is_a_finding() {
+        let shared = Shared::new(fixture::mac_that_may_change_and_control());
+
+        match control(&nginx(), Controlling::Stop, &shared, now()) {
+            Response::Controlled { report } => {
+                assert_eq!(report.done(), 0);
+                assert!(
+                    report.controlled[0].said.contains("launchd job"),
+                    "{report:?}"
+                );
+            }
+            other => panic!("it answered {other:?}"),
+        }
+        let raised = shared.with(|state| state.take_what_the_console_raised());
+        assert_eq!(raised.len(), 1);
+        assert_eq!(raised[0].kind.as_str(), "agent.unit.control_refused");
+    }
+
+    #[test]
+    fn on_a_mac_a_cron_line_is_still_looked_up_as_on_any_other_host() {
+        let shared = Shared::new(fixture::mac_that_may_change_and_control());
+
+        match control(
+            &["cron|/usr/lib/cron/tabs/root|root|/usr/bin/backup".to_string()],
+            Controlling::Comment,
+            &shared,
+            now(),
+        ) {
+            Response::Controlled { report } => assert!(
+                !report.controlled[0].said.contains("launchd"),
+                "a crontab is a file on every system, and the unit refusal is not its answer: \
+                 {report:?}"
+            ),
+            other => panic!("it answered {other:?}"),
+        }
     }
 }

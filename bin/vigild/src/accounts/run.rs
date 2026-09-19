@@ -19,6 +19,10 @@ pub fn carry_out(changes: &[AccountChange], reading: Option<&Snapshot>, now: Rfc
     asked(changes, now, &mut |change| one(change, reading, ours))
 }
 
+pub fn refused(changes: &[AccountChange], now: Rfc3339, why: &str) -> Carried {
+    asked(changes, now, &mut |change| Changed::refused(change, why))
+}
+
 fn asked(
     changes: &[AccountChange],
     now: Rfc3339,

@@ -8,6 +8,12 @@ use crate::views::WhatStartsByItself;
 
 const FAMILIES: &[&str] = &["persistence"];
 
+#[cfg(not(target_os = "macos"))]
+const SUBJECT: &str = "what the host starts by itself: units, timers, cron, shell profiles";
+
+#[cfg(target_os = "macos")]
+const SUBJECT: &str = "what the host starts by itself: launchd jobs, cron, shell profiles";
+
 pub struct Persistence;
 
 impl Module for Persistence {
@@ -16,7 +22,7 @@ impl Module for Persistence {
     }
 
     fn subject(&self) -> &'static str {
-        "what the host starts by itself: units, timers, cron, shell profiles"
+        SUBJECT
     }
 
     fn every_seconds(&self) -> u32 {
@@ -40,12 +46,6 @@ impl Module for Persistence {
     }
 }
 
-#[cfg(target_os = "linux")]
 fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
     Ok(Box::new(crate::PersistenceCollector::new(settings.now())))
-}
-
-#[cfg(not(target_os = "linux"))]
-fn reading(_settings: &Settings) -> Result<Box<dyn Collector>, String> {
-    Err("what this host starts by itself is read from a Linux /etc and /lib".to_string())
 }

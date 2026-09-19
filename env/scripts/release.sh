@@ -13,6 +13,7 @@ VERSION="${VERSION:-$(awk '/^\[workspace\.package\]/{p=1} p && /^version *= *"/{
 [ -n "$VERSION" ] || { echo "release: cannot read the version out of Cargo.toml" >&2; exit 2; }
 
 case "$TARGET" in
+*-apple-darwin) DEB_ARCH=none; RPM_ARCH=none; BIN_ARCH=universal ;;
 x86_64-*)  DEB_ARCH=amd64; RPM_ARCH=x86_64; BIN_ARCH=x86_64 ;;
 aarch64-*) DEB_ARCH=arm64; RPM_ARCH=aarch64; BIN_ARCH=aarch64 ;;
 *) echo "release: no architecture name known for $TARGET" >&2; exit 2 ;;
@@ -86,7 +87,30 @@ build_archive() {
     echo "$archive"
 }
 
+collect_macos() {
+    local pkg="$OUT/vigil_${VERSION}.macos.universal.pkg"
+    local archive="$OUT/vigil_${VERSION}.macos.universal.tar.gz"
+
+    for built in "$pkg" "$archive"; do
+        [ -f "$built" ] || {
+            echo "release: $built is missing — run 'just package-macos' on a Mac first" >&2
+            exit 2
+        }
+    done
+
+    say "the assets for macOS"
+    mkdir -p "$RELEASE"
+    install -m 0644 "$pkg" "$RELEASE/$(basename "$pkg")"
+    install -m 0644 "$archive" "$RELEASE/$(basename "$archive")"
+
+    ls -l "$RELEASE"
+}
+
 collect() {
+    case "$TARGET" in
+    *-apple-darwin) collect_macos; return ;;
+    esac
+
     local deb="$OUT/vigil_${VERSION}_${DEB_ARCH}.deb"
     local rpm="$OUT/vigil-${VERSION}-1.${RPM_ARCH}.rpm"
 

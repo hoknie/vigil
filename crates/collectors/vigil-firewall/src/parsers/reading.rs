@@ -36,7 +36,7 @@ pub fn firewall_snapshot(taken_at: &str, reading: &FirewallReading<'_>) -> Snaps
     add_tables(&mut snapshot, reading);
     add_chains(&mut snapshot, reading);
     add_backend(&mut snapshot, reading);
-    add_interfaces(&mut snapshot, reading);
+    add_interfaces(&mut snapshot, reading.interfaces, reading.counting);
 
     snapshot
 }
@@ -100,16 +100,16 @@ fn add_chains(snapshot: &mut Snapshot, reading: &FirewallReading<'_>) {
     }
 }
 
-fn add_interfaces(snapshot: &mut Snapshot, reading: &FirewallReading<'_>) {
-    for interface in reading.interfaces {
+pub(super) fn add_interfaces(snapshot: &mut Snapshot, interfaces: &[Interface], counting: bool) {
+    for interface in interfaces {
         let mut said = json!({
             "name": interface.name,
             "addresses": interface.addresses,
             "the_way_out": interface.the_way_out,
-            "counted": reading.counting,
+            "counted": counting,
         });
 
-        if let (true, Some(traffic)) = (reading.counting, interface.traffic) {
+        if let (true, Some(traffic)) = (counting, interface.traffic) {
             said["packets_in"] = json!(traffic.packets_in);
             said["packets_out"] = json!(traffic.packets_out);
             said["bytes_in"] = json!(traffic.bytes_in);

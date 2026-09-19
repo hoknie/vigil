@@ -4,6 +4,9 @@ use vigil_view::Piece;
 use super::super::fields;
 
 pub(super) fn ruleset(key: &str, item: &Value) -> Vec<Piece> {
+    if key.ends_with("|pf") {
+        return pf(key, item);
+    }
     let mut said = vec![
         Piece::title(
             "NFTABLES",
@@ -51,6 +54,54 @@ pub(super) fn ruleset(key: &str, item: &Value) -> Vec<Piece> {
             ),
         },
     );
+    said.push(Piece::Blank);
+
+    said
+}
+
+fn pf(key: &str, item: &Value) -> Vec<Piece> {
+    let enabled = fields::enabled(item);
+    let mut said = vec![
+        Piece::title(
+            "PF",
+            match enabled {
+                true => "enabled",
+                false => "disabled",
+            },
+        ),
+        Piece::Blank,
+    ];
+
+    for (name, value) in [
+        ("rulesets", fields::tables(item).to_string()),
+        (
+            "anchors",
+            item["anchors"].as_u64().unwrap_or_default().to_string(),
+        ),
+        ("on input", fields::hooked_on_input(item).to_string()),
+        ("rules", fields::all_rules(item).to_string()),
+        ("object", key.to_string()),
+    ] {
+        said.push(Piece::field(name, value));
+    }
+    said.push(Piece::Blank);
+
+    said.push(Piece::heading("WHAT THIS MEANS"));
+    said.push(match (enabled, fields::hooked_on_input(item)) {
+        (false, _) => Piece::warning(
+            "pf is switched off: the rules listed here are loaded and decide nothing. The \
+             Application Firewall, on its own row, may still filter by program.",
+        ),
+        (true, 0) => Piece::warning(
+            "pf is on and no rule of its main ruleset applies to a packet arriving at this \
+             Mac, so pf lets every one of them in.",
+        ),
+        (true, _) => Piece::text(
+            "pf is on. The chains in and out of the main ruleset are its rules for each \
+             direction, and their policy is what the last rule matching every packet says; \
+             an anchor is a ruleset a program of this Mac fills and empties as it runs.",
+        ),
+    });
     said.push(Piece::Blank);
 
     said

@@ -16,3 +16,6 @@ serde_yaml.workspace = true
 
 [dev-dependencies]
 vigil-module = { path = "../../core/vigil-module" }
+
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+libc = "0.2"

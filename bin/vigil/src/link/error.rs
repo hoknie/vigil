@@ -1,5 +1,17 @@
 use std::fmt;
 
+const ABSENT_UNDER_SYSTEMD: &[&str] = &[
+    "Is the agent running?  systemctl status vigild",
+    "Is this the socket it opened?  the socket_path line of its configuration",
+    "Point the console at another one:  vigil ui --socket /path/to/vigil.sock",
+];
+
+const ABSENT_UNDER_LAUNCHD: &[&str] = &[
+    "Is the agent running?  launchctl print system/vigil.vigild",
+    "Is this the socket it opened?  the socket_path line of its configuration",
+    "Point the console at another one:  vigil ui --socket /path/to/vigil.sock",
+];
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Trouble {
     pub path: String,
@@ -39,11 +51,10 @@ impl Trouble {
 
     pub fn what_to_try(&self) -> &'static [&'static str] {
         match self.kind {
-            TroubleKind::Absent => &[
-                "Is the agent running?  systemctl status vigild",
-                "Is this the socket it opened?  the socket_path line of its configuration",
-                "Point the console at another one:  vigil ui --socket /path/to/vigil.sock",
-            ],
+            TroubleKind::Absent => match cfg!(target_os = "macos") {
+                true => ABSENT_UNDER_LAUNCHD,
+                false => ABSENT_UNDER_SYSTEMD,
+            },
             TroubleKind::Forbidden => &[
                 "The socket is root-only, by design.",
                 "Open the console as the same user the agent runs as:  sudo vigil ui",
@@ -63,3 +74,22 @@ impl fmt::Display for Trouble {
 }
 
 impl std::error::Error for Trouble {}
+
+#[cfg(test)]
+mod tests {
+    use vigil_config::{Installation, Service};
+
+    use super::*;
+
+    #[test]
+    fn an_agent_that_is_not_answering_is_looked_for_with_the_service_manager_of_this_system() {
+        assert!(ABSENT_UNDER_SYSTEMD[0].ends_with(Service::SYSTEMD.status));
+        assert!(ABSENT_UNDER_LAUNCHD[0].ends_with(Service::LAUNCHD.status));
+
+        let said = Trouble::new("/x", TroubleKind::Absent, "gone").what_to_try();
+        assert!(
+            said[0].ends_with(Installation::here().service.status),
+            "a Mac has no systemctl, and a hint that names one sends the reader nowhere: {said:?}"
+        );
+    }
+}

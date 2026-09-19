@@ -275,3 +275,15 @@ fn asking_this_program_what_it_is_is_never_read_as_the_shape_it_used_to_have() {
         );
     }
 }
+
+#[cfg(target_os = "linux")]
+#[test]
+fn on_linux_the_console_reads_the_socket_the_daemon_opens_under_run() {
+    assert_eq!(DEFAULT_SOCKET, "/run/vigil/vigil.sock");
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn on_macos_the_console_reads_the_socket_the_daemon_opens_under_var_run() {
+    assert_eq!(DEFAULT_SOCKET, "/var/run/vigil/vigil.sock");
+}

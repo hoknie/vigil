@@ -1,0 +1,215 @@
+{
+  "source": "persistence",
+  "classes": {
+    "cron": {
+      "command": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "command_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "schedule": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "source": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "user": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "launchd": {
+      "commands": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "commands/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "commands_redacted": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "disabled": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "domain": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "inserted_libraries": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "inserted_libraries/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "owner": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "path": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "program": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "readable": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "refusal": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "run_as": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "schedule": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "scope": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "understood": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "writable_path": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      }
+    },
+    "script": {
+      "family": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "gid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "mode": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "path": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "present": {
+        "types": [
+          "boolean",
+          "null"
+        ],
+        "always": true
+      },
+      "readable": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "sha256": {
+        "types": [
+          "null",
+          "string"
+        ],
+        "always": true
+      },
+      "shown": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "size": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "uid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      }
+    }
+  }
+}

@@ -193,7 +193,12 @@ fn a_console_switch_turned_on_in_the_file_while_the_daemon_runs_stays_as_the_dae
          take back or hand out while the daemon runs is a word nobody can rely on"
     );
     assert_eq!(looked.said.len(), 1, "{:?}", looked.said);
-    for key in ["killing", "accounts", "units", "try-restart"] {
+    for key in [
+        "killing",
+        "accounts",
+        "units",
+        vigil_config::Installation::here().service.restart,
+    ] {
         assert!(
             looked.said[0].contains(key),
             "the operator is told the switch waits for a restart, by name: {}",
@@ -451,7 +456,11 @@ fn an_edit_to_another_collectors_block_waits_for_a_restart_and_is_said_to_by_nam
 
     assert!(looked.refollowed.is_empty(), "{:?}", looked.said);
     assert_eq!(looked.said.len(), 1, "{:?}", looked.said);
-    for said in ["resources", "collectors", "try-restart"] {
+    for said in [
+        "resources",
+        "collectors",
+        vigil_config::Installation::here().service.restart,
+    ] {
         assert!(
             looked.said[0].contains(said),
             "the line names the block and where it is: {}",

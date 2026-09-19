@@ -1,11 +1,11 @@
 use std::time::Instant;
 
 use vigil_model::Snapshot;
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use vigil_module::{Module, Settings};
 use vigil_view::{Pane, Room, Section, Showing, Sorting, listed};
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 const TAKEN_AT: &str = "2026-09-13T12:00:00.000Z";
 const ROUNDS: u32 = 200;
 const WINDOW: usize = 40;
@@ -19,7 +19,7 @@ fn main() {
     searching();
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn reading() {
     let settings = Settings::plain(|| TAKEN_AT.to_string());
     match vigil_files::Files.collector(&settings) {
@@ -55,7 +55,7 @@ fn reading() {
     let _ = std::fs::remove_dir_all(&bench);
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn planted(tree: &std::path::Path, count: usize) {
     for at in 0..count {
         let path = tree.join(file_name(at));
@@ -66,12 +66,12 @@ fn planted(tree: &std::path::Path, count: usize) {
     }
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn file_name(at: usize) -> String {
     format!("{:02}/file-{at:05}.conf", at % 20)
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn measured_reading(what: &str, collector: &dyn vigil_collect::Collector) {
     let started = Instant::now();
     let Ok(first) = collector.collect() else {
@@ -114,9 +114,18 @@ fn resident() -> String {
         .unwrap_or_else(|| "unknown".to_string())
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "macos")]
+fn resident() -> String {
+    let mut usage = std::mem::MaybeUninit::<libc::rusage>::zeroed();
+    match unsafe { libc::getrusage(libc::RUSAGE_SELF, usage.as_mut_ptr()) } {
+        0 => format!("{} kB", unsafe { usage.assume_init() }.ru_maxrss / 1024),
+        _ => "unknown".to_string(),
+    }
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 fn reading() {
-    println!("files: this reading is taken on Linux; nothing to measure here");
+    println!("files: this reading is taken on Linux and on macOS; nothing to measure here");
 }
 
 fn drawing() {

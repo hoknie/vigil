@@ -8,7 +8,7 @@ use crate::helpers::uuid7;
 const FILE: &str = "install_id";
 
 pub fn install_id(state_dir: &Path) -> Result<Uuid7, String> {
-    fs::create_dir_all(state_dir).map_err(|error| {
+    vigil_store::create_owner_only_directory(state_dir).map_err(|error| {
         format!(
             "the state directory {} cannot be created: {error}",
             state_dir.display()

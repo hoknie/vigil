@@ -3,6 +3,12 @@ use std::io::ErrorKind;
 use rustix::process::{Pid, Signal, kill_process};
 use vigil_model::Killing;
 
+const NOT_ALLOWED_ON_LINUX: &str = "it runs under a capability set that does not include \
+                                    CAP_KILL, or the process is in another namespace";
+
+const NOT_ALLOWED_ON_MACOS: &str = "it does not run as root, or System Integrity Protection \
+                                    keeps the process from every signal but its own";
+
 pub type StillThere<'a> = &'a dyn Fn(u32) -> bool;
 
 pub fn send(pid: u32, killing: Killing, still_there: StillThere<'_>) -> Result<String, String> {
@@ -86,8 +92,11 @@ fn said(error: rustix::io::Errno, pid: u32) -> String {
     match std::io::Error::from(error).kind() {
         ErrorKind::NotFound => format!("pid {pid} was gone before the signal reached it"),
         ErrorKind::PermissionDenied => format!(
-            "the agent is not allowed to signal pid {pid}: it runs under a capability set \
-             that does not include CAP_KILL, or the process is in another namespace"
+            "the agent is not allowed to signal pid {pid}: {}",
+            match cfg!(target_os = "macos") {
+                true => NOT_ALLOWED_ON_MACOS,
+                false => NOT_ALLOWED_ON_LINUX,
+            }
         ),
         _ => format!("pid {pid} was not signalled: {error}"),
     }
@@ -103,6 +112,17 @@ mod tests {
         assert_eq!(named(Killing::Kill), "SIGKILL");
         assert_eq!(signal(Killing::Terminate), Signal::TERM);
         assert_eq!(signal(Killing::Kill), Signal::KILL);
+    }
+
+    #[test]
+    fn a_signal_that_is_not_allowed_is_explained_in_the_words_of_the_system_that_refused_it() {
+        let named = said(rustix::io::Errno::PERM, 42);
+
+        assert!(named.contains("pid 42"), "{named}");
+        match cfg!(target_os = "macos") {
+            true => assert!(named.contains("System Integrity Protection"), "{named}"),
+            false => assert!(named.contains("CAP_KILL"), "{named}"),
+        }
     }
 
     #[test]

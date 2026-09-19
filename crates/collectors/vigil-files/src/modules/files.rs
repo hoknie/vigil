@@ -63,7 +63,6 @@ impl Module for Files {
     }
 }
 
-#[cfg(target_os = "linux")]
 fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
     let watching: Watching = settings.read().map_err(|refusal| refusal.to_string())?;
 
@@ -71,21 +70,4 @@ fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
         Layout::Named(named) => crate::FilesCollector::new(settings.now(), &named.hashed()),
         Layout::Listed(listing) => crate::FilesCollector::listed(settings.now(), listing),
     }))
-}
-
-#[cfg(not(target_os = "linux"))]
-fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
-    let watching: Watching = settings.read().map_err(|refusal| refusal.to_string())?;
-
-    Err(match watching.layout() {
-        Layout::Named(named) => format!(
-            "the {} file(s) this host is configured by are read with a Linux stat and a hash",
-            named.paths.len()
-        ),
-        Layout::Listed(listing) => format!(
-            "the paths {} names are read with a Linux stat and a hash, and walked over the \
-             Linux mount table",
-            listing.watched_path.display()
-        ),
-    })
 }

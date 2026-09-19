@@ -17,6 +17,28 @@ impl Rule for FirewallPolicyWeakened {
         };
         let was = FirewallView::new(key, before);
         let now = FirewallView::new(key, after);
+        if now.is(Family::Application) {
+            if !was.blocks_all() || now.blocks_all() || !now.enabled() {
+                return None;
+            }
+            return Some(build(
+                FirewallFinding {
+                    kind: KnownKind::FirewallPolicyWeakened,
+                    severity: Severity::High,
+                    rule: self.name(),
+                    key,
+                    object: "application_firewall",
+                    title: "The Application Firewall of this Mac no longer blocks every incoming connection: the programs it allows accept them again".to_string(),
+                    before: Some(before.clone()),
+                    after: Some(after.clone()),
+                    evidence: vec![Evidence {
+                        kind: "note".into(),
+                        value: "block all was on, and is off; which programs are allowed is on the row of the Application Firewall".into(),
+                    }],
+                },
+                ctx,
+            ));
+        }
         if !now.is(Family::Chain) {
             return None;
         }
@@ -87,6 +109,32 @@ mod tests {
         assert_eq!(finding.kind.as_str(), "firewall.policy_weakened");
         assert_eq!(finding.severity, Severity::High);
         assert!(finding.title.contains("input"), "{}", finding.title);
+    }
+
+    #[test]
+    fn block_all_switched_off_on_a_mac_is_a_policy_that_lets_more_in() {
+        let finding = apply(&Change::Changed {
+            key: "fw-application|socketfilterfw".into(),
+            before: fixture::application_firewall(true, true),
+            after: fixture::application_firewall(true, false),
+        })
+        .expect("fires");
+
+        assert_eq!(finding.kind.as_str(), "firewall.policy_weakened");
+        assert_eq!(finding.finding_key, "firewall|application|socketfilterfw");
+    }
+
+    #[test]
+    fn block_all_that_went_with_the_whole_application_firewall_is_the_other_rule() {
+        assert!(
+            apply(&Change::Changed {
+                key: "fw-application|socketfilterfw".into(),
+                before: fixture::application_firewall(true, true),
+                after: fixture::application_firewall(false, false),
+            })
+            .is_none(),
+            "one switch, one finding: firewall.disabled already says it"
+        );
     }
 
     #[test]

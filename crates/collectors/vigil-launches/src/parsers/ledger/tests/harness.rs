@@ -20,6 +20,7 @@ pub(super) fn launch(auid: u32, executable: &str, arguments: &[&str]) -> Executi
         executable_lossy: false,
         arguments: arguments.iter().map(|word| (*word).to_string()).collect(),
         arguments_lossy: false,
+        arguments_redacted: false,
     }
 }
 

@@ -58,7 +58,7 @@ fn watching(settings: &Settings) -> Result<Watching, String> {
     settings.read().map_err(|refusal| refusal.to_string())
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
     let watching = watching(settings)?;
     watching.check()?;
@@ -69,12 +69,12 @@ fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
     )))
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
     let watching = watching(settings)?;
 
-    Err(format!(
-        "what the {} of this host hold is read from a file a Linux systemd timer writes",
-        watching.engines.join(" and ")
-    ))
+    Ok(Box::new(crate::EnginesCollector::new(
+        settings.now(),
+        watching,
+    )))
 }

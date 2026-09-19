@@ -5,7 +5,30 @@ Format:
 - [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - [SemVer](https://semver.org/spec/v2.0.0.html)
 
-## [1.0.9] - 09/--/2026
+## [1.0.10] - 09/--/2026
+
+### Added
+- vigild runs on macOS as a launchd service, with its own paths, a universal `.pkg` and `.tar.gz`
+- macOS collectors: network, processes, users, resources, files, persistence (launchd jobs),
+  firewall (pf and the Application Firewall), launches (eslogger), container engines
+- `vigil-firewall-dump` and `vigil-launches-spool`: the programs launchd runs on a Mac
+- `persistence.launchd.new` (contract 1.8)
+- `just distributions` runs the agent on eleven Linux distributions in containers
+- `just coverage`, `just coverage-html`, `just docker-coverage`
+
+### Changed
+- a collector with no reader for this system starts the daemon as unavailable instead of stopping it
+- on macOS the console refuses account changes and launchd jobs, with the reason
+- the GitHub workflow caches cargo builds and runs on `main` and pull requests; Dependabot added
+
+### Fixed
+- user crontabs of openSUSE and Alpine, `/etc/cron.d` files cronie runs, Alpine's periodic and
+  `local.d` scripts, openSUSE's `/usr/etc` profiles and sudoers with their includes
+- the audit log is read where `auditd.conf` puts it
+- the state directory is made `0700` on a host installed from the binaries alone
+- a host that keeps `os-release` only under `/usr/lib`, or names a build and no version
+
+## [1.0.9] - 09/18/2026
 
 ### Added
 - collectors are read from `collectors_path` in `vigil.yaml`

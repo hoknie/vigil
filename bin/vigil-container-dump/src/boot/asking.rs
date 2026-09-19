@@ -6,13 +6,22 @@ use std::time::{Duration, Instant};
 
 use vigil_engines::{ANSWERED, Answer, Asked, FAILED, TIMED_OUT};
 
+use crate::accounts::Account;
+
 const PATH: &str = "/usr/sbin:/usr/bin:/sbin:/bin";
 
 const LOOK: Duration = Duration::from_millis(25);
 
 const COMPLAINT_CEILING: u64 = 8 * 1024;
 
-pub fn ask(program: &str, asked: &Asked, deadline: Duration, ceiling: u64, at: &Path) -> Answer {
+pub fn ask(
+    program: &str,
+    asked: &Asked,
+    deadline: Duration,
+    ceiling: u64,
+    at: &Path,
+    account: Option<&Account>,
+) -> Answer {
     let arguments: Vec<String> = asked
         .arguments
         .iter()
@@ -22,10 +31,14 @@ pub fn ask(program: &str, asked: &Asked, deadline: Duration, ceiling: u64, at: &
     let complained = scratch(at, asked, "err");
 
     let started = Instant::now();
-    let child = start(program, asked, &printed, &complained);
+    let child = start(program, asked, &printed, &complained, account);
     let mut child = match child {
         Ok(child) => child,
-        Err(why) => return unfinished(FAILED, arguments, started, None, Some(why)),
+        Err(why) => {
+            let _ = fs::remove_file(&printed);
+            let _ = fs::remove_file(&complained);
+            return unfinished(FAILED, arguments, started, None, Some(why));
+        }
     };
 
     let state = waited(&mut child, deadline);
@@ -54,22 +67,50 @@ pub fn ask(program: &str, asked: &Asked, deadline: Duration, ceiling: u64, at: &
     }
 }
 
-fn start(program: &str, asked: &Asked, printed: &Path, complained: &Path) -> Result<Child, String> {
+fn start(
+    program: &str,
+    asked: &Asked,
+    printed: &Path,
+    complained: &Path,
+    account: Option<&Account>,
+) -> Result<Child, String> {
     let out = File::create(printed).map_err(|error| format!("{}: {error}", printed.display()))?;
     let err =
         File::create(complained).map_err(|error| format!("{}: {error}", complained.display()))?;
 
-    Command::new(program)
+    let mut command = Command::new(program);
+    command
         .args(asked.arguments)
         .stdin(Stdio::null())
         .stdout(Stdio::from(out))
         .stderr(Stdio::from(err))
         .env_clear()
         .env("PATH", PATH)
-        .env("LC_ALL", "C")
+        .env("LC_ALL", "C");
+
+    if let Some(account) = account {
+        as_account(&mut command, account);
+    }
+
+    command
         .spawn()
         .map_err(|error| format!("{program} could not be run: {error}"))
 }
+
+#[cfg(target_os = "macos")]
+fn as_account(command: &mut Command, account: &Account) {
+    use std::os::unix::process::CommandExt;
+
+    if let Some(home) = &account.home {
+        command.env("HOME", home);
+    }
+    if account.uid != unsafe { libc::geteuid() } {
+        command.uid(account.uid).gid(account.gid);
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn as_account(_command: &mut Command, _account: &Account) {}
 
 fn waited(child: &mut Child, deadline: Duration) -> Option<Option<i32>> {
     let started = Instant::now();

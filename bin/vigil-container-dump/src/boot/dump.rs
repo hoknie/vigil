@@ -4,9 +4,10 @@ use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use vigil_engines::{Dump, Engine, WRITER};
+use vigil_engines::{Answer, Dump, Engine, FAILED, WRITER};
 
 use super::asking::ask;
+use crate::accounts::Account;
 use crate::cli::Options;
 
 const ONLY_THE_OWNER: u32 = 0o600;
@@ -54,6 +55,12 @@ fn asked(engine: Engine, options: &Options, taken_at: &str, at: &Path) -> Dump {
     let mut dump = Dump::present(engine.name(), taken_at, options.deadline_seconds, program);
     dump.written_by = WRITER.to_string();
 
+    let account = match account_for(program) {
+        Ok(account) => account,
+        Err(refusal) => return refused(dump, engine, &refusal),
+    };
+    dump.account = account.as_ref().map(|account| account.name.clone());
+
     for asks in engine.asks() {
         let answer = ask(
             program,
@@ -61,10 +68,43 @@ fn asked(engine: Engine, options: &Options, taken_at: &str, at: &Path) -> Dump {
             Duration::from_secs(options.deadline_seconds),
             options.ceiling,
             at,
+            account.as_ref(),
         );
         dump.asked.insert(asks.subject.as_str().to_string(), answer);
     }
 
+    dump
+}
+
+#[cfg(target_os = "macos")]
+fn account_for(program: &str) -> Result<Option<Account>, String> {
+    crate::accounts::run_as(program).map(Some)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn account_for(_program: &str) -> Result<Option<Account>, String> {
+    Ok(None)
+}
+
+fn refused(mut dump: Dump, engine: Engine, refusal: &str) -> Dump {
+    for asks in engine.asks() {
+        dump.asked.insert(
+            asks.subject.as_str().to_string(),
+            Answer {
+                state: FAILED.to_string(),
+                arguments: asks
+                    .arguments
+                    .iter()
+                    .map(|word| (*word).to_string())
+                    .collect(),
+                milliseconds: 0,
+                printed: String::new(),
+                truncated: false,
+                status: None,
+                why: Some(format!("not run: {refusal}")),
+            },
+        );
+    }
     dump
 }
 

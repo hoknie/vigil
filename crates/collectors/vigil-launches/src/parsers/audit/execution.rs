@@ -6,4 +6,5 @@ pub struct Execution {
     pub executable_lossy: bool,
     pub arguments: Vec<String>,
     pub arguments_lossy: bool,
+    pub arguments_redacted: bool,
 }

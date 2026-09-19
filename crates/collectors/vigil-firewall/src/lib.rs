@@ -8,7 +8,11 @@ mod types;
 mod views;
 
 pub use modules::Firewall;
+pub use parsers::parse_pf_anchors;
 pub use views::WhatTheHostLetsIn;
 
-#[cfg(target_os = "linux")]
 pub use collectors::FirewallCollector;
+pub use types::{
+    ANSWERED, Answer, DUMP_FILE, FAILED, FirewallDump, MACOS_DUMP_DIRECTORY, MACOS_JOB,
+    MACOS_WRITER, MOST_ANCHORS, PF_ANCHORS, Question, TIMED_OUT,
+};

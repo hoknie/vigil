@@ -74,9 +74,9 @@ pub fn persistence_snapshot(taken_at: &str, reading: &PersistenceReading<'_>) ->
     let mut snapshot = Snapshot::new(SOURCE, taken_at.to_string());
 
     add_units(&mut snapshot, reading);
-    add_cron(&mut snapshot, reading);
+    add_cron(&mut snapshot, reading.cron);
     add_modules(&mut snapshot, reading);
-    add_scripts(&mut snapshot, reading);
+    add_scripts(&mut snapshot, reading.scripts);
     add_preload(&mut snapshot, reading);
 
     snapshot
@@ -134,8 +134,8 @@ fn add_units(snapshot: &mut Snapshot, reading: &PersistenceReading<'_>) {
     }
 }
 
-fn add_cron(snapshot: &mut Snapshot, reading: &PersistenceReading<'_>) {
-    for job in reading.cron {
+pub(super) fn add_cron(snapshot: &mut Snapshot, cron: &[CronEntry]) {
+    for job in cron {
         snapshot.items.insert(
             format!("cron|{}|{}|{}", job.source, job.user, job.command),
             json!({
@@ -174,8 +174,8 @@ fn add_modules(snapshot: &mut Snapshot, reading: &PersistenceReading<'_>) {
     }
 }
 
-fn add_scripts(snapshot: &mut Snapshot, reading: &PersistenceReading<'_>) {
-    for script in reading.scripts {
+pub(super) fn add_scripts(snapshot: &mut Snapshot, scripts: &[WatchedScript]) {
+    for script in scripts {
         snapshot.items.insert(
             format!("script|{}", script.path),
             json!({

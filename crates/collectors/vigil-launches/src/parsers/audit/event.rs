@@ -5,6 +5,8 @@ use super::log::AUDIT_KEY;
 use super::record::Record;
 use super::text::{text, unquote};
 
+pub const REDACTED_AT_THE_SOURCE: &str = "redacted";
+
 pub(super) struct Event {
     id: String,
     pub(super) started_at: usize,
@@ -90,6 +92,9 @@ impl Event {
             true => arguments(&self.execve),
             false => (Vec::new(), false),
         };
+        let arguments_redacted = with_arguments
+            && value(&self.execve, REDACTED_AT_THE_SOURCE)
+                .is_some_and(|said| unquote(said) == "yes");
 
         Some(Execution {
             id: self.id.clone(),
@@ -98,6 +103,7 @@ impl Event {
             executable_lossy: lossy,
             arguments,
             arguments_lossy,
+            arguments_redacted,
         })
     }
 }

@@ -9,6 +9,18 @@ use crate::views::WhatHasRunHere;
 
 const FAMILIES: &[&str] = &["run", "agent.buffer"];
 
+#[cfg(not(target_os = "macos"))]
+const SUBJECT: &str = "what people run, from the kernel's audit records";
+
+#[cfg(target_os = "macos")]
+const SUBJECT: &str = "what people run, from the exec events of Endpoint Security";
+
+#[cfg(not(target_os = "macos"))]
+const WRITTEN_BY: Option<&str> = None;
+
+#[cfg(target_os = "macos")]
+const WRITTEN_BY: Option<&str> = Some("vigil-launches.service");
+
 #[derive(Debug, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Watching {
@@ -23,7 +35,11 @@ impl Module for Launches {
     }
 
     fn subject(&self) -> &'static str {
-        "what people run, from the kernel's audit records"
+        SUBJECT
+    }
+
+    fn unit(&self) -> Option<&'static str> {
+        WRITTEN_BY
     }
 
     fn every_seconds(&self) -> u32 {
@@ -66,7 +82,6 @@ impl Module for Launches {
     }
 }
 
-#[cfg(target_os = "linux")]
 fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
     let watching: Watching = settings.read().map_err(|refusal| refusal.to_string())?;
 
@@ -74,11 +89,4 @@ fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
         settings.now(),
         watching.record_arguments,
     )))
-}
-
-#[cfg(not(target_os = "linux"))]
-fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
-    let _: Watching = settings.read().map_err(|refusal| refusal.to_string())?;
-
-    Err("what people run is read from the records a Linux auditd writes".to_string())
 }

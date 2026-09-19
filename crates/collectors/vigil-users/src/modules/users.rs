@@ -24,7 +24,7 @@ impl Module for Users {
     }
 
     fn collector(&self, settings: &Settings) -> Result<Box<dyn Collector>, String> {
-        reading(settings)
+        Ok(Box::new(crate::UsersCollector::new(settings.now())))
     }
 
     fn rules(&self, _settings: &Settings) -> RuleSet {
@@ -38,14 +38,4 @@ impl Module for Users {
     fn families(&self) -> &[&'static str] {
         FAMILIES
     }
-}
-
-#[cfg(target_os = "linux")]
-fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
-    Ok(Box::new(crate::UsersCollector::new(settings.now())))
-}
-
-#[cfg(not(target_os = "linux"))]
-fn reading(_settings: &Settings) -> Result<Box<dyn Collector>, String> {
-    Err("who may log in is read from a Linux /etc and its login records".to_string())
 }

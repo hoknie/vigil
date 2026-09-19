@@ -22,6 +22,8 @@ pub struct Dump {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub program: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub account: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub why: Option<String>,
     #[serde(default)]
     pub asked: BTreeMap<String, Answer>,
@@ -49,6 +51,7 @@ impl Dump {
             written_by: super::engine::WRITER.to_string(),
             deadline_seconds,
             program: None,
+            account: None,
             why: Some(why),
             asked: BTreeMap::new(),
         }
@@ -62,6 +65,7 @@ impl Dump {
             written_by: super::engine::WRITER.to_string(),
             deadline_seconds,
             program: Some(program.to_string()),
+            account: None,
             why: None,
             asked: BTreeMap::new(),
         }

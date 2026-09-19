@@ -3,6 +3,7 @@ use serde_json::Value;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Family {
     Ruleset,
+    Application,
     Table,
     Chain,
     Backend,
@@ -24,6 +25,10 @@ const BACKEND: &str = "fw-backend";
 
 const INTERFACE: &str = "fw-interface";
 
+const APPLICATION: &str = "fw-application";
+
+const PF: &str = "pf";
+
 const CLOSED: &str = "drop";
 
 const OPEN: &str = "accept";
@@ -40,6 +45,7 @@ impl<'a> FirewallView<'a> {
             CHAIN => Some(Family::Chain),
             BACKEND => Some(Family::Backend),
             INTERFACE => Some(Family::Interface),
+            APPLICATION => Some(Family::Application),
             _ => None,
         }
     }
@@ -62,6 +68,30 @@ impl<'a> FirewallView<'a> {
 
     pub fn hooked_on_input(&self) -> u64 {
         self.number("hooked_on_input")
+    }
+
+    pub fn backend(&self) -> &'a str {
+        match self.family() {
+            Some(Family::Ruleset) => self.key.split_once('|').map_or("?", |(_, backend)| backend),
+            Some(Family::Application) => "application firewall",
+            _ => "?",
+        }
+    }
+
+    pub fn is_pf(&self) -> bool {
+        self.backend() == PF
+    }
+
+    pub fn enabled(&self) -> bool {
+        self.value["enabled"].as_bool().unwrap_or(false)
+    }
+
+    pub fn blocks_all(&self) -> bool {
+        self.value["blocks_all"].as_bool().unwrap_or(false)
+    }
+
+    pub fn is_an_anchor(&self) -> bool {
+        self.value["anchor"].as_bool().unwrap_or(false)
     }
 
     pub fn legacy_backend(&self) -> bool {
@@ -136,6 +166,23 @@ mod tests {
         assert!(FirewallView::new("fw-table|inet filter", &table).is(Family::Table));
         assert!(FirewallView::new("fw-chain|inet filter|input", &chain).is(Family::Chain));
         assert!(FirewallView::new("fw-backend|legacy", &backend).is(Family::Backend));
+    }
+
+    #[test]
+    fn the_ruleset_names_the_backend_that_holds_it_and_the_application_firewall_is_its_own() {
+        let pf = fixture::pf_ruleset(true, 1);
+        let application = fixture::application_firewall(true, false);
+
+        assert_eq!(
+            FirewallView::new("fw-summary|nftables", &pf).backend(),
+            "nftables"
+        );
+        assert!(FirewallView::new("fw-summary|pf", &pf).is_pf());
+        assert!(
+            FirewallView::new("fw-application|socketfilterfw", &application)
+                .is(Family::Application)
+        );
+        assert!(FirewallView::new("fw-application|socketfilterfw", &application).enabled());
     }
 
     #[test]

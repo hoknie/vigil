@@ -1,0 +1,17 @@
+[package]
+name = "vigil-launches-spool"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "vigil-launches-spool"
+path = "src/main.rs"
+
+[dependencies]
+vigil-launches = { path = "../../crates/collectors/vigil-launches" }
+vigil-config = { path = "../../crates/core/vigil-config" }
+serde_yaml.workspace = true
+
+[dev-dependencies]
+vigil-collect = { path = "../../crates/core/vigil-collect" }

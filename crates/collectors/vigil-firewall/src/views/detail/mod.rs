@@ -1,3 +1,4 @@
+mod application;
 mod chain;
 mod interface;
 mod rule;
@@ -17,6 +18,7 @@ const SHORT: &str = "fw-";
 pub(super) fn of(key: &str, item: &Value) -> Vec<Piece> {
     let mut said = match Kind::of(key) {
         Some(Kind::Ruleset) => ruleset::ruleset(key, item),
+        Some(Kind::Application) => application::application(key, item),
         Some(Kind::Table) => table::table(key, item),
         Some(Kind::Chain) => {
             let mut said = chain::chain(key, item);

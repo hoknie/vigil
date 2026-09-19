@@ -17,6 +17,25 @@ impl Rule for FirewallEnabled {
         };
         let was = FirewallView::new(key, before);
         let now = FirewallView::new(key, after);
+        if now.is(Family::Application) {
+            if was.enabled() || !now.enabled() {
+                return None;
+            }
+            return Some(build(
+                FirewallFinding {
+                    kind: KnownKind::FirewallEnabled,
+                    severity: Severity::Info,
+                    rule: self.name(),
+                    key,
+                    object: "application_firewall",
+                    title: "The Application Firewall of this Mac is switched on again".to_string(),
+                    before: Some(before.clone()),
+                    after: Some(after.clone()),
+                    evidence: Vec::new(),
+                },
+                ctx,
+            ));
+        }
         if !now.is(Family::Ruleset) {
             return None;
         }
@@ -31,10 +50,13 @@ impl Rule for FirewallEnabled {
                 rule: self.name(),
                 key,
                 object: "firewall",
-                title: format!(
-                    "This host filters incoming packets again: {} chain(s) on the input hook",
-                    now.hooked_on_input()
-                ),
+                title: match now.is_pf() {
+                    true => "pf on this Mac filters incoming packets again".to_string(),
+                    false => format!(
+                        "This host filters incoming packets again: {} chain(s) on the input hook",
+                        now.hooked_on_input()
+                    ),
+                },
                 before: Some(before.clone()),
                 after: Some(after.clone()),
                 evidence: vec![counted(&now)],
@@ -86,6 +108,31 @@ mod tests {
         );
         assert_eq!(back.kind.as_str(), "firewall.enabled");
         assert_eq!(back.severity, Severity::Info);
+    }
+
+    #[test]
+    fn the_application_firewall_switched_back_on_closes_the_finding_that_it_was_off() {
+        let off = judge(
+            &FirewallDisabled,
+            &Change::Changed {
+                key: "fw-application|socketfilterfw".into(),
+                before: fixture::application_firewall(true, false),
+                after: fixture::application_firewall(false, false),
+            },
+        )
+        .expect("switched off");
+        let on = judge(
+            &FirewallEnabled,
+            &Change::Changed {
+                key: "fw-application|socketfilterfw".into(),
+                before: fixture::application_firewall(false, false),
+                after: fixture::application_firewall(true, false),
+            },
+        )
+        .expect("and on again");
+
+        assert_eq!(on.finding_key, off.finding_key);
+        assert_eq!(on.kind.as_str(), "firewall.enabled");
     }
 
     #[test]

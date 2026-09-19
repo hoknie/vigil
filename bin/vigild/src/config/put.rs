@@ -1,8 +1,8 @@
 use std::path::Path;
 
-use vigil_config::write;
+use vigil_config::{Installation, write};
 
-pub const RESTART: &str = "systemctl try-restart vigild.service";
+pub const RESTART: &str = Installation::here().service.restart;
 
 pub const READS_AT_START: &str = "the daemon reads its configuration at start";
 

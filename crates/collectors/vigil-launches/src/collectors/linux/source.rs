@@ -5,6 +5,7 @@ use std::sync::Mutex;
 use vigil_model::Rfc3339;
 
 use super::LaunchesCollector;
+use super::auditd::audit_log;
 use super::seen::Seen;
 use crate::spool::{PLUGIN_CONFIG_PATH, SPOOL_PATH};
 
@@ -16,7 +17,7 @@ impl LaunchesCollector {
             now,
             keep_arguments,
             SPOOL_PATH,
-            AUDIT_LOG,
+            audit_log(),
             PLUGIN_CONFIG_PATH,
         )
     }

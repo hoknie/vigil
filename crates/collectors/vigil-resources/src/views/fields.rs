@@ -37,7 +37,10 @@ pub fn held(family: Family, item: &Value) -> String {
 pub fn kind_of_store(family: Family, item: &Value) -> String {
     match family {
         Family::Filesystem => text(item, "type").to_string(),
-        Family::Memory => format!("swap {}", bytes(number(item, "swap_total_bytes"))),
+        Family::Memory => match item["swap_total_bytes"].as_u64() {
+            Some(size) => format!("swap {}", bytes(size)),
+            None => format!("swap {UNSAID}"),
+        },
         Family::Boot => booted(item),
     }
 }

@@ -1,4 +1,5 @@
 mod accounts;
+mod adapters;
 mod boot;
 mod budget;
 mod cli;

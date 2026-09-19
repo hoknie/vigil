@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use vigil_config::Suppression;
+use vigil_config::{Installation, Suppression};
 
 use super::apart::Apart;
 
@@ -35,8 +35,8 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Config {
-            state_dir: "/var/lib/vigil".into(),
-            socket_path: "/run/vigil/vigil.sock".into(),
+            state_dir: Installation::here().state_directory.into(),
+            socket_path: Installation::here().socket.into(),
             retention_days: 90,
             interval_seconds: None,
             schedule: BTreeMap::new(),
@@ -123,6 +123,28 @@ pub enum Receiver {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_configuration_that_names_no_places_keeps_its_state_and_socket_where_this_system_does() {
+        let config = Config::default();
+
+        assert_eq!(config.state_dir, Installation::here().state_directory);
+        assert_eq!(config.socket_path, Installation::here().socket);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn on_linux_the_state_and_the_socket_are_under_var_lib_and_run() {
+        assert_eq!(Config::default().state_dir, "/var/lib/vigil");
+        assert_eq!(Config::default().socket_path, "/run/vigil/vigil.sock");
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn on_macos_the_state_is_under_usr_local_and_the_socket_under_var_run() {
+        assert_eq!(Config::default().state_dir, "/usr/local/var/lib/vigil");
+        assert_eq!(Config::default().socket_path, "/var/run/vigil/vigil.sock");
+    }
 
     #[test]
     fn a_configuration_nobody_edited_lets_nothing_on_this_host_be_killed() {

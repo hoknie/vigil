@@ -1,18 +1,15 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::io::ErrorKind;
-use std::path::PathBuf;
 
 use vigil_collect::parse_passwd_entries;
 use vigil_model::Snapshot;
 
 use super::keys::read_authorized_keys;
 use super::sessions::read_sessions;
-use super::{GROUP, PASSWD, SHADOW, SUDOERS, SUDOERS_DIRECTORY};
-use crate::parsers::{
-    AccountsReading, ShadowFacts, SudoGrant, accounts_snapshot, parse_group, parse_shadow,
-    parse_sudoers,
-};
+use super::sudoers::read_sudoers;
+use super::{GROUP, PASSWD, SHADOW};
+use crate::parsers::{AccountsReading, ShadowFacts, accounts_snapshot, parse_group, parse_shadow};
 use vigil_collect::CollectError;
 
 pub fn reading(taken_at: &str) -> Result<Snapshot, CollectError> {
@@ -58,33 +55,4 @@ fn read_shadow() -> Option<BTreeMap<String, ShadowFacts>> {
     fs::read_to_string(SHADOW)
         .ok()
         .map(|text| parse_shadow(&text))
-}
-
-fn read_sudoers() -> Vec<SudoGrant> {
-    let mut grants = Vec::new();
-
-    if let Ok(text) = fs::read_to_string(SUDOERS) {
-        grants.extend(parse_sudoers(&text, SUDOERS).grants);
-    }
-
-    let mut files: Vec<PathBuf> = fs::read_dir(SUDOERS_DIRECTORY)
-        .into_iter()
-        .flatten()
-        .flatten()
-        .map(|entry| entry.path())
-        .filter(|path| path.is_file())
-        .collect();
-    files.sort();
-
-    for path in files {
-        let name = path.file_name().unwrap_or_default().to_string_lossy();
-        if name.ends_with('~') || name.contains('.') {
-            continue;
-        }
-        if let Ok(text) = fs::read_to_string(&path) {
-            grants.extend(parse_sudoers(&text, &path.to_string_lossy()).grants);
-        }
-    }
-
-    grants
 }

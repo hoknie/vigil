@@ -181,7 +181,7 @@ fn grown(dump: &vigil_engines::Dump, copies: usize) -> vigil_engines::Dump {
     grown
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn reading() {
     use std::fs;
 
@@ -234,7 +234,7 @@ fn reading() {
     let _ = fs::remove_dir_all(&at);
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 fn reading() {
-    println!("engines: this reading is taken on Linux; nothing to measure here");
+    println!("engines: this reading is taken on Linux and on macOS; nothing to measure here");
 }

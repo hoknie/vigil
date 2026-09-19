@@ -71,3 +71,27 @@ pub fn preload(entries: &[&str]) -> Value {
         },
     })
 }
+
+pub fn launchd_job(path: &str, program: &str, domain: &str, scope: &str) -> Value {
+    json!({
+        "name": path.rsplit('/').next().unwrap_or(path).trim_end_matches(".plist"),
+        "path": path,
+        "domain": domain,
+        "scope": scope,
+        "owner": null,
+        "readable": true,
+        "understood": true,
+        "refusal": null,
+        "program": program,
+        "commands": [program],
+        "commands_redacted": false,
+        "run_as": match domain {
+            "daemon" => "root",
+            _ => "whoever logs in",
+        },
+        "schedule": "at load, kept alive",
+        "disabled": false,
+        "inserted_libraries": [],
+        "writable_path": program.starts_with("/private/tmp/") || program.starts_with("/Users/Shared/"),
+    })
+}

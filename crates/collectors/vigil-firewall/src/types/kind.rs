@@ -1,6 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Kind {
     Ruleset,
+    Application,
     Backend,
     Table,
     Chain,
@@ -17,6 +18,8 @@ const BACKEND: &str = "fw-backend";
 
 const INTERFACE: &str = "fw-interface";
 
+const APPLICATION: &str = "fw-application";
+
 impl Kind {
     pub fn of(key: &str) -> Option<Kind> {
         match key.split('|').next()? {
@@ -25,6 +28,7 @@ impl Kind {
             CHAIN => Some(Kind::Chain),
             BACKEND => Some(Kind::Backend),
             INTERFACE => Some(Kind::Interface),
+            APPLICATION => Some(Kind::Application),
             _ => None,
         }
     }
@@ -36,6 +40,7 @@ impl Kind {
             Kind::Table => TABLE,
             Kind::Chain => CHAIN,
             Kind::Interface => INTERFACE,
+            Kind::Application => APPLICATION,
         }
     }
 
@@ -46,6 +51,7 @@ impl Kind {
             Kind::Table => "table",
             Kind::Chain => "chain",
             Kind::Interface => "link",
+            Kind::Application => "apps",
         }
     }
 }
@@ -61,6 +67,10 @@ mod tests {
         assert_eq!(Kind::of("fw-chain|inet filter|input"), Some(Kind::Chain));
         assert_eq!(Kind::of("fw-backend|legacy"), Some(Kind::Backend));
         assert_eq!(Kind::of("fw-interface|eth0"), Some(Kind::Interface));
+        assert_eq!(
+            Kind::of("fw-application|socketfilterfw"),
+            Some(Kind::Application)
+        );
     }
 
     #[test]
@@ -81,6 +91,7 @@ mod tests {
             Kind::Interface,
             Kind::Chain,
             Kind::Table,
+            Kind::Application,
             Kind::Ruleset,
             Kind::Backend,
         ];
@@ -90,6 +101,7 @@ mod tests {
             order,
             vec![
                 Kind::Ruleset,
+                Kind::Application,
                 Kind::Backend,
                 Kind::Table,
                 Kind::Chain,

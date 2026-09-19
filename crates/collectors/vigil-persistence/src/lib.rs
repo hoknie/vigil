@@ -14,5 +14,4 @@ pub use modules::Persistence;
 pub use types::CronJob;
 pub use views::WhatStartsByItself;
 
-#[cfg(target_os = "linux")]
 pub use collectors::PersistenceCollector;

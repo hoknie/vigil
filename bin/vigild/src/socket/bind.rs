@@ -60,16 +60,7 @@ fn directory_is_private(path: &Path) -> bool {
 }
 
 fn current_uid() -> u32 {
-    fs::read_to_string("/proc/self/status")
-        .ok()
-        .and_then(|status| {
-            status
-                .lines()
-                .find_map(|line| line.strip_prefix("Uid:"))
-                .and_then(|value| value.split_whitespace().next().map(str::to_string))
-        })
-        .and_then(|uid| uid.parse().ok())
-        .unwrap_or(u32::MAX)
+    rustix::process::getuid().as_raw()
 }
 
 fn remove_stale_socket(path: &Path) -> Result<(), String> {
@@ -100,9 +91,10 @@ fn temporary_path(path: &Path) -> PathBuf {
 
 #[cfg(test)]
 mod tests_directory {
+    use std::os::unix::fs::MetadataExt;
+
     use super::*;
 
-    #[cfg(target_os = "linux")]
     fn directory(name: &str, mode: u32) -> PathBuf {
         static NAMES_GIVEN: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
         let path = std::env::temp_dir().join(format!(
@@ -119,7 +111,6 @@ mod tests_directory {
         path
     }
 
-    #[cfg(target_os = "linux")]
     #[test]
     fn a_directory_only_we_can_enter_is_private_and_one_others_can_is_not() {
         let ours = directory("ours", 0o700);
@@ -143,14 +134,17 @@ mod tests_directory {
         assert!(!directory_is_private(Path::new("vigil.sock")));
     }
 
-    #[cfg(target_os = "linux")]
     #[test]
-    fn our_own_uid_is_readable_on_this_host() {
-        assert_ne!(
-            current_uid(),
-            u32::MAX,
-            "reading /proc/self/status failed, so every directory would look like somebody else's"
+    fn our_own_uid_is_the_one_the_kernel_says_on_every_system() {
+        let ours = directory("uid", 0o700);
+
+        assert_eq!(
+            fs::metadata(&ours).map(|made| made.uid()).ok(),
+            Some(current_uid()),
+            "a uid read wrongly makes every directory look like somebody else's, and a Mac \
+             has no /proc/self/status to read it from"
         );
+        let _ = fs::remove_dir_all(&ours);
     }
 }
 
@@ -194,6 +188,23 @@ mod tests {
         let _second = bind(&path).expect("a restart must not need the file removed by hand");
 
         let _ = fs::remove_dir_all(path.parent().expect("parent"));
+    }
+
+    #[test]
+    fn a_directory_that_is_not_there_is_made_and_made_private_because_boot_empties_it() {
+        let dir = scratch("made");
+        let path = dir.join("run").join("vigil").join("vigil.sock");
+
+        let _listener = bind(&path).expect("binds");
+
+        let parent = path.parent().expect("parent");
+        let mode = fs::metadata(parent).expect("made").permissions().mode() & 0o777;
+        assert_eq!(
+            mode, 0o700,
+            "/run on Linux and /var/run on macOS are emptied at boot, and the daemon makes the \
+             directory of its socket again, closed to everybody else"
+        );
+        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]

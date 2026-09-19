@@ -1,0 +1,117 @@
+#!/bin/sh
+set -eu
+
+ROOT="${3%/}"
+ETC="$ROOT/usr/local/etc/vigil"
+SHIPPED="$ROOT/usr/local/share/vigil/defaults"
+BEFORE="$ROOT/usr/local/share/vigil/defaults.before"
+STATE="$ROOT/usr/local/var/lib/vigil"
+LOGS="$ROOT/usr/local/var/log/vigil"
+RUN="$ROOT/var/run/vigil"
+DAEMONS="$ROOT/Library/LaunchDaemons"
+LABEL="vigil.vigild"
+
+private() {
+    [ -d "$1" ] || mkdir -p "$1"
+    chown root:wheel "$1"
+    chmod 0700 "$1"
+}
+
+place() {
+    shipped="$SHIPPED/$1"
+    installed="$ETC/$1"
+    before="$BEFORE/$1"
+
+    if [ ! -e "$installed" ]; then
+        install -m 0600 -o root -g wheel "$shipped" "$installed"
+        return 0
+    fi
+    if cmp -s "$shipped" "$installed"; then
+        rm -f "$installed.new"
+        return 0
+    fi
+    if [ -f "$before" ] && cmp -s "$before" "$installed"; then
+        install -m 0600 -o root -g wheel "$shipped" "$installed"
+        rm -f "$installed.new"
+        echo "vigil: $installed was as the last version shipped it, and is now as this one ships it"
+        return 0
+    fi
+    install -m 0600 -o root -g wheel "$shipped" "$installed.new"
+    echo "vigil: $installed is yours and was kept as it is."
+    echo "vigil: the defaults this version ships are beside it, at $installed.new"
+}
+
+for directory in "$ETC" "$ETC/collectors" "$ETC/suppressions" "$ETC/reporters" \
+    "$STATE" "$STATE/firewall" "$STATE/containers" "$STATE/launches" "$LOGS" "$RUN"; do
+    private "$directory"
+done
+
+fresh=yes
+[ -f "$ETC/vigil.yaml" ] && fresh=no
+
+place vigil.yaml
+place watch_fs.yaml
+for shipped in "$SHIPPED"/collectors/*.yaml; do
+    place "collectors/$(basename "$shipped")"
+done
+rm -rf "$BEFORE"
+
+if [ -n "$ROOT" ]; then
+    echo "vigil: installed on $3, which is not the running system, so nothing was started."
+    exit 0
+fi
+
+if [ "$fresh" = yes ]; then
+    cat <<'NOTICE'
+
+vigil is installed, and vigild is being started as the launchd job vigil.vigild.
+
+  1. vigild configure --dry-run  — ask THIS Mac what it can watch, and print the
+     configuration for it without writing anything. `vigild configure --force` then
+     writes /usr/local/etc/vigil/vigil.yaml and a file in /usr/local/etc/vigil/collectors
+     for each collector that can run here, keeping every file it replaces as .previous;
+  2. give /usr/local/sbin/vigild Full Disk Access (System Settings, Privacy & Security),
+     or the files of other accounts stay unread and the collectors say so;
+  3. launchctl kickstart -k system/vigil.vigild  — after an edit, the daemon reads its
+     configuration at start;
+  4. sudo vigil ui                — the console.
+
+What it wrote about itself is in /usr/local/var/log/vigil/vigild.log. To remove it:
+sudo /usr/local/libexec/vigil/uninstall
+
+NOTICE
+    for collector in firewall containers-engines; do
+        said="$(mktemp)"
+        if /usr/local/sbin/vigild collector "$collector" enable >"$said" 2>&1; then
+            sed 's/^/  /' "$said"
+        else
+            echo "vigil: the $collector collector was left switched off on this Mac:"
+            sed 's/^/  /' "$said"
+            echo "vigil: switch it on when that is fixed:  vigild collector $collector enable"
+        fi
+        rm -f "$said"
+    done
+    cat <<'LAUNCHES'
+
+What people run is read from eslogger by the launchd job vigil.launches, which this
+package does not start: eslogger needs Full Disk Access, given to
+/usr/local/libexec/vigil/vigil-launches-spool in System Settings, Privacy & Security.
+Then:  vigild collector launches enable
+
+LAUNCHES
+    launchctl enable "system/$LABEL"
+    launchctl bootstrap system "$DAEMONS/$LABEL.plist"
+    echo "vigil: vigild is running:  launchctl print system/$LABEL"
+    exit 0
+fi
+
+if launchctl print "system/$LABEL" >/dev/null 2>&1; then
+    launchctl kickstart -k "system/$LABEL"
+    echo "vigil: vigild was running and now runs this version."
+else
+    echo
+    echo "vigil: this is an upgrade, and vigild was not running, so it was left that way."
+    echo "vigil: to start it:  sudo launchctl bootstrap system $DAEMONS/$LABEL.plist"
+fi
+
+exit 0

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- written by an installer that keeps its updater running as root -->
+<dict>
+	<key>Label</key>
+	<string>com.example.updater</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Library/Application Support/Example/updater</string>
+		<string>--daemon</string>
+		<string>--password</string>
+		<string>hunter2</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+	</dict>
+	<key>StartInterval</key>
+	<integer>3600</integer>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>3</integer>
+		<key>Minute</key>
+		<integer>15</integer>
+	</dict>
+	<key>WatchPaths</key>
+	<array>
+		<string>/etc/hosts</string>
+	</array>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>DYLD_INSERT_LIBRARIES</key>
+		<string>/private/tmp/.x/libhook.dylib:/usr/local/lib/libother.dylib</string>
+		<key>LANG</key>
+		<string>en_US.UTF-8</string>
+	</dict>
+	<key>Sockets</key>
+	<dict>
+		<key>Listener</key>
+		<dict>
+			<key>SockServiceName</key>
+			<string>8080</string>
+		</dict>
+	</dict>
+	<key>ExitTimeOut</key>
+	<real>12.5</real>
+	<key>Disabled</key>
+	<false/>
+	<key>Comment</key>
+	<string>Keeps &quot;Example&quot; &amp; its helpers &lt;current&gt;&#33;</string>
+	<key>Seal</key>
+	<data>
+	AAECAwQFBgc=
+	</data>
+	<key>Built</key>
+	<date>2026-09-01T10:00:00Z</date>
+</dict>
+</plist>

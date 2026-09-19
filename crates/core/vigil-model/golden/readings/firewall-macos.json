@@ -1,0 +1,230 @@
+{
+  "source": "firewall",
+  "taken_at": "2026-09-19T09:00:00.000Z",
+  "items": {
+    "fw-application|socketfilterfw": {
+      "allows_downloaded_signed": false,
+      "allows_signed": true,
+      "applications": [
+        {
+          "allowed": true,
+          "path": "/usr/sbin/cupsd"
+        },
+        {
+          "allowed": true,
+          "path": "/Applications/Google Chrome.app"
+        },
+        {
+          "allowed": false,
+          "path": "/usr/local/bin/node"
+        }
+      ],
+      "applications_allowed": 2,
+      "applications_blocked": 1,
+      "blocks_all": false,
+      "enabled": true,
+      "state": 1,
+      "stealth": true
+    },
+    "fw-chain|pf main|in": {
+      "family": "pf",
+      "hook": "input",
+      "name": "in",
+      "policy": "drop",
+      "priority": 0,
+      "rules": 6,
+      "rules_kept": [
+        {
+          "does": "scrub-anchor",
+          "handle": 1,
+          "matches": "\"com.apple/*\" all fragment reassemble"
+        },
+        {
+          "does": "anchor",
+          "handle": 2,
+          "matches": "\"com.apple/*\" all"
+        },
+        {
+          "does": "block",
+          "handle": 3,
+          "matches": "all"
+        },
+        {
+          "does": "pass quick",
+          "handle": 5,
+          "matches": "on lo0 all flags S/SA keep state"
+        },
+        {
+          "does": "pass",
+          "handle": 6,
+          "matches": "proto tcp from any to any port = 22 flags S/SA keep state"
+        },
+        {
+          "does": "block quick",
+          "handle": 7,
+          "matches": "on en0 proto tcp from <bruteforce> to any"
+        }
+      ],
+      "table": "main",
+      "type": "filter"
+    },
+    "fw-chain|pf main|nat": {
+      "family": "pf",
+      "hook": "postrouting",
+      "name": "nat",
+      "policy": "accept",
+      "priority": 0,
+      "rules": 2,
+      "rules_kept": [
+        {
+          "does": "nat-anchor",
+          "handle": 1,
+          "matches": "\"com.apple/*\" all"
+        },
+        {
+          "does": "nat",
+          "handle": 3,
+          "matches": "on en0 inet from 192.168.64.0/24 to any -> (en0) round-robin"
+        }
+      ],
+      "table": "main",
+      "type": "nat"
+    },
+    "fw-chain|pf main|out": {
+      "family": "pf",
+      "hook": "output",
+      "name": "out",
+      "policy": "accept",
+      "priority": 0,
+      "rules": 3,
+      "rules_kept": [
+        {
+          "does": "scrub-anchor",
+          "handle": 1,
+          "matches": "\"com.apple/*\" all fragment reassemble"
+        },
+        {
+          "does": "anchor",
+          "handle": 2,
+          "matches": "\"com.apple/*\" all"
+        },
+        {
+          "does": "pass",
+          "handle": 4,
+          "matches": "all flags S/SA keep state"
+        }
+      ],
+      "table": "main",
+      "type": "filter"
+    },
+    "fw-chain|pf main|rdr": {
+      "family": "pf",
+      "hook": "prerouting",
+      "name": "rdr",
+      "policy": "accept",
+      "priority": 0,
+      "rules": 2,
+      "rules_kept": [
+        {
+          "does": "rdr-anchor",
+          "handle": 2,
+          "matches": "\"com.apple/*\" all"
+        },
+        {
+          "does": "rdr",
+          "handle": 4,
+          "matches": "pass on en0 inet proto tcp from any to any port = 8080 -> 127.0.0.1 port 80"
+        }
+      ],
+      "table": "main",
+      "type": "nat"
+    },
+    "fw-interface|en0": {
+      "addresses": [
+        "192.168.1.23",
+        "fe80::1c2b:3a4d:5e6f:7081/64"
+      ],
+      "bytes_in": 91200311,
+      "bytes_out": 12084411,
+      "counted": true,
+      "dropped_in": 7,
+      "name": "en0",
+      "packets_in": 318841,
+      "packets_out": 201773,
+      "the_way_out": true
+    },
+    "fw-interface|lo0": {
+      "addresses": [
+        "127.0.0.1",
+        "::1/128"
+      ],
+      "bytes_in": 5140552,
+      "bytes_out": 5140552,
+      "counted": true,
+      "dropped_in": 0,
+      "name": "lo0",
+      "packets_in": 41220,
+      "packets_out": 41220,
+      "the_way_out": false
+    },
+    "fw-interface|utun0": {
+      "addresses": [],
+      "bytes_in": 0,
+      "bytes_out": 0,
+      "counted": true,
+      "dropped_in": 0,
+      "name": "utun0",
+      "packets_in": 0,
+      "packets_out": 0,
+      "the_way_out": false
+    },
+    "fw-summary|pf": {
+      "anchors": 4,
+      "base_chains": 4,
+      "chains": 8,
+      "enabled": true,
+      "families": [
+        "pf"
+      ],
+      "hooked_on_input": 1,
+      "legacy_backend": false,
+      "rules": 15,
+      "tables": 5
+    },
+    "fw-table|pf com.apple": {
+      "anchor": true,
+      "chains": 1,
+      "family": "pf",
+      "name": "com.apple",
+      "rules": 2
+    },
+    "fw-table|pf com.apple/200.AirDrop": {
+      "anchor": true,
+      "chains": 1,
+      "family": "pf",
+      "name": "com.apple/200.AirDrop",
+      "rules": 0
+    },
+    "fw-table|pf com.apple/200.AirDrop/Bonjour": {
+      "anchor": true,
+      "chains": 1,
+      "family": "pf",
+      "name": "com.apple/200.AirDrop/Bonjour",
+      "rules": 2
+    },
+    "fw-table|pf com.apple/250.ApplicationFirewall": {
+      "anchor": true,
+      "chains": 1,
+      "family": "pf",
+      "name": "com.apple/250.ApplicationFirewall",
+      "rules": 0
+    },
+    "fw-table|pf main": {
+      "anchor": false,
+      "chains": 4,
+      "family": "pf",
+      "name": "main",
+      "rules": 11
+    }
+  }
+}

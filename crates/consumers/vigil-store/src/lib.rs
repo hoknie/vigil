@@ -7,4 +7,4 @@ pub use ports::Store;
 pub use types::{Counted, Dropped, Flow, Held, Kept, Recorded, StoreError};
 
 #[cfg(feature = "files")]
-pub use stores::files::{FileStore, Limits, Outgoing};
+pub use stores::files::{FileStore, Limits, Outgoing, create_owner_only_directory};

@@ -19,3 +19,17 @@ pub fn host() -> Host {
         peer: None,
     }
 }
+
+pub fn mac() -> Host {
+    Host {
+        hostname: "studio-01".into(),
+        os: Os {
+            family: "macos".into(),
+            distro: "macos".into(),
+            version: "15.6".into(),
+            kernel: "24.6.0".into(),
+            arch: "aarch64".into(),
+        },
+        ..host()
+    }
+}

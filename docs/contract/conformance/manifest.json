@@ -43,6 +43,11 @@
       "why": "what a receiver that has been unreachable long enough eventually gets told: the outgoing buffer reached its ceiling and is discarding the oldest findings first. The subject is the buffer of one named reporter, the finding_key is agent.buffer|<reporter>, and agent.buffer.drained closes it under that key when the buffer has been emptied"
     },
     {
+      "file": "accept/persistence-launchd-new.json",
+      "expect": "accept",
+      "why": "shape of a finding about a launchd job of a Mac, added in 1.8: the subject names the job by its label and the plist it was read from, finding_key is persistence| and the snapshot key launchd|<path of the plist>, and the arguments of the program are carried with their secret already hidden. It has no closing pair, as persistence.unit.new has none: a job that went away is not the job that was there"
+    },
+    {
       "file": "accept/from-a-newer-producer.json",
       "expect": "accept"
     },

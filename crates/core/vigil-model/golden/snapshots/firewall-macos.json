@@ -1,0 +1,315 @@
+{
+  "source": "firewall",
+  "classes": {
+    "fw-application": {
+      "allows_downloaded_signed": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "allows_signed": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "applications": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "applications/[]": {
+        "types": [
+          "object"
+        ],
+        "always": true
+      },
+      "applications/[]/allowed": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "applications/[]/path": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "applications_allowed": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "applications_blocked": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "blocks_all": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "enabled": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "state": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "stealth": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      }
+    },
+    "fw-chain": {
+      "family": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "hook": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "policy": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "priority": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "rules": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "rules_kept": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "rules_kept/[]": {
+        "types": [
+          "object"
+        ],
+        "always": true
+      },
+      "rules_kept/[]/does": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "rules_kept/[]/handle": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "rules_kept/[]/matches": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "table": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "type": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "fw-interface": {
+      "addresses": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "addresses/[]": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
+      "bytes_in": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "bytes_out": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "counted": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "dropped_in": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "packets_in": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "packets_out": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "the_way_out": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      }
+    },
+    "fw-summary": {
+      "anchors": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "base_chains": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "chains": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "enabled": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "families": {
+        "types": [
+          "array"
+        ],
+        "always": true
+      },
+      "families/[]": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "hooked_on_input": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "legacy_backend": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "rules": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "tables": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      }
+    },
+    "fw-table": {
+      "anchor": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "chains": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "family": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "rules": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      }
+    }
+  }
+}

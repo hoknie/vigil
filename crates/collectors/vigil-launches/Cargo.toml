@@ -16,3 +16,4 @@ rustix.workspace = true
 
 [dev-dependencies]
 vigil-module = { path = "../../core/vigil-module" }
+vigil-config = { path = "../../core/vigil-config" }

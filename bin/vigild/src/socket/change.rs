@@ -1,8 +1,9 @@
 use vigil_model::{AccountChange, ProtocolError, Response, Rfc3339};
 
 use super::Shared;
-use crate::accounts::{READING, carry_out, findings};
+use crate::accounts::{READING, carry_out, findings, refused as refused_here};
 use crate::helpers::uuid7;
+use crate::types::System;
 
 const OFF: &str = "This agent changes no account on this host. Changing accounts from the console \
                    is off until accounts.from_the_console in the users block says otherwise \
@@ -20,8 +21,16 @@ pub fn change(changes: &[AccountChange], shared: &Shared, now: Rfc3339) -> Respo
         );
     }
 
-    let reading = shared.with(|state| state.snapshot(READING).cloned());
-    let carried = carry_out(changes, reading.as_ref(), now);
+    let (system, reading) = shared.with(|state| {
+        (
+            System::of(&state.host().os.family),
+            state.snapshot(READING).cloned(),
+        )
+    });
+    let carried = match system.changes_accounts() {
+        Err(why) => refused_here(changes, now, why),
+        Ok(()) => carry_out(changes, reading.as_ref(), now),
+    };
     let raised = findings(&carried, &mut uuid7::mint);
     shared.with(|state| {
         state.record_what_the_console_did(&raised);
@@ -136,5 +145,29 @@ mod tests {
         assert_eq!(raised.len(), 1);
         assert_eq!(raised[0].kind.as_str(), "agent.account.change_refused");
         assert_eq!(raised[0].finding_key, "agent.account.change|account|root");
+    }
+
+    #[test]
+    fn on_a_mac_every_change_is_refused_by_name_and_the_refusal_is_a_finding() {
+        let mut state = fixture::mac_that_may_change_and_control();
+        state.record_reading(fixture::reading_of("users", vigil_users::fixture::users()));
+        let shared = Shared::new(state);
+
+        let answer = change(&root(), &shared, now());
+
+        match answer {
+            Response::Changed { report } => {
+                assert_eq!(report.done(), 0);
+                assert!(
+                    report.changed[0].said.contains("Directory Services"),
+                    "a Mac has no useradd, and a sudoers.d file written beside an account that \
+                     could not be made is half a change: {report:?}"
+                );
+            }
+            other => panic!("it answered {other:?}"),
+        }
+        let raised = shared.with(|state| state.take_what_the_console_raised());
+        assert_eq!(raised.len(), 1);
+        assert_eq!(raised[0].kind.as_str(), "agent.account.change_refused");
     }
 }

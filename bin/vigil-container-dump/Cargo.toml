@@ -11,3 +11,9 @@ path = "src/main.rs"
 [dependencies]
 vigil-engines = { path = "../../crates/collectors/vigil-engines" }
 serde_json.workspace = true
+
+[dev-dependencies]
+vigil-collect = { path = "../../crates/core/vigil-collect" }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+libc = "0.2"

@@ -4,7 +4,11 @@ use vigil_view::{Notice, Showing};
 use super::fields::{hooked_on_input, legacy_backend};
 use super::rows::summary;
 
+#[cfg(not(target_os = "macos"))]
 const WRITTEN_BY: &str = "The reading is written by the vigil-firewall.timer unit and read from a file; the agent starts no program of its own.";
+
+#[cfg(target_os = "macos")]
+const WRITTEN_BY: &str = "The reading is written by the launchd job vigil.firewall and read from a file; the agent starts no program of its own.";
 
 const NOT_THE_SAME: &str =
     "What this host filters is unknown, which is not the same as a host that filters nothing.";

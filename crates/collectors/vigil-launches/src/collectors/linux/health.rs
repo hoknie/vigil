@@ -38,7 +38,7 @@ impl LaunchesCollector {
             }
             Err(error) => {
                 return Health::Unavailable(format!(
-                    "{} cannot be read ({error}): program launches are not visible; the file is 0640 root:adm",
+                    "{} cannot be read ({error}): program launches are not visible; auditd keeps it readable by root and at most the group named by log_group in /etc/audit/auditd.conf",
                     self.log_path.display()
                 ));
             }

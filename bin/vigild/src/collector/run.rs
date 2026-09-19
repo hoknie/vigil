@@ -3,6 +3,7 @@ use vigil_collect::Health;
 use super::apart::{collectors_at, switch};
 use super::edit::{self, Edit};
 use super::host::{self, Standing};
+use super::manager::Manager;
 use crate::wizard::{DEFAULT_PATH, Surveyed, take};
 use crate::{Config, config};
 
@@ -69,14 +70,11 @@ pub fn disable(options: &Options) -> Result<String, String> {
             "nothing on this host was started for {name}, so nothing was stopped"
         )),
         Some(unit) => match options.dry_run {
-            true => said.push(format!(
-                "would run: {} disable --now {unit}",
-                host::SYSTEMCTL
-            )),
+            true => said.push(format!("would run: {}", host::said_disabling(unit))),
             false => match host::standing(unit) {
-                Standing::NoSystemd => said.push(format!(
-                    "no systemd here, so {unit} was not stopped; whatever writes that reading \
-                     on this host is yours to stop"
+                Standing::NoManager(why) => said.push(format!(
+                    "{unit} was not stopped: {why}. Whatever writes that reading on this host \
+                     is yours to stop"
                 )),
                 _ => said.push(host::disable(unit)?),
             },
@@ -95,23 +93,18 @@ pub fn disable(options: &Options) -> Result<String, String> {
 
 fn start(unit: &str, dry_run: bool) -> Result<String, String> {
     if dry_run {
-        return Ok(format!(
-            "would run: {} enable --now {unit}",
-            host::SYSTEMCTL
-        ));
+        return Ok(format!("would run: {}", host::said_enabling(unit)));
     }
     match host::standing(unit) {
-        Standing::NoSystemd => Err(format!(
-            "{unit} writes this reading and there is no systemd on this host ({} is not a \
-             directory). Run `/usr/sbin/nft --json list ruleset > \
-             /var/lib/vigil/firewall/ruleset.json` on a period of your own, and nothing here \
-             was changed",
-            host::SYSTEMD
+        Standing::NoManager(why) => Err(format!(
+            "{unit} writes this reading and {why}. Nothing here was changed"
         )),
         Standing::Masked => Err(format!(
             "{unit} is masked. Somebody switched this reading off deliberately and that \
-             decision is older than this command: `systemctl unmask {unit}` first. Nothing \
-             here was changed"
+             decision is older than this command: `{}` first. Nothing here was changed",
+            Manager::here()
+                .masking_undone(unit)
+                .unwrap_or_else(|| format!("undo what switched {unit} off"))
         )),
         Standing::Known(_) => host::enable(unit),
     }

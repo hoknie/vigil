@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use vigil_config::write;
+use vigil_config::{Installation, write};
 
 use super::plan::{Planned, absolute, directory_of, plan};
 use super::progress::{self, Action};
@@ -8,7 +8,7 @@ use super::prose::wrap;
 use super::{Surveyed, take};
 use crate::Config;
 
-pub const DEFAULT_PATH: &str = "/etc/vigil/vigil.yaml";
+pub const DEFAULT_PATH: &str = Installation::here().configuration;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Options {
@@ -93,7 +93,10 @@ pub fn configure_with(options: &Options, survey: &[Surveyed]) -> Result<String, 
              --dry-run  print what would be written, and write nothing"
         ));
     }
-    Ok("done. Next:\n  systemctl enable --now vigild\n  vigil ui".to_string())
+    Ok(format!(
+        "done. Next:\n  {}\n  vigil ui",
+        Installation::here().service.start
+    ))
 }
 
 fn there(file: &Planned) -> Option<String> {

@@ -114,10 +114,13 @@ fn the_watching_loop_and_the_rules_reach_none_of_them() {
 fn the_place_that_starts_one_is_reached_from_the_command_line_and_from_nowhere_else() {
     let text = fs::read_to_string(workspace().join(THE_ONE_PLACE)).expect("the one place");
 
-    assert!(
-        text.contains("/usr/bin/systemctl"),
-        "the one program it starts is systemctl, by its absolute path"
-    );
+    for manager in ["/usr/bin/systemctl", "/bin/launchctl"] {
+        assert!(
+            text.contains(manager),
+            "the programs it starts are the service manager of the host, systemctl on Linux and \
+             launchctl on macOS, each by its absolute path: {manager}"
+        );
+    }
 
     let callers: Vec<String> = sources()
         .into_iter()

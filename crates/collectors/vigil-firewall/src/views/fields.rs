@@ -12,10 +12,22 @@ pub const NO_ADDRESS: &str = "no address";
 
 pub fn what(key: &str, item: &Value) -> String {
     match Kind::of(key).unwrap_or(Kind::Ruleset) {
+        Kind::Ruleset if key.ends_with("|pf") => match item["enabled"].as_bool() {
+            Some(true) => "pf, enabled".to_string(),
+            _ => "pf, disabled".to_string(),
+        },
         Kind::Ruleset => match version(item) {
             Some(version) => format!("nftables {version}"),
             None => "nftables".to_string(),
         },
+        Kind::Application => format!(
+            "Application Firewall, {}",
+            match (enabled(item), item["blocks_all"].as_bool() == Some(true)) {
+                (false, _) => "off",
+                (true, false) => "on",
+                (true, true) => "on, blocking all",
+            }
+        ),
         Kind::Table => format!("{} {}", text(item, "family"), text(item, "name")),
         Kind::Chain => format!(
             "{} {} · {}",
@@ -101,6 +113,22 @@ pub fn all_rules(item: &Value) -> u64 {
 
 pub fn hooked_on_input(item: &Value) -> u64 {
     number(item, "hooked_on_input")
+}
+
+pub fn enabled(item: &Value) -> bool {
+    item["enabled"].as_bool().unwrap_or(false)
+}
+
+pub fn applications(item: &Value) -> Vec<(&str, bool)> {
+    item["applications"]
+        .as_array()
+        .map(|values| {
+            values
+                .iter()
+                .filter_map(|one| Some((one["path"].as_str()?, one["allowed"].as_bool()?)))
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 pub fn legacy_backend(item: &Value) -> bool {
