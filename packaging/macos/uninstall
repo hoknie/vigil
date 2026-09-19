@@ -1,0 +1,48 @@
+#!/bin/sh
+set -eu
+
+LABELS="vigil.launches vigil.containers vigil.firewall vigil.vigild"
+KEPT="/usr/local/etc/vigil /usr/local/var/lib/vigil /usr/local/var/log/vigil"
+IDENTIFIER="vigil.agent"
+
+purge=no
+case "${1:-}" in
+"") ;;
+--purge) purge=yes ;;
+-h|--help)
+    echo "usage: sudo $0 [--purge]"
+    echo
+    echo "Stops vigil and removes its programs and its launchd jobs. The configuration, the"
+    echo "findings and the logs are kept unless --purge is given."
+    exit 0
+    ;;
+*) echo "vigil uninstall: $1 is not an option; --help says what is" >&2; exit 2 ;;
+esac
+
+[ "$(id -u)" -eq 0 ] || { echo "vigil uninstall: it removes what root installed: sudo $0" >&2; exit 1; }
+
+for label in $LABELS; do
+    if launchctl print "system/$label" >/dev/null 2>&1; then
+        launchctl bootout "system/$label" || true
+        echo "vigil: stopped $label"
+    fi
+    rm -f "/Library/LaunchDaemons/$label.plist"
+done
+
+rm -f /usr/local/sbin/vigild /usr/local/bin/vigil
+rm -rf /usr/local/share/vigil /usr/local/share/doc/vigil /var/run/vigil
+pkgutil --forget "$IDENTIFIER" >/dev/null 2>&1 || true
+echo "vigil: the programs and the launchd jobs are removed"
+
+if [ "$purge" = yes ]; then
+    for kept in $KEPT; do
+        rm -rf "$kept"
+    done
+    echo "vigil: removed as asked:$(printf ' %s' $KEPT)"
+else
+    echo "vigil: kept on purpose:$(printf ' %s' $KEPT)"
+    echo "vigil: findings are the record of what happened on this Mac."
+    echo "vigil: remove them deliberately if you want them gone:  sudo $0 --purge"
+fi
+
+rm -rf /usr/local/libexec/vigil

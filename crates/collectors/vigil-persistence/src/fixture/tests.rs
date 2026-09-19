@@ -60,3 +60,35 @@ fn every_class_the_parsers_build_is_named_in_the_sample_that_publishes_it() {
         );
     }
 }
+
+#[test]
+fn the_macos_sample_reading_on_disk_is_the_one_the_macos_parsers_build() {
+    if let Err(complaint) = Golden::reading("persistence-macos")
+        .write_or_check(&document(&super::persistence_on_macos()))
+    {
+        panic!("{complaint}");
+    }
+}
+
+#[test]
+fn the_macos_sample_shape_on_disk_is_the_shape_the_macos_parsers_produce() {
+    if let Err(complaint) = Golden::snapshot("persistence-macos")
+        .write_or_check(&Shape::of(&super::persistence_on_macos()).written())
+    {
+        panic!("{complaint}");
+    }
+}
+
+#[test]
+fn the_macos_sample_says_what_it_could_not_read_rather_than_leaving_it_out() {
+    let reading = super::persistence_on_macos();
+
+    assert_eq!(
+        reading.items["launchd|/Library/LaunchDaemons/com.example.locked.plist"]["readable"],
+        false
+    );
+    assert_eq!(
+        reading.items["launchd|/Users/alice/Library/LaunchAgents/notes.plist"]["understood"], false,
+        "a file launchd cannot read is still a file in a place launchd reads"
+    );
+}

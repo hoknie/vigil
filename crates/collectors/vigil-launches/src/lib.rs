@@ -10,11 +10,12 @@ mod types;
 mod views;
 
 pub use modules::{Launches, Watching};
+pub use parsers::{EsloggerRefusal, Launched, parse_eslogger_event};
 pub use spool::{
-    CEILING_BYTES, Cursor, PLUGIN_CONFIG_PATH, Report, SPOOL_PATH, SpoolWriter, cursor_path,
-    dropped_note,
+    ABSENT, AUID_UNSET, CEILING_BYTES, Cursor, ESLOGGER, ESLOGGER_SPOOL, ESLOGGER_STATUS,
+    LAUNCHES_DIRECTORY, PLUGIN_CONFIG_PATH, REFUSED, RUNNING, Report, SPOOL_PATH, STOPPED,
+    SpoolWriter, SpoolerStatus, audit_records, cursor_path, dropped_note, somebody_launched,
 };
 pub use views::{Launches as LaunchesPane, WhatHasRunHere};
 
-#[cfg(target_os = "linux")]
 pub use collectors::LaunchesCollector;

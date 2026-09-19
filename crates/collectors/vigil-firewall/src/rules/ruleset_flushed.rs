@@ -18,6 +18,9 @@ impl Rule for FirewallRulesetFlushed {
         if !was.is(Family::Table) || was.rules() == 0 {
             return None;
         }
+        if was.is_an_anchor() {
+            return None;
+        }
 
         let gone = after.is_none();
         Some(build(
@@ -143,5 +146,32 @@ mod tests {
         };
 
         assert!(apply(&change).is_none());
+    }
+
+    #[test]
+    fn an_anchor_emptied_by_the_program_that_owns_it_is_not_a_ruleset_flushed() {
+        let change = Change::Changed {
+            key: "fw-table|pf com.apple/200.AirDrop/Bonjour".into(),
+            before: fixture::pf_anchor("com.apple/200.AirDrop/Bonjour", 2),
+            after: fixture::pf_anchor("com.apple/200.AirDrop/Bonjour", 0),
+        };
+
+        assert!(
+            apply(&change).is_none(),
+            "AirDrop, the Application Firewall and every VPN on a Mac fill their anchor when \
+             they start and empty it when they stop, and a finding of high severity each \
+             time is the noise that gets this agent switched off"
+        );
+    }
+
+    #[test]
+    fn the_main_ruleset_of_pf_flushed_is_this_finding() {
+        let change = Change::Changed {
+            key: "fw-table|pf main".into(),
+            before: fixture::firewall_table("pf", "main", 2, 5),
+            after: fixture::firewall_table("pf", "main", 2, 0),
+        };
+
+        assert!(apply(&change).is_some());
     }
 }

@@ -70,7 +70,6 @@ impl Module for Firewall {
     }
 }
 
-#[cfg(target_os = "linux")]
 fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
     let watching: Watching = settings.read().map_err(|error| error.to_string())?;
 
@@ -78,9 +77,4 @@ fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
         settings.now(),
         watching.monitoring,
     )))
-}
-
-#[cfg(not(target_os = "linux"))]
-fn reading(_settings: &Settings) -> Result<Box<dyn Collector>, String> {
-    Err("the ruleset of this host is read from what a Linux nft writes down".to_string())
 }

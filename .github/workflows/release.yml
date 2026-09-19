@@ -106,8 +106,50 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  macos:
+    needs: gate
+    runs-on: macos-14
+    env:
+      TARGET: universal-apple-darwin
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          targets: aarch64-apple-darwin, x86_64-apple-darwin
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: macos
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: The tag and Cargo.toml agree
+        if: github.ref_type == 'tag'
+        run: ./env/scripts/release.sh check-tag "$TAG"
+
+      - name: Lint, as macOS compiles it
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Tests, as macOS runs them
+        run: cargo test --workspace
+
+      - name: Universal binaries, the .pkg and the .tar.gz, checked
+        run: ./env/scripts/package-macos.sh all
+
+      - name: The assets collect
+        run: ./env/scripts/release.sh collect
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: vigil-${{ env.TARGET }}
+          path: dist/release/*
+          if-no-files-found: error
+          retention-days: 7
+
   publish:
-    needs: packages
+    needs: [packages, macos]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     permissions:

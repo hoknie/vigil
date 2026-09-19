@@ -2,7 +2,8 @@ use std::fs;
 use std::io::ErrorKind;
 
 use super::sessions::read_sessions;
-use super::{PASSWD, SHADOW, SUDOERS};
+use super::sudoers::main_sudoers;
+use super::{PASSWD, SHADOW};
 use crate::parsers::SessionSource;
 use vigil_collect::Health;
 
@@ -21,14 +22,15 @@ pub fn health() -> Health {
             _ => format!("{SHADOW} is not present: lock state and password dates will be missing"),
         });
     }
-    match fs::read_to_string(SUDOERS) {
+    let sudoers = main_sudoers();
+    match fs::read_to_string(sudoers) {
         Ok(_) => {}
         Err(error) if error.kind() == ErrorKind::NotFound => {}
         Err(error) if error.kind() == ErrorKind::PermissionDenied => missing.push(format!(
-            "{SUDOERS} is not readable: grants made there will not be seen; run as root"
+            "{sudoers} is not readable: grants made there will not be seen; run as root"
         )),
         Err(error) => missing.push(format!(
-            "{SUDOERS} could not be read ({error}): grants made there will not be seen"
+            "{sudoers} could not be read ({error}): grants made there will not be seen"
         )),
     }
     missing.extend(session_notes(&read_sessions(&[]).sources));

@@ -1,7 +1,9 @@
-use std::path::Path;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 use crate::parsers::{CronEntry, CronFormat, cron_script, parse_crontab};
 
+use super::dialect::CronDialect;
 use super::files::{read_capped, sorted_files};
 use super::{CRON_DIRECTORY, CRON_SCRIPT_DIRECTORIES, CRON_SPOOLS, CRONTAB};
 
@@ -12,9 +14,10 @@ pub(super) fn read_cron() -> Vec<CronEntry> {
         jobs.extend(parse_crontab(&text, CRONTAB, CronFormat::WithUser, "root"));
     }
 
+    let dialect = CronDialect::of_this_host();
     for path in sorted_files(Path::new(CRON_DIRECTORY)) {
         let name = path.file_name().unwrap_or_default().to_string_lossy();
-        if name.contains('.') || name.ends_with('~') {
+        if !dialect.runs_from_cron_d(&name) {
             continue;
         }
         if let Some(text) = read_capped(&path) {
@@ -23,7 +26,7 @@ pub(super) fn read_cron() -> Vec<CronEntry> {
         }
     }
 
-    for spool in CRON_SPOOLS {
+    for spool in spools_once(CRON_SPOOLS) {
         for path in sorted_files(Path::new(spool)) {
             let Some(user) = path.file_name().and_then(|n| n.to_str()) else {
                 continue;
@@ -42,4 +45,22 @@ pub(super) fn read_cron() -> Vec<CronEntry> {
     }
 
     jobs
+}
+
+pub(super) fn spools_once<'a>(spools: &[&'a str]) -> Vec<&'a str> {
+    let mut read: Vec<PathBuf> = Vec::new();
+    let mut kept = Vec::new();
+
+    for spool in spools {
+        let Ok(real) = fs::canonicalize(spool) else {
+            continue;
+        };
+        if read.contains(&real) {
+            continue;
+        }
+        read.push(real);
+        kept.push(*spool);
+    }
+
+    kept
 }

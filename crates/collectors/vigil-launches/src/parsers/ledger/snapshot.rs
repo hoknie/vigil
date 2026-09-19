@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use serde_json::{Value, json};
 use vigil_model::Snapshot;
 
+use super::origin::{AUDIT_LOG, AUDIT_PLUGIN, Origin};
 use super::reading::LaunchReading;
 use crate::helpers::moment;
 use crate::parsers::audit::Execution;
@@ -32,12 +33,23 @@ const ARGUMENTS_KEPT: usize = 120;
 
 pub(super) const AUID_UNSET: u32 = u32::MAX;
 
-const WRITABLE_PATHS: &[&str] = &["/tmp/", "/var/tmp/", "/dev/shm/", "/home/", "/run/user/"];
-
 pub fn launches_snapshot(
     taken_at: &str,
     known: &BTreeMap<String, Value>,
     reading: &LaunchReading<'_>,
+) -> Snapshot {
+    let origin = match reading.from_plugin {
+        true => &AUDIT_PLUGIN,
+        false => &AUDIT_LOG,
+    };
+    launches_snapshot_from(taken_at, known, reading, origin)
+}
+
+pub fn launches_snapshot_from(
+    taken_at: &str,
+    known: &BTreeMap<String, Value>,
+    reading: &LaunchReading<'_>,
+    origin: &Origin,
 ) -> Snapshot {
     let mut snapshot = Snapshot::new(SOURCE, taken_at.to_string());
     snapshot.items = known.clone();
@@ -78,7 +90,7 @@ pub fn launches_snapshot(
                 "exe_lossy": execution.executable_lossy,
                 "exe_present": seen.on_disk(),
                 "exe_shown": seen.shown(),
-                "writable_path": is_writable_path(executable),
+                "writable_path": origin.writable(executable),
                 "first_seen": taken_at,
                 "runs": 1,
                 "last_audit_id": execution.id,
@@ -94,14 +106,8 @@ pub fn launches_snapshot(
         SOURCE_ROW.to_string(),
         json!({
             "named": false,
-            "from": match reading.from_plugin {
-                true => "audit plugin",
-                false => "audit log",
-            },
-            "reason": match reading.from_plugin {
-                true => "launches arrive through the plugin auditd starts",
-                false => "no plugin is delivering: launches are read from the log file, one reading late, and a rotation between two readings takes what it held",
-            },
+            "from": origin.from,
+            "reason": origin.reason,
         }),
     );
 
@@ -111,7 +117,7 @@ pub fn launches_snapshot(
                 DROPPING.to_string(),
                 json!({
                     "named": false,
-                    "reason": "the audit plugin dropped the oldest events to stay under its spool size; launches from that window were never read",
+                    "reason": origin.dropped,
                 }),
             );
         }
@@ -147,7 +153,10 @@ fn recorded(execution: &Execution, keep_arguments: bool) -> (Value, bool) {
     match keep_arguments {
         true if !execution.arguments.is_empty() => {
             let clean = redact(&execution.arguments);
-            (Value::String(clean.text), clean.redacted)
+            (
+                Value::String(clean.text),
+                clean.redacted || execution.arguments_redacted,
+            )
         }
         _ => (Value::Null, false),
     }
@@ -210,10 +219,4 @@ fn ran_again(known: &mut Value, execution: &Execution, keep_arguments: bool) {
 
 pub fn any_launch_was_read(items: &BTreeMap<String, Value>) -> bool {
     items.keys().any(|key| key.starts_with(RUN))
-}
-
-fn is_writable_path(executable: &str) -> bool {
-    WRITABLE_PATHS
-        .iter()
-        .any(|writable| executable.starts_with(writable))
 }

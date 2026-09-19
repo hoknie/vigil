@@ -10,7 +10,10 @@ fn an_empty_file_is_a_working_configuration() {
 
     let config = load(path.to_str().expect("utf-8")).expect("parses");
 
-    assert_eq!(config.state_dir, "/var/lib/vigil");
+    assert_eq!(
+        config.state_dir,
+        vigil_config::Installation::here().state_directory
+    );
     assert!(
         config.reporters.is_empty(),
         "no receiver configured is a supported configuration"

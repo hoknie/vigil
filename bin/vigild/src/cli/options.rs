@@ -36,8 +36,8 @@ pub struct Cli {
         long_help = "\
 The configuration file to watch this host with.
 
-It is named, never guessed. The shipped systemd unit names it on an installed
-host."
+It is named, never guessed. The shipped service names it on an installed host:
+the systemd unit on Linux, the launchd job on macOS."
     )]
     pub config: Option<String>,
 

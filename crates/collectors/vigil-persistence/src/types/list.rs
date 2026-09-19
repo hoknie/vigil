@@ -4,8 +4,11 @@ use vigil_model::Snapshot;
 
 use super::kind::Kind;
 
+const LAUNCHD_ROWS: &str = "launchd|";
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum List {
+    Launchd,
     #[default]
     Units,
     Timers,
@@ -22,15 +25,22 @@ impl List {
         List::Cron,
         List::Modules,
         List::Files,
+        List::Launchd,
         List::Other,
     ];
 
     pub fn shown(self, reading: &Snapshot) -> bool {
-        self != List::Other || holds_something_unknown(reading)
+        match self {
+            List::Other => holds_something_unknown(reading),
+            List::Launchd => holds_launchd_jobs(reading),
+            List::Units | List::Timers | List::Modules => !holds_launchd_jobs(reading),
+            List::Cron | List::Files => true,
+        }
     }
 
     pub fn name(self) -> &'static str {
         match self {
+            List::Launchd => "launchd",
             List::Units => "units",
             List::Timers => "timers",
             List::Cron => "cron",
@@ -42,6 +52,7 @@ impl List {
 
     pub fn caption(self) -> &'static str {
         match self {
+            List::Launchd => "LAUNCHD",
             List::Units => "UNITS",
             List::Timers => "TIMERS",
             List::Cron => "CRON",
@@ -53,6 +64,7 @@ impl List {
 
     pub fn detail(self) -> &'static str {
         match self {
+            List::Launchd => "THE SELECTED JOB",
             List::Units => "THE SELECTED UNIT",
             List::Timers => "THE SELECTED TIMER",
             List::Cron => "THE SELECTED CRON JOB",
@@ -64,6 +76,10 @@ impl List {
 
     pub fn about(self) -> &'static str {
         match self {
+            List::Launchd => {
+                "every launchd daemon and agent on disk — this Mac's, the system's and each \
+                 person's — and the program it starts"
+            }
             List::Units => "every systemd unit found on disk, and the command it runs",
             List::Timers => "every systemd timer, when it fires and what it starts",
             List::Cron => "every cron job, and the whole command it runs",
@@ -78,6 +94,7 @@ impl List {
 
     pub fn thing(self) -> &'static str {
         match self {
+            List::Launchd => "launchd job",
             List::Units => "unit",
             List::Timers => "timer",
             List::Cron => "cron job",
@@ -92,6 +109,7 @@ impl List {
             return self.thing().to_string();
         }
         match self {
+            List::Launchd => "launchd jobs".to_string(),
             List::Units => "units".to_string(),
             List::Timers => "timers".to_string(),
             List::Cron => "cron job(s)".to_string(),
@@ -103,6 +121,7 @@ impl List {
 
     pub fn empty(self) -> &'static str {
         match self {
+            List::Launchd => "This Mac starts nothing from a launchd job, which no Mac does.",
             List::Units => "This host starts nothing from a systemd unit.",
             List::Timers => "No systemd timer is set on this host.",
             List::Cron => "No cron job was found, in any of the four places cron reads.",
@@ -117,6 +136,7 @@ impl List {
 
     pub fn holding(key: &str) -> List {
         match Kind::of(key) {
+            Kind::Launchd => List::Launchd,
             Kind::Unit => List::Units,
             Kind::Timer => List::Timers,
             Kind::Cron => List::Cron,
@@ -125,6 +145,14 @@ impl List {
             Kind::Unknown => List::Other,
         }
     }
+}
+
+fn holds_launchd_jobs(reading: &Snapshot) -> bool {
+    reading
+        .items
+        .range::<str, _>((Bound::Included(LAUNCHD_ROWS), Bound::Unbounded))
+        .next()
+        .is_some_and(|(key, _)| key.starts_with(LAUNCHD_ROWS))
 }
 
 fn holds_something_unknown(reading: &Snapshot) -> bool {

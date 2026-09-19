@@ -130,9 +130,61 @@ fn reading() {
     );
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "macos")]
 fn reading() {
-    println!("firewall: this reading is taken on Linux; nothing to measure here");
+    use std::fs;
+
+    use vigil_collect::Collector;
+    use vigil_firewall::{DUMP_FILE, FirewallCollector};
+
+    let at = std::env::temp_dir().join(format!("vigil-firewall-cost-{}", std::process::id()));
+    let _ = fs::create_dir_all(&at);
+    let _ = fs::write(
+        at.join(DUMP_FILE),
+        serde_json::to_vec_pretty(&vigil_firewall::fixture::pf_dump(true)).expect("plain data"),
+    );
+    let collector = FirewallCollector::with_path(
+        || "2026-09-19T09:00:00.000Z".to_string(),
+        at.join(DUMP_FILE),
+    )
+    .counting(true);
+
+    let started = Instant::now();
+    let Ok(first) = collector.collect() else {
+        println!(
+            "firewall: nothing to read here: {:?}",
+            collector.available()
+        );
+        return;
+    };
+    println!(
+        "firewall: first reading {:.2} ms, {} items, {} bytes as the baseline",
+        started.elapsed().as_secs_f64() * 1000.0,
+        first.items.len(),
+        serde_json::to_string(&first).expect("serialises").len()
+    );
+
+    let started = Instant::now();
+    for _ in 0..ROUNDS {
+        let _ = collector.collect();
+    }
+    println!(
+        "firewall: {:.2} ms per reading over {ROUNDS}, the dump off disk and the links of this Mac",
+        started.elapsed().as_secs_f64() * 1000.0 / f64::from(ROUNDS)
+    );
+
+    let started = Instant::now();
+    let health = collector.available();
+    println!(
+        "firewall: health {:.2} ms: {health:?}",
+        started.elapsed().as_secs_f64() * 1000.0
+    );
+    let _ = fs::remove_dir_all(&at);
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+fn reading() {
+    println!("firewall: this reading is taken on Linux and on macOS; nothing to measure here");
 }
 
 fn drawing() {

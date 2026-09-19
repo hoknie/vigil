@@ -29,8 +29,17 @@ chmod 0700 /home/tester /home/tester/.ssh
 chmod 0600 /home/tester/.ssh/authorized_keys
 stat -c '  %n is %a %U:%G' /home/tester /etc/shadow
 
-say "install, and a configuration that reads often enough to watch"
+say "install: the package starts the agent by itself"
 dpkg -i "$DEB" >/dev/null || exit 1
+sleep 3
+[ "$(systemctl is-active vigild)" = active ] \
+    && ok "vigild is running with nothing typed after dpkg -i" \
+    || { bad "after dpkg -i the service is $(systemctl is-active vigild)"; systemctl status vigild --no-pager -l | tail -25; }
+[ "$(systemctl is-enabled vigild)" = enabled ] \
+    && ok "and it is enabled, so it comes back after a reboot" \
+    || bad "vigild is $(systemctl is-enabled vigild) after dpkg -i"
+
+say "a configuration that reads often enough to watch"
 cat > /etc/vigil/vigil.yaml <<'YAML'
 state_dir: /var/lib/vigil
 socket_path: /run/vigil/vigil.sock
@@ -43,8 +52,8 @@ reporters:
 YAML
 chmod 0600 /etc/vigil/vigil.yaml
 
-say "systemctl enable --now vigild"
-systemctl enable --now vigild >/dev/null 2>&1
+say "systemctl restart vigild, to read it"
+systemctl restart vigild >/dev/null 2>&1
 sleep 6
 [ "$(systemctl is-active vigild)" = active ] \
     && ok "the service is active" \

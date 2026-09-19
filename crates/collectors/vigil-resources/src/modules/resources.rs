@@ -119,16 +119,8 @@ impl Module for Resources {
     }
 }
 
-#[cfg(target_os = "linux")]
 fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
     let _: Thresholds = settings.read().map_err(|refusal| refusal.to_string())?;
 
     Ok(Box::new(crate::ResourcesCollector::new(settings.now())))
-}
-
-#[cfg(not(target_os = "linux"))]
-fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
-    let _: Thresholds = settings.read().map_err(|refusal| refusal.to_string())?;
-
-    Err("what this host runs on is read from a Linux /proc".to_string())
 }

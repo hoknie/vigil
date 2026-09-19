@@ -1,0 +1,178 @@
+{
+  "source": "persistence",
+  "taken_at": "2026-09-19T09:00:00.000Z",
+  "items": {
+    "cron|/usr/lib/cron/tabs/alice|alice|/Users/alice/bin/backup --token=[redacted]": {
+      "command": "/Users/alice/bin/backup --token=[redacted]",
+      "command_redacted": true,
+      "schedule": "*/10 * * * *",
+      "source": "/usr/lib/cron/tabs/alice",
+      "user": "alice"
+    },
+    "cron|/usr/local/etc/periodic/daily|root|/usr/local/etc/periodic/daily/500.backup": {
+      "command": "/usr/local/etc/periodic/daily/500.backup",
+      "command_redacted": false,
+      "schedule": "@daily",
+      "source": "/usr/local/etc/periodic/daily",
+      "user": "root"
+    },
+    "launchd|/Library/LaunchAgents/com.example.updater.agent.plist": {
+      "commands": [
+        "/Library/Application Support/Example/updater --daemon --password [redacted]"
+      ],
+      "commands_redacted": true,
+      "disabled": false,
+      "domain": "agent",
+      "inserted_libraries": [
+        "/private/tmp/.x/libhook.dylib",
+        "/usr/local/lib/libother.dylib"
+      ],
+      "name": "com.example.updater",
+      "owner": null,
+      "path": "/Library/LaunchAgents/com.example.updater.agent.plist",
+      "program": "/Library/Application Support/Example/updater",
+      "readable": true,
+      "refusal": null,
+      "run_as": "whoever logs in",
+      "schedule": "at load, kept alive, every 3600 s, on a calendar, when /etc/hosts changes, on a connection",
+      "scope": "system",
+      "understood": true,
+      "writable_path": true
+    },
+    "launchd|/Library/LaunchDaemons/com.example.locked.plist": {
+      "commands": [],
+      "commands_redacted": false,
+      "disabled": false,
+      "domain": "daemon",
+      "inserted_libraries": [],
+      "name": "com.example.locked",
+      "owner": null,
+      "path": "/Library/LaunchDaemons/com.example.locked.plist",
+      "program": null,
+      "readable": false,
+      "refusal": "the file cannot be read: Permission denied (os error 13)",
+      "run_as": "root",
+      "schedule": null,
+      "scope": "system",
+      "understood": false,
+      "writable_path": false
+    },
+    "launchd|/Library/LaunchDaemons/com.example.updater.plist": {
+      "commands": [
+        "/Library/Application Support/Example/updater --daemon --password [redacted]"
+      ],
+      "commands_redacted": true,
+      "disabled": false,
+      "domain": "daemon",
+      "inserted_libraries": [
+        "/private/tmp/.x/libhook.dylib",
+        "/usr/local/lib/libother.dylib"
+      ],
+      "name": "com.example.updater",
+      "owner": null,
+      "path": "/Library/LaunchDaemons/com.example.updater.plist",
+      "program": "/Library/Application Support/Example/updater",
+      "readable": true,
+      "refusal": null,
+      "run_as": "root",
+      "schedule": "at load, kept alive, every 3600 s, on a calendar, when /etc/hosts changes, on a connection",
+      "scope": "system",
+      "understood": true,
+      "writable_path": true
+    },
+    "launchd|/System/Library/LaunchDaemons/com.apple.example.plist": {
+      "commands": [
+        "/usr/libexec/example"
+      ],
+      "commands_redacted": false,
+      "disabled": false,
+      "domain": "daemon",
+      "inserted_libraries": [],
+      "name": "com.apple.example",
+      "owner": null,
+      "path": "/System/Library/LaunchDaemons/com.apple.example.plist",
+      "program": "/usr/libexec/example",
+      "readable": true,
+      "refusal": null,
+      "run_as": "root",
+      "schedule": "on request",
+      "scope": "vendor",
+      "understood": true,
+      "writable_path": false
+    },
+    "launchd|/Users/alice/Library/LaunchAgents/com.example.sync.plist": {
+      "commands": [
+        "/Users/alice/Library/Application Support/Sync/sync --background"
+      ],
+      "commands_redacted": false,
+      "disabled": false,
+      "domain": "agent",
+      "inserted_libraries": [],
+      "name": "com.example.sync",
+      "owner": "alice",
+      "path": "/Users/alice/Library/LaunchAgents/com.example.sync.plist",
+      "program": "/Users/alice/Library/Application Support/Sync/sync",
+      "readable": true,
+      "refusal": null,
+      "run_as": "alice",
+      "schedule": "at load",
+      "scope": "person",
+      "understood": true,
+      "writable_path": false
+    },
+    "launchd|/Users/alice/Library/LaunchAgents/notes.plist": {
+      "commands": [],
+      "commands_redacted": false,
+      "disabled": false,
+      "domain": "agent",
+      "inserted_libraries": [],
+      "name": "notes",
+      "owner": "alice",
+      "path": "/Users/alice/Library/LaunchAgents/notes.plist",
+      "program": null,
+      "readable": true,
+      "refusal": "the file is neither an XML nor a binary property list",
+      "run_as": "alice",
+      "schedule": null,
+      "scope": "person",
+      "understood": false,
+      "writable_path": false
+    },
+    "script|/Library/Scripts/login.sh": {
+      "family": "boot",
+      "gid": 0,
+      "mode": "0444",
+      "path": "/Library/Scripts/login.sh",
+      "present": true,
+      "readable": true,
+      "sha256": "3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f",
+      "shown": true,
+      "size": 3191,
+      "uid": 0
+    },
+    "script|/Users/bob/.zshrc": {
+      "family": "profile",
+      "gid": 0,
+      "mode": "",
+      "path": "/Users/bob/.zshrc",
+      "present": null,
+      "readable": false,
+      "sha256": null,
+      "shown": true,
+      "size": 0,
+      "uid": 0
+    },
+    "script|/etc/zshrc": {
+      "family": "profile",
+      "gid": 0,
+      "mode": "0444",
+      "path": "/etc/zshrc",
+      "present": true,
+      "readable": true,
+      "sha256": "3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f",
+      "shown": true,
+      "size": 3191,
+      "uid": 0
+    }
+  }
+}

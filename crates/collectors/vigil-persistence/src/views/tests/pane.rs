@@ -102,3 +102,65 @@ fn what_the_detail_of_a_unit_says_is_what_a_reader_can_act_on() {
         "the key an operator puts in suppressions is the finding key: {said}"
     );
 }
+
+#[test]
+fn every_pane_shown_for_a_mac_answers_about_its_reading_and_answers_whole() {
+    let reading = crate::fixture::persistence_on_macos();
+
+    for pane in panes() {
+        if !pane.shown(&reading) {
+            continue;
+        }
+        conformance::run_all(pane.as_ref(), &reading);
+    }
+}
+
+#[test]
+fn a_mac_is_shown_its_launchd_jobs_and_not_the_empty_lists_of_what_linux_has() {
+    let mac = crate::fixture::persistence_on_macos();
+    let linux = persistence();
+    let shown = |reading: &vigil_model::Snapshot| -> Vec<String> {
+        panes()
+            .into_iter()
+            .filter(|pane| pane.shown(reading))
+            .map(|pane| pane.name().to_string())
+            .collect()
+    };
+
+    assert_eq!(
+        shown(&mac),
+        vec!["cron", "files", "launchd"],
+        "the lists keep their places, so a console that walks to the cron list of a Linux \
+         host walks to the same place on a Mac"
+    );
+    assert!(
+        !shown(&linux).contains(&"launchd".to_string()),
+        "{:?}",
+        shown(&linux)
+    );
+}
+
+#[test]
+fn a_launchd_job_is_shown_with_what_it_runs_as_whom_and_whose_it_is() {
+    let reading = crate::fixture::persistence_on_macos();
+    let launchd = panes()
+        .into_iter()
+        .find(|pane| pane.name() == "launchd")
+        .expect("a launchd pane");
+    let row = launchd
+        .rows(&reading, &Showing::default())
+        .into_iter()
+        .find(|row| row.key.ends_with("com.example.sync.plist"))
+        .expect("alice's agent");
+
+    let said = format!("{:?}", launchd.cells(&reading, &row, Room::of(160)));
+
+    assert!(said.contains("com.example.sync"), "{said}");
+    assert!(said.contains("alice"), "{said}");
+    assert!(said.contains("at load"), "{said}");
+    let detail = format!("{:?}", launchd.detail(&reading, &row, 100));
+    assert!(
+        detail.contains("persistence|launchd|/Users/alice"),
+        "{detail}"
+    );
+}

@@ -1,5 +1,6 @@
 mod file;
 mod job;
+mod launchd;
 mod module;
 mod timer;
 mod unit;
@@ -13,6 +14,7 @@ use crate::types::Kind;
 
 pub(super) fn of(key: &str, item: &Value, reading: &Snapshot) -> Vec<Piece> {
     let mut said = match Kind::of(key) {
+        Kind::Launchd => launchd::job(key, item, reading),
         Kind::Unit => unit::unit(key, item, reading),
         Kind::Timer => timer::timer(key, item, reading),
         Kind::Cron => job::job(key, item, reading),

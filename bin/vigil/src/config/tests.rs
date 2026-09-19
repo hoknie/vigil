@@ -309,3 +309,15 @@ fn a_file_asked_for_by_name_with_no_directory_to_put_it_in_is_refused_rather_tha
     assert!(refused.contains("suppressions_path"), "{refused}");
     assert_eq!(std::fs::read_to_string(&path).expect("readable"), SHIPPED);
 }
+
+#[cfg(target_os = "linux")]
+#[test]
+fn on_linux_the_console_edits_the_configuration_the_packages_install_under_etc() {
+    assert_eq!(super::DEFAULT_PATH, "/etc/vigil/vigil.yaml");
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn on_macos_the_console_edits_the_configuration_the_package_installs_under_usr_local() {
+    assert_eq!(super::DEFAULT_PATH, "/usr/local/etc/vigil/vigil.yaml");
+}

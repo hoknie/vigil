@@ -14,6 +14,8 @@ pub use services::switching::{new_block, switched, with_block};
 pub use services::watched_paths::{listed, paths, put, put_listed, stop, stop_listed};
 pub use types::block::Block;
 pub use types::entry::Entry;
+pub use types::installation::Installation;
+pub use types::service::Service;
 pub use types::source::Source;
 pub use types::suppression::Suppression;
 pub use types::switched::Switched;

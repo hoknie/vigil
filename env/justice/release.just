@@ -14,6 +14,12 @@ release-assets: package
     ./env/scripts/release.sh collect
     ./env/scripts/release.sh checksums
 
+# Build the macOS packages and name them the way the release does
+[group('release')]
+release-assets-macos: package-macos
+    TARGET=universal-apple-darwin ./env/scripts/release.sh collect
+    ./env/scripts/release.sh checksums
+
 # The notes the release would carry, read out of CHANGELOG.md
 [group('release')]
 release-notes:

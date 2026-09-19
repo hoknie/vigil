@@ -10,5 +10,4 @@ mod views;
 pub use modules::Containers;
 pub use views::WhatRunsInContainers;
 
-#[cfg(target_os = "linux")]
 pub use collectors::ContainersCollector;

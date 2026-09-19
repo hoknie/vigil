@@ -117,3 +117,37 @@ fn the_summary_found_by_its_key_is_the_row_a_walk_over_the_whole_reading_finds()
         );
     }
 }
+
+#[test]
+fn every_pane_of_a_mac_answers_about_pf_and_the_application_firewall_whole() {
+    let reading = crate::fixture::firewall_on_macos();
+
+    for pane in crate::views::WhatTheHostLetsIn.panes() {
+        if !pane.shown(&reading) {
+            continue;
+        }
+        vigil_view::conformance::run_all(pane.as_ref(), &reading);
+    }
+}
+
+#[test]
+fn the_ruleset_of_a_mac_lists_pf_and_the_application_firewall_by_what_they_are() {
+    let reading = crate::fixture::firewall_on_macos();
+    let pane = &crate::views::WhatTheHostLetsIn.panes()[0];
+    let listed: Vec<String> = pane
+        .rows(&reading, &vigil_view::Showing::default())
+        .iter()
+        .map(|row| format!("{:?}", pane.cells(&reading, row, vigil_view::Room::of(160))))
+        .collect();
+
+    assert!(
+        listed.iter().any(|row| row.contains("pf, enabled")),
+        "{listed:#?}"
+    );
+    assert!(
+        listed
+            .iter()
+            .any(|row| row.contains("Application Firewall, on")),
+        "{listed:#?}"
+    );
+}

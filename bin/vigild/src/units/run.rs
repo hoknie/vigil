@@ -23,6 +23,17 @@ pub fn carry_out(
     })
 }
 
+pub fn refused(
+    keys: &[String],
+    controlling: Controlling,
+    now: Rfc3339,
+    why: &str,
+) -> ControlReport {
+    asked(keys, controlling, now, &mut |key| {
+        Controlled::refused(key, why)
+    })
+}
+
 fn asked(
     keys: &[String],
     controlling: Controlling,

@@ -24,7 +24,7 @@ impl Module for Network {
     }
 
     fn collector(&self, settings: &Settings) -> Result<Box<dyn Collector>, String> {
-        elsewhere(settings)
+        Ok(Box::new(crate::NetworkCollector::new(settings.now())))
     }
 
     fn rules(&self, _settings: &Settings) -> RuleSet {
@@ -38,14 +38,4 @@ impl Module for Network {
     fn families(&self) -> &[&'static str] {
         FAMILIES
     }
-}
-
-#[cfg(target_os = "linux")]
-fn elsewhere(settings: &Settings) -> Result<Box<dyn Collector>, String> {
-    Ok(Box::new(crate::NetworkCollector::new(settings.now())))
-}
-
-#[cfg(not(target_os = "linux"))]
-fn elsewhere(_settings: &Settings) -> Result<Box<dyn Collector>, String> {
-    Err("the sockets of this host are read from a Linux /proc".to_string())
 }

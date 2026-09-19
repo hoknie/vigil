@@ -1,4 +1,5 @@
 mod cron;
+mod dialect;
 mod files;
 mod modules;
 mod preload;
@@ -33,18 +34,32 @@ pub(super) const UNIT_DIRECTORIES: &[&str] = &[
 pub(super) const CRONTAB: &str = "/etc/crontab";
 pub(super) const CRON_DIRECTORY: &str = "/etc/cron.d";
 
-pub(super) const CRON_SPOOLS: &[&str] = &["/var/spool/cron/crontabs", "/var/spool/cron"];
+pub(super) const CRON_SPOOLS: &[&str] = &[
+    "/var/spool/cron/crontabs",
+    "/var/spool/cron",
+    "/var/spool/cron/tabs",
+    "/etc/crontabs",
+];
+
+pub(super) const DEBIAN_VERSION: &str = "/etc/debian_version";
 
 pub(super) const CRON_SCRIPT_DIRECTORIES: &[(&str, &str)] = &[
     ("/etc/cron.hourly", "@hourly"),
     ("/etc/cron.daily", "@daily"),
     ("/etc/cron.weekly", "@weekly"),
     ("/etc/cron.monthly", "@monthly"),
+    ("/etc/periodic/15min", "*/15 * * * *"),
+    ("/etc/periodic/hourly", "@hourly"),
+    ("/etc/periodic/daily", "@daily"),
+    ("/etc/periodic/weekly", "@weekly"),
+    ("/etc/periodic/monthly", "@monthly"),
 ];
 
 pub(super) const PRELOAD: &str = "/etc/ld.so.preload";
 
 pub(super) const BOOT_SCRIPTS: &[&str] = &["/etc/rc.local", "/etc/rc.d/rc.local"];
+
+pub(super) const BOOT_DIRECTORIES: &[&str] = &["/etc/local.d"];
 
 pub(super) const SYSTEM_PROFILES: &[&str] = &[
     "/etc/profile",
@@ -54,9 +69,12 @@ pub(super) const SYSTEM_PROFILES: &[&str] = &[
     "/etc/zsh/zprofile",
     "/etc/zshrc",
     "/etc/environment",
+    "/usr/etc/profile",
+    "/usr/etc/bash.bashrc",
+    "/usr/etc/environment",
 ];
 
-pub(super) const PROFILE_DIRECTORY: &str = "/etc/profile.d";
+pub(super) const PROFILE_DIRECTORIES: &[&str] = &["/etc/profile.d", "/usr/etc/profile.d"];
 
 pub(super) const USER_PROFILES: &[&str] = &[
     ".bashrc",

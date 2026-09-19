@@ -7,6 +7,14 @@ pub const PLUGIN_CONFIG_PATH: &str = "/etc/audit/plugins.d/vigil.conf";
 
 pub const CEILING_BYTES: u64 = 16 * 1024 * 1024;
 
+pub const ESLOGGER: &str = "/usr/bin/eslogger";
+
+pub const LAUNCHES_DIRECTORY: &str = "/usr/local/var/lib/vigil/launches";
+
+pub const ESLOGGER_SPOOL: &str = "exec-spool";
+
+pub const ESLOGGER_STATUS: &str = "eslogger.json";
+
 pub fn cursor_path(spool: &Path) -> PathBuf {
     beside(spool, ".cursor")
 }

@@ -1,11 +1,11 @@
 use std::time::Instant;
 
 use vigil_model::Snapshot;
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use vigil_module::{Module, Settings};
 use vigil_view::{Pane, Room, Section, Showing, Sorting, listed};
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 const TAKEN_AT: &str = "2026-09-13T12:00:00.000Z";
 const ROUNDS: u32 = 200;
 const WINDOW: usize = 40;
@@ -19,7 +19,7 @@ fn main() {
     searching();
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn reading() {
     let settings = Settings::plain(|| TAKEN_AT.to_string());
     let collector = match vigil_processes::Processes.collector(&settings) {
@@ -53,11 +53,18 @@ fn reading() {
         "processes: {:.2} ms per reading over {ROUNDS}",
         started.elapsed().as_secs_f64() * 1000.0 / f64::from(ROUNDS)
     );
+
+    let started = Instant::now();
+    let health = collector.available();
+    println!(
+        "processes: health {:.2} ms: {health:?}",
+        started.elapsed().as_secs_f64() * 1000.0
+    );
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 fn reading() {
-    println!("processes: this reading is taken on Linux; nothing to measure here");
+    println!("processes: this reading is taken on Linux and on macOS; nothing to measure here");
 }
 
 fn drawing() {

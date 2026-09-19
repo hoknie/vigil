@@ -7,7 +7,7 @@ use vigil_view::{
 use super::detail;
 use super::footer::{counted, footer};
 use super::indexed::indexed;
-use super::lists::{cron, files, modules, other, timers, units};
+use super::lists::{cron, files, launchd, modules, other, timers, units};
 use super::notices;
 use super::rows::{TREE, parents_of, rows};
 use super::tally::tally;
@@ -47,6 +47,7 @@ impl Pane for Of {
     fn columns(&self, room: Room) -> Vec<Column> {
         let wide = room.holds(ROOM_FOR_THE_PATH);
         match self.0 {
+            List::Launchd => launchd::columns(wide),
             List::Units => units::columns(wide),
             List::Timers => timers::columns(wide),
             List::Cron => cron::columns(wide),
@@ -72,6 +73,7 @@ impl Pane for Of {
         let key = row.key.as_str();
 
         let said = match self.0 {
+            List::Launchd => launchd::cells(key, item, wide),
             List::Units => {
                 units::cells(key, item, row.depth, parents_of(&reading.items, key), wide)
             }

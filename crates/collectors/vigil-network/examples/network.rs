@@ -115,7 +115,7 @@ fn drawing() {
     }
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn reading() {
     use vigil_collect::Collector;
     use vigil_network::NetworkCollector;
@@ -146,11 +146,18 @@ fn reading() {
         "network: {:.2} ms per reading over {rounds}",
         started.elapsed().as_secs_f64() * 1000.0 / f64::from(rounds)
     );
+
+    let started = Instant::now();
+    let health = collector.available();
+    println!(
+        "network: health {:.2} ms: {health:?}",
+        started.elapsed().as_secs_f64() * 1000.0
+    );
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 fn reading() {
-    println!("network: the reading walks a Linux /proc; nothing to measure here");
+    println!("network: the reading is taken on Linux and on macOS; nothing to measure here");
 }
 
 fn judging() {

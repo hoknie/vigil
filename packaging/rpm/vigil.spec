@@ -75,6 +75,30 @@ cp -a %{vigil_stage}/. %{buildroot}/
 %license %attr(0644,root,root) /usr/share/doc/vigil/copyright
 
 %post
+enable_collector() {
+    said="$(mktemp)"
+    if ! /usr/sbin/vigild collector "$1" enable >"$said" 2>&1; then
+        echo "vigil: $1 is off on this host: $(sed -n '1p' "$said")"
+        echo "vigil:   switch it on when that is fixed:  vigild collector $1 enable"
+    fi
+    rm -f "$said"
+}
+
+load_audit() {
+    [ -d /etc/audit ] || return 0
+    if ! command -v augenrules >/dev/null 2>&1 || ! pidof auditd >/dev/null 2>&1; then
+        echo "vigil: program launches are read through auditd, which is not running here; the"
+        echo "vigil:   launches collector says so until it is"
+        return 0
+    fi
+    if augenrules --load >/dev/null 2>&1 && auditctl --signal reload >/dev/null 2>&1; then
+        echo "vigil: the audit rule of vigil is loaded and auditd has taken its plugin up"
+    else
+        echo "vigil: the audit rule could not be loaded; launches are read from the audit log"
+        echo "vigil:   until:  augenrules --load && auditctl --signal reload"
+    fi
+}
+
 if [ -x /usr/bin/systemd-tmpfiles ]; then
     /usr/bin/systemd-tmpfiles --create /usr/lib/tmpfiles.d/vigil.conf >/dev/null 2>&1 || true
 fi
@@ -83,79 +107,62 @@ for directory in /run/vigil /var/lib/vigil /var/lib/vigil/firewall /var/lib/vigi
     chmod 0700 "$directory"
 done
 
+systemd=no
 if [ -d /run/systemd/system ]; then
+    systemd=yes
     systemctl daemon-reload >/dev/null 2>&1 || true
-    if [ "$1" -ge 2 ]; then
-        systemctl try-restart vigild.service >/dev/null 2>&1 || true
-    fi
 fi
 
-if [ -d /etc/audit ]; then
-cat <<'AUDIT'
-
-vigil watches program launches through auditd, and auditd has to be told twice:
-
-  augenrules --load          loads /etc/audit/rules.d/vigil-exec.rules
-  systemctl restart auditd   starts the plugin in /etc/audit/plugins.d/vigil.conf
-
-This package does neither. Until both are done vigil reads /var/log/audit/audit.log instead, a
-reading late and exposed to rotation, and its own health says which of the two is missing.
-
-AUDIT
-fi
+echo
+load_audit
 
 if [ "$1" -eq 1 ]; then
-cat <<'NOTICE'
+    for collector in firewall containers-engines; do
+        enable_collector "$collector"
+    done
+    if [ "$systemd" = no ]; then
+        echo
+        echo "vigil is installed. This host has no systemd, so start it yourself:"
+        echo "  /usr/sbin/vigild /etc/vigil/vigil.yaml"
+    elif systemctl enable --now vigild.service >/dev/null 2>&1; then
+        cat <<'NOTICE'
 
-vigil is installed and is not running yet.
+vigil is installed and running:  systemctl status vigild
 
-  1. vigild configure --dry-run  — ask THIS host what it can watch, and print the
-     configuration for it without writing anything. `vigild configure --force` then
-     writes /etc/vigil/vigil.yaml and a file in /etc/vigil/collectors for each
-     collector that can run here, keeping every file it replaces as .previous;
-  2. read /etc/vigil/vigil.yaml and /etc/vigil/collectors — every value in them is
-     already the default, so the files this package installed work as they stand;
-  3. systemctl enable --now vigild
-  4. vigil ui                    — the console, once the daemon is up
-
-Reading the nftables ruleset is done by vigil-firewall.timer, which vigild.service pulls in:
-/usr/sbin/nft runs there and not inside the agent, so the agent keeps the two capabilities it
-had. To stop that reading and keep everything else:  systemctl mask vigil-firewall.timer
-
-What this host's container engines hold is read the same way, by vigil-containers.timer, which
-runs /usr/sbin/vigil-container-dump. To stop that one:  systemctl mask vigil-containers.timer
+  sudo vigil ui            the console
+  /etc/vigil               the configuration; vigild configure --dry-run shows what fits this host
+  /etc/vigil/reporters     empty, so findings stay on this host until a reporter is added there
 
 NOTICE
-for collector in firewall containers-engines; do
-    if /usr/sbin/vigild collector "$collector" enable > /tmp/vigil-enable.$$ 2>&1; then
-        sed 's/^/  /' /tmp/vigil-enable.$$
     else
-        echo "vigil: the $collector collector was left switched off on this host:"
-        sed 's/^/  /' /tmp/vigil-enable.$$
-        echo "vigil: switch it on when that is fixed:  vigild collector $collector enable"
+        echo
+        echo "vigil is installed, and vigild did not start:  systemctl status vigild"
     fi
-    rm -f /tmp/vigil-enable.$$
-done
 else
-echo
-echo "vigil: this is an upgrade, so /etc/vigil/vigil.yaml was not touched. To switch"
-echo "vigil: the firewall collector on:  vigild collector firewall enable"
-echo "vigil: the container engines on:   vigild collector containers-engines enable"
-echo
-if ! grep -q '^collectors_path:' /etc/vigil/vigil.yaml 2>/dev/null; then
-    echo "vigil: /etc/vigil/vigil.yaml names its collectors itself and is read as it always was."
-    echo "vigil: Each collector now has a file of its own in /etc/vigil/collectors. To move to"
-    echo "vigil: them, take collectors, schedule, interval_seconds, killing, accounts, units and"
-    echo "vigil: every collector's block out of vigil.yaml, carry what you changed into those"
-    echo "vigil: files, and add to vigil.yaml:"
-    echo "vigil:   collectors_path: /etc/vigil/collectors"
-    for kept in suppressions reporters; do
-        grep -q "^${kept}_path:" /etc/vigil/vigil.yaml 2>/dev/null \
-            || echo "vigil:   ${kept}_path: /etc/vigil/$kept"
-    done
-    echo "vigil: \`vigild configure --dry-run\` prints the whole layout for this host."
-    echo
-fi
+    if [ "$systemd" = yes ]; then
+        if systemctl is-active --quiet vigild.service; then
+            systemctl restart vigild.service >/dev/null 2>&1 || true
+            echo "vigil: vigild was running and now runs this version"
+        elif systemctl is-enabled --quiet vigild.service; then
+            systemctl start vigild.service >/dev/null 2>&1 || true
+            echo "vigil: vigild is enabled here and was not running, so it was started"
+        else
+            echo "vigil: vigild is not enabled on this host and was left off:  systemctl enable --now vigild"
+        fi
+    fi
+    if ! grep -q '^collectors_path:' /etc/vigil/vigil.yaml 2>/dev/null; then
+        echo "vigil: /etc/vigil/vigil.yaml names its collectors itself and is read as it always was."
+        echo "vigil: Each collector now has a file of its own in /etc/vigil/collectors. To move to"
+        echo "vigil: them, take collectors, schedule, interval_seconds, killing, accounts, units and"
+        echo "vigil: every collector's block out of vigil.yaml, carry what you changed into those"
+        echo "vigil: files, and add to vigil.yaml:"
+        echo "vigil:   collectors_path: /etc/vigil/collectors"
+        for kept in suppressions reporters; do
+            grep -q "^${kept}_path:" /etc/vigil/vigil.yaml 2>/dev/null \
+                || echo "vigil:   ${kept}_path: /etc/vigil/$kept"
+        done
+        echo "vigil: \`vigild configure --dry-run\` prints the whole layout for this host."
+    fi
 fi
 
 %preun

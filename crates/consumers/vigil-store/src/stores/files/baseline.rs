@@ -12,7 +12,7 @@ pub struct Baselines {
 
 impl Baselines {
     pub fn open(directory: PathBuf) -> Result<Self, StoreError> {
-        fs::create_dir_all(&directory).map_err(|error| StoreError::Io(error.to_string()))?;
+        super::private::create_owner_only_directory(&directory)?;
         Ok(Baselines { directory })
     }
 

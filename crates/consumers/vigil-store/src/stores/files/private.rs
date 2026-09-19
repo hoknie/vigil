@@ -5,6 +5,21 @@ use crate::StoreError;
 
 pub const OWNER_ONLY: u32 = 0o600;
 
+pub const OWNER_ONLY_DIRECTORY: u32 = 0o700;
+
+pub fn create_owner_only_directory(path: &Path) -> Result<(), StoreError> {
+    let mut builder = std::fs::DirBuilder::new();
+    builder.recursive(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        builder.mode(OWNER_ONLY_DIRECTORY);
+    }
+    builder
+        .create(path)
+        .map_err(|error| StoreError::Io(format!("{}: {error}", path.display())))
+}
+
 pub fn create_owner_only(path: &Path, append: bool) -> Result<std::fs::File, StoreError> {
     let mut options = OpenOptions::new();
     options.write(true).create(true);
@@ -52,6 +67,27 @@ mod tests {
                     + NAMES_GIVEN.fetch_add(1, std::sync::atomic::Ordering::Relaxed) as u128)
                 .unwrap_or(0)
         ))
+    }
+
+    #[test]
+    fn a_directory_this_store_makes_is_entered_by_its_owner_and_nobody_else_at_every_level() {
+        let top = temporary("directory");
+        let deepest = top.join("findings").join("baselines");
+
+        create_owner_only_directory(&deepest).expect("creates");
+
+        for made in [&top, &top.join("findings"), &deepest] {
+            let mode = std::fs::metadata(made).expect("stat").permissions().mode();
+            assert_eq!(
+                mode & 0o777,
+                OWNER_ONLY_DIRECTORY,
+                "{} was {:o}: a host installed from the binaries alone has no package to make \
+                 the state directory, and the store is what makes it",
+                made.display(),
+                mode & 0o777
+            );
+        }
+        let _ = std::fs::remove_dir_all(&top);
     }
 
     #[test]

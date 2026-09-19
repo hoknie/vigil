@@ -1,12 +1,12 @@
 use std::path::{Path, PathBuf};
 
-use vigil_config::{Edit, Entry, Source, Suppression, apart, silenced, write};
+use vigil_config::{Edit, Entry, Installation, Source, Suppression, apart, silenced, write};
 
 use super::done::Done;
 use super::options::Options;
 use super::shape::{known, moment};
 
-pub const DEFAULT_PATH: &str = "/etc/vigil/vigil.yaml";
+pub const DEFAULT_PATH: &str = Installation::here().configuration;
 
 pub const NEXT_ROUND: &str = "the agent takes it up on its next round";
 

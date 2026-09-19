@@ -25,7 +25,8 @@ usage: install.sh [options]
 
   -v, --version VERSION   the release to install, as 1.0.7 or v1.0.7
                           (default: the latest release)
-  -k, --kind KIND         deb or rpm (default: whatever this host manages packages with)
+  -k, --kind KIND         deb, rpm or pkg (default: whatever this host manages packages
+                          with; pkg on macOS)
   -r, --repository OWNER/NAME
                           where the releases are (default: hoknie/vigil)
   -l, --list              print the releases on offer and leave
@@ -39,7 +40,8 @@ environment: VIGIL_VERSION, VIGIL_KIND, VIGIL_REPOSITORY, VIGIL_TOKEN (or GITHUB
 Every download is checked against the SHA256SUMS of its own release before anything
 is installed. The configuration under /etc/vigil (vigil.yaml, collectors/*.yaml,
 watch_fs.yaml) is conffiles: an update keeps the files this host has and never
-writes over them.
+writes over them. On macOS the same holds for /usr/local/etc/vigil: a file you
+changed is kept, and the new defaults are put beside it as <file>.new.
 USAGE
 }
 
@@ -47,7 +49,7 @@ while [ $# -gt 0 ]; do
     case "$1" in
     -v|--version) [ $# -ge 2 ] || die "--version wants a version"; WANTED="$2"; shift 2 ;;
     --version=*) WANTED="${1#*=}"; shift ;;
-    -k|--kind) [ $# -ge 2 ] || die "--kind wants deb or rpm"; KIND="$2"; shift 2 ;;
+    -k|--kind) [ $# -ge 2 ] || die "--kind wants deb, rpm or pkg"; KIND="$2"; shift 2 ;;
     --kind=*) KIND="${1#*=}"; shift ;;
     -r|--repository) [ $# -ge 2 ] || die "--repository wants OWNER/NAME"; REPOSITORY="$2"; shift 2 ;;
     --repository=*) REPOSITORY="${1#*=}"; shift ;;
@@ -82,9 +84,10 @@ sum_of() {
     else die "neither sha256sum nor shasum is installed, so the download cannot be checked"; fi
 }
 
-case "$(uname -s)" in
-Linux) ;;
-*) die "vigil watches Linux hosts; this is $(uname -s)" ;;
+SYSTEM="$(uname -s)"
+case "$SYSTEM" in
+Linux|Darwin) ;;
+*) die "vigil watches Linux hosts and Macs; this is $SYSTEM" ;;
 esac
 
 case "$(uname -m)" in
@@ -94,7 +97,8 @@ aarch64|arm64) DEB_ARCH=arm64; RPM_ARCH=aarch64 ;;
 esac
 
 if [ -z "$KIND" ]; then
-    if have dpkg; then KIND=deb
+    if [ "$SYSTEM" = Darwin ]; then KIND=pkg
+    elif have dpkg; then KIND=deb
     elif have rpm; then KIND=rpm
     else
         die "this host has neither dpkg nor rpm; take the .tar.gz from the release page instead"
@@ -104,7 +108,8 @@ fi
 case "$KIND" in
 deb) have dpkg || die "--kind deb was asked for and dpkg is not installed" ;;
 rpm) have rpm || die "--kind rpm was asked for and rpm is not installed" ;;
-*) die "$KIND is neither deb nor rpm" ;;
+pkg) [ "$SYSTEM" = Darwin ] && have installer || die "--kind pkg installs with the installer of macOS, and this is $SYSTEM" ;;
+*) die "$KIND is neither deb, rpm nor pkg" ;;
 esac
 
 releases() {
@@ -130,6 +135,7 @@ installed_version() {
     case "$KIND" in
     deb) dpkg-query --show --showformat='${Version}' vigil 2>/dev/null || true ;;
     rpm) rpm --query vigil >/dev/null 2>&1 && rpm --query --queryformat='%{VERSION}' vigil || true ;;
+    pkg) pkgutil --pkg-info vigil.agent 2>/dev/null | awk '/^version: / { print $2 }' || true ;;
     esac
 }
 
@@ -145,6 +151,7 @@ VERSION="${WANTED#v}"
 case "$KIND" in
 deb) ASSET="vigil_${VERSION}.debian.${DEB_ARCH}.deb" ;;
 rpm) ASSET="vigil_${VERSION}.el.${RPM_ARCH}.rpm" ;;
+pkg) ASSET="vigil_${VERSION}.macos.universal.pkg" ;;
 esac
 
 BASE="https://github.com/$REPOSITORY/releases/download/v$VERSION"
@@ -197,9 +204,17 @@ GOT="$(sum_of "$WORK/$ASSET")"
 note "  sha256    $GOT"
 
 defaults() {
-    [ -d /etc/vigil ] || return 0
-    find /etc/vigil \( -name '*.dpkg-dist' -o -name '*.rpmnew' \) -exec stat -c '%n %i %Y %s' {} + \
-        2>/dev/null | sort
+    case "$KIND" in
+    pkg)
+        [ -d /usr/local/etc/vigil ] || return 0
+        find /usr/local/etc/vigil -name '*.new' -exec stat -f '%N %i %m %z' {} + 2>/dev/null | sort
+        ;;
+    *)
+        [ -d /etc/vigil ] || return 0
+        find /etc/vigil \( -name '*.dpkg-dist' -o -name '*.rpmnew' \) -exec stat -c '%n %i %Y %s' {} + \
+            2>/dev/null | sort
+        ;;
+    esac
 }
 defaults > "$WORK/before"
 
@@ -207,6 +222,7 @@ say "installing"
 case "$KIND" in
 deb) dpkg --force-confold --force-confdef --install "$WORK/$ASSET" ;;
 rpm) rpm --upgrade --oldpackage --replacepkgs --verbose "$WORK/$ASSET" ;;
+pkg) installer -pkg "$WORK/$ASSET" -target / ;;
 esac
 
 NOW="$(installed_version)"
@@ -214,6 +230,15 @@ say "installed"
 note "  vigil     ${NOW:-unknown}${HERE:+, over $HERE}"
 if have vigild; then
     note "  vigild    $(vigild --version 2>/dev/null || echo 'does not say its version')"
+fi
+
+if [ "$KIND" = pkg ]; then
+    if launchctl print system/vigil.vigild >/dev/null 2>&1; then
+        note "  service   running as the launchd job vigil.vigild"
+    else
+        note ""
+        note "the daemon is installed and not running:  launchctl bootstrap system /Library/LaunchDaemons/vigil.vigild.plist"
+    fi
 fi
 
 if [ -d /run/systemd/system ] && have systemctl; then

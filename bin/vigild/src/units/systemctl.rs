@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 
 use vigil_model::Controlling;
 
-const PLACES: &[&str] = &["/usr/bin/systemctl", "/bin/systemctl"];
+const PLACES: &[&str] = crate::collector::SYSTEMCTL_PLACES;
 
 const WAIT: Duration = Duration::from_secs(30);
 

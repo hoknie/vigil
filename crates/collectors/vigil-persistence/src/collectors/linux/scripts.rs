@@ -10,7 +10,8 @@ use vigil_collect::{absent, hex, sha256, shown_to_the_agent};
 
 use super::files::{read_capped, sorted_files};
 use super::{
-    BOOT_SCRIPTS, NON_INTERACTIVE_SHELLS, PROFILE_DIRECTORY, SYSTEM_PROFILES, USER_PROFILES,
+    BOOT_DIRECTORIES, BOOT_SCRIPTS, NON_INTERACTIVE_SHELLS, PROFILE_DIRECTORIES, SYSTEM_PROFILES,
+    USER_PROFILES,
 };
 
 pub(super) fn read_scripts() -> Vec<WatchedScript> {
@@ -19,11 +20,18 @@ pub(super) fn read_scripts() -> Vec<WatchedScript> {
     for path in BOOT_SCRIPTS {
         scripts.push(describe_script(Path::new(path), ScriptFamily::Boot));
     }
+    for directory in BOOT_DIRECTORIES {
+        for path in sorted_files(Path::new(directory)) {
+            scripts.push(describe_script(&path, ScriptFamily::Boot));
+        }
+    }
     for path in SYSTEM_PROFILES {
         scripts.push(describe_script(Path::new(path), ScriptFamily::Profile));
     }
-    for path in sorted_files(Path::new(PROFILE_DIRECTORY)) {
-        scripts.push(describe_script(&path, ScriptFamily::Profile));
+    for directory in PROFILE_DIRECTORIES {
+        for path in sorted_files(Path::new(directory)) {
+            scripts.push(describe_script(&path, ScriptFamily::Profile));
+        }
     }
 
     if let Ok(text) = fs::read_to_string("/etc/passwd") {

@@ -36,7 +36,7 @@ pub fn build(spec: FirewallFinding<'_>, ctx: &mut RuleContext<'_>) -> Finding {
                     "chain": view.name(),
                     "hook": view.hook(),
                 }),
-                _ => json!({ "backend": "nftables" }),
+                _ => json!({ "backend": view.backend() }),
             }
         }
         None => json!({ "key": spec.key }),

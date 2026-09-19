@@ -5,7 +5,14 @@ use super::targets::Target;
 
 const WHERE_SS_LIVES: &[&str] = &["/usr/sbin/ss", "/sbin/ss", "/usr/bin/ss", "/bin/ss"];
 
+const NO_SOCK_DESTROY: &str = "closing a socket without stopping its process is the Linux \
+                               kernel's SOCK_DESTROY, and macOS has nothing like it: stop the \
+                               process that holds the socket instead";
+
 pub fn destroy(target: &Target) -> Result<String, String> {
+    if cfg!(target_os = "macos") {
+        return Err(NO_SOCK_DESTROY.to_string());
+    }
     let Some(tool) = found() else {
         return Err(format!(
             "closing a socket without stopping its process is done by ss, which is not on \
@@ -95,6 +102,16 @@ mod tests {
         );
     }
 
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn on_macos_a_socket_is_not_closed_behind_its_process_and_the_refusal_says_what_to_do() {
+        let complaint = destroy(&target("0.0.0.0", 8080)).expect_err("macOS has no ss -K");
+
+        assert!(complaint.contains("SOCK_DESTROY"), "{complaint}");
+        assert!(complaint.contains("stop the process"), "{complaint}");
+    }
+
+    #[cfg(not(target_os = "macos"))]
     #[test]
     fn a_host_without_ss_is_told_so_by_name_rather_than_left_with_a_silent_failure() {
         if found().is_some() {

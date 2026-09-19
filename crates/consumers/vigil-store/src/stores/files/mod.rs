@@ -11,4 +11,5 @@ mod tally;
 
 pub use limits::Limits;
 pub use outgoing::Outgoing;
+pub use private::create_owner_only_directory;
 pub use store::FileStore;

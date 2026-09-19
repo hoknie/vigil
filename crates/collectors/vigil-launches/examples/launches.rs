@@ -5,7 +5,7 @@ use vigil_model::Snapshot;
 use vigil_module::{Module, Settings};
 use vigil_view::{Pane, Room, Section, Showing, Sorting, listed};
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 const TAKEN_AT: &str = "2026-09-13T12:00:00.000Z";
 const ROUNDS: u32 = 200;
 const WINDOW: usize = 40;
@@ -55,9 +55,128 @@ fn reading() {
     );
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "macos")]
 fn reading() {
-    println!("launches: this reading is taken on Linux; nothing to measure here");
+    use std::fs;
+
+    use vigil_collect::Collector;
+    use vigil_launches::{
+        ESLOGGER_SPOOL, ESLOGGER_STATUS, Launched, LaunchesCollector, RUNNING, SpoolWriter,
+        SpoolerStatus, audit_records,
+    };
+
+    const SPOOLED: u64 = 20_000;
+
+    let printed = include_str!("../src/parsers/eslogger/tests/exec.ndjson").repeat(5_000);
+    let started = Instant::now();
+    let mut turned = 0usize;
+    for line in printed.lines() {
+        if let Ok(launched) = vigil_launches::parse_eslogger_event(line.as_bytes()) {
+            turned += audit_records(&launched, true).len();
+        }
+    }
+    println!(
+        "launches: {} exec events eslogger printed ({} bytes) read and turned into {turned} bytes of records in {:.2} ms",
+        printed.lines().count(),
+        printed.len(),
+        started.elapsed().as_secs_f64() * 1000.0
+    );
+
+    let at = std::env::temp_dir().join(format!("vigil-launches-cost-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&at);
+    let _ = fs::create_dir_all(&at);
+    let _ = SpoolerStatus {
+        state: RUNNING.to_string(),
+        since: TAKEN_AT.to_string(),
+        program: "/usr/bin/eslogger".to_string(),
+        arguments_recorded: true,
+        why: None,
+    }
+    .write(&at.join(ESLOGGER_STATUS));
+
+    let started = Instant::now();
+    let mut writer = SpoolWriter::open(at.join(ESLOGGER_SPOOL), 64 * 1024 * 1024).expect("a spool");
+    let mut pending: Vec<u8> = Vec::new();
+    for sequence in 0..SPOOLED {
+        let launched = Launched {
+            seconds: 1_789_808_523 + sequence,
+            milliseconds: 0,
+            sequence,
+            pid: 4000,
+            ppid: 1,
+            auid: 501,
+            uid: 501,
+            euid: 501,
+            executable: format!("/usr/local/bin/tool{}", sequence % 300),
+            arguments: vec![
+                "tool".to_string(),
+                "--password".to_string(),
+                "hunter2".to_string(),
+            ],
+            working_directory: None,
+        };
+        pending.extend_from_slice(audit_records(&launched, true).as_bytes());
+        if pending.len() >= 64 * 1024 {
+            let _ = writer.write(&pending);
+            pending.clear();
+        }
+    }
+    let _ = writer.write(&pending);
+    println!(
+        "launches: {SPOOLED} launches spooled in {:.2} ms, {} bytes, written 64 KiB at a time",
+        started.elapsed().as_secs_f64() * 1000.0,
+        writer.bytes()
+    );
+
+    let collector = LaunchesCollector::with_paths(|| TAKEN_AT.to_string(), true, &at);
+    let started = Instant::now();
+    let mut rounds = 0;
+    while collector
+        .collect()
+        .map(|read| read.items.len())
+        .unwrap_or(0)
+        > 0
+        && rounds < 32
+    {
+        rounds += 1;
+        let cursor =
+            fs::read_to_string(at.join(format!("{ESLOGGER_SPOOL}.cursor"))).unwrap_or_default();
+        if cursor
+            .split_whitespace()
+            .nth(1)
+            .and_then(|offset| offset.parse::<u64>().ok())
+            == Some(writer.bytes())
+        {
+            break;
+        }
+    }
+    println!(
+        "launches: the whole spool read in {} reading(s), {:.2} ms",
+        rounds + 1,
+        started.elapsed().as_secs_f64() * 1000.0
+    );
+
+    let started = Instant::now();
+    for _ in 0..ROUNDS {
+        let _ = collector.collect();
+    }
+    println!(
+        "launches: {:.2} ms per reading with nothing new over {ROUNDS}",
+        started.elapsed().as_secs_f64() * 1000.0 / f64::from(ROUNDS)
+    );
+
+    let started = Instant::now();
+    let health = collector.available();
+    println!(
+        "launches: health {:.2} ms: {health:?}",
+        started.elapsed().as_secs_f64() * 1000.0
+    );
+    let _ = fs::remove_dir_all(&at);
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+fn reading() {
+    println!("launches: this reading is taken on Linux and on macOS; nothing to measure here");
 }
 
 fn drawing() {

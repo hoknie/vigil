@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use vigil_collect::Health;
-use vigil_config::{Switched, blocks_in, switched};
+use vigil_config::{Installation, Switched, blocks_in, switched};
 
 use super::Surveyed;
 use super::documents::{documents, names};
@@ -226,26 +226,25 @@ fn every_key_that_lets_the_console_change_this_host_is_written_out_and_switched_
 
 #[test]
 fn on_a_host_where_everything_runs_it_writes_exactly_the_files_this_product_ships() {
-    let planned = plan(Path::new("/etc/vigil/vigil.yaml"), &every_one_runs());
+    let here = Installation::here();
+    let planned = plan(Path::new(here.configuration), &every_one_runs());
     let shipped = shipped_directory();
 
     for file in &planned {
         let relative = file
             .path
-            .strip_prefix("/etc/vigil")
-            .expect("under /etc/vigil");
+            .strip_prefix(here.configuration_directory)
+            .expect("under the directory this system installs to");
         let on_disk = match relative == Path::new("vigil.yaml") {
             true => shipped.join("vigil.example.yaml"),
             false => shipped.join(relative),
         };
+        let written = std::fs::read_to_string(&on_disk)
+            .unwrap_or_else(|error| panic!("{}: {error}", on_disk.display()));
         assert_eq!(
             file.text.as_deref(),
-            Some(
-                std::fs::read_to_string(&on_disk)
-                    .unwrap_or_else(|error| panic!("{}: {error}", on_disk.display()))
-                    .as_str()
-            ),
-            "{} is not what config/ ships",
+            Some(here.moved_from(&Installation::LINUX, &written).as_str()),
+            "{} is not what config/ ships, moved to the places of this system",
             file.path.display()
         );
     }

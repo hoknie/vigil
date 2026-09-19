@@ -50,3 +50,19 @@ package-systemd: package-deb
 [group('package')]
 package-unit: package-deb
     {{ CLEAN }} {{ CLEAN_DEB }} bash -c 'timeout -s KILL 600 sh -c "apt-get -qq update && apt-get -qq install -y --no-install-recommends systemd nftables >/dev/null && dpkg -i \"\$(ls -t dist/vigil_*_amd64.deb | head -1)\" >/dev/null && systemd-analyze verify /usr/lib/systemd/system/vigild.service /usr/lib/systemd/system/vigil-firewall.service /usr/lib/systemd/system/vigil-firewall.timer /usr/lib/systemd/system/vigil-containers.service /usr/lib/systemd/system/vigil-containers.timer && echo \"the units verify\""'
+
+# Build the macOS .pkg and .tar.gz into ./dist from universal binaries, and check them
+[group('package')]
+package-macos:
+    ./env/scripts/package-macos.sh all
+
+# Look inside the macOS .pkg, and run its install scripts against a scratch volume
+[group('package')]
+package-macos-check:
+    ./env/scripts/package-macos.sh check
+
+# Install the agent on eleven Linux distributions in containers and print what each collector reads there
+[group('package')]
+distributions *images:
+    ./env/scripts/distributions.sh build
+    ./env/scripts/distributions.sh run {{ images }}

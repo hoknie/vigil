@@ -1,5 +1,6 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Kind {
+    Launchd,
     Unit,
     Timer,
     Cron,
@@ -12,11 +13,12 @@ pub enum Kind {
 
 impl Kind {
     pub const NAMED: &'static [&'static str] = &[
-        "unit", "timer", "cron", "module", "modules", "script", "preload",
+        "launchd", "unit", "timer", "cron", "module", "modules", "script", "preload",
     ];
 
     pub fn of(key: &str) -> Kind {
         match key.split('|').next().unwrap_or_default() {
+            "launchd" => Kind::Launchd,
             "unit" => Kind::Unit,
             "timer" => Kind::Timer,
             "cron" => Kind::Cron,
@@ -61,7 +63,7 @@ mod tests {
         }
         assert_eq!(
             kinds.len(),
-            7,
+            8,
             "a kind missing from the list would be searched for as unknown and never found"
         );
     }

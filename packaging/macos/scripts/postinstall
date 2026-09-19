@@ -1,0 +1,124 @@
+#!/bin/sh
+set -eu
+
+ROOT="${3%/}"
+ETC="$ROOT/usr/local/etc/vigil"
+SHIPPED="$ROOT/usr/local/share/vigil/defaults"
+BEFORE="$ROOT/usr/local/share/vigil/defaults.before"
+STATE="$ROOT/usr/local/var/lib/vigil"
+LOGS="$ROOT/usr/local/var/log/vigil"
+RUN="$ROOT/var/run/vigil"
+DAEMONS="$ROOT/Library/LaunchDaemons"
+LABEL="vigil.vigild"
+
+private() {
+    [ -d "$1" ] || mkdir -p "$1"
+    chown root:wheel "$1"
+    chmod 0700 "$1"
+}
+
+place() {
+    shipped="$SHIPPED/$1"
+    installed="$ETC/$1"
+    before="$BEFORE/$1"
+
+    if [ ! -e "$installed" ]; then
+        install -m 0600 -o root -g wheel "$shipped" "$installed"
+        return 0
+    fi
+    if cmp -s "$shipped" "$installed"; then
+        rm -f "$installed.new"
+        return 0
+    fi
+    if [ -f "$before" ] && cmp -s "$before" "$installed"; then
+        install -m 0600 -o root -g wheel "$shipped" "$installed"
+        rm -f "$installed.new"
+        echo "vigil: $installed was as the last version shipped it, and is now as this one ships it"
+        return 0
+    fi
+    install -m 0600 -o root -g wheel "$shipped" "$installed.new"
+    echo "vigil: $installed is yours and was kept as it is."
+    echo "vigil: the defaults this version ships are beside it, at $installed.new"
+}
+
+for directory in "$ETC" "$ETC/collectors" "$ETC/suppressions" "$ETC/reporters" \
+    "$STATE" "$STATE/firewall" "$STATE/containers" "$STATE/launches" "$LOGS" "$RUN"; do
+    private "$directory"
+done
+
+fresh=yes
+[ -f "$ETC/vigil.yaml" ] && fresh=no
+
+place vigil.yaml
+place watch_fs.yaml
+for shipped in "$SHIPPED"/collectors/*.yaml; do
+    place "collectors/$(basename "$shipped")"
+done
+rm -rf "$BEFORE"
+
+if [ -n "$ROOT" ]; then
+    echo "vigil: installed on $3, which is not the running system, so nothing was started."
+    exit 0
+fi
+
+enable_collector() {
+    said="$(mktemp)"
+    if ! /usr/local/sbin/vigild collector "$1" enable >"$said" 2>&1; then
+        echo "vigil: $1 is off on this Mac: $(sed -n '1p' "$said")"
+        echo "vigil:   switch it on when that is fixed:  sudo vigild collector $1 enable"
+    fi
+    rm -f "$said"
+}
+
+started() {
+    launchctl print "system/$LABEL" >/dev/null 2>&1
+}
+
+switched_off() {
+    launchctl print-disabled system 2>/dev/null | grep -E -q "\"$LABEL\" => (disabled|true)"
+}
+
+start() {
+    launchctl enable "system/$LABEL"
+    launchctl bootstrap system "$DAEMONS/$LABEL.plist" 2>/dev/null || launchctl kickstart "system/$LABEL"
+}
+
+if [ "$fresh" = yes ]; then
+    echo
+    for collector in firewall containers-engines; do
+        enable_collector "$collector"
+    done
+    start
+    if started; then
+        cat <<'NOTICE'
+
+vigil is installed and running:  sudo launchctl print system/vigil.vigild
+
+  sudo vigil ui                      the console
+  /usr/local/etc/vigil               the configuration; vigild configure --dry-run shows what fits this Mac
+  /usr/local/etc/vigil/reporters     empty, so findings stay on this Mac until a reporter is added there
+
+It reads more with Full Disk Access for /usr/local/sbin/vigild, and program launches with Full
+Disk Access for /usr/local/libexec/vigil/vigil-launches-spool (System Settings, Privacy &
+Security), then:  sudo vigild collector launches enable
+
+NOTICE
+    else
+        echo
+        echo "vigil is installed, and vigild did not start. What it said:"
+        echo "  sudo tail -20 /usr/local/var/log/vigil/vigild.log"
+    fi
+    exit 0
+fi
+
+if started; then
+    launchctl kickstart -k "system/$LABEL"
+    echo "vigil: vigild was running and now runs this version."
+elif switched_off; then
+    echo "vigil: vigild is switched off on this Mac and was left off:  sudo launchctl enable system/$LABEL"
+else
+    start
+    echo "vigil: vigild was not running, and now runs this version."
+fi
+
+exit 0

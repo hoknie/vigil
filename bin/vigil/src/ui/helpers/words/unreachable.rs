@@ -47,7 +47,7 @@ mod tests {
 
         assert!(page.contains("/run/vigil/vigil.sock"), "{page}");
         assert!(
-            page.contains("systemctl"),
+            page.contains(vigil_config::Installation::here().service.status),
             "and what to do about it: {page}"
         );
     }

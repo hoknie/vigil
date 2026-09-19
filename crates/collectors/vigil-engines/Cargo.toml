@@ -16,3 +16,4 @@ serde_json.workspace = true
 [dev-dependencies]
 vigil-module = { path = "../../core/vigil-module" }
 vigil-collect = { path = "../../core/vigil-collect" }
+vigil-config = { path = "../../core/vigil-config" }

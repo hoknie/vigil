@@ -5,4 +5,4 @@ mod run;
 mod systemctl;
 
 pub use report::findings;
-pub use run::{READING, carry_out};
+pub use run::{READING, carry_out, refused};

@@ -142,3 +142,80 @@ fn reading_the_sessions_of_this_host_names_a_source_for_every_one_of_them() {
         "merging may join rows, never invent them"
     );
 }
+
+#[test]
+fn the_sudoers_of_a_host_that_keeps_it_under_usr_etc_names_both_directories_it_includes() {
+    let tumbleweed = "\
+## Read drop-in files
+@includedir /usr/etc/sudoers.d
+@includedir /etc/sudoers.d
+root ALL=(ALL:ALL) ALL
+";
+
+    let included = sudoers::included_by(tumbleweed, std::path::Path::new("/usr/etc"));
+
+    assert_eq!(
+        sudoers::directories_to_read(&included),
+        vec![
+            std::path::PathBuf::from("/usr/etc/sudoers.d"),
+            std::path::PathBuf::from("/etc/sudoers.d"),
+        ],
+        "openSUSE Tumbleweed ships /usr/etc/sudoers and no /etc/sudoers, and a grant dropped \
+         into /usr/etc/sudoers.d is one sudo honours"
+    );
+}
+
+#[test]
+fn the_old_hash_spelling_of_an_include_is_an_include_and_not_a_comment() {
+    let debian = "\
+Defaults env_reset
+#includedir /etc/sudoers.d
+#include /etc/sudoers.local
+# includedir /not/a/directive
+";
+
+    let included = sudoers::included_by(debian, std::path::Path::new("/etc"));
+
+    assert_eq!(
+        included.directories,
+        vec![std::path::PathBuf::from("/etc/sudoers.d")]
+    );
+    assert_eq!(
+        included.files,
+        vec![std::path::PathBuf::from("/etc/sudoers.local")]
+    );
+}
+
+#[test]
+fn an_include_named_relative_to_the_sudoers_file_is_read_beside_it() {
+    let included = sudoers::included_by(
+        "@include \"sudoers.local\"\n@includedir sudoers.d\n",
+        std::path::Path::new("/usr/etc"),
+    );
+
+    assert_eq!(
+        included.files,
+        vec![std::path::PathBuf::from("/usr/etc/sudoers.local")]
+    );
+    assert_eq!(
+        included.directories,
+        vec![std::path::PathBuf::from("/usr/etc/sudoers.d")]
+    );
+}
+
+#[test]
+fn etc_sudoers_d_is_read_even_when_the_sudoers_file_could_not_say_it_includes_it() {
+    assert_eq!(
+        sudoers::directories_to_read(&sudoers::Included::default()),
+        vec![std::path::PathBuf::from(SUDOERS_DIRECTORY)],
+        "an agent that cannot read /etc/sudoers still lists the drop-in directory every \
+         distribution includes, rather than seeing no grant at all"
+    );
+}
+
+#[test]
+fn an_include_whose_path_depends_on_the_host_name_is_not_guessed_at() {
+    let included = sudoers::included_by("@include /etc/sudoers.%h\n", std::path::Path::new("/etc"));
+
+    assert!(included.files.is_empty());
+}

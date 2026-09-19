@@ -52,12 +52,6 @@ impl Module for Containers {
     }
 }
 
-#[cfg(target_os = "linux")]
 fn reading(settings: &Settings) -> Result<Box<dyn Collector>, String> {
     Ok(Box::new(crate::ContainersCollector::new(settings.now())))
-}
-
-#[cfg(not(target_os = "linux"))]
-fn reading(_settings: &Settings) -> Result<Box<dyn Collector>, String> {
-    Err("the containers of this host are read from a Linux /proc and its cgroups".to_string())
 }

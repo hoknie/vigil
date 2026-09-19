@@ -1,0 +1,16 @@
+[package]
+name = "vigil-firewall-dump"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "vigil-firewall-dump"
+path = "src/main.rs"
+
+[dependencies]
+vigil-firewall = { path = "../../crates/collectors/vigil-firewall" }
+serde_json.workspace = true
+
+[dev-dependencies]
+vigil-collect = { path = "../../crates/core/vigil-collect" }

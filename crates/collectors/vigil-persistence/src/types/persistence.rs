@@ -2,6 +2,7 @@ use serde_json::Value;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Family {
+    Launchd,
     Unit,
     Timer,
     Cron,
@@ -24,6 +25,7 @@ impl<'a> PersistenceView<'a> {
 
     pub fn family(&self) -> Option<Family> {
         match self.key.split_once('|')?.0 {
+            "launchd" => Some(Family::Launchd),
             "unit" => Some(Family::Unit),
             "timer" => Some(Family::Timer),
             "cron" => Some(Family::Cron),
@@ -140,7 +142,25 @@ impl<'a> PersistenceView<'a> {
             .unwrap_or_default()
     }
 
+    pub fn domain(&self) -> &'a str {
+        self.value["domain"].as_str().unwrap_or("daemon")
+    }
+
+    pub fn scope(&self) -> &'a str {
+        self.value["scope"].as_str().unwrap_or("system")
+    }
+
+    pub fn inserted_libraries(&self) -> Vec<&'a str> {
+        self.value["inserted_libraries"]
+            .as_array()
+            .map(|values| values.iter().filter_map(Value::as_str).collect())
+            .unwrap_or_default()
+    }
+
     pub fn runs_from_writable_path(&self) -> bool {
+        if let Some(said) = self.value["writable_path"].as_bool() {
+            return said;
+        }
         let commands = match self.family() {
             Some(Family::Cron) => self.command().to_string(),
             _ => self.commands(),

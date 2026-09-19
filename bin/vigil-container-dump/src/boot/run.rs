@@ -106,10 +106,15 @@ mod tests {
             return;
         }
         assert_eq!(dump.state, "absent");
-        assert!(
-            dump.why.is_some_and(|why| why.contains("/usr/bin/docker")),
-            "the document says where it looked, because a reader of it cannot look again"
-        );
+        let why = dump.why.clone().unwrap_or_default();
+        for place in vigil_engines::Engine::Docker.places() {
+            assert!(
+                why.contains(place),
+                "the document says every place it looked, because a reader of it cannot look \
+                 again, and the places are the ones of the system it ran on: {place} is missing \
+                 from {why:?}"
+            );
+        }
         assert!(dump.asked.is_empty());
         let _ = fs::remove_dir_all(&at);
     }
@@ -141,6 +146,44 @@ mod tests {
             !at.join("docker.json.writing").exists(),
             "the file the reader opens is renamed into place, so it never holds half a dump"
         );
+        let _ = fs::remove_dir_all(&at);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn what_this_program_writes_on_a_mac_is_what_the_collector_of_the_agent_reads() {
+        use vigil_collect::Collector;
+        use vigil_engines::{EnginesCollector, Watching};
+
+        let at = workspace("read-back");
+        let options = Options {
+            directory: at.display().to_string(),
+            ..Options::default()
+        };
+
+        assert_eq!(run(&options), ExitCode::SUCCESS);
+
+        let read = EnginesCollector::with_paths(
+            || "2026-09-19T12:00:00.000Z".to_string(),
+            &at,
+            Watching::default(),
+        )
+        .collect()
+        .expect("the files this program wrote are read by the agent");
+        for engine in ["docker", "podman"] {
+            assert!(
+                read.items
+                    .contains_key(&format!("{engine}|engine|{engine}")),
+                "{engine}: an engine is a row whether it is installed or not, answered or not"
+            );
+        }
+        let docker = written(&at);
+        if docker.on_this_host() {
+            assert!(
+                docker.account.is_some(),
+                "the document says which account the client was run as"
+            );
+        }
         let _ = fs::remove_dir_all(&at);
     }
 }

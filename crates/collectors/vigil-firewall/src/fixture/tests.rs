@@ -51,3 +51,21 @@ fn every_class_the_parsers_build_is_named_in_the_sample_that_publishes_it() {
         );
     }
 }
+
+#[test]
+fn the_macos_sample_reading_on_disk_is_the_one_the_macos_parsers_build() {
+    if let Err(complaint) =
+        Golden::reading("firewall-macos").write_or_check(&document(&super::firewall_on_macos()))
+    {
+        panic!("{complaint}");
+    }
+}
+
+#[test]
+fn the_macos_sample_shape_on_disk_is_the_shape_the_macos_parsers_produce() {
+    if let Err(complaint) = Golden::snapshot("firewall-macos")
+        .write_or_check(&Shape::of(&super::firewall_on_macos()).written())
+    {
+        panic!("{complaint}");
+    }
+}

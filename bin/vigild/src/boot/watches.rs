@@ -1,7 +1,10 @@
 use vigil_collect::{Collector, Health};
+use vigil_module::{Module, Settings};
 use vigil_rules::RuleSet;
 
 use crate::Config;
+use crate::adapters::Unported;
+use crate::helpers::rfc3339;
 use crate::loops::Watch;
 
 pub struct Family {
@@ -9,34 +12,30 @@ pub struct Family {
     pub rules: RuleSet,
 }
 
-#[cfg(target_os = "linux")]
 pub fn families(config: &Config) -> Result<Vec<Family>, String> {
-    use vigil_module::Settings;
-
-    use crate::helpers::rfc3339;
-
     let mut families = Vec::new();
     for module in crate::modules::modules() {
         let settings = match module.settings_key() {
             Some(key) => Settings::of(rfc3339::now, key, config.of_the_module(key)),
             None => Settings::plain(rfc3339::now),
         };
-        families.push(Family {
-            collector: module.collector(&settings)?,
-            rules: module.rules(&settings),
-        });
+        families.push(family(module.as_ref(), &settings)?);
     }
 
     Ok(families)
 }
 
-#[cfg(not(target_os = "linux"))]
-pub fn families(config: &Config) -> Result<Vec<Family>, String> {
-    let _ = config.of_the_module("files");
-    Err(format!(
-        "this build has no collector for {}: vigil reads a Linux /proc. Run it on Linux: `just docker` opens a container with the working copy mounted.",
-        std::env::consts::OS
-    ))
+pub fn family(module: &dyn Module, settings: &Settings) -> Result<Family, String> {
+    module.check(settings)?;
+    let collector = match module.collector(settings) {
+        Ok(collector) => collector,
+        Err(why) => Box::new(Unported::new(module.name(), why)),
+    };
+
+    Ok(Family {
+        collector,
+        rules: module.rules(settings),
+    })
 }
 
 pub fn open(config: &Config) -> Result<(Vec<Watch>, Vec<String>), String> {
@@ -109,6 +108,88 @@ mod tests {
             .iter()
             .map(|family| family.collector.name())
             .collect()
+    }
+
+    struct Elsewhere {
+        refuses_its_settings: bool,
+    }
+
+    impl Module for Elsewhere {
+        fn name(&self) -> &'static str {
+            "elsewhere"
+        }
+        fn subject(&self) -> &'static str {
+            "a subject read on another system"
+        }
+        fn every_seconds(&self) -> u32 {
+            60
+        }
+        fn check(&self, _settings: &Settings) -> Result<(), String> {
+            match self.refuses_its_settings {
+                true => Err("schedule: yesterday is not a period".into()),
+                false => Ok(()),
+            }
+        }
+        fn collector(&self, _settings: &Settings) -> Result<Box<dyn Collector>, String> {
+            Err("it is read from a file this system does not have".into())
+        }
+        fn rules(&self, _settings: &Settings) -> RuleSet {
+            RuleSet::of(Vec::new())
+        }
+        fn families(&self) -> &[&'static str] {
+            &[]
+        }
+    }
+
+    fn noon() -> String {
+        "2026-09-19T12:00:00.000Z".into()
+    }
+
+    #[test]
+    fn a_module_that_cannot_read_this_system_starts_the_daemon_as_a_collector_that_says_why() {
+        let module = Elsewhere {
+            refuses_its_settings: false,
+        };
+
+        let family = super::family(&module, &Settings::plain(noon)).expect("the daemon starts");
+
+        assert_eq!(family.collector.name(), "elsewhere");
+        match family.collector.available() {
+            Health::Unavailable(why) => assert!(
+                why.contains("a file this system does not have"),
+                "the reason is the module's own: {why}"
+            ),
+            other => panic!(
+                "a subject nothing here can read is unavailable, and a daemon that stopped \
+                 for it would watch none of the others: {other:?}"
+            ),
+        }
+    }
+
+    #[test]
+    fn settings_the_module_refuses_still_stop_the_daemon_on_every_system() {
+        let module = Elsewhere {
+            refuses_its_settings: true,
+        };
+
+        let refused = super::family(&module, &Settings::plain(noon))
+            .err()
+            .expect("a file the operator got wrong is not a subject this system lacks");
+
+        assert!(refused.contains("yesterday"), "{refused}");
+    }
+
+    #[test]
+    fn every_module_this_build_has_is_asked_for_its_collector_on_this_system() {
+        let families = families(&Config::default()).expect("the default starts on every system");
+
+        assert_eq!(
+            families
+                .iter()
+                .map(|family| family.collector.name())
+                .collect::<Vec<_>>(),
+            crate::modules::names()
+        );
     }
 
     #[test]

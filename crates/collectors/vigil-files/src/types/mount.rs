@@ -28,6 +28,7 @@ const NEVER_WALKED: &[&str] = &[
     "nsfs",
     "efivarfs",
     "selinuxfs",
+    "devfs",
 ];
 
 impl Mount {
@@ -76,6 +77,16 @@ mod tests {
             "proc", "sysfs", "cgroup2", "devpts", "nsfs", "bpf", "tracefs",
         ] {
             assert!(mounted("/x", filesystem, "none").pseudo(), "{filesystem}");
+        }
+        for filesystem in ["devfs", "autofs"] {
+            assert!(
+                mounted("/dev", filesystem, "devfs").pseudo(),
+                "{filesystem} is the kernel of macOS or a promise to mount something later, and \
+                 walking it reads devices or wakes a network share"
+            );
+        }
+        for filesystem in ["apfs", "hfs", "nullfs"] {
+            assert!(!mounted("/x", filesystem, "none").pseudo(), "{filesystem}");
         }
         for filesystem in ["ext4", "xfs", "tmpfs", "overlay", "nfs4", "btrfs"] {
             assert!(!mounted("/x", filesystem, "none").pseudo(), "{filesystem}");

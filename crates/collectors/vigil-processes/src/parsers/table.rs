@@ -3,6 +3,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde_json::json;
 use vigil_model::Snapshot;
 
+use crate::types::{LINUX, Platform};
+
 pub const SOURCE: &str = "processes";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -25,6 +27,14 @@ pub struct ProcessesReading<'a> {
 pub const UNRESOLVED: &str = "processes|unresolved";
 
 pub fn processes_snapshot(taken_at: &str, reading: &ProcessesReading<'_>) -> Snapshot {
+    processes_snapshot_on(taken_at, reading, &LINUX)
+}
+
+pub fn processes_snapshot_on(
+    taken_at: &str,
+    reading: &ProcessesReading<'_>,
+    platform: &Platform,
+) -> Snapshot {
     let mut snapshot = Snapshot::new(SOURCE, taken_at.to_string());
 
     let by_pid: BTreeMap<u32, &ProcessRow> = reading
@@ -69,7 +79,7 @@ pub fn processes_snapshot(taken_at: &str, reading: &ProcessesReading<'_>) -> Sna
                 "cmdline": program.command_line,
                 "cmdline_varies": program.command_line_varies,
                 "cmdline_redacted": program.command_line_redacted,
-                "writable_path": is_writable_path(&executable),
+                "writable_path": platform.writable(&executable),
                 "exe_resolved": true,
             }),
         );
@@ -80,7 +90,7 @@ pub fn processes_snapshot(taken_at: &str, reading: &ProcessesReading<'_>) -> Sna
             UNRESOLVED.to_string(),
             json!({
                 "exe_resolved": false,
-                "reason": "some executables could not be read: those programs are not in this reading (needs CAP_SYS_PTRACE, or root without a restricted capability set)",
+                "reason": platform.unresolved_reason,
             }),
         );
     }
@@ -89,14 +99,6 @@ pub fn processes_snapshot(taken_at: &str, reading: &ProcessesReading<'_>) -> Sna
 }
 
 const PARENT_LIMIT: usize = 16;
-
-const WRITABLE_PATHS: &[&str] = &["/tmp/", "/var/tmp/", "/dev/shm/", "/home/", "/run/user/"];
-
-fn is_writable_path(executable: &str) -> bool {
-    WRITABLE_PATHS
-        .iter()
-        .any(|writable| executable.starts_with(writable))
-}
 
 #[derive(Default)]
 struct Program {
@@ -256,6 +258,59 @@ mod tests {
         assert!(
             !snapshot.items.keys().any(|key| key.starts_with("exec|")),
             "the marker must not look like a program"
+        );
+    }
+
+    #[test]
+    fn a_reading_of_macos_marks_its_own_writable_directories_and_says_its_own_reason() {
+        let users = users();
+        let snapshot = processes_snapshot_on(
+            "2026-09-19T12:00:00.000Z",
+            &ProcessesReading {
+                processes: &[process(9001, 1, 0, "/private/tmp/.x/nc", "nc -l 4444")],
+                users: &users,
+                any_unresolved: true,
+            },
+            &crate::types::MACOS,
+        );
+
+        assert_eq!(
+            snapshot.items["exec|/private/tmp/.x/nc|root"]["writable_path"],
+            json!(true)
+        );
+        assert!(
+            snapshot.items[UNRESOLVED]["reason"]
+                .as_str()
+                .is_some_and(|reason| reason.contains("run as root"))
+        );
+    }
+
+    #[test]
+    fn a_linux_reading_is_built_as_it_was_before_macos_was_added() {
+        let users = users();
+        let snapshot = processes_snapshot(
+            "2026-09-09T12:00:00.000Z",
+            &ProcessesReading {
+                processes: &[
+                    process(9001, 1, 0, "/private/tmp/nc", "nc"),
+                    process(9002, 1, 0, "/dev/shm/x", "x"),
+                ],
+                users: &users,
+                any_unresolved: true,
+            },
+        );
+
+        assert_eq!(
+            snapshot.items["exec|/private/tmp/nc|root"]["writable_path"],
+            json!(false)
+        );
+        assert_eq!(
+            snapshot.items["exec|/dev/shm/x|root"]["writable_path"],
+            json!(true)
+        );
+        assert_eq!(
+            snapshot.items[UNRESOLVED]["reason"],
+            "some executables could not be read: those programs are not in this reading (needs CAP_SYS_PTRACE, or root without a restricted capability set)"
         );
     }
 }

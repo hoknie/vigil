@@ -21,7 +21,7 @@ pub struct Journal {
 impl Journal {
     pub fn open(path: PathBuf) -> Result<(Self, Replay), StoreError> {
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent).map_err(|error| StoreError::Io(error.to_string()))?;
+            super::private::create_owner_only_directory(parent)?;
         }
 
         let replay = Self::replay(&path)?;

@@ -40,10 +40,26 @@ half a dump:
 It decides nothing else. Projection, stabilisation and the hiding of secrets are in
 `vigil-engines`, where a fixture pins them.
 
+## macOS
+
+The launchd job `vigil.containers` runs it as root every 120 seconds, writing to
+`/usr/local/var/lib/vigil/containers`. The clients are found at the paths a Mac has them
+(`vigil-engines` lists them), and there is one rule of its own: **a client is run as the
+account that owns its file.** Docker Desktop is dragged into `/Applications` by a person and
+belongs to them, and so does Homebrew's `/opt/homebrew`; run as root, the client they can
+replace would hand them root the next time the job ran. So before a client runs, every
+directory from `/` to it is checked: each must belong to root or to the owner of the client,
+and none may be writable by any account, nor by a group other than `wheel` and `admin` (whose
+members may become root already). A client that passes runs with that owner's uid, gid and
+`HOME`; one that does not is not run, and every subject is written down as `failed` with the
+reason. The document names the account in `account`. Started by hand by an account that is not
+root, every client runs as that account.
+
 ## Dependencies
 
 `vigil-engines` for the vocabulary the writer and the reader share — the engines, the command
-list, the document — and `serde_json`. No socket, no configuration, no findings.
+list, the document — `serde_json`, and `libc` on macOS for the account a client belongs to.
+No socket, no configuration, no findings.
 
 ## Context
 

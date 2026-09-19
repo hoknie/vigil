@@ -2,7 +2,17 @@ use serde_json::Value;
 
 pub struct ProcessView<'a>(&'a Value);
 
-const WRITABLE_PATHS: &[&str] = &["/tmp/", "/var/tmp/", "/dev/shm/", "/home/", "/run/user/"];
+const WRITABLE_PATHS: &[&str] = &[
+    "/tmp/",
+    "/var/tmp/",
+    "/dev/shm/",
+    "/home/",
+    "/run/user/",
+    "/private/tmp/",
+    "/private/var/tmp/",
+    "/private/var/folders/",
+    "/Users/",
+];
 
 const EXECUTES_WHAT_ARRIVES: &[&str] = &[
     "nginx",

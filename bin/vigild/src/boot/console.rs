@@ -1,7 +1,7 @@
 use crate::Config;
 use crate::helpers::rfc3339;
 use crate::socket::{self, Shared};
-use crate::types::Schedule;
+use crate::types::{Schedule, System};
 
 pub fn listen(config: &Config, schedule: &Schedule, shared: &Shared) -> Result<(), String> {
     socket::listen(&config.socket_path, shared.clone(), rfc3339::now)?;
@@ -9,6 +9,9 @@ pub fn listen(config: &Config, schedule: &Schedule, shared: &Shared) -> Result<(
     eprintln!("  console: {}", killing(config));
     eprintln!("  console: {}", accounts(config));
     eprintln!("  console: {}", units(config));
+    for said in refused_on(config, System::of(std::env::consts::OS)) {
+        eprintln!("  console: {said}");
+    }
 
     eprintln!(
         "  history: {}, kept {} days",
@@ -19,6 +22,25 @@ pub fn listen(config: &Config, schedule: &Schedule, shared: &Shared) -> Result<(
     }
 
     Ok(())
+}
+
+fn refused_on(config: &Config, system: System) -> Vec<String> {
+    let mut said = Vec::new();
+    if config.accounts.from_the_console
+        && let Err(why) = system.changes_accounts()
+    {
+        said.push(format!(
+            "accounts.from_the_console is on, and refused here: {why}"
+        ));
+    }
+    if config.units.from_the_console
+        && let Err(why) = system.controls_units()
+    {
+        said.push(format!(
+            "units.from_the_console is on, and a unit is refused here: {why}"
+        ));
+    }
+    said
 }
 
 fn killing(config: &Config) -> &'static str {
@@ -56,6 +78,27 @@ fn accounts(config: &Config) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_mac_where_accounts_and_units_are_switched_on_is_told_at_start_up_that_both_are_refused() {
+        let armed = Config {
+            accounts: crate::config::Accounts {
+                from_the_console: true,
+            },
+            units: crate::config::Units {
+                from_the_console: true,
+            },
+            ..Config::default()
+        };
+
+        let said = refused_on(&armed, System::Macos);
+
+        assert_eq!(said.len(), 2, "{said:?}");
+        assert!(said[0].contains("Directory Services"), "{said:?}");
+        assert!(said[1].contains("launchd"), "{said:?}");
+        assert!(refused_on(&armed, System::Linux).is_empty());
+        assert!(refused_on(&Config::default(), System::Macos).is_empty());
+    }
 
     #[test]
     fn whether_the_console_may_change_accounts_is_said_at_start_up_either_way() {
