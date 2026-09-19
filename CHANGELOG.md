@@ -17,6 +17,9 @@ Format:
 - `just coverage`, `just coverage-html`, `just docker-coverage`
 
 ### Changed
+- installing the package starts vigild, the firewall and engine readings and, where auditd runs,
+  loads its rule
+- `vigild collector … enable` waits for the first reading of the job it just started
 - a collector with no reader for this system starts the daemon as unavailable instead of stopping it
 - on macOS the console refuses account changes and launchd jobs, with the reason
 - the GitHub workflow caches cargo builds and runs on `main` and pull requests; Dependabot added

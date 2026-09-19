@@ -77,7 +77,17 @@ impl Manager {
 
     pub fn enabling(self, unit: &str, loaded: bool) -> Vec<Vec<String>> {
         match self {
-            Manager::Systemd => vec![Manager::words(&["enable", "--now", unit])],
+            Manager::Systemd => {
+                let mut steps = vec![Manager::words(&["enable", "--now", unit])];
+                if let Some(service) = unit.strip_suffix(".timer") {
+                    steps.push(Manager::words(&[
+                        "start",
+                        "--no-block",
+                        &format!("{service}.service"),
+                    ]));
+                }
+                steps
+            }
             Manager::Launchd => {
                 let mut steps = vec![Manager::words(&["enable", &self.target(unit)])];
                 if !loaded {
@@ -172,7 +182,17 @@ mod tests {
     fn on_linux_a_reading_is_switched_with_one_systemctl_word_that_also_starts_or_stops_it() {
         assert_eq!(
             Manager::Systemd.enabling("vigil-firewall.timer", false),
-            vec![words(&["enable", "--now", "vigil-firewall.timer"])]
+            vec![
+                words(&["enable", "--now", "vigil-firewall.timer"]),
+                words(&["start", "--no-block", "vigil-firewall.service"]),
+            ],
+            "a timer that waits OnBootSec on a host booted a minute ago leaves the first reading \
+             half a minute away, and the command that switched it on refused it as unreadable"
+        );
+        assert_eq!(
+            Manager::Systemd.enabling("vigil-launches.service", false),
+            vec![words(&["enable", "--now", "vigil-launches.service"])],
+            "a service is started by enable --now already"
         );
         assert_eq!(
             Manager::Systemd.disabling("vigil-firewall.timer", true),

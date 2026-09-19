@@ -4,6 +4,7 @@ use super::apart::{collectors_at, switch};
 use super::edit::{self, Edit};
 use super::host::{self, Standing};
 use super::manager::Manager;
+use super::waiting::{FIRST_READING, LOOK_AGAIN, first_reading};
 use crate::wizard::{DEFAULT_PATH, Surveyed, take};
 use crate::{Config, config};
 
@@ -30,11 +31,16 @@ pub fn enable(options: &Options) -> Result<String, String> {
     let text = read(&options.path)?;
     let apart = collectors_at(options, &text)?;
 
+    let mut started = false;
     if let Some(unit) = crate::modules::unit_of(name) {
         said.push(start(unit, options.dry_run)?);
+        started = !options.dry_run;
     }
 
-    let standing = surveyed(name)?;
+    let standing = match started {
+        true => first_reading(|| surveyed(name), FIRST_READING, LOOK_AGAIN)?,
+        false => surveyed(name)?,
+    };
     if let Health::Unavailable(why) = &standing.health {
         return Err(format!(
             "{name} cannot read anything on this host, so nothing was written to {}.\n  {why}",

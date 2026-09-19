@@ -208,7 +208,11 @@ mod tests {
         assert!(said.starts_with(program(Manager::here())), "{said}");
         match Manager::here() {
             Manager::Systemd => {
-                assert_eq!(said, "/usr/bin/systemctl enable --now vigil-firewall.timer")
+                assert_eq!(
+                    said,
+                    "/usr/bin/systemctl enable --now vigil-firewall.timer; /usr/bin/systemctl \
+                     start --no-block vigil-firewall.service"
+                )
             }
             Manager::Launchd => assert_eq!(
                 said,

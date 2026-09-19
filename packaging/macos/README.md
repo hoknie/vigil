@@ -43,10 +43,17 @@ file you never changed is brought to the new defaults.
 
 ## After installing
 
+Nothing has to be typed: the package starts `vigild`, and the firewall and container-engine
+readings with it. Open the console with:
+
+    sudo vigil ui
+
+The shipped configuration watches everything this Mac can be read for. To see what fits it and
+write that instead:
+
     vigild configure --dry-run          what this Mac can be watched with, and the files for it
     sudo vigild configure --force       write them; what was there is kept as .previous
     sudo launchctl kickstart -k system/vigil.vigild
-    sudo vigil ui
 
 The daemon reads the files of every account only with **Full Disk Access**: add
 `/usr/local/sbin/vigild` under System Settings → Privacy & Security → Full Disk Access. Without
