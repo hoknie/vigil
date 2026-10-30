@@ -11,6 +11,8 @@ fn removing_a_finding_writes_it_into_the_configuration_and_takes_it_off_the_scre
     shift(&mut app, KeyCode::Down);
 
     press(&mut app, KeyCode::Char('d'));
+
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "the staging api, expected here");
 
     let page = drawn_at(&app, 200, 30);
@@ -42,6 +44,8 @@ fn silencing_one_row_takes_every_row_about_the_same_object_off_the_screen() {
     assert!(before.contains("A listening port closed"), "{before}");
 
     press(&mut app, KeyCode::Char('d'));
+
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "ours");
 
     let page = drawn_at(&app, 200, 30);
@@ -63,6 +67,7 @@ fn silencing_one_row_takes_every_row_about_the_same_object_off_the_screen() {
 fn a_finding_raised_about_a_silenced_object_before_the_daemon_restarts_is_not_drawn_either() {
     let (mut app, _path) = over_a_configuration();
     press(&mut app, KeyCode::Char('d'));
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "ours");
 
     let mut again = crate::ui::fixture::finding("It happened once more", Severity::High);
@@ -84,6 +89,8 @@ fn the_object_is_written_down_once_however_many_rows_of_it_were_picked() {
     press(&mut app, KeyCode::Char('a'));
 
     press(&mut app, KeyCode::Char('d'));
+
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "ours");
 
     assert_eq!(
@@ -98,6 +105,8 @@ fn nothing_is_written_until_a_reason_is_given_and_escape_writes_nothing_at_all()
     let (mut app, path) = over_a_configuration();
 
     press(&mut app, KeyCode::Char('d'));
+
+    press(&mut app, KeyCode::Char('o'));
     let page = drawn_at(&app, 200, 30);
     assert!(page.contains("why is"), "{page}");
     assert!(page.contains("Esc leaves it"), "{page}");
@@ -116,6 +125,7 @@ fn nothing_is_written_until_a_reason_is_given_and_escape_writes_nothing_at_all()
 fn a_reason_nobody_typed_is_refused_and_the_question_stays_open() {
     let (mut app, path) = over_a_configuration();
     press(&mut app, KeyCode::Char('d'));
+    press(&mut app, KeyCode::Char('o'));
 
     press(&mut app, KeyCode::Enter);
 
@@ -132,6 +142,8 @@ fn a_configuration_this_console_cannot_write_takes_nothing_off_the_screen_and_sa
     let mut app = on_the_findings();
 
     press(&mut app, KeyCode::Char('d'));
+
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "ours");
 
     let page = drawn_at(&app, 200, 30);
@@ -147,13 +159,17 @@ fn a_configuration_this_console_cannot_write_takes_nothing_off_the_screen_and_sa
 fn an_object_already_written_down_is_not_written_down_twice_and_the_line_says_so() {
     let (mut app, path) = over_a_configuration();
     press(&mut app, KeyCode::Char('d'));
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "ours");
     press(&mut app, KeyCode::Char('u'));
 
     press(&mut app, KeyCode::Char('d'));
+
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "ours again");
     press(&mut app, KeyCode::Char('u'));
     press(&mut app, KeyCode::Char('d'));
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "and again");
 
     assert_eq!(
@@ -170,6 +186,7 @@ fn an_object_somebody_silenced_already_is_taken_off_the_screen_without_claiming_
     let mut app = watching(&path);
     into(&mut app, Screen::FINDINGS, 200, 30);
     press(&mut app, KeyCode::Char('d'));
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "ours");
     assert_eq!(silenced(&path).len(), 1);
 
@@ -180,6 +197,8 @@ fn an_object_somebody_silenced_already_is_taken_off_the_screen_without_claiming_
     app.settle();
 
     press(&mut app, KeyCode::Char('d'));
+
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "ours");
 
     let page = drawn_at(&app, 200, 30);
@@ -195,6 +214,7 @@ fn an_object_somebody_silenced_already_is_taken_off_the_screen_without_claiming_
 fn bringing_it_back_takes_the_entry_out_of_the_configuration_as_well_as_back_on_the_screen() {
     let (mut app, path) = over_a_configuration();
     press(&mut app, KeyCode::Char('d'));
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "ours");
     assert_eq!(silenced(&path).len(), 1);
 
@@ -207,4 +227,114 @@ fn bringing_it_back_takes_the_entry_out_of_the_configuration_as_well_as_back_on_
         super::harness::SHIPPED,
         "what the console wrote, the console takes out, and the file is the one it started as"
     );
+}
+
+fn of_the_same_program(app: &mut crate::ui::app::App) {
+    let mut another_port = crate::ui::fixture::finding("Another port of it", Severity::High);
+    another_port.finding_key = "port.listen|tcp|0.0.0.0:5555".into();
+    let mut closed = crate::ui::fixture::finding("It closed one", Severity::Low);
+    closed.finding_key = "port.listen|tcp|0.0.0.0:6666".into();
+    closed.kind = vigil_model::Kind::from("port.listen.removed".to_string());
+    closed.before = closed.after.take();
+    app.view.found.findings.push(another_port);
+    app.view.found.findings.push(closed);
+    app.settle();
+}
+
+#[test]
+fn a_kind_from_a_program_is_written_with_its_full_path_and_takes_only_that_kind_off_the_screen() {
+    let (mut app, path) = over_a_configuration();
+    of_the_same_program(&mut app);
+
+    press(&mut app, KeyCode::Char('d'));
+    press(&mut app, KeyCode::Char('k'));
+    because(&mut app, "the tunnel moves its ports");
+
+    assert_eq!(
+        silenced(&path),
+        vec!["program /tmp/.x/nc (port.listen.new) — the tunnel moves its ports".to_string()]
+    );
+    let page = drawn_at(&app, 200, 30);
+    assert!(!page.contains("Another port of it"), "{page}");
+    assert!(
+        page.contains("It closed one"),
+        "silencing the ports a program opens is not silencing the ones it closes: {page}"
+    );
+    assert!(page.contains("1 entry(ies) written"), "{page}");
+
+    let mut later = crate::ui::fixture::finding("Yet another port of it", Severity::High);
+    later.finding_key = "port.listen|tcp|0.0.0.0:7777".into();
+    app.view.found.findings.push(later);
+    app.settle();
+    let page = drawn_at(&app, 200, 30);
+    assert!(
+        !page.contains("Yet another port of it"),
+        "a port it opens after the entry was written is covered by the same entry: {page}"
+    );
+}
+
+#[test]
+fn everything_from_a_program_is_one_entry_naming_the_program_alone() {
+    let (mut app, path) = over_a_configuration();
+    of_the_same_program(&mut app);
+
+    press(&mut app, KeyCode::Char('d'));
+    press(&mut app, KeyCode::Char('p'));
+    because(&mut app, "ours");
+
+    assert_eq!(
+        silenced(&path),
+        vec!["program /tmp/.x/nc — ours".to_string()]
+    );
+    let page = drawn_at(&app, 200, 30);
+    assert!(!page.contains("It closed one"), "{page}");
+    assert!(!page.contains("Another port of it"), "{page}");
+}
+
+#[test]
+fn leaving_the_band_of_ways_to_silence_writes_nothing_and_asks_nothing() {
+    let (mut app, path) = over_a_configuration();
+
+    press(&mut app, KeyCode::Char('d'));
+    press(&mut app, KeyCode::Esc);
+
+    assert!(silenced(&path).is_empty());
+    assert!(app.asking().is_none());
+    assert!(drawn_at(&app, 200, 30).contains("A new listening port"));
+}
+
+#[test]
+fn a_finding_with_no_program_is_asked_about_as_an_object_with_no_band_first() {
+    let (mut app, path) = over_a_configuration();
+    for finding in app.view.found.findings.iter_mut() {
+        finding.after = None;
+    }
+    app.settle();
+
+    press(&mut app, KeyCode::Char('d'));
+
+    assert!(
+        app.asking().is_some(),
+        "a finding that names no program has one thing to silence, and a band offering one \
+         way is a key pressed for nothing"
+    );
+    because(&mut app, "ours");
+    assert_eq!(silenced(&path).len(), 1);
+    assert!(silenced(&path)[0].starts_with("port.listen|tcp|0.0.0.0:4444"));
+}
+
+#[test]
+fn bringing_back_a_program_takes_its_entry_out_and_puts_its_rows_back() {
+    let (mut app, path) = over_a_configuration();
+    of_the_same_program(&mut app);
+    press(&mut app, KeyCode::Char('d'));
+    press(&mut app, KeyCode::Char('p'));
+    because(&mut app, "ours");
+
+    press(&mut app, KeyCode::Char('u'));
+
+    assert!(silenced(&path).is_empty(), "{:?}", silenced(&path));
+    let page = drawn_at(&app, 200, 30);
+    assert!(page.contains("It closed one"), "{page}");
+    assert!(page.contains("no longer silenced"), "{page}");
 }

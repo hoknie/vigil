@@ -145,7 +145,7 @@ fn a_prefix_and_an_exact_key_are_two_different_entries_and_neither_hides_the_oth
     let both = changed(add(
         &exact,
         &[Entry {
-            prefix: true,
+            naming: crate::Naming::Prefix,
             ..entry("port.listen|tcp|10.0.0.5:")
         }],
     ));

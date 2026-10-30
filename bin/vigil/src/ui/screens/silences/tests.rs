@@ -166,3 +166,32 @@ fn nothing_runs_off_the_side_at_any_of_the_widths_this_is_read_at() {
         }
     }
 }
+
+#[test]
+fn an_entry_naming_a_program_is_drawn_with_the_program_at_eighty_columns_without_colour() {
+    let silences = Silences::read(Ok(vec![Source {
+        path: PathBuf::from("/etc/vigil/suppressions/console.yaml"),
+        suppressions: vec![Suppression {
+            program: Some("/usr/bin/netbird".into()),
+            kind: Some("port.listen.new".into()),
+            reason: "vpn mesh".into(),
+            ..Suppression::default()
+        }],
+    }]));
+    let running = vec!["program /usr/bin/netbird (port.listen.new) — vpn mesh".to_string()];
+
+    let wide = drawn(&silences, Some(&running), 200);
+    let narrow = drawn(&silences, Some(&running), 80);
+
+    for said in [
+        "program /usr/bin/netbird",
+        "port.listen.new",
+        "vpn mesh",
+        "in force",
+    ] {
+        assert!(wide.contains(said), "{said} is missing: {wide}");
+    }
+    for said in ["program /usr/bin/netb", "vpn mesh", "in force"] {
+        assert!(narrow.contains(said), "{said} is missing: {narrow}");
+    }
+}

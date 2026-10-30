@@ -1,6 +1,8 @@
 use std::path::{Path, PathBuf};
 
-use vigil_config::{Edit, Entry, Installation, Source, Suppression, apart, silenced, write};
+use vigil_config::{
+    Edit, Entry, Installation, Naming, Source, Suppression, apart, silenced, write,
+};
 
 use super::done::Done;
 use super::options::Options;
@@ -29,8 +31,8 @@ pub fn add(options: &Options) -> Result<Done, String> {
                 entries
                     .iter()
                     .map(|entry| match &entry.kind {
-                        Some(kind) => format!("{} ({kind})", entry.key),
-                        None => entry.key.clone(),
+                        Some(kind) => format!("{} ({kind})", entry.object()),
+                        None => entry.object(),
                     })
                     .collect::<Vec<String>>()
                     .join(", "),
@@ -58,7 +60,7 @@ pub fn add(options: &Options) -> Result<Done, String> {
         Edit::Changed { text: after, .. } => {
             let mut said = vec![put(&target, configuration, &after, options.dry_run)?];
             for entry in &fresh {
-                said.push(format!("{}: {}", entry.named(), entry.key));
+                said.push(written_as(entry));
             }
             said.push(restart_note());
             Ok(Done {
@@ -71,6 +73,11 @@ pub fn add(options: &Options) -> Result<Done, String> {
 }
 
 pub fn remove(options: &Options) -> Result<Done, String> {
+    if options.keys.is_empty() && options.program.is_none() && options.pattern.is_none() {
+        return Err(
+            "name an object, --program or --match; as asked it takes nothing out".to_string(),
+        );
+    }
     let text = read(&options.path)?;
     let configuration = Path::new(&options.path);
     let held = vigil_config::sources(configuration, &text)?;
@@ -81,7 +88,16 @@ pub fn remove(options: &Options) -> Result<Done, String> {
             true => text.clone(),
             false => read_or_nothing(&source.path)?,
         };
-        match vigil_config::remove(&before, &options.keys) {
+        let edit = match (&options.program, &options.pattern) {
+            (None, None) => vigil_config::remove(&before, &options.keys),
+            (program, pattern) => vigil_config::remove_written(
+                &before,
+                &options.keys,
+                program.as_deref(),
+                pattern.as_deref(),
+            ),
+        };
+        match edit {
             Edit::NotOurs(why) => return Err(format!("{}: {why}", source.path.display())),
             Edit::AlreadySo => {}
             Edit::Changed {
@@ -102,7 +118,7 @@ pub fn remove(options: &Options) -> Result<Done, String> {
                 format!(
                     "nothing in {} is written down for {}, so no file was touched",
                     places(&held),
-                    options.keys.join(", ")
+                    asked_for(options)
                 ),
                 match named.is_empty() {
                     true => "they silence nothing at all".to_string(),
@@ -122,7 +138,7 @@ pub fn remove(options: &Options) -> Result<Done, String> {
     }
     said.push(format!(
         "{taken} entry(ies) taken out, and {} is reported again",
-        options.keys.join(", ")
+        asked_for(options)
     ));
     said.push(restart_note());
     Ok(Done {
@@ -278,42 +294,107 @@ fn asked(options: &Options) -> Result<Vec<Entry>, String> {
         Some(written) => Some(moment(written)?),
     };
 
+    let template = Entry {
+        program: options.program.clone(),
+        kind,
+        until,
+        reason: options.reason.trim().to_string(),
+        ..Entry::default()
+    };
+
     let mut entries: Vec<Entry> = Vec::new();
-    for key in &options.keys {
-        let entry = Entry {
-            key: key.clone(),
-            prefix: options.prefix,
-            kind: kind.clone(),
-            until: until.clone(),
-            reason: options.reason.trim().to_string(),
-        };
-        if !entries.contains(&entry) {
-            entries.push(entry);
+    match (&options.pattern, options.keys.is_empty()) {
+        (Some(_), false) => {
+            return Err(
+                "an object is named either by its keys or by --match, not both".to_string(),
+            );
+        }
+        (Some(_), true) if options.prefix => {
+            return Err("--match already covers what --prefix would; keep one".to_string());
+        }
+        (Some(pattern), true) => entries.push(Entry {
+            key: pattern.clone(),
+            naming: Naming::Pattern,
+            ..template
+        }),
+        (None, true) if template.program.is_some() || template.kind.is_some() => {
+            entries.push(Entry {
+                naming: Naming::Nothing,
+                ..template
+            })
+        }
+        (None, true) => {
+            return Err(
+                "name an object, --program, --match or --kind; as asked it silences nothing"
+                    .to_string(),
+            );
+        }
+        (None, false) => {
+            for key in &options.keys {
+                let entry = Entry {
+                    key: key.clone(),
+                    naming: match options.prefix {
+                        true => Naming::Prefix,
+                        false => Naming::Exact,
+                    },
+                    ..template.clone()
+                };
+                if !entries.contains(&entry) {
+                    entries.push(entry);
+                }
+            }
         }
     }
 
     for entry in &entries {
         as_written(entry)
             .validate()
-            .map_err(|why| format!("{}: {why}", entry.key))?;
+            .map_err(|why| format!("{}: {why}", entry.object()))?;
     }
     Ok(entries)
 }
 
 fn as_written(entry: &Entry) -> Suppression {
+    let key = |naming: Naming| (entry.naming == naming).then(|| entry.key.clone());
     Suppression {
-        finding_key: match entry.prefix {
-            true => None,
-            false => Some(entry.key.clone()),
-        },
-        finding_key_prefix: match entry.prefix {
-            true => Some(entry.key.clone()),
-            false => None,
-        },
+        finding_key: key(Naming::Exact),
+        finding_key_prefix: key(Naming::Prefix),
+        finding_key_match: key(Naming::Pattern),
+        program: entry.program.clone(),
         kind: entry.kind.clone(),
         reason: entry.reason.clone(),
         until: entry.until.clone(),
     }
+}
+
+fn written_as(entry: &Entry) -> String {
+    let mut said = match entry.naming.field() {
+        Some(field) => format!("{field}: {}", entry.key),
+        None => String::new(),
+    };
+    if let Some(program) = &entry.program {
+        if !said.is_empty() {
+            said.push_str(", ");
+        }
+        said.push_str(&format!("program: {program}"));
+    }
+    if said.is_empty()
+        && let Some(kind) = &entry.kind
+    {
+        said.push_str(&format!("kind: {kind}"));
+    }
+    said
+}
+
+fn asked_for(options: &Options) -> String {
+    let mut named: Vec<String> = options.keys.clone();
+    if let Some(pattern) = &options.pattern {
+        named.push(pattern.clone());
+    }
+    if let Some(program) = &options.program {
+        named.push(format!("program {program}"));
+    }
+    named.join(", ")
 }
 
 fn put(file: &Path, configuration: &Path, after: &str, dry_run: bool) -> Result<String, String> {

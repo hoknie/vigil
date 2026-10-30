@@ -16,10 +16,10 @@ reporters: []
 pub(super) fn entry(key: &str) -> Entry {
     Entry {
         key: key.into(),
-        prefix: false,
         kind: None,
         until: None,
         reason: "the staging api, expected here".into(),
+        ..Entry::default()
     }
 }
 

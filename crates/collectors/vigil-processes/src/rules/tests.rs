@@ -86,3 +86,32 @@ fn the_row_saying_some_executables_could_not_be_read_reaches_no_rule_at_all() {
 
     assert!(processes(&change).is_empty());
 }
+
+#[test]
+fn every_finding_about_a_running_program_names_it_for_a_suppression_to_match() {
+    let changes = [
+        Change::Added {
+            key: "exec|/bin/sh|www-data".into(),
+            after: fixture::program("/bin/sh", "www-data", 33, &["/usr/sbin/php-fpm"]),
+        },
+        Change::Added {
+            key: "exec|/usr/bin/tcpdump|root".into(),
+            after: fixture::program("/usr/bin/tcpdump", "root", 0, &[]),
+        },
+        Change::Changed {
+            key: "exec|/usr/sbin/nginx|root".into(),
+            before: fixture::program("/usr/sbin/nginx", "root", 0, &[]),
+            after: fixture::program_with_deleted_binary("/usr/sbin/nginx", "root", 0),
+        },
+    ];
+    let expected = ["/bin/sh", "/usr/bin/tcpdump", "/usr/sbin/nginx"];
+
+    for (change, program) in changes.iter().zip(expected) {
+        let fired =
+            vigil_rules::programs_for(super::set::process_rules(), std::slice::from_ref(change));
+        assert!(!fired.is_empty(), "{change:?} fired nothing");
+        for (kind, named) in fired {
+            assert_eq!(named.as_deref(), Some(program), "{kind}");
+        }
+    }
+}

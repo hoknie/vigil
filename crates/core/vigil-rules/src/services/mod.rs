@@ -4,4 +4,4 @@ mod verdict;
 
 pub use rule_set::RuleSet;
 pub use snapshot_diff::diff;
-pub use verdict::findings_for;
+pub use verdict::{findings_for, programs_for};

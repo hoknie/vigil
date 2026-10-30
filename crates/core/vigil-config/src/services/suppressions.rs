@@ -1,5 +1,5 @@
 use crate::helpers::quoting::unquoted;
-use crate::types::entry::Entry;
+use crate::types::entry::{Entry, Naming};
 use crate::types::suppression::Suppression;
 
 const HEADING: &str = "suppressions:";
@@ -27,8 +27,11 @@ pub fn add(text: &str, entries: &[Entry]) -> Edit {
     let mut wrote = 0;
     for entry in entries {
         let asked = Named {
-            key: entry.key.clone(),
-            prefix: entry.prefix,
+            key: match entry.naming {
+                Naming::Nothing => None,
+                naming => Some((entry.key.clone(), naming)),
+            },
+            program: entry.program.clone(),
             kind: entry.kind.clone(),
         };
         if named.contains(&asked) {
@@ -76,14 +79,42 @@ pub fn remove(text: &str, keys: &[String]) -> Edit {
     })
 }
 
+pub fn remove_written(
+    text: &str,
+    keys: &[String],
+    program: Option<&str>,
+    pattern: Option<&str>,
+) -> Edit {
+    taken_out(text, |item| {
+        let key_fits = match pattern {
+            Some(pattern) => item.key == Some((pattern.to_string(), Naming::Pattern)),
+            None if keys.is_empty() => true,
+            None => item
+                .key
+                .as_ref()
+                .is_some_and(|(key, _)| keys.iter().any(|wanted| wanted == key)),
+        };
+        let program_fits = match program {
+            Some(program) => item.program.as_deref() == Some(program),
+            None => true,
+        };
+        key_fits && program_fits
+    })
+}
+
 pub fn remove_one(text: &str, suppression: &Suppression) -> Edit {
-    let key = match (&suppression.finding_key, &suppression.finding_key_prefix) {
-        (Some(exact), _) => Some((exact.clone(), false)),
-        (_, Some(prefix)) => Some((prefix.clone(), true)),
+    let key = match (
+        &suppression.finding_key,
+        &suppression.finding_key_prefix,
+        &suppression.finding_key_match,
+    ) {
+        (Some(exact), _, _) => Some((exact.clone(), Naming::Exact)),
+        (_, Some(prefix), _) => Some((prefix.clone(), Naming::Prefix)),
+        (_, _, Some(pattern)) => Some((pattern.clone(), Naming::Pattern)),
         _ => None,
     };
     taken_out(text, |item| {
-        item.key == key && item.kind == suppression.kind
+        item.key == key && item.kind == suppression.kind && item.program == suppression.program
     })
 }
 
@@ -137,14 +168,15 @@ enum Shape {
 struct Item {
     start: usize,
     end: usize,
-    key: Option<(String, bool)>,
+    key: Option<(String, Naming)>,
+    program: Option<String>,
     kind: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Named {
-    key: String,
-    prefix: bool,
+    key: Option<(String, Naming)>,
+    program: Option<String>,
     kind: Option<String>,
 }
 
@@ -154,11 +186,13 @@ impl Item {
     }
 
     fn named(&self) -> Option<Named> {
-        let (key, prefix) = self.key.clone()?;
+        if self.key.is_none() && self.program.is_none() && self.kind.is_none() {
+            return None;
+        }
 
         Some(Named {
-            key,
-            prefix,
+            key: self.key.clone(),
+            program: self.program.clone(),
             kind: self.kind.clone(),
         })
     }
@@ -194,6 +228,7 @@ fn items(lines: &[&str], heading: usize) -> Vec<Item> {
                 start: at,
                 end: at + 1,
                 key: keyed(first.trim()),
+                program: programmed(first.trim()),
                 kind: kinded(first.trim()),
             }),
             None => {
@@ -201,6 +236,9 @@ fn items(lines: &[&str], heading: usize) -> Vec<Item> {
                     item.end = at + 1;
                     if item.key.is_none() {
                         item.key = keyed(held);
+                    }
+                    if item.program.is_none() {
+                        item.program = programmed(held);
                     }
                     if item.kind.is_none() {
                         item.kind = kinded(held);
@@ -218,10 +256,20 @@ fn kinded(field: &str) -> Option<String> {
         .map(|value| unquoted(value.trim()))
 }
 
-fn keyed(field: &str) -> Option<(String, bool)> {
-    for (name, prefix) in [("finding_key_prefix:", true), ("finding_key:", false)] {
+fn programmed(field: &str) -> Option<String> {
+    field
+        .strip_prefix("program:")
+        .map(|value| unquoted(value.trim()))
+}
+
+fn keyed(field: &str) -> Option<(String, Naming)> {
+    for (name, naming) in [
+        ("finding_key_prefix:", Naming::Prefix),
+        ("finding_key_match:", Naming::Pattern),
+        ("finding_key:", Naming::Exact),
+    ] {
         if let Some(value) = field.strip_prefix(name) {
-            return Some((unquoted(value.trim()), prefix));
+            return Some((unquoted(value.trim()), naming));
         }
     }
     None

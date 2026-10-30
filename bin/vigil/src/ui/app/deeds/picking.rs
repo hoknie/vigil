@@ -4,7 +4,7 @@ use crate::ui::app::App;
 
 use crate::config;
 use crate::ui::screens::findings;
-use crate::ui::{Asking, Deed, Level, Motion, Offset, Screen};
+use crate::ui::{Asking, Choosing, Deed, Level, Motion, Offset, Screen};
 
 const PICK_HERE: char = 'x';
 
@@ -13,6 +13,12 @@ const PICK_EVERY_ROW: char = 'a';
 const BRING_BACK: char = 'u';
 
 const NOTHING_TAKEN_OFF: &str = "Nothing has been silenced from this console.";
+
+const THIS_OBJECT: char = 'o';
+
+const KIND_FROM_PROGRAM: char = 'k';
+
+const EVERYTHING_FROM_PROGRAM: char = 'p';
 
 impl App {
     pub(in crate::ui::app) fn picked_here(&self) -> bool {
@@ -77,10 +83,48 @@ impl App {
             }
             BRING_BACK => self.bring_back(),
             key => match Deed::of(key) {
+                Some(deed) if self.every_reached_has_a_program() => self.offer_how_to_silence(deed),
                 Some(deed) => self.ask_about(deed),
                 None => false,
             },
         }
+    }
+
+    fn every_reached_has_a_program(&self) -> bool {
+        let reached = self.reached();
+        !reached.is_empty() && reached.iter().all(|finding| finding.program().is_some())
+    }
+
+    fn offer_how_to_silence(&mut self, _deed: Deed) -> bool {
+        let reached = self.reached();
+        let (kind, program) = match reached.as_slice() {
+            [one] => (
+                one.kind.as_str().to_string(),
+                one.program().unwrap_or_default().to_string(),
+            ),
+            _ => ("each kind".to_string(), "its program".to_string()),
+        };
+        self.chooser.open_by_key(
+            Choosing::Silence,
+            vec![
+                (THIS_OBJECT, "this object".to_string()),
+                (KIND_FROM_PROGRAM, format!("{kind} from {program}")),
+                (
+                    EVERYTHING_FROM_PROGRAM,
+                    format!("everything from {program}"),
+                ),
+            ],
+        );
+        true
+    }
+
+    pub(in crate::ui::app) fn chose_how_to_silence(&mut self, at: usize) {
+        let reached = self.reached();
+        self.asking = match at {
+            0 => Asking::about(Deed::Remove, &reached),
+            1 => Asking::about_programs(Deed::Remove, &reached, true),
+            _ => Asking::about_programs(Deed::Remove, &reached, false),
+        };
     }
 
     fn ask_about(&mut self, deed: Deed) -> bool {
@@ -124,6 +168,11 @@ impl App {
             return;
         }
 
+        if !asking.programs().is_empty() {
+            self.silence_programs(&asking);
+            return;
+        }
+
         let asked = config::Options {
             keys: asking.keys().to_vec(),
             reason: asking.reason().to_string(),
@@ -156,13 +205,88 @@ impl App {
         }
     }
 
+    fn silence_programs(&mut self, asking: &Asking) {
+        let mut written = 0;
+        let mut file = None;
+        let mut entries = Vec::new();
+        for (program, kind) in asking.programs() {
+            let asked = config::Options {
+                program: Some(program.clone()),
+                kind: kind.clone(),
+                reason: asking.reason().to_string(),
+                path: self.configuration_path(),
+                ..config::Options::default()
+            };
+            match config::add(&asked) {
+                Err(why) => {
+                    self.message = Some(format!("Nothing was silenced. {why}"));
+                    return;
+                }
+                Ok(done) => {
+                    written += done.entries;
+                    if done.file.is_some() {
+                        file = done.file;
+                    }
+                    entries.push(vigil_config::Suppression {
+                        program: Some(program.clone()),
+                        kind: kind.clone(),
+                        reason: asking.reason().to_string(),
+                        ..vigil_config::Suppression::default()
+                    });
+                }
+            }
+        }
+
+        let written_to = file
+            .as_ref()
+            .map(|file| file.display().to_string())
+            .unwrap_or_else(|| self.configuration_path());
+        if let Some(file) = file {
+            self.dismissed.silence_entries(file, entries);
+        }
+        self.picked.clear();
+        self.message = Some(match written {
+            0 => format!(
+                "{} entry(ies) already silenced in {}",
+                asking.programs().len(),
+                self.configuration_path()
+            ),
+            written => format!(
+                "{written} entry(ies) written \u{b7} {} \u{b7} written to {written_to}",
+                config::NEXT_ROUND
+            ),
+        });
+    }
+
     fn bring_back(&mut self) -> bool {
         if self.dismissed.is_empty() {
             self.message = Some(NOTHING_TAKEN_OFF.to_string());
             return false;
         }
+        for (file, entry) in self.dismissed.entries().to_vec() {
+            let asked = config::Options {
+                path: self.configuration_path(),
+                ..config::Options::default()
+            };
+            if let Err(why) = config::take_out(&asked, &file, &entry) {
+                self.message = Some(format!(
+                    "The rows are back on this screen, and {} still holds the entry: {why}",
+                    file.display()
+                ));
+                self.dismissed.bring_back();
+                return true;
+            }
+        }
         let written = self.dismissed.objects();
-        let count = written.len();
+        let count = written.len() + self.dismissed.entries().len();
+        if written.is_empty() {
+            self.dismissed.bring_back();
+            self.message = Some(format!(
+                "{count} entry(ies) no longer silenced \u{b7} {}",
+                config::NEXT_ROUND
+            ));
+            return true;
+        }
         let taken_out = config::remove(&config::Options {
             keys: written,
             path: self.configuration_path(),
