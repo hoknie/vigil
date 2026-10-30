@@ -84,7 +84,7 @@ fn complaint(collector: &EnginesCollector, one: &Held) -> Vec<String> {
             "{shown} was written {age} seconds ago, more than the {} this collector allows: \
              what it says about this Mac may have been true and no longer is. {}; a job \
              launchd is not starting is the usual cause (launchctl print system/{JOB})",
-            collector.stale_after_seconds(),
+            one.stale_after_seconds,
             how_it_is_written()
         ));
     }

@@ -17,6 +17,8 @@ pub struct Dump {
     pub engine: String,
     pub state: String,
     pub taken_at: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub previous_taken_at: Option<String>,
     pub written_by: String,
     pub deadline_seconds: u64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -48,6 +50,7 @@ impl Dump {
             engine: engine.to_string(),
             state: ABSENT.to_string(),
             taken_at: taken_at.to_string(),
+            previous_taken_at: None,
             written_by: super::engine::WRITER.to_string(),
             deadline_seconds,
             program: None,
@@ -62,6 +65,7 @@ impl Dump {
             engine: engine.to_string(),
             state: PRESENT.to_string(),
             taken_at: taken_at.to_string(),
+            previous_taken_at: None,
             written_by: super::engine::WRITER.to_string(),
             deadline_seconds,
             program: Some(program.to_string()),
@@ -117,6 +121,27 @@ mod tests {
             missing.state, broken.state,
             "a host with no docker on it and a docker that refused to answer are different \
              facts, and a reader that cannot tell them apart reads silence as safety"
+        );
+    }
+
+    #[test]
+    fn a_dump_of_the_previous_build_without_the_previous_moment_is_still_read() {
+        let written = serde_json::json!({
+            "engine": "docker",
+            "state": "absent",
+            "taken_at": "2026-09-17T09:00:00.000Z",
+            "written_by": "vigil-container-dump",
+            "deadline_seconds": 10,
+            "why": "no docker"
+        });
+
+        let dump: Dump = serde_json::from_value(written).expect("reads");
+
+        assert_eq!(dump.previous_taken_at, None);
+        let again = serde_json::to_value(&dump).expect("plain data");
+        assert!(
+            again.get("previous_taken_at").is_none(),
+            "a document with no previous moment does not grow a null the build before this one never wrote"
         );
     }
 

@@ -1,8 +1,7 @@
 use vigil_model::{Change, Evidence, Finding, KnownKind, Severity};
 
 use super::container_finding::{ContainerFinding, build, finding_key, running};
-use super::docker_socket_exposed::is_a_runtime_socket;
-use crate::types::{ContainerView, Family};
+use crate::types::{ContainerView, Family, is_a_runtime_socket};
 use vigil_rules::{Rule, RuleContext, is_a_path_of_this_host};
 
 pub struct ContainerHostMount;

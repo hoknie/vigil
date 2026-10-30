@@ -73,7 +73,7 @@ fn complaint(collector: &EnginesCollector, one: &Held) -> Vec<String> {
             "{shown} was written {age} seconds ago, more than the {} this collector allows: \
              what it says about this host may have been true and no longer is. \
              {HOW_IT_IS_WRITTEN}; a timer that is not firing is the usual cause",
-            collector.stale_after_seconds()
+            one.stale_after_seconds
         ));
     }
 

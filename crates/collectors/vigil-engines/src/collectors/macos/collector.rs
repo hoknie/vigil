@@ -26,6 +26,7 @@ pub struct Held {
     pub engine: Engine,
     pub dump: Result<Dump, CollectError>,
     pub age_seconds: Option<u64>,
+    pub stale_after_seconds: u64,
     pub registries: Vec<Registry>,
     pub registries_refusal: Option<String>,
 }
@@ -78,12 +79,14 @@ impl EnginesCollector {
             Ok((dump, age)) => (Ok(dump), age),
             Err(refusal) => (Err(refusal), None),
         };
+        let stale_after_seconds = self.watching.stale_after_seconds(dump.as_ref().ok());
         let (registries, registries_refusal) = self.registries_of(engine);
 
         Held {
             engine,
             dump,
             age_seconds,
+            stale_after_seconds,
             registries,
             registries_refusal,
         }
@@ -114,14 +117,15 @@ impl EnginesCollector {
         let dump = crate::parsers::parse_dump(&bytes)
             .map_err(|refusal| CollectError::Unreadable(format!("{shown}: {refusal}")))?;
 
-        Ok((dump, self.age_seconds(&metadata)))
+        let age = self.age_seconds(&metadata, &dump);
+        Ok((dump, age))
     }
 
-    fn age_seconds(&self, metadata: &fs::Metadata) -> Option<u64> {
+    fn age_seconds(&self, metadata: &fs::Metadata, dump: &Dump) -> Option<u64> {
         let written_at = metadata.modified().ok()?;
         let age = SystemTime::now().duration_since(written_at).ok()?.as_secs();
 
-        match age > self.watching.stale_after_seconds() {
+        match age > self.watching.stale_after_seconds(Some(dump)) {
             true => Some(age),
             false => None,
         }
@@ -146,10 +150,6 @@ impl EnginesCollector {
             },
             Engine::Podman => (parse_registries_conf(&text, &shown), None),
         }
-    }
-
-    pub fn stale_after_seconds(&self) -> u64 {
-        self.watching.stale_after_seconds()
     }
 }
 

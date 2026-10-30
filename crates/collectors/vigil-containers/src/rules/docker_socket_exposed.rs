@@ -1,21 +1,8 @@
 use vigil_model::{Change, Evidence, Finding, KnownKind, Severity};
 
 use super::container_finding::{ContainerFinding, build, finding_key, running};
-use crate::types::{ContainerView, Family};
+use crate::types::{ContainerView, Family, is_a_runtime_socket};
 use vigil_rules::{Rule, RuleContext};
-
-const RUNTIME_SOCKETS: &[&str] = &[
-    "/var/run/docker.sock",
-    "/run/docker.sock",
-    "/run/podman/podman.sock",
-    "/var/run/podman/podman.sock",
-    "/run/containerd/containerd.sock",
-    "/var/run/crio/crio.sock",
-];
-
-pub fn is_a_runtime_socket(path: &str) -> bool {
-    RUNTIME_SOCKETS.contains(&path)
-}
 
 pub struct ContainerDockerSocketExposed;
 

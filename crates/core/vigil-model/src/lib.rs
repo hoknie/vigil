@@ -5,7 +5,7 @@ mod protocol;
 mod snapshot;
 
 pub use contract::{Envelope, Producer, SCHEMA_VERSION, SchemaVersion};
-pub use finding::{Evidence, Finding, Kind, KnownKind, Severity, State, Subject};
+pub use finding::{Evidence, Finding, Kind, KnownKind, RESERVED, Severity, State, Subject};
 pub use host::{Host, Os, Peer};
 pub use protocol::{
     AccountChange, AccountObject, AgentBudget, AgentStatus, BufferStatus, ChangeReport, Changed,

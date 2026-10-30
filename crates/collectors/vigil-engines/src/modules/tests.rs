@@ -49,7 +49,7 @@ fn a_finding_of_the_engines_walks_to_the_row_of_the_reading_it_is_about() {
 fn the_period_this_module_reads_at_is_the_period_the_dump_is_written_at() {
     assert_eq!(
         u64::from(Engines.every_seconds()) * 2,
-        crate::types::Watching::default().stale_after_seconds(),
+        crate::types::Watching::default().stale_after_seconds(None),
         "the timer and the collector are two halves of one reading: a collector reading \
          faster than the dump is written finds the same document over and over, and one \
          reading slower leaves the console showing a host as it was two periods ago"

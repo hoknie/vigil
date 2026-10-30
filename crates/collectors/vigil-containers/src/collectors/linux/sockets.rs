@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fs;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 
@@ -8,11 +9,15 @@ const PERMISSION_BITS: u32 = 0o7777;
 
 impl ContainersCollector {
     pub(super) fn runtime_sockets(&self) -> Vec<RuntimeSocket> {
+        let mut seen: HashSet<(u64, u64)> = HashSet::new();
         let mut found: Vec<RuntimeSocket> = self
             .socket_paths
             .iter()
             .filter_map(|path| {
                 let metadata = fs::symlink_metadata(path).ok()?;
+                if !seen.insert((metadata.dev(), metadata.ino())) {
+                    return None;
+                }
                 Some(RuntimeSocket {
                     path: path.display().to_string(),
                     mode: format!("{:04o}", metadata.permissions().mode() & PERMISSION_BITS),

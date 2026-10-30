@@ -199,3 +199,84 @@ fn a_proc_this_agent_cannot_list_is_never_a_host_running_no_containers() {
     assert!(matches!(health, Health::Unavailable(_)), "{health:?}");
     assert!(matches!(collector.collect(), Err(CollectError::Absent(_))));
 }
+
+#[test]
+fn the_reading_reads_every_socket_the_rule_names() {
+    let collector = ContainersCollector::new(|| "2026-09-11T12:00:00.000Z".to_string());
+
+    let read: Vec<String> = collector
+        .socket_paths
+        .iter()
+        .map(|path| path.display().to_string())
+        .collect();
+
+    assert_eq!(
+        read,
+        crate::types::RUNTIME_SOCKETS
+            .iter()
+            .map(|path| path.to_string())
+            .collect::<Vec<_>>(),
+        "a socket the rule calls dangerous and the reading never opens is a silence"
+    );
+}
+
+#[test]
+fn one_socket_reached_by_two_paths_is_one_row_under_run() {
+    let bench = Bench::new("two-paths");
+    fs::create_dir_all(bench.directory.join("run")).expect("a run directory");
+    fs::create_dir_all(bench.directory.join("var")).expect("a var directory");
+    std::os::unix::fs::symlink("../run", bench.directory.join("var/run")).expect("links");
+    fs::write(bench.directory.join("run/docker.sock"), "").expect("writes");
+    let under_run = bench
+        .directory
+        .join("run/docker.sock")
+        .display()
+        .to_string();
+    let under_var_run = bench
+        .directory
+        .join("var/run/docker.sock")
+        .display()
+        .to_string();
+
+    let reading = bench
+        .collector(&[&under_run, &under_var_run])
+        .collect()
+        .expect("reads");
+
+    let sockets: Vec<&String> = reading
+        .items
+        .keys()
+        .filter(|key| key.starts_with("container-socket|"))
+        .collect();
+    assert_eq!(
+        sockets,
+        vec![&format!("container-socket|{under_run}")],
+        "one socket is one row and one finding, however many names the host gives it"
+    );
+}
+
+#[test]
+fn a_podman_socket_under_var_run_is_read() {
+    let bench = Bench::new("podman");
+    fs::create_dir_all(bench.directory.join("var/run/podman")).expect("a podman directory");
+    let at = bench.directory.join("var/run/podman/podman.sock");
+    fs::write(&at, "").expect("writes");
+    fs::set_permissions(&at, std::os::unix::fs::PermissionsExt::from_mode(0o660))
+        .expect("sets the mode");
+    let under_run = bench
+        .directory
+        .join("run/podman/podman.sock")
+        .display()
+        .to_string();
+    let under_var_run = at.display().to_string();
+
+    let reading = bench
+        .collector(&[&under_run, &under_var_run])
+        .collect()
+        .expect("reads");
+
+    assert_eq!(
+        reading.items[&format!("container-socket|{under_var_run}")]["mode"],
+        "0660"
+    );
+}

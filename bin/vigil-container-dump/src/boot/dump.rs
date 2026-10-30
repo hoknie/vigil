@@ -29,8 +29,9 @@ pub fn dump(options: &Options, taken_at: &str) -> Result<Vec<Written>, String> {
 
     let mut written = Vec::new();
     for engine in &options.engines {
-        let dump = asked(*engine, options, taken_at, at);
         let path = at.join(engine.dump_file());
+        let mut dump = asked(*engine, options, taken_at, at);
+        dump.previous_taken_at = previous_moment(&path);
         put(&path, &dump)?;
         written.push(Written { at: path, dump });
     }
@@ -116,6 +117,12 @@ fn found(engine: Engine) -> Option<&'static str> {
         .find(|place| Path::new(place).exists())
 }
 
+fn previous_moment(path: &Path) -> Option<String> {
+    let bytes = fs::read(path).ok()?;
+    let previous: Dump = serde_json::from_slice(&bytes).ok()?;
+    Some(previous.taken_at)
+}
+
 fn put(path: &Path, dump: &Dump) -> Result<(), String> {
     let written = serde_json::to_vec_pretty(dump).map_err(|error| error.to_string())?;
     let temporary = path.with_extension("json.writing");
@@ -137,4 +144,79 @@ fn put(path: &Path, dump: &Dump) -> Result<(), String> {
     }
 
     fs::rename(&temporary, path).map_err(|error| format!("{}: {error}", path.display()))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+    use std::path::PathBuf;
+
+    use super::*;
+
+    fn workspace(named: &str) -> PathBuf {
+        let at = std::env::temp_dir().join(format!(
+            "vigil-container-dump-previous-{}-{named}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&at);
+        at
+    }
+
+    fn options(at: &Path) -> Options {
+        Options {
+            directory: at.display().to_string(),
+            engines: vec![Engine::Docker],
+            ..Options::default()
+        }
+    }
+
+    fn previous_of(written: &[Written]) -> Option<String> {
+        written[0].dump.previous_taken_at.clone()
+    }
+
+    #[test]
+    fn a_first_dump_names_no_previous_moment() {
+        let at = workspace("first");
+
+        let written = dump(&options(&at), "2026-09-17T09:00:00.000Z").expect("writes");
+
+        assert_eq!(previous_of(&written), None);
+        let _ = fs::remove_dir_all(&at);
+    }
+
+    #[test]
+    fn the_second_dump_names_the_moment_of_the_first() {
+        let at = workspace("second");
+        dump(&options(&at), "2026-09-17T09:00:00.000Z").expect("writes");
+
+        let written = dump(&options(&at), "2026-09-17T09:10:00.000Z").expect("writes");
+
+        assert_eq!(
+            previous_of(&written).as_deref(),
+            Some("2026-09-17T09:00:00.000Z"),
+            "the period the agent judges the dump by is the one the dumps show, not one \
+             written down in a second place"
+        );
+        let on_disk: Dump =
+            serde_json::from_slice(&fs::read(at.join("docker.json")).expect("the document"))
+                .expect("parses");
+        assert_eq!(on_disk.previous_taken_at, previous_of(&written));
+        let _ = fs::remove_dir_all(&at);
+    }
+
+    #[test]
+    fn a_torn_previous_dump_is_not_a_previous_moment() {
+        let at = workspace("torn");
+        fs::create_dir_all(&at).expect("a directory");
+        fs::write(
+            at.join("docker.json"),
+            b"{\"engine\":\"docker\",\"taken_at\":\"2026-09",
+        )
+        .expect("tears");
+
+        let written = dump(&options(&at), "2026-09-17T09:10:00.000Z").expect("writes");
+
+        assert_eq!(previous_of(&written), None);
+        let _ = fs::remove_dir_all(&at);
+    }
 }

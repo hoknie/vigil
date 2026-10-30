@@ -1,6 +1,8 @@
 use serde::Deserialize;
 
+use super::dump::Dump;
 use super::engine::Engine;
+use crate::helpers::epoch_seconds;
 
 pub const DUMP_SECONDS: u32 = 120;
 
@@ -91,8 +93,24 @@ impl Watching {
             .collect()
     }
 
-    pub fn stale_after_seconds(&self) -> u64 {
-        u64::from(self.dump_seconds) * 2
+    pub fn period_seconds(&self, dump: Option<&Dump>) -> u64 {
+        dump.and_then(observed_period)
+            .unwrap_or(u64::from(self.dump_seconds))
+    }
+
+    pub fn stale_after_seconds(&self, dump: Option<&Dump>) -> u64 {
+        self.period_seconds(dump) * 2
+    }
+}
+
+fn observed_period(dump: &Dump) -> Option<u64> {
+    let now = epoch_seconds(&dump.taken_at)?;
+    let before = epoch_seconds(dump.previous_taken_at.as_deref()?)?;
+    let period = u64::try_from(now.checked_sub(before)?).ok()?;
+
+    match period {
+        0 => None,
+        period => Some(period.min(u64::from(LONGEST_DUMP_SECONDS))),
     }
 }
 
@@ -120,7 +138,7 @@ mod tests {
 
         assert_eq!(watching.engines, vec!["docker", "podman"]);
         assert_eq!(watching.dump_seconds, DUMP_SECONDS);
-        assert_eq!(watching.stale_after_seconds(), 240);
+        assert_eq!(watching.stale_after_seconds(None), 240);
         assert_eq!(watching.report, Report::default());
         assert!(watching.report.images && watching.report.secrets);
         assert!(watching.check().is_ok());
@@ -165,7 +183,7 @@ mod tests {
         let watching = read(json!({"dump_seconds": 30})).expect("parses");
 
         assert_eq!(
-            watching.stale_after_seconds(),
+            watching.stale_after_seconds(None),
             60,
             "one period is the ordinary case: a dump written a moment before the reading is \
              the dump of the previous run for as long as the two are not in step"
@@ -180,5 +198,72 @@ mod tests {
 
         let twice = read(json!({"engines": ["docker", "docker"]})).expect("parses");
         assert!(twice.check().is_err());
+    }
+
+    fn dumped(taken_at: &str, previous: Option<&str>) -> Dump {
+        let mut dump = Dump::absent("docker", taken_at, 10, "no docker".into());
+        dump.previous_taken_at = previous.map(str::to_string);
+        dump
+    }
+
+    #[test]
+    fn a_timer_lengthened_by_the_operator_is_followed_without_touching_the_configuration() {
+        let watching = Watching::default();
+        let every_ten_minutes =
+            dumped("2026-09-17T09:10:00.000Z", Some("2026-09-17T09:00:00.000Z"));
+
+        assert_eq!(
+            watching.stale_after_seconds(Some(&every_ten_minutes)),
+            1_200,
+            "a timer an operator slowed with systemctl edit is the period now, and the \
+             configuration that still says 120 is not a second place to edit"
+        );
+    }
+
+    #[test]
+    fn a_stopped_timer_is_still_called_stale() {
+        let watching = Watching::default();
+        let every_two_minutes =
+            dumped("2026-09-17T09:02:00.000Z", Some("2026-09-17T09:00:00.000Z"));
+
+        let threshold = watching.stale_after_seconds(Some(&every_two_minutes));
+
+        assert_eq!(threshold, 240);
+        assert!(
+            4_000 > threshold,
+            "a timer that stopped writes no new period, so the last one it showed still judges it"
+        );
+    }
+
+    #[test]
+    fn dump_seconds_is_the_period_until_a_dump_shows_its_own() {
+        let watching = read(json!({"dump_seconds": 300})).expect("parses");
+
+        for unseen in [
+            dumped("2026-09-17T09:00:00.000Z", None),
+            dumped("2026-09-17T09:00:00.000Z", Some("2026-09-17T09:00:00.000Z")),
+            dumped("2026-09-17T09:00:00.000Z", Some("2026-09-17T09:10:00.000Z")),
+            dumped("2026-09-17T09:00:00.000Z", Some("not a moment")),
+        ] {
+            assert_eq!(
+                watching.stale_after_seconds(Some(&unseen)),
+                600,
+                "{:?} shows no period of its own",
+                unseen.previous_taken_at
+            );
+        }
+        assert_eq!(watching.stale_after_seconds(None), 600);
+    }
+
+    #[test]
+    fn a_day_of_silence_does_not_stretch_the_threshold_past_two_days() {
+        let watching = Watching::default();
+        let after_a_week = dumped("2026-09-24T09:00:00.000Z", Some("2026-09-17T09:00:00.000Z"));
+
+        assert_eq!(
+            watching.stale_after_seconds(Some(&after_a_week)),
+            2 * 86_400,
+            "a timer that was off for a week has not been told to dump weekly"
+        );
     }
 }

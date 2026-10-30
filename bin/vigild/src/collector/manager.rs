@@ -179,6 +179,19 @@ mod tests {
     }
 
     #[test]
+    fn on_macos_a_unit_is_named_by_its_launchd_job() {
+        assert_eq!(
+            Manager::Launchd.job("vigil-launches.service"),
+            "vigil.launches",
+            "the name an operator types into launchctl, not a unit no Mac has"
+        );
+        assert_eq!(
+            Manager::Systemd.job("vigil-launches.service"),
+            "vigil-launches.service"
+        );
+    }
+
+    #[test]
     fn on_linux_a_reading_is_switched_with_one_systemctl_word_that_also_starts_or_stops_it() {
         assert_eq!(
             Manager::Systemd.enabling("vigil-firewall.timer", false),

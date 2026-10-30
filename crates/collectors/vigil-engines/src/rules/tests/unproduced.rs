@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use vigil_model::Snapshot;
+use vigil_model::{RESERVED, Snapshot};
 
 use super::verdict::judged;
 use crate::fixture;
@@ -44,15 +44,14 @@ fn every_dangerous_setting_in_the_sample_is_reported_when_it_arrives() {
 fn a_privileged_service_is_named_by_the_vocabulary_and_raised_by_no_rule_because_no_list_says_it() {
     let raised = every_kind_raised_when_the_whole_sample_arrives_at_once();
 
-    assert!(
-        !raised.contains("container.project.privileged_service"),
-        "`docker ps` and `podman ps` do not print whether a container runs with --privileged; \
-         only `inspect` does, and `inspect` also prints the environment, which this agent \
-         never asks for. A rule claiming to know is a rule guessing"
-    );
-    assert!(
-        !raised.contains("container.image_unknown"),
-        "every image a container of the sample runs is an image its engine lists, and an image \
-         the engine does not know is only the race between two of the dump's commands"
-    );
+    for reserved in RESERVED {
+        assert!(
+            !raised.contains(reserved.as_str()),
+            "{} is reserved: `docker ps` and `podman ps` do not print whether a container runs \
+             with --privileged, only `inspect` does and it also prints the environment this \
+             agent never asks for; and an image the engine does not know is only the race \
+             between two of the dump's commands. A rule claiming to know is a rule guessing",
+            reserved.as_str()
+        );
+    }
 }

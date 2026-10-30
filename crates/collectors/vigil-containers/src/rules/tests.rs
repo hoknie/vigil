@@ -1,7 +1,9 @@
 use vigil_model::Change;
 
 use super::verdict::containers;
+use super::{ContainerDockerSocketExposed, ContainerHostMount};
 use crate::fixture;
+use crate::types::RUNTIME_SOCKETS;
 
 const ORDINARY: &str = "00000000a80425fb";
 
@@ -126,4 +128,73 @@ fn the_image_a_container_was_started_from_is_named_by_no_rule_here() {
          every image its containers run from, so an image it does not know is only the race \
          between two of its commands. A rule guessing at it would be worse than the silence"
     );
+}
+
+#[test]
+fn no_rule_of_the_containers_on_this_host_raises_a_reserved_kind() {
+    let started = [
+        fixture::container("/usr/sbin/nginx", ORDINARY, &[]),
+        fixture::container(
+            "/usr/local/bin/agent",
+            EVERYTHING,
+            &["/", "/run/docker.sock"],
+        ),
+    ];
+
+    for after in started {
+        let change = Change::Added {
+            key: "container|3ab1c0f2d4e5".into(),
+            after,
+        };
+        for (_, kind) in containers(&change) {
+            assert!(
+                !vigil_model::RESERVED
+                    .iter()
+                    .any(|reserved| kind == reserved.as_str()),
+                "{kind} is reserved and no rule raises it"
+            );
+        }
+    }
+}
+
+#[test]
+fn the_reading_and_the_rule_know_the_same_runtime_sockets() {
+    use vigil_rules::{Rule, RuleContext};
+
+    assert!(
+        RUNTIME_SOCKETS.contains(&"/var/run/podman/podman.sock"),
+        "a socket the rule calls dangerous and the reading never opens is a silence, not a safe host"
+    );
+    for path in RUNTIME_SOCKETS {
+        let mut mint = || "event-1".to_string();
+        let mut ctx = RuleContext {
+            now: "2026-09-11T12:04:02.104Z".into(),
+            mint_event_id: &mut mint,
+        };
+        let opened = Change::Added {
+            key: format!("container-socket|{path}"),
+            after: fixture::runtime_socket(path, "0666"),
+        };
+        let held = Change::Added {
+            key: "container|3ab1c0f2d4e5".into(),
+            after: fixture::container("/usr/local/bin/agent", ORDINARY, &[path]),
+        };
+
+        assert!(
+            ContainerDockerSocketExposed
+                .apply(&opened, &mut ctx)
+                .is_some(),
+            "{path} read open to everyone is judged"
+        );
+        assert!(
+            ContainerDockerSocketExposed
+                .apply(&held, &mut ctx)
+                .is_some(),
+            "{path} held by a container is judged"
+        );
+        assert!(
+            ContainerHostMount.apply(&held, &mut ctx).is_none(),
+            "{path} is the socket's finding, not a second one about a mount"
+        );
+    }
 }

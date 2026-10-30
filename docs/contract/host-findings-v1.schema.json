@@ -163,7 +163,7 @@
         },
         "kind": {
           "type": "string",
-          "description": "One of the values below, or any other string. An unknown value is stored and shown as received, not dropped.",
+          "description": "One of the values below, or any other string. An unknown value is stored and shown as received, not dropped. Reserved kinds are named so a receiver can show them, and vigil raises them from no rule because nothing it reads establishes them honestly: `container.image_unknown`, `container.project.privileged_service`.",
           "examples": [
             "port.listen.new",
             "port.listen.removed",

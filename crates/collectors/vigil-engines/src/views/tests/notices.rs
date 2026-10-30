@@ -95,3 +95,42 @@ fn an_engine_that_holds_none_of_a_thing_says_it_answered_and_listed_none() {
         said(pane("podman", "secrets").as_ref(), &reading).starts_with("podman holds no secrets.")
     );
 }
+
+#[test]
+fn an_engine_left_out_names_the_containers_engines_block() {
+    let mut unwatched = fixture::engines();
+    unwatched.items.retain(|key, _| !key.starts_with("podman|"));
+
+    let why = said(pane("podman", "containers").as_ref(), &unwatched);
+
+    assert!(why.contains("containers-engines block"), "{why}");
+    assert!(
+        !why.contains("the containers block"),
+        "the containers block holds the /proc reading, and an operator sent there finds no \
+         engines: key to change: {why}"
+    );
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn on_macos_the_notice_names_the_launchd_job() {
+    let reading = fixture::docker_silent_on(Subject::Volume);
+
+    let why = said(pane("docker", "volumes").as_ref(), &reading);
+
+    assert!(why.contains("vigil.containers"), "{why}");
+    assert!(
+        !why.contains("vigil-containers.timer"),
+        "a Mac has no timers: {why}"
+    );
+}
+
+#[cfg(not(target_os = "macos"))]
+#[test]
+fn on_linux_the_notice_names_the_timer() {
+    let reading = fixture::docker_silent_on(Subject::Volume);
+
+    let why = said(pane("docker", "volumes").as_ref(), &reading);
+
+    assert!(why.contains("vigil-containers.timer"), "{why}");
+}

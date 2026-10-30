@@ -4,18 +4,11 @@ use std::sync::Mutex;
 use vigil_model::Rfc3339;
 
 use super::ContainersCollector;
+use crate::types::RUNTIME_SOCKETS;
 
 pub(super) const NAME: &str = "containers";
 
 pub(super) const PROC: &str = "/proc";
-
-pub(super) const RUNTIME_SOCKETS: &[&str] = &[
-    "/var/run/docker.sock",
-    "/run/docker.sock",
-    "/run/podman/podman.sock",
-    "/run/containerd/containerd.sock",
-    "/var/run/crio/crio.sock",
-];
 
 pub(super) const PROCESS_CEILING: usize = 8192;
 

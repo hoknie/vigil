@@ -289,3 +289,31 @@ fn the_registries_of_this_host_are_read_by_the_agent_out_of_the_files_it_is_poin
     assert_eq!(read.items["podman|registry|docker.io"]["role"], "search");
     let _ = fs::remove_dir_all(&at);
 }
+
+#[test]
+fn a_dump_written_every_ten_minutes_is_not_called_stale_seven_minutes_after_it_was_written() {
+    let at = workspace("lengthened");
+    for mut dump in [docker::dump(), podman::dump()] {
+        dump.taken_at = "2026-09-17T09:10:00.000Z".to_string();
+        dump.previous_taken_at = Some("2026-09-17T09:00:00.000Z".to_string());
+        written(&at, &dump);
+    }
+    let seven_minutes_ago = std::time::SystemTime::now() - std::time::Duration::from_secs(420);
+    for engine in Engine::ALL {
+        let file = fs::File::options()
+            .write(true)
+            .open(at.join(engine.dump_file()))
+            .expect("the dump");
+        file.set_times(fs::FileTimes::new().set_modified(seven_minutes_ago))
+            .expect("an older mtime");
+    }
+
+    let collector = reading(&at);
+
+    assert_eq!(
+        collector.available(),
+        Health::Ok,
+        "the dumps say they are written every ten minutes, so seven minutes is on time"
+    );
+    let _ = fs::remove_dir_all(&at);
+}

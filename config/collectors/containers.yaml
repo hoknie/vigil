@@ -14,8 +14,9 @@ containers-engines:
   # read. An engine that is not installed here is recorded as absent, which is not the same
   # answer as an engine that did not reply.
   engines: [docker, podman]
-  # How often vigil-containers.timer runs the engine commands. A reading older than twice
-  # this is reported as stale rather than passed off as current.
+  # The period of vigil-containers.timer assumed until two dumps have shown their own; the
+  # period itself is changed in the timer. A reading older than twice the period is reported
+  # as stale rather than passed off as current.
   dump_seconds: 120
   # Which changes to what the engines hold are reported as findings.
   report:

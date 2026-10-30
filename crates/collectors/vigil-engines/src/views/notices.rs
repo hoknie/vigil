@@ -3,6 +3,12 @@ use vigil_view::{Notice, Showing};
 
 use crate::types::{Engine, List, Standing, Subject};
 
+#[cfg(target_os = "macos")]
+const WRITES_THE_DUMP: &str = "the launchd job vigil.containers";
+
+#[cfg(not(target_os = "macos"))]
+const WRITES_THE_DUMP: &str = "vigil-containers.timer";
+
 pub(super) fn why(reading: &Snapshot, engine: Engine, list: List, showing: &Showing<'_>) -> Notice {
     let standing = Standing::in_reading(reading, engine);
     let name = engine.name();
@@ -10,8 +16,8 @@ pub(super) fn why(reading: &Snapshot, engine: Engine, list: List, showing: &Show
 
     if !standing.watched {
         return Notice::plain(format!("{name} is not watched on this host.")).saying(format!(
-            "`engines:` in the containers block of vigil.yaml does not name {name}, so the \
-             agent does not read what it holds."
+            "`engines:` in the containers-engines block does not name {name}, so the agent \
+             does not read what it holds."
         ));
     }
     if !from_the_files && !standing.dump_read {
@@ -31,9 +37,10 @@ pub(super) fn why(reading: &Snapshot, engine: Engine, list: List, showing: &Show
     }
     if standing.silent_on(list.subject()) {
         return Notice::loud(format!("{name} did not answer for its {}.", list.name())).saying(
-            "The command failed or did not finish when vigil-containers.timer last ran, so \
-             what it holds is unknown rather than nothing. No finding says any of it was \
-             removed.",
+            format!(
+                "The command failed or did not finish when {WRITES_THE_DUMP} last ran, so what \
+                 it holds is unknown rather than nothing. No finding says any of it was removed."
+            ),
         );
     }
 

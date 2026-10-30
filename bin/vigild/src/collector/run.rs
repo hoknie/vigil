@@ -78,10 +78,7 @@ pub fn disable(options: &Options) -> Result<String, String> {
         Some(unit) => match options.dry_run {
             true => said.push(format!("would run: {}", host::said_disabling(unit))),
             false => match host::standing(unit) {
-                Standing::NoManager(why) => said.push(format!(
-                    "{unit} was not stopped: {why}. Whatever writes that reading on this host \
-                     is yours to stop"
-                )),
+                Standing::NoManager(why) => said.push(not_stopped(Manager::here(), unit, &why)),
                 _ => said.push(host::disable(unit)?),
             },
         },
@@ -102,18 +99,35 @@ fn start(unit: &str, dry_run: bool) -> Result<String, String> {
         return Ok(format!("would run: {}", host::said_enabling(unit)));
     }
     match host::standing(unit) {
-        Standing::NoManager(why) => Err(format!(
-            "{unit} writes this reading and {why}. Nothing here was changed"
-        )),
-        Standing::Masked => Err(format!(
-            "{unit} is masked. Somebody switched this reading off deliberately and that \
-             decision is older than this command: `{}` first. Nothing here was changed",
-            Manager::here()
-                .masking_undone(unit)
-                .unwrap_or_else(|| format!("undo what switched {unit} off"))
-        )),
+        Standing::NoManager(why) => Err(not_started(Manager::here(), unit, &why)),
+        Standing::Masked => Err(masked(Manager::here(), unit)),
         Standing::Known(_) => host::enable(unit),
     }
+}
+
+fn not_stopped(manager: Manager, unit: &str, why: &str) -> String {
+    format!(
+        "{} was not stopped: {why}. Whatever writes that reading on this host is yours to stop",
+        manager.job(unit)
+    )
+}
+
+fn not_started(manager: Manager, unit: &str, why: &str) -> String {
+    format!(
+        "{} writes this reading and {why}. Nothing here was changed",
+        manager.job(unit)
+    )
+}
+
+fn masked(manager: Manager, unit: &str) -> String {
+    let named = manager.job(unit);
+    format!(
+        "{named} is masked. Somebody switched this reading off deliberately and that decision \
+         is older than this command: `{}` first. Nothing here was changed",
+        manager
+            .masking_undone(unit)
+            .unwrap_or_else(|| format!("undo what switched {named} off"))
+    )
 }
 
 fn unnamed(options: &Options, text: &str, name: &str) -> Result<String, String> {
@@ -237,6 +251,33 @@ mod tests {
             !source.contains("\"firewall\" =>") && !source.contains("== \"firewall\""),
             "a name compared against here is the second place to edit when the next \
              collector needs a unit, and the one that gets forgotten"
+        );
+    }
+
+    #[test]
+    fn the_mac_output_of_collector_launches_names_vigil_launches_and_no_systemd_unit() {
+        let unit = "vigil-launches.service";
+        #[cfg(target_os = "macos")]
+        assert_eq!(
+            crate::modules::unit_of("launches"),
+            Some(unit),
+            "the name launches declares on a Mac, from which its launchd job is derived"
+        );
+
+        for said in [
+            not_stopped(Manager::Launchd, unit, "launchd answered nothing"),
+            not_started(Manager::Launchd, unit, "launchd answered nothing"),
+            masked(Manager::Launchd, unit),
+        ] {
+            assert!(said.contains("vigil.launches"), "{said}");
+            assert!(
+                !said.contains(".service") && !said.contains(".timer"),
+                "a Mac has no systemd unit to look for: {said}"
+            );
+        }
+        assert!(
+            not_started(Manager::Systemd, unit, "no systemd").contains(unit),
+            "and on Linux the unit is the name to look for"
         );
     }
 }

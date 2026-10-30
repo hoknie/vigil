@@ -3,7 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde_json::Value;
-use vigil_model::{Envelope, KnownKind, SCHEMA_VERSION, SchemaVersion, Severity};
+use vigil_model::{Envelope, KnownKind, RESERVED, SCHEMA_VERSION, SchemaVersion, Severity};
 
 fn contract() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/contract")
@@ -149,6 +149,35 @@ fn the_schema_carries_the_same_vocabulary_as_this_build() {
         .map(|severity| severity.as_str().to_string())
         .collect();
     assert_eq!(severities, ours, "the severity vocabulary has drifted");
+}
+
+#[test]
+fn a_reserved_kind_is_named_in_the_schema_and_a_named_one_is_reserved() {
+    let schema: Value =
+        serde_json::from_str(&read(&contract().join("host-findings-v1.schema.json")))
+            .expect("the schema is json");
+    let description = schema["$defs"]["finding"]["properties"]["kind"]["description"]
+        .as_str()
+        .expect("the kind is described");
+    let (_, reserved_part) = description
+        .split_once("Reserved kinds")
+        .expect("the description names the reserved kinds");
+
+    let named: BTreeSet<String> = reserved_part
+        .split('`')
+        .skip(1)
+        .step_by(2)
+        .map(str::to_string)
+        .collect();
+    let ours: BTreeSet<String> = RESERVED
+        .iter()
+        .map(|kind| kind.as_str().to_string())
+        .collect();
+
+    assert_eq!(
+        named, ours,
+        "a kind reserved on one side only is a kind a receiver waits for and no agent sends"
+    );
 }
 
 #[test]
