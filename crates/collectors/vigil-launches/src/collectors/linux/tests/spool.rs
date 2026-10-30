@@ -100,3 +100,77 @@ fn a_spool_that_had_to_drop_events_says_so_in_a_row_and_in_its_health() {
         other => panic!("{other:?}"),
     }
 }
+
+fn a_spool_holding_two_launches(name: &str) -> (std::path::PathBuf, std::path::PathBuf) {
+    let path = workspace(name);
+    let spool_path = spool_beside(&path);
+    let mut spool = SpoolWriter::open(spool_path.clone(), 1024 * 1024).expect("opens");
+    spool.write(LAUNCH.as_bytes()).expect("writes");
+    spool.write(SECOND_LAUNCH.as_bytes()).expect("writes");
+    (path, spool_path)
+}
+
+#[test]
+fn a_daemon_that_restarts_carries_on_from_the_cursor_it_left_in_the_spool() {
+    let (path, spool_path) = a_spool_holding_two_launches("resumed.log");
+    Cursor {
+        inode: fs::metadata(&spool_path).expect("stat").ino(),
+        offset: LAUNCH.len() as u64,
+    }
+    .write(&cursor_path(&spool_path))
+    .expect("writes");
+
+    let snapshot = collector(&path).collect().expect("readable");
+
+    assert!(snapshot.items.contains_key("run|root|/usr/bin/uname"));
+    assert!(
+        !snapshot.items.contains_key("run|root|/usr/bin/id"),
+        "what the previous process read and left a cursor after is not counted a second time"
+    );
+}
+
+#[test]
+fn a_cursor_left_by_a_spool_that_was_replaced_starts_the_new_one_from_its_beginning() {
+    let (path, spool_path) = a_spool_holding_two_launches("replaced.log");
+    let inode = fs::metadata(&spool_path).expect("stat").ino();
+    for cursor in [
+        Cursor {
+            inode: inode + 1,
+            offset: LAUNCH.len() as u64,
+        },
+        Cursor {
+            inode,
+            offset: 10 * 1024 * 1024,
+        },
+    ] {
+        cursor.write(&cursor_path(&spool_path)).expect("writes");
+
+        let snapshot = collector(&path).collect().expect("readable");
+
+        assert!(
+            snapshot.items.contains_key("run|root|/usr/bin/id")
+                && snapshot.items.contains_key("run|root|/usr/bin/uname"),
+            "a cursor about another file, or past the end of this one, is no cursor: {cursor:?}"
+        );
+    }
+}
+
+#[test]
+fn the_audit_log_without_a_plugin_is_still_read_from_its_last_two_megabytes() {
+    let path = workspace("tail.log");
+    let filler = "type=CWD msg=audit(1757419203.500:3425): cwd=\"/root\"\n";
+    let mut log = String::from(LAUNCH);
+    while log.len() < 3 * 1024 * 1024 {
+        log.push_str(filler);
+    }
+    log.push_str(SECOND_LAUNCH);
+    fs::write(&path, log).expect("write");
+
+    let snapshot = collector(&path).collect().expect("readable");
+
+    assert!(snapshot.items.contains_key("run|root|/usr/bin/uname"));
+    assert!(
+        !snapshot.items.contains_key("run|root|/usr/bin/id"),
+        "the log belongs to auditd, no cursor sits beside it, and a first reading takes its tail"
+    );
+}

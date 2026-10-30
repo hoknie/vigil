@@ -91,6 +91,15 @@ impl Drop for Watching {
 }
 
 pub fn watching(name: &str, health: Health, readings: Vec<Snapshot>) -> Watching {
+    watching_beside(name, health, readings, Vec::new())
+}
+
+pub fn watching_beside(
+    name: &str,
+    health: Health,
+    readings: Vec<Snapshot>,
+    beside: Vec<Box<dyn Collector>>,
+) -> Watching {
     struct Handed(std::sync::Arc<Scripted>);
 
     impl Collector for Handed {
@@ -113,23 +122,43 @@ pub fn watching(name: &str, health: Health, readings: Vec<Snapshot>) -> Watching
             host: crate::socket::fixture::host(),
             started_at: "2026-09-11T09:00:00.000Z".into(),
             interval_seconds: 30,
-            periods: [("network".to_string(), 30)].into_iter().collect(),
+            periods: std::iter::once("network")
+                .chain(beside.iter().map(|collector| collector.name()))
+                .map(|name| (name.to_string(), 30))
+                .collect(),
             killing_from_the_console: false,
             accounts_from_the_console: false,
             units_from_the_console: false,
         },
-        &[("network", health)],
+        &std::iter::once(("network", health))
+            .chain(
+                beside
+                    .iter()
+                    .map(|collector| (collector.name(), Health::Ok)),
+            )
+            .collect::<Vec<_>>(),
         &[],
         &[],
     ));
+    let mut due = vec![Due::new("network", 30, Instant::now())];
+    due.extend(
+        beside
+            .iter()
+            .map(|collector| Due::new(collector.name(), 30, Instant::now())),
+    );
+    let mut watches = vec![Watch::new(
+        Box::new(Handed(collector.clone())),
+        vigil_network::Network.rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
+    )];
+    watches.extend(
+        beside
+            .into_iter()
+            .map(|collector| Watch::new(collector, vigil_rules::RuleSet::of(Vec::new()))),
+    );
 
     Watching {
         round: Round {
-            watches: vec![Watch::new(
-                Box::new(Handed(collector.clone())),
-                vigil_network::Network
-                    .rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string())),
-            )],
+            watches,
             store: FileStore::open(&directory).expect("opens"),
             policy: Policy::new(Vec::new()),
             delivery: Delivery::new(
@@ -139,12 +168,13 @@ pub fn watching(name: &str, health: Health, readings: Vec<Snapshot>) -> Watching
                 shared.clone(),
             ),
             shared,
-            schedule: Schedule::of(vec![Due::new("network", 30, Instant::now())]),
+            schedule: Schedule::of(due),
             meter: Meter::default(),
             opening: Vec::new(),
             standing: Vec::new(),
             followed: Followed::nothing(),
             silences: Silences::nothing(),
+            retention_days: 90,
         },
         collector,
         directory,

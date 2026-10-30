@@ -92,6 +92,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         standing,
         followed,
         silences,
+        retention_days: config.retention_days,
     }
     .run()
 }

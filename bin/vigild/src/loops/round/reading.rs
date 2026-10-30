@@ -17,6 +17,13 @@ impl Round {
             Some(name),
             "the schedule and the watches are one list read by one index"
         );
+        if let Some(why) = self.watches[index].switched_off() {
+            if !said.failing_now(name) {
+                let why = why.to_string();
+                self.failed(name, &why, said);
+            }
+            return;
+        }
 
         let started = Instant::now();
         let outcome = self.watches[index].tick();
@@ -37,14 +44,16 @@ impl Round {
                     self.take_health_of(index, said);
                 }
             }
-            Err(error) => {
-                self.shared
-                    .with(|state| state.record_failure(name, rfc3339::now(), &error));
-                if said.failing(name, &error) {
-                    eprintln!("{} collector failed: {error}", rfc3339::now());
-                    self.say_it_could_not_read(name, said);
-                }
-            }
+            Err(error) => self.failed(name, &error, said),
+        }
+    }
+
+    pub(super) fn failed(&mut self, name: &'static str, error: &str, said: &mut Said) {
+        self.shared
+            .with(|state| state.record_failure(name, rfc3339::now(), error));
+        if said.failing(name, error) {
+            eprintln!("{} collector failed: {error}", rfc3339::now());
+            self.say_it_could_not_read(name, said);
         }
     }
 
