@@ -1,166 +1,140 @@
 # Changelog
 
-All notable changes by release tag, newest first.
-Format:
-- [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
-- [SemVer](https://semver.org/spec/v2.0.0.html)
+Every notable change of vigil. Sections are written by `env/scripts/changelog.sh` from the
+Conventional Commits between release tags; the release on GitHub carries the section of its tag.
+The versions follow [Semantic Versioning](https://semver.org/).
 
-## [1.0.10] - 09/--/2026
+## [Unreleased]
 
-### Added
-- vigild runs on macOS as a launchd service, with its own paths, a universal `.pkg` and `.tar.gz`
-- macOS collectors: network, processes, users, resources, files, persistence (launchd jobs),
-  firewall (pf and the Application Firewall), launches (eslogger), container engines
-- `vigil-firewall-dump` and `vigil-launches-spool`: the programs launchd runs on a Mac
-- `persistence.launchd.new` (contract 1.8)
-- `just distributions` runs the agent on eleven Linux distributions in containers
-- `just coverage`, `just coverage-html`, `just docker-coverage`
+### Features
 
-### Changed
-- installing the package starts vigild, the firewall and engine readings and, where auditd runs,
-  loads its rule
-- `vigild collector … enable` waits for the first reading of the job it just started
-- a collector with no reader for this system starts the daemon as unavailable instead of stopping it
-- on macOS the console refuses account changes and launchd jobs, with the reason
-- the GitHub workflow caches cargo builds and runs on `main` and pull requests; Dependabot added
+- **GH-43:** Updated findings, sudo actions, secrets clean ([4624bc4](https://github.com/hoknie/vigil/commit/4624bc400e59af1151f505852e43f0fda007af89))
+- **GH-43:** Updated state and loops ([492be75](https://github.com/hoknie/vigil/commit/492be75030e9f0d2f00258afe0c6bdcb13712920))
+- **GH-41:** Added wild mute for findings ([2d98d40](https://github.com/hoknie/vigil/commit/2d98d40297069e059e3760036a830a0666abf2b8))
 
-### Fixed
-- user crontabs of openSUSE and Alpine, `/etc/cron.d` files cronie runs, Alpine's periodic and
-  `local.d` scripts, openSUSE's `/usr/etc` profiles and sudoers with their includes
-- the audit log is read where `auditd.conf` puts it
-- the state directory is made `0700` on a host installed from the binaries alone
-- a host that keeps `os-release` only under `/usr/lib`, or names a build and no version
+### Dependencies
 
-## [1.0.9] - 09/18/2026
+- Bump rustix in the cargo-minor-and-patch group (#37) ([643940b](https://github.com/hoknie/vigil/commit/643940b1c313ca898fe7bec66abf1d391459920b))
 
-### Added
-- collectors are read from `collectors_path` in `vigil.yaml`
-- `vigild collector <name> enable|disable` edits that block in place, or writes a file for a
-  collector that has none
-- files: the watched paths live in a watch list of their own
-- reporters can be kept apart from `vigil.yaml` the same way, under `reporters_path`
-- the findings section has two lists, `reported · silenced`
-- the findings filter offers each kind the agent holds, with how many findings it would leave
-- findings sort by SEEN and by FIRST SEEN
+[Full diff](https://github.com/hoknie/vigil/compare/v1.0.10...HEAD)
 
-### Changed
-- the socket collector is renamed `ports` → `network`
-- the console refusals of killing, accounts and units name the key and the collector file it lives in
+## [1.0.10] - 2026-09-19
 
-### Fixed
-- a container engine named in `engines:` that is not installed on the host no longer marks the
-  containers-engines reading degraded
+### Features
+
+- **GH-7:** Added support for macos (#36) ([673e27b](https://github.com/hoknie/vigil/commit/673e27bb17014abf7de16d9f5f2400cea178bcd6))
+- Added coverage ([f721296](https://github.com/hoknie/vigil/commit/f72129614309700574ad7991f7d7d825eac2b274))
+- Ci update ([1712485](https://github.com/hoknie/vigil/commit/1712485ad1799483bc1eec1bf8ae0bdf3385f040))
+
+### Dependencies
+
+- Bump the actions group with 3 updates (#33) ([3c929ee](https://github.com/hoknie/vigil/commit/3c929ee342b160e9b18f075adc07149e77a120cb))
+- Bump clap in the cargo-minor-and-patch group (#34) ([f343488](https://github.com/hoknie/vigil/commit/f3434888c60effce393a953d384cb5120ad8beda))
+- Bump sha2 from 0.10.9 to 0.11.0 (#35) ([0645f9e](https://github.com/hoknie/vigil/commit/0645f9ebec613b15a75e19f688b6f4676d62c219))
+- Bump debian in /env/docker in the images group (#32) ([c028c97](https://github.com/hoknie/vigil/commit/c028c978e452b8b71a089290ea550f19f51989be))
+
+[Full diff](https://github.com/hoknie/vigil/compare/v1.0.9...v1.0.10)
+
+## [1.0.9] - 2026-09-18
+
+### Features
+
+- **GH-20:** Extended findings and added live suppress (#31) ([f31b2ae](https://github.com/hoknie/vigil/commit/f31b2ae56ddc1101530772cf4fdd0f15479dd20a))
+
+[Full diff](https://github.com/hoknie/vigil/compare/v1.0.8...v1.0.9)
 
 ## [1.0.8] - 2026-09-18
 
-### Added
-- `env/scripts/install.sh` installs and updates vigil from a release, as a package
-- the images, volumes, networks, projects, pods, secrets and registries of docker and podman
+### Features
 
-### Fixed
-- `just golden` no longer fails a test that reads a sample while another test writes it
+- **GH-19:** Added support for docker (#30) ([2678c33](https://github.com/hoknie/vigil/commit/2678c33e6ef2ea6466b71a0e02cb77a43ba82b25))
+- Added install script ([4889031](https://github.com/hoknie/vigil/commit/4889031e0966026a2ca7489afd965607d952f891))
+
+### Other
+
+- Update README.md ([609efd7](https://github.com/hoknie/vigil/commit/609efd733c7defb61a6c816165556d9a2c184047))
+
+[Full diff](https://github.com/hoknie/vigil/compare/v1.0.7...v1.0.8)
 
 ## [1.0.7] - 2026-09-17
 
-### Added
-- launches show the last run beside the run count, sort by either, and H opens the runs of a row
-- units and timers can be stopped, started, disabled, enabled, masked and unmasked
-- cron lines can be commented out and back in
-- the firewall section lists tables and zones, says what each rule matches and does
-- the filesystems of this host are drawn as a tree of the disks and volumes they sit on
-- watched paths are edited in `vigil.yaml`, from the console or by hand
+### Fixes
 
-### Changed
-- console look: rounded frames, inset fields with a real cursor, dropdowns and popups
-- console look: a section's panes carry the frames, the popup shadow dims instead of covering
+- **GH-28:** Improved ui ([e00239c](https://github.com/hoknie/vigil/commit/e00239c86b2b9c3f5e755ad567c8922af278ad9e))
+- **GH-16:** Update units, firewall and fs (#27) ([000916e](https://github.com/hoknie/vigil/commit/000916e0e15c7baed53b81a308c3182dabf6617f))
+- **GH-16:** Update units, firewall and fs ([3361183](https://github.com/hoknie/vigil/commit/33611832e818cd41483eee31c75d3d1fb20a3e4e))
+- **GH-15:** Added launches count and last run date (#26) ([bd7c7a5](https://github.com/hoknie/vigil/commit/bd7c7a510c9636d8fd7e9737192cf2e4d9e33a78))
+- **GH-13:** Fmt ([3f32f27](https://github.com/hoknie/vigil/commit/3f32f27d80eca05b88af31e8b4432702274512ce))
 
-### Fixed
-- the help page fits an 80x24 terminal
+[Full diff](https://github.com/hoknie/vigil/compare/v1.0.6...v1.0.7)
 
 ## [1.0.6] - 2026-09-14
 
-### Added
-- `vigil suppress` writes, removes and lists suppressions
-- findings can be silenced from the console
-- picking rows on the findings screen
-- sockets can be closed and silenced from the console
-- programs can be stopped from the console
-- the detail pane no longer takes the focus when it opens
-- the start-up lines say whether the console of this host may ask the agent to close a socket,
-  and name the key that decides it
-- accounts can be changed from the console
+### Features
 
-### Changed
-- the configuration path the daemon was started with is the one the console edits
-- the screen for a reading no section draws
-- a pane's name is its own, not a fixed list
-- `vigil.yaml` is read in two passes: the daemon's own keys, then the key each module names as
-  its own
-- crates reorganized: one crate per subject watched
-- keys changed for a clearer console
-- lists draw faster
+- **GH-13:** Added accounts crud (#25) ([b5b18d3](https://github.com/hoknie/vigil/commit/b5b18d33e820b2cf42d20bba3aed9b231281d941))
+- **GH-14:** Added last audit id and updated pid getter (#24) ([31122e6](https://github.com/hoknie/vigil/commit/31122e6d6fbd31306f8feab28bb6eb27d339d9dd))
+- **GH-11:** Added socket control (#23) ([1c54096](https://github.com/hoknie/vigil/commit/1c54096345370a04b5bd2ebb85994b149041c4c8))
+- **GH-10:** Added suppress for findings from ui (#22) ([8df922e](https://github.com/hoknie/vigil/commit/8df922e94f08ad0d4c1adeeae002abb876ba7d71))
+- **GH-12:** Reorg crates (#21) ([9b649d1](https://github.com/hoknie/vigil/commit/9b649d1e67926dcee607af7bcfe7ca83d9d64183))
 
-### Fixed
-- one object silenced twice is written down once
-- moving through a list of several hundred rows no longer lags: only the rows on the screen are
-  drawn
-- a socket state between two readings of an unchanged host
-- the record that loads the audit rule is no longer counted as somebody having run something
+### Fixes
+
+- Updated counter for audit ([f1ff188](https://github.com/hoknie/vigil/commit/f1ff1880e12b72f9a93cb12238c2999dbcd42d42))
+
+[Full diff](https://github.com/hoknie/vigil/compare/v1.0.5...v1.0.6)
 
 ## [1.0.5] - 2026-09-12
 
-### Fixed
-- updated audit rule `auid>=1000`
-- collector no longer calls itself degraded on a quiet host
-- updated collector state after restart
-- health is now taken right after a reading that found something
-- a collector whose reading fails raises a finding, once, and a reading that goes through closes it
-- a complaint a previous run left open is closed by the first reading that goes through, not by the greeting
-- the record that loads the audit rule is no longer counted as somebody having run something
+### Features
+
+- **GH-2:** Updated audit rule (#3) ([2dd71c3](https://github.com/hoknie/vigil/commit/2dd71c3c003be9ace4116f932f6aa2140617ffb2))
+- Added ico ([0fa971e](https://github.com/hoknie/vigil/commit/0fa971ee9eacb1608265dbdd21aaf1d85f257485))
+
+[Full diff](https://github.com/hoknie/vigil/compare/v1.0.4...v1.0.5)
 
 ## [1.0.4] - 2026-09-12
 
-### Added
-- an outgoing buffer
-- config for file reading
-- the `containers` collector
-- the `resources` collector
-- `agent.collector.recovered` and `agent.buffer.drained`: the closing halves of
-  `agent.collector.degraded` and `agent.buffer.dropping`
+### Features
 
-### Changed
-- compaction of an NDJSON journal no longer reads back what it has just written
-- the console is no longer told that nothing is buffered for sending
-- the contract's agent-state message now carries `buffers` as a list where it carried
-  one `buffer` object
-- the console puts a list in order with `s` and narrows the findings with `f`
-- the panel behind `d` on those sections prints every value the agent recorded about the row
+- **vig-548:** Added containers and fs collectors (#1) ([1c6f5e2](https://github.com/hoknie/vigil/commit/1c6f5e20704a0f7670326ac2654c4664ac1e56f1))
+- Added more preview img ([51b6757](https://github.com/hoknie/vigil/commit/51b675720b21b6045c37b7da7c62008a9c7bcb61))
+- Added screenshots to README.md ([f734f76](https://github.com/hoknie/vigil/commit/f734f760828046289022197a6b5e571551c3cadb))
+- Added preview img ([fe6ed9e](https://github.com/hoknie/vigil/commit/fe6ed9ef6cb5f09d0bb19059b4b06cf9a68d859b))
+- Ver bump ([cb18c4e](https://github.com/hoknie/vigil/commit/cb18c4e057ebfc312a118f3b861ea62c42853e98))
+- Removed help msg ([65d8915](https://github.com/hoknie/vigil/commit/65d89157f6f3e14fa66980cccf784756533a46df))
 
-### Fixed
-- a finding closed by its pair is marked resolved on the console as it is in the store,
-  instead of standing open until the daemon is restarted
+### Other
+
+- Create CODE_OF_CONDUCT.md ([c360e71](https://github.com/hoknie/vigil/commit/c360e71c22db39d004c304cf7004da048d3f14be))
+
+[Full diff](https://github.com/hoknie/vigil/compare/v1.0.3...v1.0.4)
 
 ## [1.0.3] - 2026-09-11
 
-### Added
-- the agent, the console, the `host-findings/v1` contract and the packages
-- reading of this host's firewall: the `firewall` collector over the nftables ruleset that
-  `vigil-firewall.timer` writes to `/var/lib/vigil/firewall/ruleset.json`
-- a firewall section in the console
-- `vigild collector <name> enable` and `disable` commands
+### Features
 
-### Fixed
-- a release run over a tag that already has a release updates it instead of failing
-- the summary screen lined the agent's fields up one column to the right wherever the host
-  column had run out of rows
+- Added firewall collector ([3e804ce](https://github.com/hoknie/vigil/commit/3e804ceb11d1e9cabcb5e9a5e9167a4bede9abcc))
+- Added release tools ([d136237](https://github.com/hoknie/vigil/commit/d1362371c458639fea067f937fddbbf62cc79a2a))
+- Fixed period ([78bbf51](https://github.com/hoknie/vigil/commit/78bbf51f25ad716feca4741c76c9aaddba42fe91))
+- Updated collectors ([5bb1fd1](https://github.com/hoknie/vigil/commit/5bb1fd1c3ad8fa9f07b07e5b3a14345a108af521))
+- Added README ([319c935](https://github.com/hoknie/vigil/commit/319c93519c349408a078f85a6cda05c47e08973d))
+- Init ([90581ab](https://github.com/hoknie/vigil/commit/90581ab76b72ab277d64146b50ecd00f5a5b6173))
+- Added example config ([f05a7ee](https://github.com/hoknie/vigil/commit/f05a7ee4f69c35524cc9cfa5be1e2bdcf2989fdd))
+- Updated packaging and justfile ([afc553c](https://github.com/hoknie/vigil/commit/afc553c53dcb3ac702d4725d5ddb44e6593e8be3))
+- Added api contract ([99202ec](https://github.com/hoknie/vigil/commit/99202ec7983dec4c821c9ad11902a682e8d00dda))
+- Added env ([670803c](https://github.com/hoknie/vigil/commit/670803ccbaaddb625d3c68b25ead95eef9eb25f4))
 
-## [1.0.1] - 09/11/2026
+### Fixes
 
-### Fixed
-- a release run over a tag that already has a release updates it instead of failing
+- Bump version ([fcaa83b](https://github.com/hoknie/vigil/commit/fcaa83b1965f64c6652b17c57388456af899a89c))
+- Added missed file ([46ffdb1](https://github.com/hoknie/vigil/commit/46ffdb15813a049a3874332293ed889492ed0a04))
+- Updated tests ([4fb7f48](https://github.com/hoknie/vigil/commit/4fb7f48ce9ae8fd056ce5f063ca822422fcd52d4))
+- Cargo fmt ([a0c0120](https://github.com/hoknie/vigil/commit/a0c0120bdfea972575a9da87aa7a206fa7b0825d))
+- Release workflow updated ([58c33de](https://github.com/hoknie/vigil/commit/58c33de7ee45e12abc9ed9c9e1b8c55d9a778ed3))
+- Added missing manifest ([cb161e7](https://github.com/hoknie/vigil/commit/cb161e771da1841fa6fc7f7c23825b0746857518))
 
-## [1.0.0] - 09/11/2026
+### Other
 
-### Added
-- project initialize
-
+- Added packaging ([4724495](https://github.com/hoknie/vigil/commit/472449578c09e4df4663c56c6c01ac1ea8eb9e9b))
+- Initial commit ([4122f87](https://github.com/hoknie/vigil/commit/4122f87ab9bb6af8e03109cb15ab2b4f3199d667))
