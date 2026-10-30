@@ -9,6 +9,8 @@ use crate::killing::send;
 
 const SUDOERS_MODE: u32 = 0o440;
 
+const SUDOERS_OWNER: (u32, u32) = (0, 0);
+
 pub fn carry(steps: &[Step]) -> Result<String, String> {
     let mut said: Vec<String> = Vec::with_capacity(steps.len());
     for step in steps {
@@ -51,7 +53,7 @@ fn one(step: &Step) -> Result<String, String> {
 }
 
 fn sudoers(path: &str, text: &str) -> Result<String, String> {
-    files::write_checked(path, text, SUDOERS_MODE, &|candidate| {
+    files::write_checked(path, text, SUDOERS_MODE, SUDOERS_OWNER, &|candidate| {
         tools::run(
             Utility::Visudo,
             &["-c".to_string(), "-f".to_string(), candidate.to_string()],

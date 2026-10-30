@@ -99,9 +99,10 @@ impl Watch {
             .map_err(|error| format!("{}: {error}", self.collector.name()))?;
 
         let Some(previous) = &self.previous else {
+            let findings = self.judge_baseline(&snapshot);
             self.previous = Some(snapshot.clone());
             return Ok(Tick {
-                findings: Vec::new(),
+                findings,
                 changes: 0,
                 baseline: true,
                 snapshot,
@@ -128,6 +129,16 @@ impl Watch {
         );
         self.off = Some(why.clone());
         why
+    }
+
+    fn judge_baseline(&self, baseline: &Snapshot) -> Vec<Finding> {
+        let mut mint = uuid7::mint;
+        let mut ctx = RuleContext {
+            now: rfc3339::now(),
+            mint_event_id: &mut mint,
+        };
+
+        self.rules.judge_baseline(baseline, &mut ctx)
     }
 
     fn judge(&self, changes: &[vigil_model::Change]) -> Vec<Finding> {
@@ -446,6 +457,81 @@ mod tests {
             watch
                 .switched_off()
                 .is_some_and(|why| why.contains("the baseline is from another version"))
+        );
+    }
+
+    struct StandingDanger;
+
+    impl vigil_rules::Rule for StandingDanger {
+        fn name(&self) -> &'static str {
+            "standing_danger"
+        }
+        fn apply(
+            &self,
+            change: &vigil_model::Change,
+            ctx: &mut RuleContext<'_>,
+        ) -> Option<Finding> {
+            let vigil_model::Change::Added { key, after } = change else {
+                return None;
+            };
+            if after["port"] != 4444 {
+                return None;
+            }
+            vigil_network::Network
+                .rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string()))
+                .judge(
+                    &[vigil_model::Change::Added {
+                        key: key.clone(),
+                        after: after.clone(),
+                    }],
+                    ctx,
+                )
+                .into_iter()
+                .next()
+        }
+        fn judges_the_baseline(&self) -> bool {
+            true
+        }
+    }
+
+    #[test]
+    fn a_rule_that_judges_a_standing_danger_speaks_on_the_baseline_and_no_other_rule_does() {
+        let mut watch = Watch::new(
+            scripted(vec![snapshot(&[
+                ("tcp|0.0.0.0:443", nginx()),
+                ("tcp|0.0.0.0:4444", implant()),
+            ])]),
+            RuleSet::new(Vec::new(), vec![Box::new(StandingDanger), Box::new(Breaks)]),
+        );
+
+        let tick = watch.tick().expect("first reading");
+
+        assert!(tick.baseline);
+        assert_eq!(
+            tick.findings.len(),
+            1,
+            "only the rule that claimed the baseline is asked about it, and it speaks about the \
+             one row that is dangerous in itself: {:?}",
+            tick.findings
+        );
+        assert_eq!(tick.findings[0].finding_key, "port.listen|tcp|0.0.0.0:4444");
+    }
+
+    #[test]
+    fn a_baseline_handed_back_after_a_restart_is_not_judged_again() {
+        let mut watch = Watch::new(
+            scripted(vec![snapshot(&[("tcp|0.0.0.0:4444", implant())])]),
+            RuleSet::new(Vec::new(), vec![Box::new(StandingDanger)]),
+        );
+        watch.restore(snapshot(&[("tcp|0.0.0.0:4444", implant())]));
+
+        let tick = watch.tick().expect("first reading after a restart");
+
+        assert!(!tick.baseline);
+        assert!(
+            tick.findings.is_empty(),
+            "the danger was said on the baseline before the restart, and a restart is not a \
+             fresh install"
         );
     }
 

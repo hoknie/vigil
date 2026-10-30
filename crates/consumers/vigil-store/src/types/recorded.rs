@@ -7,4 +7,8 @@ pub enum Recorded {
         occurrences: u64,
         first_seen_at: Rfc3339,
     },
+    Reopened {
+        occurrences: u64,
+        first_seen_at: Rfc3339,
+    },
 }

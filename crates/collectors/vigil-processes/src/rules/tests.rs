@@ -36,6 +36,16 @@ fn exactly_one_process_rule_fires_for_each_change_a_host_can_produce() {
             "process.binary_deleted",
         ),
         (
+            "a program that ran from /tmp at the baseline wiped its own file",
+            Change::Changed {
+                key: "exec|/tmp/.x/nc|www-data".into(),
+                before: fixture::program("/tmp/.x/nc", "www-data", 33, &[]),
+                after: fixture::program_with_deleted_binary("/tmp/.x/nc", "www-data", 33),
+            },
+            "process_from_writable_path",
+            "process.from_writable_path",
+        ),
+        (
             "a program ran as root for the first time",
             Change::Added {
                 key: "exec|/usr/bin/tcpdump|root".into(),

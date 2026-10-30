@@ -154,3 +154,45 @@ pub fn open_findings_come_back_newest_first_and_within_the_limit(store: &dyn Sto
     assert_eq!(open[0].finding_key, "d");
     assert_eq!(open[1].finding_key, "c");
 }
+
+pub fn a_closed_finding_seen_again_is_open_again_and_says_so(store: &dyn Store) {
+    let key = "port.listen|tcp|0.0.0.0:4444";
+    store
+        .record(&finding(key, "2026-09-09T10:00:00.000Z"))
+        .expect("recorded");
+    store
+        .resolve(key, "port.listen.new", "2026-09-09T10:05:00.000Z")
+        .expect("resolves");
+
+    assert_eq!(
+        store
+            .record(&finding(key, "2026-09-09T10:10:00.000Z"))
+            .expect("recorded"),
+        Recorded::Reopened {
+            occurrences: 2,
+            first_seen_at: "2026-09-09T10:00:00.000Z".into()
+        },
+        "a finding that came back after it was closed is news, and the store has to say so \
+         rather than call it a repeat of something still open"
+    );
+
+    let open = store.open_findings(10).expect("readable");
+    let recorded = open
+        .iter()
+        .find(|f| f.finding_key == key)
+        .expect("open again");
+    assert_eq!(recorded.state, vigil_model::State::Open);
+    assert_eq!(recorded.occurrences, 2);
+    assert_eq!(recorded.first_seen_at, "2026-09-09T10:00:00.000Z");
+
+    assert_eq!(
+        store
+            .record(&finding(key, "2026-09-09T10:15:00.000Z"))
+            .expect("recorded"),
+        Recorded::Repeated {
+            occurrences: 3,
+            first_seen_at: "2026-09-09T10:00:00.000Z".into()
+        },
+        "once open again, the next sighting is an ordinary repeat"
+    );
+}

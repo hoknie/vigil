@@ -8,3 +8,4 @@ mod sudoers;
 mod tests;
 
 pub use plan::plan;
+pub use sudo::left_in_sudoers;

@@ -24,3 +24,18 @@ release-assets-macos: package-macos
 [group('release')]
 release-notes:
     ./env/scripts/release.sh notes
+
+# CHANGELOG.md anew from the commits between v* tags
+[group('release')]
+changelog:
+    ./env/scripts/changelog.sh rebuild
+
+# The version the next release takes (auto from the commits, or patch/minor/major)
+[group('release')]
+next-version level='auto':
+    @./env/scripts/changelog.sh next {{ level }}
+
+# Bump the version in Cargo.toml unless it is already past the last tag, then write its CHANGELOG.md section
+[group('release')]
+release-bump level='auto':
+    ./env/scripts/changelog.sh release {{ level }}

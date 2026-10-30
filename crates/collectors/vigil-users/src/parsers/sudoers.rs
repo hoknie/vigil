@@ -1,4 +1,4 @@
-use vigil_collect::redact;
+use vigil_collect::{redact, split_command};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SudoGrant {
@@ -49,16 +49,14 @@ pub fn parse_sudoers(text: &str, source: &str) -> Sudoers {
         }
 
         let upper = spec.to_ascii_uppercase();
-        let clean = redact(
-            &spec
-                .split_whitespace()
-                .map(str::to_string)
-                .collect::<Vec<_>>(),
-        );
+        let clean = redact(&split_command(spec));
         sudoers.grants.push(SudoGrant {
             who: who.to_string(),
             source: source.to_string(),
-            spec: clean.text,
+            spec: match clean.redacted {
+                true => clean.text,
+                false => spec.to_string(),
+            },
             spec_redacted: clean.redacted,
             nopasswd: upper.contains("NOPASSWD"),
             all_commands: commands_of(&upper) == "ALL",
@@ -224,6 +222,30 @@ monitor ALL=(ALL) \
         assert_eq!(
             sudoers.unparsed, 1,
             "a grant this parser cannot follow must still be visible as one it could not read"
+        );
+    }
+    #[test]
+    fn a_header_in_quotes_inside_a_rule_is_hidden_whole() {
+        let sudoers = parse_sudoers(
+            "ops ALL=(root) /usr/bin/curl -H \"Authorization: Bearer abc def\" https://x\n",
+            "/etc/sudoers",
+        );
+
+        let spec = &sudoers.grants[0].spec;
+        assert!(sudoers.grants[0].spec_redacted);
+        assert!(!spec.contains("abc") && !spec.contains("def"), "{spec}");
+        assert!(spec.contains("-H [redacted]"), "{spec}");
+    }
+
+    #[test]
+    fn a_rule_with_quotes_and_nothing_to_hide_is_kept_as_it_is_written() {
+        let rule = "ALL=(root) /usr/bin/printf \"a  b\" \\, /usr/bin/id";
+        let sudoers = parse_sudoers(&format!("ops {rule}\n"), "/etc/sudoers");
+
+        assert!(!sudoers.grants[0].spec_redacted);
+        assert_eq!(
+            sudoers.grants[0].spec, rule,
+            "a rule shown back to a person, and written back from the form, is the rule in the file"
         );
     }
 }

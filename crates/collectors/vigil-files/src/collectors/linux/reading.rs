@@ -4,6 +4,7 @@ use vigil_model::Snapshot;
 
 use super::FilesCollector;
 use super::filesystems::Filesystems;
+use super::health::NAMED_AT_MOST;
 use super::health::{Notes, Walked};
 use super::plan::Plan;
 use super::stat;
@@ -95,7 +96,7 @@ impl FilesCollector {
 
     fn asked(&self) -> Asked {
         match &self.plan {
-            Plan::Named(paths) => Asked {
+            Plan::Named { paths, beyond } => Asked {
                 nothing: paths.is_empty().then(|| {
                     "there is nothing to check: no path is named for this collector. What it \
                      watches is a list in the configuration file and never a walk of a tree, \
@@ -107,7 +108,7 @@ impl FilesCollector {
                 devices: Devices::default(),
                 max_files: usize::MAX,
                 listed: false,
-                complaints: Vec::new(),
+                complaints: over_the_ceiling(paths.len(), beyond),
             },
             Plan::Listed { listing, lists } => {
                 let gathered = match lists.lock() {
@@ -134,6 +135,23 @@ impl FilesCollector {
             }
         }
     }
+}
+
+fn over_the_ceiling(watched: usize, beyond: &[String]) -> Vec<String> {
+    if beyond.is_empty() {
+        return Vec::new();
+    }
+    let mut named: Vec<String> = beyond.iter().take(NAMED_AT_MOST).cloned().collect();
+    let left = beyond.len().saturating_sub(NAMED_AT_MOST);
+    if left > 0 {
+        named.push(format!("and {left} more"));
+    }
+    vec![format!(
+        "the watch list names {} paths and this collector watches the first {watched}: {} are \
+         not watched",
+        watched + beyond.len(),
+        named.join(", ")
+    )]
 }
 
 fn entry_of(path: String, ceiling_bytes: u64, listed: bool) -> Entry {

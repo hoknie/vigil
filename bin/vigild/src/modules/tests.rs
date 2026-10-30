@@ -164,3 +164,26 @@ fn a_module_with_no_key_of_its_own_is_handed_nothing_and_is_content_with_it() {
         );
     }
 }
+
+#[test]
+fn the_only_rule_of_this_build_that_speaks_on_a_first_reading_is_the_open_directory_of_the_path() {
+    let speaking: Vec<(&'static str, &'static str)> = modules()
+        .iter()
+        .flat_map(|module| {
+            module
+                .rules(&Settings::plain(|| "2026-09-09T12:00:00.000Z".to_string()))
+                .baseline_judges()
+                .into_iter()
+                .map(|rule| (module.name(), rule))
+                .collect::<Vec<_>>()
+        })
+        .collect();
+
+    assert_eq!(
+        speaking,
+        vec![("files", "path_writable_by_all")],
+        "the first reading of a host is a silent baseline, and a rule that speaks on it is an \
+         exception the specification of the baseline names one by one; a new one is a decision \
+         about noise written there first"
+    );
+}

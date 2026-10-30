@@ -112,10 +112,7 @@ impl Round {
                 rfc3339::now(),
                 tick.snapshot.items.len()
             );
-            return;
-        }
-
-        if tick.changes > 0 {
+        } else if tick.changes > 0 {
             eprintln!(
                 "{} {collector}: {} change(s), {} finding(s), {} new",
                 rfc3339::now(),

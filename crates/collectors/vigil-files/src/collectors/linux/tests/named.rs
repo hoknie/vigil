@@ -118,3 +118,32 @@ fn a_mode_that_changed_is_the_only_thing_that_moved_in_the_row() {
     assert_eq!(after.items[&key]["mode"], "4755");
     assert_eq!(before.items[&key]["sha256"], after.items[&key]["sha256"]);
 }
+
+#[test]
+fn a_watch_list_longer_than_the_ceiling_says_which_paths_are_not_watched() {
+    let bench = Bench::new("ceiling");
+    let watched: Vec<String> = (0..260)
+        .map(|n| bench.at(&format!("file-{n:03}")))
+        .collect();
+    let collector = bench.collector(&watched, 4096);
+
+    let snapshot = collector.collect().expect("readable");
+    let rows = snapshot
+        .items
+        .keys()
+        .filter(|key| key.starts_with("file|"))
+        .count();
+    assert_eq!(rows, 256);
+
+    let Health::Degraded(why) = collector.available() else {
+        panic!("a list cut short has to say so rather than watch fewer paths in silence");
+    };
+    assert!(
+        why.contains("the watch list names 260 paths and this collector watches the first 256")
+            && why.contains(&watched[256])
+            && why.contains(&watched[258])
+            && !why.contains(&watched[259])
+            && why.contains("and 1 more"),
+        "{why}"
+    );
+}

@@ -9,4 +9,8 @@ pub trait Rule {
     fn name(&self) -> &'static str;
 
     fn apply(&self, change: &Change, ctx: &mut RuleContext<'_>) -> Option<Finding>;
+
+    fn judges_the_baseline(&self) -> bool {
+        false
+    }
 }

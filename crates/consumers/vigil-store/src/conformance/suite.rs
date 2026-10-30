@@ -4,6 +4,7 @@ use super::baselines::{
     the_baseline_is_the_last_reading,
 };
 use super::findings::{
+    a_closed_finding_seen_again_is_open_again_and_says_so,
     a_different_kind_about_the_same_object_is_not_a_repeat,
     a_repeat_raises_the_counter_and_keeps_the_first_sighting, a_resolved_finding_stops_being_open,
     one_open_finding_is_found_by_its_object_and_its_kind,
@@ -26,6 +27,7 @@ pub fn run_all(new_store: &dyn Fn() -> Box<dyn Store>) {
     a_repeat_raises_the_counter_and_keeps_the_first_sighting(new_store().as_ref());
     a_different_kind_about_the_same_object_is_not_a_repeat(new_store().as_ref());
     a_resolved_finding_stops_being_open(new_store().as_ref());
+    a_closed_finding_seen_again_is_open_again_and_says_so(new_store().as_ref());
     one_open_finding_is_found_by_its_object_and_its_kind(new_store().as_ref());
     resolving_something_that_was_never_recorded_is_not_an_error(new_store().as_ref());
     open_findings_come_back_newest_first_and_within_the_limit(new_store().as_ref());

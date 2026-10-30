@@ -11,7 +11,7 @@ impl Round {
         let mut fresh = Vec::new();
 
         for finding in findings {
-            self.close_what_it_ends(finding);
+            let closed_something = self.close_what_it_ends(finding);
 
             let now = rfc3339::now();
             match self.policy.judge(finding, &now) {
@@ -24,6 +24,18 @@ impl Round {
 
             match self.store.record(finding) {
                 Ok(Recorded::Created) => fresh.push(finding.clone()),
+                Ok(Recorded::Reopened {
+                    occurrences,
+                    first_seen_at,
+                }) => {
+                    eprintln!(
+                        "{} {} open again: {} ({occurrences} times since {first_seen_at})",
+                        rfc3339::now(),
+                        finding.finding_key,
+                        finding.kind
+                    );
+                    fresh.push(finding.clone());
+                }
                 Ok(Recorded::Repeated {
                     occurrences,
                     first_seen_at,
@@ -33,6 +45,9 @@ impl Round {
                         rfc3339::now(),
                         finding.finding_key
                     );
+                    if closed_something {
+                        fresh.push(finding.clone());
+                    }
                 }
                 Err(error) => {
                     eprintln!(
@@ -48,30 +63,36 @@ impl Round {
         fresh
     }
 
-    fn close_what_it_ends(&self, finding: &Finding) {
+    fn close_what_it_ends(&self, finding: &Finding) -> bool {
         let Kind::Known(kind) = &finding.kind else {
-            return;
+            return false;
         };
         let Some(ended) = kind.resolves() else {
-            return;
+            return false;
         };
 
         match self
             .store
             .resolve(&finding.finding_key, ended.as_str(), &finding.observed_at)
         {
-            Ok(true) => eprintln!(
-                "{} {} resolved: {}",
-                rfc3339::now(),
-                finding.finding_key,
-                ended.as_str()
-            ),
-            Ok(false) => {}
-            Err(error) => eprintln!(
-                "{} could not resolve {}: {error}",
-                rfc3339::now(),
-                finding.finding_key
-            ),
+            Ok(true) => {
+                eprintln!(
+                    "{} {} resolved: {}",
+                    rfc3339::now(),
+                    finding.finding_key,
+                    ended.as_str()
+                );
+                true
+            }
+            Ok(false) => false,
+            Err(error) => {
+                eprintln!(
+                    "{} could not resolve {}: {error}",
+                    rfc3339::now(),
+                    finding.finding_key
+                );
+                false
+            }
         }
     }
 }

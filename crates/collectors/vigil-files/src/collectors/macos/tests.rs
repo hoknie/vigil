@@ -209,3 +209,24 @@ fn a_list_that_names_only_readable_places_leaves_the_collector_well() {
 
     assert_eq!(collector.available(), Health::Ok);
 }
+
+#[test]
+fn a_watch_list_on_a_mac_longer_than_the_ceiling_says_which_paths_are_not_watched() {
+    let bench = Bench::new("ceiling");
+    let watched: Vec<String> = (0..260)
+        .map(|n| bench.at(&format!("file-{n:03}")))
+        .collect();
+    let collector = bench.named(&watched);
+
+    collector.collect().expect("readable");
+
+    let Health::Degraded(why) = collector.available() else {
+        panic!("a list cut short has to say so rather than watch fewer paths in silence");
+    };
+    assert!(
+        why.contains("the watch list names 260 paths and this collector watches the first 256")
+            && why.contains(&watched[256])
+            && why.contains("and 1 more"),
+        "{why}"
+    );
+}

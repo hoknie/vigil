@@ -9,13 +9,12 @@ pub fn write_checked(
     path: &str,
     text: &str,
     mode: u32,
+    owner: (u32, u32),
     check: &dyn Fn(&str) -> Result<String, String>,
 ) -> Result<String, String> {
     let place = place(path, None)?;
-    let (uid, gid) = match existing(&place, path)? {
-        Some(stat) => (stat.st_uid, stat.st_gid),
-        None => (0, 0),
-    };
+    existing(&place, path)?;
+    let (uid, gid) = owner;
 
     let candidate = candidate(&place.name);
     fill(&place, &candidate, text, uid, gid, bits(mode))

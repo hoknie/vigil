@@ -4,7 +4,10 @@ use crate::collectors::lists::Lists;
 use crate::types::Listing;
 
 pub(super) enum Plan {
-    Named(Vec<(String, u64)>),
+    Named {
+        paths: Vec<(String, u64)>,
+        beyond: Vec<String>,
+    },
     Listed {
         listing: Listing,
         lists: Mutex<Lists>,

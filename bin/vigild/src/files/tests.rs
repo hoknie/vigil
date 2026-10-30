@@ -227,7 +227,7 @@ fn a_checked_file_that_fails_its_check_leaves_the_old_one_and_no_candidate_behin
     let path = directory.join("deploy");
     fs::write(&path, "deploy ALL=(ALL) ALL\n").expect("writes");
 
-    let refused = write_checked(text(&path), "garbage\n", 0o440, &|candidate| {
+    let refused = write_checked(text(&path), "garbage\n", 0o440, ours(), &|candidate| {
         assert!(
             Path::new(candidate).exists(),
             "{candidate} is checked where it lies"
@@ -250,5 +250,38 @@ fn a_candidate_sits_beside_its_file_under_a_name_sudo_skips_in_its_include_direc
         ".vigil-deploy.candidate",
         "sudo reads no file in /etc/sudoers.d whose name holds a dot, so a candidate left \
          behind by a crash is never a live grant"
+    );
+}
+
+#[test]
+fn a_grant_file_is_put_in_place_owned_by_root_whoever_owned_the_one_before_it() {
+    if !rustix::process::getuid().is_root() {
+        return;
+    }
+    let directory = scratch("grant-owner");
+    let path = directory.join("deploy");
+    fs::write(&path, "deploy ALL=(ALL) ALL\n").expect("writes");
+    rustix::fs::chown(
+        &path,
+        Some(rustix::fs::Uid::from_raw(4_242)),
+        Some(rustix::fs::Gid::from_raw(4_242)),
+    )
+    .expect("hands the file to somebody else");
+
+    write_checked(
+        text(&path),
+        "deploy ALL=(root) /usr/bin/id\n",
+        0o440,
+        (0, 0),
+        &|_| Ok("checked".to_string()),
+    )
+    .expect("put in place");
+
+    let metadata = fs::metadata(&path).expect("stat");
+    assert_eq!(
+        (metadata.uid(), metadata.gid(), metadata.mode() & 0o7777),
+        (0, 0, 0o440),
+        "sudo ignores a file in sudoers.d that root does not own, and a file its grantee owns is \
+         one the grantee can rewrite: the agent writes it root's whatever it found"
     );
 }
