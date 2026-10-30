@@ -49,10 +49,10 @@ systemctl enable --now vigild        # enable and start vigil
 ### Building the packages
 
 ```bash
-just package          # all binaries into ./dist
-just package-verify   # install them on clean debian and almalinux hosts and check
-just package-unit     # systemd-analyze verify over the installed units
-just package-systemd  # the unit under a real systemd; measures what its hardening allows
+just package all              # all binaries into ./dist
+just package-check verify     # install them on clean debian and almalinux hosts and check
+just package-check unit       # systemd-analyze verify over the installed units
+just package-check systemd    # the unit under a real systemd; measures what its hardening allows
 ```
 
 ## Build and run

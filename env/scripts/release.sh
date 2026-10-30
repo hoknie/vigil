@@ -93,7 +93,7 @@ collect_macos() {
 
     for built in "$pkg" "$archive"; do
         [ -f "$built" ] || {
-            echo "release: $built is missing — run 'just package-macos' on a Mac first" >&2
+            echo "release: $built is missing — run 'just package macos' on a Mac first" >&2
             exit 2
         }
     done
@@ -116,7 +116,7 @@ collect() {
 
     for built in "$deb" "$rpm"; do
         [ -f "$built" ] || {
-            echo "release: $built is missing — run 'just package' for TARGET=$TARGET first" >&2
+            echo "release: $built is missing — run 'just package all' for TARGET=$TARGET first" >&2
             exit 2
         }
     done

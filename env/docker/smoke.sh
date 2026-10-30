@@ -158,4 +158,4 @@ echo "and a ruleset weakened and then flushed under a live nft:"
 echo "collector → differ → rule → reporter, end to end, twice over."
 echo
 echo "The findings, as a receiver would have been sent them: $FINDINGS"
-echo "For a shell in here, with the daemon running next door:  just docker"
+echo "For a shell in here, with the daemon running next door:  just docker-env shell"

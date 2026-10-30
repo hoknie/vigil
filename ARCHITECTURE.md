@@ -36,10 +36,10 @@ Everything else in this document follows from four principles.
    only through a local unix socket and a spool file, each of them one-way.
 
 4. **Quality is enforced by gates.** Formatting, linting and tests are fixed commands in the
-   `justfile`, identical locally and in CI: `just check` (fmt · clippy `-D warnings` · test),
-   `just docker-check` (the same gate on musl, the only environment where the Linux-specific
-   half of the code compiles), and `just console-pty` (the console's keyboard handling under a
-   real terminal). The current state of each gate is in §9.
+   `justfile`, identical locally and in CI: `just qa-gates` (fmt · clippy `-D warnings` · test),
+   `just docker-gates all` (the same gate on musl, the only environment where the
+   Linux-specific half of the code compiles), and `just docker-gates console-pty` (the console's
+   keyboard handling under a real terminal). The current state of each gate is in §9.
 
 ---
 
@@ -296,7 +296,7 @@ answering a different question:
   sits on a named field and records both the value and its source; a consumer checks the shape
   everywhere and the value of pinned fields.
 
-The producer regenerates them with `just golden`. They are an internal surface: the daemon and
+The producer regenerates them with `just qa-test golden`. They are an internal surface: the daemon and
 the console ship in the same package, so no third party relies on them. The only published
 surface is `docs/contract/` (§8), which is versioned and follows the N/N−1 acceptance rule.
 
@@ -617,8 +617,8 @@ suite (samples that must be accepted and samples that must be rejected). Rules f
 | Style | `cargo fmt --all --check` | ✅ |
 | Linter | `cargo clippy --workspace --all-targets -- -D warnings` | ✅ |
 | Tests | `cargo test --workspace`; no host state, no network | ✅ |
-| Linux-specific code | `just docker-check` — the same gate on musl | ✅ |
-| Console keyboard handling | `just console-pty` — under a real terminal | ✅ |
+| Linux-specific code | `just docker-gates all` — the same gate on musl | ✅ |
+| Console keyboard handling | `just docker-gates console-pty` — under a real terminal | ✅ |
 | README in every crate | purpose, decision, dependencies, graph | ✅ |
 | Comments in `.rs` | none (§3.5) | ✅ zero |
 | `#[allow(...)]` in the tree | forbidden; fix the cause of the warning | ✅ zero |
@@ -643,7 +643,7 @@ unrecorded violation.
 | `crates/collectors/vigil-<subject>/src/fixture/`, `crates/core/vigil-rules/src/fixture/`, `bin/vigil/src/ui/fixture/`, `bin/vigild/src/socket/fixture/` | the kind is named in the singular, contrary to §3.3.1 | The name predates the definition of the kind and is shared by all sides of the wire: `fixture::` appears in more than sixty console source files. Renaming is a purely mechanical edit, and combining it with a substantive change would hide that change in noise. The rename should land as a standalone edit; until then the debt is recorded here. |
 | `crates/core/vigil-config/src/helpers/write.rs`, `helpers/places.rs`, `services/sources.rs` | io in `core/`, one of the two places in that layer that touch files (the other is the next row) | The crate exists to own a **file on disk**, and the files that file points at: the daemon and the console read suppressions from the same `suppressions_path` and must agree on which files that means. Both programs write suppressions (`vigil suppress` and a key on the findings screen), and `vigild configure` and `vigild collector` write the same file. Without a shared crate, the same 0600 write ("write to a temporary file, rename it, keep the previous version as `.previous`") would live in two binaries that must stay byte-identical and would drift apart on the first edit. Its dependencies keep the boundary tight: `vigil-config` links none of our crates, performs two kinds of io (`write`, and reading the files a path names: `files_in`, `gathered`, `sources`), and is invisible to `vigil-model` and `vigil-rules`. |
 
-| `crates/core/vigil-model/src/snapshot/golden.rs` (`Golden`) | file io in `vigil-model`, which §1 keeps free of io, and it is public outside a test build | The golden samples (§3.3.1) are checked by every side that links the vocabulary: the collector crates, both binaries and `vigil-model` itself. Their fixture tests live in other crates, so the reader and writer of `golden/` has to be an ordinary public item of the one crate all of them already link; a `cfg(test)` item is invisible across crates, and a separate test-support crate would be one more crate pinned to the same directory. `Golden` is only called from tests and `just golden`: nothing on the watch path, no rule and no sink reaches it. |
+| `crates/core/vigil-model/src/snapshot/golden.rs` (`Golden`) | file io in `vigil-model`, which §1 keeps free of io, and it is public outside a test build | The golden samples (§3.3.1) are checked by every side that links the vocabulary: the collector crates, both binaries and `vigil-model` itself. Their fixture tests live in other crates, so the reader and writer of `golden/` has to be an ordinary public item of the one crate all of them already link; a `cfg(test)` item is invisible across crates, and a separate test-support crate would be one more crate pinned to the same directory. `Golden` is only called from tests and `just qa-test golden`: nothing on the watch path, no rule and no sink reaches it. |
 ---
 
 ## 11. Recipes
@@ -673,7 +673,7 @@ sink buffers and watching continues.
 **Add a console screen.** A subject's section is described as data in its crate's `views/`; a
 screen that belongs to the console itself goes in `bin/vigil/src/ui/screens/<name>/`. Keyboard
 navigation follows the three-level focus model (tabs → list → details): `→`/Enter moves in,
-`←`/Esc moves out. Verify it with `just console-pty`.
+`←`/Esc moves out. Verify it with `just docker-gates console-pty`.
 
 **Split an overgrown file.** Identify cohesive groups of methods; move them into concern files as
 **child modules** of the type (`<type>/mod.rs` plus children); keep the trait impl thin and

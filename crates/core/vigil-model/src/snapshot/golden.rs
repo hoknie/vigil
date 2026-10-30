@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 const ASKED_TO_WRITE: &str = "VIGIL_GOLDEN";
 
-const RECIPE: &str = "just golden";
+const RECIPE: &str = "just qa-test golden";
 
 static STAGED: AtomicUsize = AtomicUsize::new(0);
 

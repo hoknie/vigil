@@ -8,9 +8,9 @@ The versions follow [Semantic Versioning](https://semver.org/).
 
 ### Features
 
-- **GH-43:** Updated findings, sudo actions, secrets clean ([4624bc4](https://github.com/hoknie/vigil/commit/4624bc400e59af1151f505852e43f0fda007af89))
-- **GH-43:** Updated state and loops ([492be75](https://github.com/hoknie/vigil/commit/492be75030e9f0d2f00258afe0c6bdcb13712920))
-- **GH-41:** Added wild mute for findings ([2d98d40](https://github.com/hoknie/vigil/commit/2d98d40297069e059e3760036a830a0666abf2b8))
+- **GH-44:** Updated findings, sudo actions, secrets clean (#47) ([5dce2ee](https://github.com/hoknie/vigil/commit/5dce2eecce8444c89b71e95ae741da115b4aecc2))
+- **GH-43:** Updated state and loops (#46) ([96b673d](https://github.com/hoknie/vigil/commit/96b673d0e8f6733fa1ecdaa9bdbe8d6971af36c5))
+- **GH-41:** Added wild mute for findings (#45) ([4eb42c5](https://github.com/hoknie/vigil/commit/4eb42c5f690045e374ade0dec5cfda04b14ef50d))
 
 ### Dependencies
 

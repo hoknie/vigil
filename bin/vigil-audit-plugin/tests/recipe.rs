@@ -90,25 +90,29 @@ fn it_says_what_it_touches_before_it_touches_it() {
 
 #[test]
 fn the_recipe_is_not_part_of_the_gate_because_the_gate_may_not_touch_the_machine_it_runs_on() {
-    let quality = fs::read_to_string(workspace().join("env/justice/quality.just"))
-        .expect("the quality recipes");
-    let docker = fs::read_to_string(workspace().join("env/justice/docker.just"))
-        .expect("the docker recipes");
+    for gate in ["quality.just", "qa-lint.just", "qa-test.just"] {
+        let recipes = fs::read_to_string(workspace().join("env/justice").join(gate))
+            .unwrap_or_else(|error| panic!("{gate}: {error}"));
+        assert!(
+            !recipes.contains("audit"),
+            "`just qa-gates` is the gate, and a gate that loads an audit rule into the kernel of \
+             whatever machine ran it is a gate nobody can run twice at once: {gate}"
+        );
+    }
 
+    let docker = fs::read_to_string(workspace().join("env/justice/docker-gates.just"))
+        .expect("the recipes that run in containers");
     assert!(
-        !quality.contains("audit-check") && !quality.contains("docker-audit"),
-        "`just check` is the gate, and a gate that loads an audit rule into the kernel of \
-         whatever machine ran it is a gate nobody can run twice at once"
-    );
-    assert!(
-        docker.contains("docker-audit"),
+        docker.contains("\naudit:\n    {{ COMPOSE }} run --rm --build audit\n"),
         "the live audit path is a recipe of its own"
     );
+    let gate = docker
+        .split("\n\n")
+        .find(|recipe| recipe.contains("\nall:\n"))
+        .expect("the gate in the container");
     assert!(
-        !docker.contains(
-            "docker-check:\n    {{ RUN }} just check\n    {{ COMPOSE }} run --rm --build audit"
-        ),
-        "and docker-check does not pull it in"
+        !gate.contains("audit"),
+        "and the gate in the container does not pull it in"
     );
 }
 

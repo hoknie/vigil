@@ -300,7 +300,7 @@ if [ "$failures" -eq 0 ]; then
     echo "removal kept the findings. Nothing outside this container was contacted."
     echo
     echo "NOT checked here (no systemd as pid 1 in a container): systemctl enable/start, and"
-    echo "every sandbox directive in the unit. See 'just package-unit'."
+    echo "every sandbox directive in the unit. See 'just package-check unit'."
     exit 0
 fi
 echo "$failures check(s) failed" >&2
