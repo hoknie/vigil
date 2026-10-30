@@ -206,6 +206,64 @@ fn an_object_silenced_in_the_directory_is_not_reported_from_the_next_round_on() 
     assert_eq!(it.round.policy.suppressed(), 1);
 }
 
+struct PanicsUntilFollowed;
+
+impl Collector for PanicsUntilFollowed {
+    fn name(&self) -> &'static str {
+        "network"
+    }
+    fn available(&self) -> Health {
+        Health::Ok
+    }
+    fn collect(&self) -> Result<Snapshot, CollectError> {
+        panic!("a field this build does not know")
+    }
+}
+
+#[test]
+fn a_collector_switched_off_by_a_panic_reads_again_once_its_block_changes() {
+    let mut it = watching("following-panicked", Health::Ok, Vec::new());
+    let directory = temporary_directory("following-panicked-configuration");
+    std::fs::create_dir_all(&directory).expect("a directory");
+    let path = directory.join("vigil.yaml");
+    written(&path, WATCHING_HOSTS);
+    let name = path.to_str().expect("utf-8");
+    it.round.followed = Followed::of(
+        name,
+        Stamp::of(name),
+        &load(name).expect("loads"),
+        vec![Box::new(FollowingTheFile)],
+        &["network"],
+    );
+    it.round.watches[0].follow(Box::new(PanicsUntilFollowed), RuleSet::of(Vec::new()));
+    let mut said = Said::about([("network", "ok".to_string())]);
+    it.round.read(0, &mut said);
+    assert!(
+        it.round.watches[0].switched_off().is_some(),
+        "it panicked first"
+    );
+
+    written(&path, WATCHING_SUDOERS);
+    it.round.follow_the_file(&mut said);
+
+    assert!(it.round.watches[0].switched_off().is_none());
+    assert_eq!(
+        read_now(&it.round),
+        vec![
+            "file|/etc/hosts".to_string(),
+            "file|/etc/sudoers".to_string()
+        ],
+        "the changed block is read on the round it was taken up"
+    );
+    assert!(
+        raised(&it.round)
+            .iter()
+            .any(|finding| finding.kind.as_str() == "agent.collector.recovered"),
+        "and the complaint the panic raised is closed"
+    );
+    let _ = std::fs::remove_dir_all(&directory);
+}
+
 #[test]
 fn a_program_silenced_in_the_directory_is_not_reported_from_the_next_round_on_whatever_port_it_opens()
  {

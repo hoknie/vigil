@@ -149,7 +149,7 @@ mod tests {
         let directory = temporary_directory("pruned");
         let store = open(&directory).expect("opens");
         recorded(&store, "ancient", "2020-01-01T10:00:00.000Z");
-        recorded(&store, "recent", "2026-09-09T11:00:00.000Z");
+        recorded(&store, "recent", &rfc3339::days_ago(1));
         let shared = console();
 
         prune(&store, 30);

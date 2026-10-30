@@ -7,6 +7,7 @@ mod killings;
 mod memory;
 mod outgoing;
 mod reading;
+mod retention;
 #[cfg(test)]
 mod tests;
 
@@ -25,6 +26,8 @@ use super::Watch;
 
 const HEALTH_EVERY_SECONDS: u32 = 300;
 const HEALTH: &str = "health";
+const RETENTION_EVERY_SECONDS: u32 = 3600;
+const RETENTION: &str = "retention";
 const NEVER_SPIN: Duration = Duration::from_millis(10);
 
 const WHILE_THE_CONSOLE_MAY_ACT: Duration = Duration::from_secs(2);
@@ -41,6 +44,7 @@ pub struct Round {
     pub standing: Vec<(&'static str, String)>,
     pub followed: Followed,
     pub silences: Silences,
+    pub retention_days: u32,
 }
 
 impl Round {
@@ -55,6 +59,11 @@ impl Round {
             said.opened(name, why);
         }
         let mut health = Due::new(HEALTH, HEALTH_EVERY_SECONDS, Instant::now());
+        let mut retention = Due::new(
+            RETENTION,
+            RETENTION_EVERY_SECONDS,
+            Instant::now() + Duration::from_secs(u64::from(RETENTION_EVERY_SECONDS)),
+        );
         let mut announce = false;
 
         let opening = std::mem::take(&mut self.opening);
@@ -77,6 +86,10 @@ impl Round {
                 health.advance(Instant::now());
                 announce = true;
             }
+            if retention.is_due(Instant::now()) {
+                self.take_retention();
+                retention.advance(Instant::now());
+            }
 
             self.take_what_the_console_did();
             self.follow_the_file(&mut said);
@@ -87,16 +100,17 @@ impl Round {
                     self.schedule.advance(index, Instant::now());
                     self.read(index, &mut said);
                 }
-                None => self.rest(&health),
+                None => self.rest(&health, &retention),
             }
         }
     }
 
-    fn rest(&self, health: &Due) {
+    fn rest(&self, health: &Due, retention: &Due) {
         let now = Instant::now();
+        let routine = health.waiting(now).min(retention.waiting(now));
         let until = match self.schedule.rest(now) {
-            Some(soonest) => soonest.min(health.waiting(now)),
-            None => health.waiting(now),
+            Some(soonest) => soonest.min(routine),
+            None => routine,
         };
         let until = match self.shared.with(|state| state.console_may_act()) {
             true => until.min(WHILE_THE_CONSOLE_MAY_ACT),

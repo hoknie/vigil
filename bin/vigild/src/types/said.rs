@@ -30,6 +30,10 @@ impl Said {
             != Some(error)
     }
 
+    pub fn failing_now(&self, collector: &'static str) -> bool {
+        self.failures.contains_key(collector)
+    }
+
     pub fn reading_again(&mut self, collector: &'static str) -> bool {
         self.failures.remove(collector).is_some()
     }

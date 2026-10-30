@@ -44,7 +44,14 @@ impl LaunchesCollector {
         {
             seen.from = Some(path.clone());
             seen.inode = metadata.ino();
-            seen.offset = 0;
+            seen.offset = match from_plugin {
+                true => Cursor::read(&cursor_path(&path))
+                    .filter(|cursor| {
+                        cursor.inode == metadata.ino() && cursor.offset <= metadata.len()
+                    })
+                    .map_or(0, |cursor| cursor.offset),
+                false => 0,
+            };
         }
         let resumed_from = (seen.inode, seen.offset);
 
