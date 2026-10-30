@@ -3,7 +3,7 @@ use super::walk::Stop;
 use crate::parsers::WatchedFile;
 use vigil_collect::Health;
 
-const NAMED_AT_MOST: usize = 3;
+pub(super) const NAMED_AT_MOST: usize = 3;
 
 #[derive(Debug, Clone, Default)]
 pub(super) struct Notes {

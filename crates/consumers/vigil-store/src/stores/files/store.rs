@@ -162,13 +162,18 @@ impl Store for FileStore {
                 let mut stored = finding.clone();
                 stored.first_seen_at = previous.first_seen_at.clone();
                 stored.occurrences = occurrences;
-                (
-                    Recorded::Repeated {
+                let first_seen_at = stored.first_seen_at.clone();
+                let outcome = match previous.state {
+                    vigil_model::State::Resolved => Recorded::Reopened {
                         occurrences,
-                        first_seen_at: stored.first_seen_at.clone(),
+                        first_seen_at,
                     },
-                    stored,
-                )
+                    _ => Recorded::Repeated {
+                        occurrences,
+                        first_seen_at,
+                    },
+                };
+                (outcome, stored)
             }
         };
 

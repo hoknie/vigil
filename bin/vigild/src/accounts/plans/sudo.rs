@@ -2,7 +2,7 @@ use vigil_model::Snapshot;
 
 use super::reader::{Reader, present};
 use super::sudoers;
-use crate::accounts::fields::{item, sudoers_d_sources};
+use crate::accounts::fields::{item, sudoers_d_sources, text};
 use crate::accounts::step::Step;
 
 pub fn sudo(
@@ -51,4 +51,18 @@ pub fn sudo(
             })
         })
         .collect())
+}
+
+const SUDOERS: &str = "/etc/sudoers";
+
+pub fn left_in_sudoers(reading: &Snapshot, who: &str) -> Option<String> {
+    let rules = item(reading, &format!("sudoer|{who}"))?
+        .get("rules")
+        .and_then(serde_json::Value::as_array)?
+        .iter()
+        .filter(|rule| text(rule, "source") == Some(SUDOERS))
+        .count();
+    (rules > 0).then(|| {
+        format!("; {SUDOERS} still grants {who} {rules} rule(s), which the console does not change")
+    })
 }

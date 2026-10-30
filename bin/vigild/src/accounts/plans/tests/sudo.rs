@@ -96,3 +96,29 @@ fn files_that_no_longer_hold_the_grant_the_reading_saw_change_nothing() {
 
     assert!(complaint.contains("older than the files"), "{complaint}");
 }
+
+#[test]
+fn a_grant_that_etc_sudoers_still_holds_says_so_after_it_is_changed_from_the_console() {
+    assert_eq!(
+        crate::accounts::plans::left_in_sudoers(&with_sudoers_d(), "deploy").as_deref(),
+        Some("; /etc/sudoers still grants deploy 1 rule(s), which the console does not change"),
+        "the operator took the grant away at the console, and the account can still run sudo \
+         through the main file: the report is the one place that can say so"
+    );
+}
+
+#[test]
+fn a_grant_held_only_in_sudoers_d_says_nothing_more() {
+    let mut reading = users();
+    reading.items.insert(
+        "sudoer|deploy".into(),
+        json!({"who": "deploy", "rules": [
+            {"source": "/etc/sudoers.d/deploy", "spec": "ALL=(ALL) ALL"}
+        ]}),
+    );
+
+    assert_eq!(
+        crate::accounts::plans::left_in_sudoers(&reading, "deploy"),
+        None
+    );
+}

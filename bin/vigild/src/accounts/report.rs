@@ -142,4 +142,34 @@ mod tests {
             raised[1].title
         );
     }
+    #[test]
+    fn a_grant_taken_away_that_etc_sudoers_still_holds_says_so_in_its_finding() {
+        let delete = AccountChange::DeleteSudo {
+            who: "deploy".into(),
+        };
+        let said = "/etc/sudoers.d/deploy removed; /etc/sudoers still grants deploy 1 rule(s), \
+                    which the console does not change";
+        let carried = Carried {
+            report: ChangeReport {
+                acted_at: "2026-09-14T10:00:00.000Z".into(),
+                changed: vec![Changed::done(&delete, said)],
+            },
+            asked: vec![delete.said()],
+        };
+
+        let raised = findings(&carried, &mut mint());
+
+        assert_eq!(raised[0].kind.as_str(), "agent.account.changed");
+        assert!(
+            raised[0]
+                .evidence
+                .iter()
+                .any(|evidence| evidence.kind == "outcome"
+                    && evidence
+                        .value
+                        .ends_with("which the console does not change")),
+            "{:?}",
+            raised[0].evidence
+        );
+    }
 }

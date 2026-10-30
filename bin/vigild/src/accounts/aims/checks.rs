@@ -23,11 +23,46 @@ pub fn name(what: &str, value: &str) -> Result<(), String> {
     }
 }
 
-pub fn principal(value: &str) -> Result<(), String> {
-    match value.strip_prefix('%') {
-        Some(group) => name("group", group),
-        None => name("account", value),
+pub fn existing(what: &str, value: &str) -> Result<(), String> {
+    one_line(what, value)?;
+    if value.is_empty() {
+        return Err(format!("no {what} was named"));
     }
+    if value.starts_with('-') {
+        return Err(format!(
+            "{value:?} begins with a dash, and the tool that changes a {what} would read it as \
+             one of its options"
+        ));
+    }
+    if value.contains([':', '/']) {
+        return Err(format!(
+            "{value:?} holds a colon or a slash, which no {what} name on this host can hold"
+        ));
+    }
+    Ok(())
+}
+
+pub fn principal(value: &str) -> Result<(), String> {
+    if is_an_alias(value) {
+        return Err(format!(
+            "{value} is a sudoers alias, which stands for others and is not changed from the \
+             console"
+        ));
+    }
+    match value.strip_prefix('%') {
+        Some(group) => existing("group", group),
+        None => existing("account", value),
+    }
+}
+
+fn is_an_alias(value: &str) -> bool {
+    let mut characters = value.chars();
+    characters
+        .next()
+        .is_some_and(|first| first.is_ascii_uppercase())
+        && characters.all(|character| {
+            character.is_ascii_uppercase() || character.is_ascii_digit() || character == '_'
+        })
 }
 
 pub fn path(what: &str, value: &str) -> Result<(), String> {
@@ -128,8 +163,20 @@ mod tests {
     fn a_sudo_principal_is_an_account_or_a_group_with_its_percent_sign() {
         assert!(principal("deploy").is_ok());
         assert!(principal("%wheel").is_ok());
+        assert!(principal("Deploy").is_ok());
         assert!(principal("%").is_err());
         assert!(principal("ALL").is_err());
+        assert!(principal("ADMINS_2").is_err());
+    }
+
+    #[test]
+    fn a_name_already_on_this_host_is_taken_as_it_is_written_unless_a_tool_would_misread_it() {
+        for fine in ["Deploy", "svc.Web-1", "de ploy", "machine$", "deploy;id"] {
+            assert!(existing("account", fine).is_ok(), "{fine}");
+        }
+        for wrong in ["", "-rf", "a:b", "a/b", "a\nb", "a\0b"] {
+            assert!(existing("account", wrong).is_err(), "{wrong:?}");
+        }
     }
 
     #[test]

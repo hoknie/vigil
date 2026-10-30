@@ -157,4 +157,25 @@ mod tests {
 
         assert!(complaint.contains("/usr/bin/systemctl"), "{complaint}");
     }
+    #[test]
+    fn the_reading_and_the_control_verb_look_for_systemctl_in_one_list() {
+        assert_eq!(PLACES, crate::collector::SYSTEMCTL_PLACES);
+        for source in [
+            include_str!("systemctl.rs"),
+            include_str!("run.rs"),
+            include_str!("cron.rs"),
+            include_str!("names.rs"),
+            include_str!("report.rs"),
+        ] {
+            let shipped = source.split("#[cfg(test)]").next().unwrap_or_default();
+            for place in ["\"/usr/bin/systemctl\"", "\"/bin/systemctl\""] {
+                assert!(
+                    !shipped.contains(place),
+                    "{place} is written in the control verb: a second list of places drifts from \
+                     the one the reading uses, and a host where one finds systemctl and the other \
+                     does not reads its units and cannot act on them"
+                );
+            }
+        }
+    }
 }

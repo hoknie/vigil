@@ -255,3 +255,67 @@ fn a_session_is_ended_by_its_logind_id_or_its_pid_and_never_when_it_is_pid_1() {
         .contains("pid 1")
     );
 }
+
+fn with_an_account_named(name: &str) -> vigil_model::Snapshot {
+    let mut reading = users();
+    let mut account = reading.items["account|deploy"].clone();
+    account["name"] = json!(name);
+    account["uid"] = json!(1_777);
+    reading.items.insert(format!("account|{name}"), account);
+    reading
+}
+
+#[test]
+fn an_account_with_a_capital_letter_that_is_on_this_host_can_be_changed_and_deleted() {
+    let reading = with_an_account_named("Deploy");
+
+    for change in [
+        AccountChange::DeleteUser {
+            name: "Deploy".into(),
+        },
+        update_user("Deploy", Some("/bin/bash"), None, None),
+    ] {
+        if let Err(why) = aim(&change, &reading, ours()) {
+            panic!(
+                "the rule for a name this agent writes is a rule for new names, and {change:?} \
+                 names an account that already exists: {why}"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_new_group_is_still_named_the_way_the_account_tools_would_name_it() {
+    let why = refused(AccountChange::CreateGroup {
+        name: "Ops".into(),
+        members: Vec::new(),
+    });
+
+    assert!(
+        why.contains("is not a group name this agent writes"),
+        "{why}"
+    );
+}
+
+#[test]
+fn a_name_with_a_command_in_it_that_is_not_on_this_host_is_refused_as_absent() {
+    let why = refused(AccountChange::DeleteUser {
+        name: "deploy;id".into(),
+    });
+
+    assert!(why.contains("there is no account deploy;id"), "{why}");
+}
+
+#[test]
+fn a_name_a_tool_would_read_as_an_option_is_refused_before_anything_is_looked_up() {
+    let why = refused(AccountChange::DeleteUser { name: "-rf".into() });
+
+    assert!(why.contains("begins with a dash"), "{why}");
+}
+
+#[test]
+fn a_grant_to_a_sudoers_alias_is_not_changed_from_the_console() {
+    let why = refused(AccountChange::DeleteSudo { who: "ALL".into() });
+
+    assert!(why.contains("sudoers alias"), "{why}");
+}

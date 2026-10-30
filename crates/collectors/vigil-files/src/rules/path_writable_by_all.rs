@@ -11,6 +11,10 @@ impl Rule for PathWritableByAll {
         "path_writable_by_all"
     }
 
+    fn judges_the_baseline(&self) -> bool {
+        true
+    }
+
     fn apply(&self, change: &Change, ctx: &mut RuleContext<'_>) -> Option<Finding> {
         let (key, before, after) = match change {
             Change::Changed { key, before, after } => (key, Some(before), after),

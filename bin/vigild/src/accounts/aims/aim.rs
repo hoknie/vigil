@@ -182,7 +182,7 @@ pub fn aim(change: &AccountChange, reading: &Snapshot, ours: Ours) -> Result<(),
 }
 
 fn account<'a>(reading: &'a Snapshot, name: &str) -> Result<&'a Value, String> {
-    checks::name("account", name)?;
+    checks::existing("account", name)?;
     item(reading, &format!("account|{name}")).ok_or_else(|| {
         format!(
             "there is no account {name} in the reading the agent holds: it was removed, or it \
@@ -192,7 +192,7 @@ fn account<'a>(reading: &'a Snapshot, name: &str) -> Result<&'a Value, String> {
 }
 
 fn group<'a>(reading: &'a Snapshot, name: &str) -> Result<&'a Value, String> {
-    checks::name("group", name)?;
+    checks::existing("group", name)?;
     item(reading, &format!("group|{name}")).ok_or_else(|| {
         format!(
             "there is no group {name} in the reading the agent holds: it was removed, or it was \
@@ -229,7 +229,7 @@ fn readable_keys<'a>(
 }
 
 fn key<'a>(reading: &'a Snapshot, user: &str, fingerprint: &str) -> Result<&'a Value, String> {
-    checks::name("account", user)?;
+    checks::existing("account", user)?;
     let row = item(reading, &format!("sshkey|{user}|{fingerprint}")).ok_or_else(|| {
         format!("the reading the agent holds lets {user} in by no key {fingerprint}")
     })?;

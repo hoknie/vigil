@@ -12,8 +12,10 @@ impl Rule for ProcessFromWritablePath {
     }
 
     fn apply(&self, change: &Change, ctx: &mut RuleContext<'_>) -> Option<Finding> {
-        let Change::Added { key, after } = change else {
-            return None;
+        let (key, before, after) = match change {
+            Change::Added { key, after } => (key, None, after),
+            Change::Changed { key, before, after } => (key, Some(before), after),
+            Change::Removed { .. } => return None,
         };
         let view = ProcessView::new(after);
         if !view.is_program() || !view.runs_from_writable_path() {
@@ -22,6 +24,15 @@ impl Rule for ProcessFromWritablePath {
         if view.is_shell_under_a_service() {
             return None;
         }
+        let file_just_deleted = match before {
+            None => false,
+            Some(before) => {
+                if ProcessView::new(before).executable_deleted() || !view.executable_deleted() {
+                    return None;
+                }
+                true
+            }
+        };
 
         Some(build(
             ProcessFinding {
@@ -30,11 +41,15 @@ impl Rule for ProcessFromWritablePath {
                 rule: self.name(),
                 key,
                 title: format!(
-                    "{} is running from a directory anybody can write to, as {}",
+                    "{} is running from a directory anybody can write to, as {}{}",
                     view.executable(),
-                    view.user()
+                    view.user(),
+                    match file_just_deleted {
+                        true => ", and its file has just been deleted",
+                        false => "",
+                    }
                 ),
-                before: None,
+                before: before.cloned(),
                 after: Some(after.clone()),
                 evidence: program_evidence(&view),
             },
@@ -91,5 +106,53 @@ mod tests {
         };
 
         assert!(apply(&change).is_none());
+    }
+    #[test]
+    fn a_program_from_a_writable_directory_that_deletes_its_own_file_is_reported_at_the_top() {
+        let finding = apply(&Change::Changed {
+            key: "exec|/tmp/.x/nc|www-data".into(),
+            before: fixture::program("/tmp/.x/nc", "www-data", 33, &[]),
+            after: fixture::program_with_deleted_binary("/tmp/.x/nc", "www-data", 33),
+        })
+        .expect("a program that ran from /tmp at the baseline and then wiped its file is news");
+
+        assert_eq!(finding.severity, Severity::Critical);
+        assert_eq!(finding.kind.as_str(), "process.from_writable_path");
+        assert!(
+            finding
+                .title
+                .ends_with("and its file has just been deleted"),
+            "{}",
+            finding.title
+        );
+        assert!(finding.before.is_some());
+    }
+
+    #[test]
+    fn a_program_from_a_writable_directory_that_only_changed_its_arguments_says_nothing() {
+        let before = fixture::program("/tmp/.x/nc", "www-data", 33, &[]);
+        let mut after = before.clone();
+        after["cmdline"] = serde_json::json!("/tmp/.x/nc -l 4444");
+
+        assert!(
+            apply(&Change::Changed {
+                key: "exec|/tmp/.x/nc|www-data".into(),
+                before,
+                after,
+            })
+            .is_none()
+        );
+    }
+
+    #[test]
+    fn a_file_already_deleted_at_the_reading_before_is_not_reported_again() {
+        assert!(
+            apply(&Change::Changed {
+                key: "exec|/tmp/.x/nc|www-data".into(),
+                before: fixture::program_with_deleted_binary("/tmp/.x/nc", "www-data", 33),
+                after: fixture::program_with_deleted_binary("/tmp/.x/nc", "www-data", 34),
+            })
+            .is_none()
+        );
     }
 }

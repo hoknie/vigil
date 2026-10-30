@@ -35,7 +35,14 @@ impl FilesCollector {
     ) -> Self {
         FilesCollector::of(
             now,
-            Plan::Named(watched.iter().take(PATH_CEILING).cloned().collect()),
+            Plan::Named {
+                paths: watched.iter().take(PATH_CEILING).cloned().collect(),
+                beyond: watched
+                    .iter()
+                    .skip(PATH_CEILING)
+                    .map(|(path, _)| path.clone())
+                    .collect(),
+            },
             directories,
         )
     }

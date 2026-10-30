@@ -9,16 +9,19 @@ const HIDDEN: &str = "[redacted]";
 const SECRET_FLAGS: &[&str] = &[
     "--password",
     "--pass",
-    "-H",
     "--header",
     "--token",
     "--api-key",
     "--secret",
-    "-u",
-    "--user",
 ];
 
-const GLUED_SECRET_FLAGS: &[&str] = &["-p", "-u"];
+const SHORT_SECRET_FLAGS: &[&str] = &["-H"];
+
+const USER_FLAG: &str = "--user";
+
+const SHORT_USER_FLAG: &str = "-u";
+
+const GLUED_PASSWORD_FLAG: &str = "-p";
 
 const SECRET_ASSIGNMENTS: &[&str] = &[
     "password=",
@@ -33,30 +36,37 @@ const SECRET_ASSIGNMENTS: &[&str] = &[
     "auth=",
 ];
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Next {
+    Shown,
+    Secret,
+    User,
+}
+
 pub fn redact(arguments: &[String]) -> Redacted {
     let mut out: Vec<String> = Vec::with_capacity(arguments.len());
     let mut redacted = false;
-    let mut hide_next = false;
+    let mut next = Next::Shown;
 
     for argument in arguments {
-        if hide_next {
+        let hidden = match std::mem::replace(&mut next, Next::Shown) {
+            Next::Secret => true,
+            Next::User => holds_a_password(argument),
+            Next::Shown => false,
+        };
+        if hidden {
             out.push(HIDDEN.to_string());
             redacted = true;
-            hide_next = false;
+            continue;
+        }
+
+        if let Some(glued) = glued(argument) {
+            out.push(glued);
+            redacted = true;
             continue;
         }
 
         let lower = argument.to_ascii_lowercase();
-
-        if let Some(flag) = GLUED_SECRET_FLAGS
-            .iter()
-            .find(|flag| argument.len() > 2 && lower.starts_with(&flag.to_ascii_lowercase()))
-        {
-            out.push(format!("{flag}{HIDDEN}"));
-            redacted = true;
-            continue;
-        }
-
         let unquoted = lower.trim_start_matches(['"', '\'']);
         if let Some(assignment) = SECRET_ASSIGNMENTS
             .iter()
@@ -67,28 +77,53 @@ pub fn redact(arguments: &[String]) -> Redacted {
             continue;
         }
 
-        if let Some((flag, _value)) = argument.split_once('=')
-            && SECRET_FLAGS
-                .iter()
-                .any(|known| known.eq_ignore_ascii_case(flag))
+        if let Some((flag, value)) = argument.split_once('=')
+            && (is_secret_flag(flag) || (is_user_flag(flag) && holds_a_password(value)))
         {
             out.push(format!("{flag}={HIDDEN}"));
             redacted = true;
             continue;
         }
 
-        if SECRET_FLAGS
-            .iter()
-            .any(|flag| flag.eq_ignore_ascii_case(argument))
-        {
-            hide_next = true;
-        }
+        next = match () {
+            _ if is_secret_flag(argument) => Next::Secret,
+            _ if is_user_flag(argument) => Next::User,
+            _ => Next::Shown,
+        };
         out.push(argument.clone());
     }
 
     Redacted {
         text: out.join(" "),
         redacted,
+    }
+}
+
+fn is_secret_flag(flag: &str) -> bool {
+    SHORT_SECRET_FLAGS.contains(&flag)
+        || SECRET_FLAGS
+            .iter()
+            .any(|known| known.eq_ignore_ascii_case(flag))
+}
+
+fn is_user_flag(flag: &str) -> bool {
+    flag == SHORT_USER_FLAG || flag.eq_ignore_ascii_case(USER_FLAG)
+}
+
+fn holds_a_password(value: &str) -> bool {
+    value.contains(':')
+}
+
+fn glued(argument: &str) -> Option<String> {
+    if argument.len() <= 2 {
+        return None;
+    }
+    if argument.starts_with(GLUED_PASSWORD_FLAG) {
+        return Some(format!("{GLUED_PASSWORD_FLAG}{HIDDEN}"));
+    }
+    match argument.strip_prefix(SHORT_USER_FLAG) {
+        Some(value) if holds_a_password(value) => Some(format!("{SHORT_USER_FLAG}{HIDDEN}")),
+        _ => None,
     }
 }
 
@@ -112,7 +147,7 @@ mod tests {
     fn hides_a_password_glued_to_its_flag() {
         let out = redact(&arguments(&["mysql", "-uroot", "-pS3cret", "shop"]));
 
-        assert_eq!(out.text, "mysql -u[redacted] -p[redacted] shop");
+        assert_eq!(out.text, "mysql -uroot -p[redacted] shop");
         assert!(out.redacted);
     }
 
@@ -154,5 +189,58 @@ mod tests {
 
         assert!(out.redacted);
         assert!(!out.text.contains("S3cret"), "{}", out.text);
+    }
+    #[test]
+    fn a_user_without_a_password_is_a_name_and_stays_on_the_line() {
+        for line in [
+            &["sudo", "-u", "root", "id"][..],
+            &["ps", "--user", "www-data"],
+            &["mysql", "-uroot", "shop"],
+            &["app", "--user=deploy"],
+        ] {
+            let out = redact(&arguments(line));
+            assert_eq!(out.text, line.join(" "));
+            assert!(!out.redacted, "{line:?}");
+        }
+    }
+
+    #[test]
+    fn a_user_with_a_password_after_a_colon_is_hidden_in_every_form() {
+        for (line, shown) in [
+            (
+                &["curl", "-u", "admin:hunter2", "https://api.example.com"][..],
+                "curl -u [redacted] https://api.example.com",
+            ),
+            (&["curl", "-uadmin:hunter2"], "curl -u[redacted]"),
+            (&["wget", "--user=admin:hunter2"], "wget --user=[redacted]"),
+            (
+                &["wget", "--USER", "admin:hunter2"],
+                "wget --USER [redacted]",
+            ),
+        ] {
+            let out = redact(&arguments(line));
+            assert_eq!(out.text, shown);
+            assert!(!out.text.contains("hunter2"));
+        }
+    }
+
+    #[test]
+    fn a_short_flag_is_read_with_its_case_because_capitals_mean_other_things() {
+        for line in [
+            &["mysql", "-h", "db.internal", "-u", "app"][..],
+            &["scp", "-P2222", "file", "host:"],
+            &["tool", "-Uroot"],
+        ] {
+            let out = redact(&arguments(line));
+            assert_eq!(out.text, line.join(" "), "{line:?}");
+            assert!(!out.redacted, "{line:?}");
+        }
+    }
+
+    #[test]
+    fn a_long_flag_is_read_whatever_its_case() {
+        let out = redact(&arguments(&["app", "--PASSWORD", "hunter2", "--Token=abc"]));
+
+        assert_eq!(out.text, "app --PASSWORD [redacted] --Token=[redacted]");
     }
 }

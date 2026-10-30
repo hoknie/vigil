@@ -5,7 +5,7 @@ use super::aims::aim;
 use super::carried::Carried;
 use super::carry::carry;
 use super::ours::Ours;
-use super::plans::plan;
+use super::plans::{left_in_sudoers, plan};
 use crate::files;
 
 pub const READING: &str = "users";
@@ -73,9 +73,16 @@ fn one(change: &AccountChange, reading: Option<&Snapshot>, ours: Ours) -> Change
         Err(why) => return Changed::refused(change, why),
     };
 
+    let left = match change {
+        AccountChange::UpdateSudo { who, .. } | AccountChange::DeleteSudo { who } => {
+            left_in_sudoers(reading, who)
+        }
+        _ => None,
+    }
+    .unwrap_or_default();
     let changed = match carry(&steps) {
-        Ok(said) => Changed::done(change, said),
-        Err(said) => Changed::refused(change, said),
+        Ok(said) => Changed::done(change, format!("{said}{left}")),
+        Err(said) => Changed::refused(change, format!("{said}{left}")),
     };
     match change {
         AccountChange::CreateKey { user, line } => match parse_authorized_keys(line).first() {

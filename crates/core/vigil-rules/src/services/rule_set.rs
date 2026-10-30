@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use vigil_model::{Change, Finding};
+use vigil_model::{Change, Finding, Snapshot};
 
 use crate::ports::BatchRule;
 use crate::ports::{Rule, RuleContext};
@@ -55,6 +55,40 @@ impl RuleSet {
         }
 
         findings
+    }
+
+    pub fn judge_baseline(&self, baseline: &Snapshot, ctx: &mut RuleContext<'_>) -> Vec<Finding> {
+        let judging: Vec<&dyn Rule> = self
+            .over_one_change
+            .iter()
+            .map(Box::as_ref)
+            .filter(|rule| rule.judges_the_baseline())
+            .collect();
+        if judging.is_empty() {
+            return Vec::new();
+        }
+
+        let mut findings = Vec::new();
+        for (key, after) in &baseline.items {
+            let change = Change::Added {
+                key: key.clone(),
+                after: after.clone(),
+            };
+            for rule in &judging {
+                if let Some(finding) = rule.apply(&change, ctx) {
+                    findings.push(finding);
+                }
+            }
+        }
+        findings
+    }
+
+    pub fn baseline_judges(&self) -> Vec<&'static str> {
+        self.over_one_change
+            .iter()
+            .filter(|rule| rule.judges_the_baseline())
+            .map(|rule| rule.name())
+            .collect()
     }
 }
 
@@ -175,5 +209,61 @@ mod tests {
 
         assert_eq!(judged(&set, &[added("a"), added("b")]).len(), 2);
         assert_eq!(set.len(), 1);
+    }
+    struct Standing;
+
+    impl Rule for Standing {
+        fn name(&self) -> &'static str {
+            "standing"
+        }
+        fn apply(&self, change: &Change, ctx: &mut RuleContext<'_>) -> Option<Finding> {
+            Some(finding(change.key(), "standing", ctx))
+        }
+        fn judges_the_baseline(&self) -> bool {
+            true
+        }
+    }
+
+    fn baseline(keys: &[&str]) -> Snapshot {
+        let mut reading = Snapshot::new("network", "2026-09-08T12:00:00.000Z");
+        for key in keys {
+            reading.items.insert((*key).to_string(), json!({}));
+        }
+        reading
+    }
+
+    fn judged_baseline(set: &RuleSet, reading: &Snapshot) -> Vec<String> {
+        let mut mint = || "event".to_string();
+        let mut ctx = RuleContext {
+            now: "2026-09-08T12:00:00.000Z".into(),
+            mint_event_id: &mut mint,
+        };
+        set.judge_baseline(reading, &mut ctx)
+            .into_iter()
+            .map(|finding| format!("{}:{}", finding.title, finding.finding_key))
+            .collect()
+    }
+
+    #[test]
+    fn a_rule_that_did_not_claim_the_baseline_is_not_asked_about_it() {
+        let set = RuleSet::new(vec![Box::new(Pairing)], vec![Box::new(Chatty)]);
+
+        assert!(
+            judged_baseline(&set, &baseline(&["a", "b"])).is_empty(),
+            "the first reading of a host is a baseline, and a rule that describes what changed \
+             has nothing to say about it"
+        );
+        assert!(set.baseline_judges().is_empty());
+    }
+
+    #[test]
+    fn a_rule_that_claims_the_baseline_sees_every_row_of_it_as_appearing() {
+        let set = RuleSet::of(vec![Box::new(Chatty), Box::new(Standing)]);
+
+        assert_eq!(
+            judged_baseline(&set, &baseline(&["a", "b"])),
+            vec!["standing:a", "standing:b"]
+        );
+        assert_eq!(set.baseline_judges(), vec!["standing"]);
     }
 }
