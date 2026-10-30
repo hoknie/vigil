@@ -203,3 +203,93 @@ fn a_collector_that_goes_unwell_while_the_agent_runs_is_reported_and_then_closed
         "in the journal too, which is what the next start reads"
     );
 }
+
+struct PanicsOnEveryAsk(std::sync::Arc<std::sync::atomic::AtomicUsize>);
+
+impl vigil_collect::Collector for PanicsOnEveryAsk {
+    fn name(&self) -> &'static str {
+        "firewall"
+    }
+    fn available(&self) -> Health {
+        self.0.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        panic!("the ruleset dump ended mid-table")
+    }
+    fn collect(&self) -> Result<vigil_model::Snapshot, vigil_collect::CollectError> {
+        self.0.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        panic!("the ruleset dump ended mid-table")
+    }
+}
+
+fn about_the_firewall(round: &crate::loops::Round) -> vigil_model::CollectorStatus {
+    round.shared.with(|state| {
+        state
+            .agent()
+            .collectors
+            .into_iter()
+            .find(|collector| collector.name == "firewall")
+            .expect("the collector beside network")
+    })
+}
+
+#[test]
+fn a_panicking_collector_switches_itself_off_and_the_one_beside_it_keeps_reading() {
+    let asked = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let mut it = super::harness::watching_beside(
+        "panicking",
+        Health::Ok,
+        vec![snapshot(&[443]), snapshot(&[443]), snapshot(&[443])],
+        vec![Box::new(PanicsOnEveryAsk(asked.clone()))],
+    );
+    let mut said = Said::about([
+        ("network", "ok".to_string()),
+        ("firewall", "ok".to_string()),
+    ]);
+
+    for _ in 0..3 {
+        it.round.read(0, &mut said);
+        it.round.read(1, &mut said);
+    }
+    it.round.take_health(true, &mut said);
+
+    let about_it: Vec<_> = raised(&it.round)
+        .into_iter()
+        .filter(|finding| finding.kind.as_str() == "agent.collector.degraded")
+        .collect();
+    assert_eq!(about_it.len(), 1, "one panic, one finding: {about_it:?}");
+    assert_eq!(about_it[0].finding_key, "agent.collector|firewall");
+    assert_eq!(
+        asked.load(std::sync::atomic::Ordering::Relaxed),
+        1,
+        "after the panic nothing calls into that collector again: not its period, not the \
+         health check"
+    );
+
+    let firewall = about_the_firewall(&it.round);
+    assert_eq!(
+        firewall.failures, 1,
+        "a reading that was not taken is not a failed one"
+    );
+    assert!(
+        firewall.last_error.as_deref().is_some_and(|error| error
+            .contains("the collector panicked: the ruleset dump ended mid-table")
+            && error.contains(
+                "switched off until its block in the configuration changes or the daemon restarts"
+            )),
+        "{:?}",
+        firewall.last_error
+    );
+
+    let network = it.round.shared.with(|state| {
+        state
+            .agent()
+            .collectors
+            .into_iter()
+            .find(|collector| collector.name == "network")
+            .expect("network")
+    });
+    assert_eq!(
+        network.readings, 3,
+        "the collector beside it read every time"
+    );
+    assert_eq!(network.failures, 0);
+}

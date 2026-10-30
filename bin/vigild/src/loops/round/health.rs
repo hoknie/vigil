@@ -23,8 +23,17 @@ impl Round {
     }
 
     fn health_of(&mut self, index: usize, said: &mut Said, announce: bool) -> Vec<Finding> {
-        let state_of_it = self.watches[index].health();
         let name = self.watches[index].name();
+        if self.watches[index].switched_off().is_some() {
+            return Vec::new();
+        }
+        let state_of_it = match self.watches[index].examine() {
+            Ok(state_of_it) => state_of_it,
+            Err(why) => {
+                self.failed(name, &why, said);
+                return Vec::new();
+            }
+        };
         self.shared
             .with(|state| state.record_health(name, &state_of_it));
 

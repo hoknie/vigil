@@ -40,7 +40,10 @@ pub fn kill(
     let reading = shared.with(|state| state.snapshot(reading_of(target)).cloned());
     let report = carry_out(target, keys, killing, reading.as_ref(), now);
     let raised = findings(&report, &mut uuid7::mint);
-    shared.with(|state| state.record_what_the_console_did(&raised));
+    shared.with(|state| {
+        state.record_what_the_console_did(&raised);
+        state.ask_for_a_reading(reading_of(target));
+    });
 
     for one in &report.killed {
         eprintln!(
@@ -190,5 +193,72 @@ mod tests {
         let raised = shared.with(|state| state.take_what_the_console_raised());
         assert_eq!(raised.len(), 1);
         assert_eq!(raised[0].kind.as_str(), "agent.process.kill_refused");
+    }
+    #[test]
+    fn every_kill_answered_asks_for_the_reading_its_target_was_looked_up_in_even_a_refused_one() {
+        let mut state = fixture::state_that_may_kill();
+        state.record_reading(fixture::reading(fixture::snapshot()));
+        state.record_reading(fixture::reading_of(
+            "processes",
+            vigil_processes::fixture::processes(),
+        ));
+        let shared = Shared::new(state);
+
+        kill(
+            &["tcp|nothing:1".into()],
+            &[],
+            Killing::Terminate,
+            &shared,
+            now(),
+        );
+        assert_eq!(
+            shared.with(|state| state.take_readings_asked_for()),
+            vec!["network".to_string()],
+            "the console reads the sockets next, and the reading it gets has to be one taken \
+             after the signal rather than the one the target was found in"
+        );
+
+        kill(
+            &[],
+            &["exec|/usr/bin/nothing-runs-this|root".into()],
+            Killing::Terminate,
+            &shared,
+            now(),
+        );
+        assert_eq!(
+            shared.with(|state| state.take_readings_asked_for()),
+            vec!["processes".to_string()]
+        );
+    }
+
+    #[test]
+    fn an_ask_refused_before_anything_was_looked_up_asks_for_no_reading() {
+        let off = Shared::new(fixture::state());
+        kill(
+            &["tcp|0.0.0.0:4444".into()],
+            &[],
+            Killing::Kill,
+            &off,
+            now(),
+        );
+
+        let on = Shared::new(fixture::state_that_may_kill());
+        kill(&[], &[], Killing::Terminate, &on, now());
+        kill(
+            &["tcp|0.0.0.0:4444".into()],
+            &["exec|/tmp/.x/nc|www-data".into()],
+            Killing::Terminate,
+            &on,
+            now(),
+        );
+
+        for shared in [off, on] {
+            assert!(
+                shared
+                    .with(|state| state.take_readings_asked_for())
+                    .is_empty(),
+                "an ask that was not taken up changed nothing, and has nothing new to read"
+            );
+        }
     }
 }
