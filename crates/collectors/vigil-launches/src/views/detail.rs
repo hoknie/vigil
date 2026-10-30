@@ -17,8 +17,8 @@ pub(super) fn launch(item: &Value) -> Vec<Piece> {
     if let Some(auid) = number(item, "auid") {
         said.push(Piece::field("login id", auid.to_string()));
     }
-    if let Some(id) = number(item, "audit_id") {
-        said.push(Piece::field("audit id", id.to_string()));
+    if let Some(id) = text(item, "last_audit_id").or_else(|| text(item, "audit_id")) {
+        said.push(Piece::field("audit id", id));
     }
     said.push(Piece::field(
         "first seen",
@@ -42,9 +42,12 @@ pub(super) fn launch(item: &Value) -> Vec<Piece> {
 
     said.push(Piece::field(
         "the file",
-        match flag(item, "exe_present") {
-            true => "was on disk when this record was read",
-            false => "was not on disk when this record was read",
+        match item.get("exe_present").and_then(Value::as_bool) {
+            Some(true) => "was on disk when this record was read",
+            Some(false) => "was not on disk when this record was read",
+            None => {
+                "could not be checked: the agent was not shown that path when this record was read"
+            }
         },
     ));
     said.push(Piece::text(

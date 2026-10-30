@@ -2,7 +2,7 @@ use clap::Args;
 use vigil_config::Installation;
 
 use super::opening::Opening;
-use super::screen::screen;
+use super::screen::{help_for_screen, screen};
 use crate::cli::style;
 use crate::ui::Screen;
 
@@ -33,10 +33,7 @@ paths and the suppressions from it again on its next round; everything else is r
         value_name = "NAME",
         value_parser = screen,
         help = "Which screen to open it on",
-        long_help = "\
-Which screen to open it on: home, network, accounts, programs, startup,
-firewall, summary, findings. `vigil ui` opens on home, `vigil capture` prints
-summary."
+        long_help = help_for_screen()
     )]
     pub screen: Option<Opening>,
 }

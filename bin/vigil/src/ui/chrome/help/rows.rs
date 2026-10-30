@@ -25,8 +25,8 @@ pub(super) fn rows() -> Vec<(&'static str, &'static str)> {
             "show / hide kinds of socket, or all (network)",
         ),
         (
-            "t / d",
-            "units as a tree (startup); a section's words (main)",
+            "d",
+            "words (main) \u{b7} why (summary) \u{b7} silence (findings)",
         ),
         (
             "",
@@ -62,7 +62,7 @@ pub(super) fn rows() -> Vec<(&'static str, &'static str)> {
         ),
         (
             "",
-            "  startup: units \u{b7} timers \u{b7} cron \u{b7} modules \u{b7} files",
+            "  startup: units \u{b7} timers \u{b7} cron \u{b7} modules \u{b7} files (t a tree)",
         ),
         (
             "\u{2190} or Esc",

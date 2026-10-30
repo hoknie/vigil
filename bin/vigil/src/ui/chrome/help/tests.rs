@@ -28,8 +28,8 @@ fn every_key_the_console_uses_is_in_here() {
         "reported \u{b7} silenced",
         "Esc",
         "r",
-        "as a tree",
-        "a section's words",
+        "t a tree",
+        "words (main)",
         "x / M",
         "K / U / S",
         "H / P / r",
@@ -184,4 +184,42 @@ fn it_fits_the_terminal_it_is_opened_on() {
             assert!(line.chars().count() <= width as usize, "{width}: {line}");
         }
     }
+}
+
+#[test]
+fn the_key_d_is_named_with_every_screen_it_works_on() {
+    let mut buffer = Buffer::empty(Rect::new(0, 0, 80, 24));
+
+    render(fixture::look(), buffer.area, &mut buffer);
+
+    let page = text::to_text(&buffer);
+    let line = page
+        .lines()
+        .find(|line| line.contains("words (main)"))
+        .unwrap_or_else(|| panic!("no line for d: {page}"));
+    for said in ["words (main)", "why (summary)", "silence (findings)"] {
+        assert!(
+            line.contains(said),
+            "d means something else on each of three screens, and a reader who meets it on \
+             one of them looks up that one: {line}"
+        );
+    }
+}
+
+#[test]
+fn no_line_gives_a_key_to_a_screen_it_does_not_work_on() {
+    let keys: Vec<&str> = rows().into_iter().map(|(keys, _)| keys).collect();
+
+    assert!(
+        !keys
+            .iter()
+            .any(|keys| keys.contains("t / d") || keys.contains("d / t")),
+        "t works on the startup screen and d does not, so one line for both gives d to it: \
+         {keys:?}"
+    );
+    let startup = rows()
+        .into_iter()
+        .find(|(_, meaning)| meaning.contains("startup:"))
+        .expect("the startup lists are named");
+    assert!(startup.1.contains("t a tree"), "{startup:?}");
 }

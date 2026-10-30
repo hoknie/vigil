@@ -312,3 +312,65 @@ fn a_suppression_can_be_asked_for_by_program_and_pattern_without_naming_an_objec
         other => panic!("{other:?}"),
     }
 }
+
+fn sections() -> Vec<&'static str> {
+    Screen::all()
+        .into_iter()
+        .filter(|screen| *screen != Screen::SUMMARY && *screen != Screen::FINDINGS)
+        .map(Screen::name)
+        .collect()
+}
+
+fn names_every_section(said: &str) {
+    let flat = said.split_whitespace().collect::<Vec<_>>().join(" ");
+    for section in sections() {
+        assert!(
+            flat.contains(section),
+            "{section} opens with --screen and is not named where the screens are listed: {said}"
+        );
+    }
+    for own in ["summary", "findings", "home", "difference"] {
+        assert!(flat.contains(own), "{own}: {said}");
+    }
+    assert!(
+        !flat.contains("ports"),
+        "the former name is accepted for old scripts and not offered to new ones: {said}"
+    );
+}
+
+#[test]
+fn every_section_this_build_opens_is_named_where_an_unknown_screen_is_refused() {
+    for line in [
+        ["ui", "--screen", "resources"],
+        ["capture", "--screen", "resources"],
+    ] {
+        let error = parse(&line).expect_err("must not be accepted");
+
+        names_every_section(&error.to_string());
+    }
+}
+
+#[test]
+fn every_section_this_build_opens_is_named_in_the_help_for_screen() {
+    for subcommand in ["ui", "capture"] {
+        let mut command = Cli::command();
+        let help = command
+            .find_subcommand_mut(subcommand)
+            .expect("the subcommand")
+            .render_long_help()
+            .to_string();
+
+        names_every_section(&help);
+    }
+}
+
+#[test]
+fn a_section_the_old_list_forgot_opens_by_its_name() {
+    for name in ["system", "containers"] {
+        assert_eq!(
+            ui(&["ui", "--screen", name]).console.opening(Screen::HOME),
+            plain(screen(name)),
+            "--screen {name}"
+        );
+    }
+}
