@@ -2,9 +2,9 @@ use std::path::{Path, PathBuf};
 
 use vigil_model::Finding;
 
-use crate::Flow;
 use crate::conformance::finding;
 use crate::stores::files::{Limits, Outgoing};
+use crate::{Flow, HeldBatch};
 
 fn temporary_path(name: &str) -> PathBuf {
     static NAMES_GIVEN: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
@@ -239,5 +239,93 @@ fn an_empty_buffer_names_no_oldest_finding_and_holds_no_bytes() {
         path,
         "and it names the file an operator reads"
     );
+    let _ = std::fs::remove_file(&path);
+}
+
+fn batch_beside(path: &Path) -> PathBuf {
+    path.with_extension("batch")
+}
+
+#[test]
+fn a_held_batch_survives_a_restart_of_the_buffer() {
+    let path = temporary_path("held-restart");
+    {
+        let mut buffer = opened(&path, small());
+        buffer.keep(&findings(5)).expect("keeps");
+        buffer.hold_batch("batch-one", 3).expect("holds");
+    }
+
+    let buffer = opened(&path, small());
+
+    assert_eq!(
+        buffer.held_batch(),
+        Some(HeldBatch {
+            batch_id: "batch-one".into(),
+            findings: 3,
+        }),
+        "a restart while the receiver is down is the retry that matters most"
+    );
+    let _ = std::fs::remove_file(&path);
+    let _ = std::fs::remove_file(batch_beside(&path));
+}
+
+#[test]
+fn a_batch_the_ceiling_cut_into_is_forgotten() {
+    let path = temporary_path("held-ceiling");
+    let mut buffer = opened(&path, small());
+    buffer.keep(&findings(8)).expect("keeps");
+    buffer.hold_batch("batch-one", 8).expect("holds");
+
+    buffer.keep(&findings(4)).expect("keeps past the ceiling");
+
+    assert_eq!(
+        buffer.held_batch(),
+        None,
+        "a batch that lost its oldest findings is not the batch that was refused"
+    );
+    assert!(!batch_beside(&path).exists());
+    assert_eq!(
+        opened(&path, small()).held_batch(),
+        None,
+        "nor after a restart"
+    );
+    let _ = std::fs::remove_file(&path);
+}
+
+#[test]
+fn a_batch_that_no_longer_heads_the_buffer_is_forgotten_at_open() {
+    let path = temporary_path("held-moved");
+    {
+        let mut buffer = opened(&path, small());
+        buffer.keep(&findings(4)).expect("keeps");
+        buffer.hold_batch("batch-one", 2).expect("holds");
+    }
+    let text = std::fs::read_to_string(&path).expect("readable");
+    let without_the_first: Vec<&str> = text.lines().skip(1).collect();
+    std::fs::write(&path, without_the_first.join("\n") + "\n").expect("rewrites");
+
+    let buffer = opened(&path, small());
+
+    assert_eq!(
+        buffer.held_batch(),
+        None,
+        "a batch id names one set of findings, and these are no longer it"
+    );
+    assert!(!batch_beside(&path).exists());
+    let _ = std::fs::remove_file(&path);
+}
+
+#[test]
+fn a_delivered_batch_leaves_no_file_behind() {
+    let path = temporary_path("held-delivered");
+    let mut buffer = opened(&path, small());
+    buffer.keep(&findings(4)).expect("keeps");
+    buffer.hold_batch("batch-one", 2).expect("holds");
+    assert!(batch_beside(&path).exists());
+
+    buffer.delivered(2).expect("taken");
+
+    assert_eq!(buffer.held_batch(), None);
+    assert!(!batch_beside(&path).exists());
     let _ = std::fs::remove_file(&path);
 }

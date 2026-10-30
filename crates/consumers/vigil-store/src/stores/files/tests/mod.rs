@@ -1,3 +1,4 @@
+mod batch;
 mod ceilings;
 mod contract;
 mod harness;

@@ -4,7 +4,9 @@ mod stores;
 mod types;
 
 pub use ports::Store;
-pub use types::{Counted, Dropped, Flow, Held, Kept, Recorded, StoreError};
+pub use types::{Counted, Dropped, Flow, Held, HeldBatch, Kept, Recorded, StoreError};
 
 #[cfg(feature = "files")]
-pub use stores::files::{FileStore, Limits, Outgoing, create_owner_only_directory};
+pub use stores::files::{
+    FileStore, Limits, Outgoing, create_owner_only, create_owner_only_directory,
+};

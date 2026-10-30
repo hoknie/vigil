@@ -1,13 +1,19 @@
 use std::sync::Mutex;
 
-use vigil_model::{BufferStatus, Envelope, Finding, Host, Producer, SCHEMA_VERSION};
+use vigil_model::{BufferStatus, Envelope, Finding, Host, Producer, SCHEMA_VERSION, Uuid7};
 use vigil_report::{ReportError, Reporter};
-use vigil_store::{Flow, Held, Outgoing};
+use vigil_store::{Flow, Held, HeldBatch, Outgoing};
 
 use crate::helpers::{agent_finding, rfc3339, uuid7};
 use crate::socket::Shared;
 
 const BATCH: usize = 500;
+
+struct Pushed {
+    accepted: usize,
+    failure: Option<String>,
+    unaccepted: Option<HeldBatch>,
+}
 
 struct Line {
     reporter: Box<dyn Reporter>,
@@ -111,9 +117,9 @@ impl Delivery {
             .collect();
 
         let mut raised = Vec::new();
-        let (kept, mut pending, held) = self.with_buffer(line, |buffer| {
+        let (kept, mut pending, held, batch) = self.with_buffer(line, |buffer| {
             let kept = buffer.keep(&wanted);
-            (kept, buffer.waiting(), buffer.held())
+            (kept, buffer.waiting(), buffer.held(), buffer.held_batch())
         });
         let from_the_buffer = pending.len();
 
@@ -132,7 +138,8 @@ impl Delivery {
             return raised;
         }
 
-        let (accepted, failure) = self.push(line, &pending);
+        let pushed = self.push(line, &pending, batch);
+        let accepted = pushed.accepted;
         let (drained, held) = self.with_buffer(line, |buffer| {
             let drained = match buffer.delivered(accepted.min(from_the_buffer)) {
                 Ok(flow) => flow,
@@ -144,21 +151,43 @@ impl Delivery {
                     Flow::Steady
                 }
             };
+            if let Some(unaccepted) = pushed.unaccepted
+                && holdable(accepted, unaccepted.findings, from_the_buffer)
+                && let Err(error) = buffer.hold_batch(unaccepted.batch_id, unaccepted.findings)
+            {
+                eprintln!(
+                    "{} outgoing batch for {name} not held: {error}. Its retry goes out under \
+                     a new batch id",
+                    rfc3339::now()
+                );
+            }
             (drained, buffer.held())
         });
         raised.extend(said(&name, drained, &held));
 
+        let failure = pushed.failure;
         self.shared
             .with(|state| state.record_delivery(&name, rfc3339::now(), failure));
         raised
     }
 
-    fn push(&self, line: &Line, pending: &[Finding]) -> (usize, Option<String>) {
+    fn push(&self, line: &Line, pending: &[Finding], batch: Option<HeldBatch>) -> Pushed {
         let mut accepted = 0;
         let mut refused = None;
 
-        for chunk in pending.chunks(BATCH) {
-            match line.reporter.send(&self.envelope(chunk)) {
+        let (first, rest) = match batch {
+            Some(batch) if batch.findings <= pending.len() => {
+                let (held, rest) = pending.split_at(batch.findings);
+                (Some((batch.batch_id, held)), rest)
+            }
+            _ => (None, pending),
+        };
+        let chunks = first
+            .into_iter()
+            .chain(rest.chunks(BATCH).map(|chunk| (uuid7::mint(), chunk)));
+
+        for (batch_id, chunk) in chunks {
+            match line.reporter.send(&self.envelope(batch_id.clone(), chunk)) {
                 Ok(_) => accepted += chunk.len(),
                 Err(ReportError::Malformed(what)) => {
                     eprintln!(
@@ -176,18 +205,29 @@ impl Delivery {
                         rfc3339::now(),
                         line.reporter.name()
                     );
-                    return (accepted, Some(error.to_string()));
+                    return Pushed {
+                        accepted,
+                        failure: Some(error.to_string()),
+                        unaccepted: Some(HeldBatch {
+                            batch_id,
+                            findings: chunk.len(),
+                        }),
+                    };
                 }
             }
         }
 
-        (accepted, refused)
+        Pushed {
+            accepted,
+            failure: refused,
+            unaccepted: None,
+        }
     }
 
-    fn envelope(&self, findings: &[Finding]) -> Envelope {
+    fn envelope(&self, batch_id: Uuid7, findings: &[Finding]) -> Envelope {
         Envelope {
             schema_version: SCHEMA_VERSION,
-            batch_id: uuid7::mint(),
+            batch_id,
             sent_at: rfc3339::now(),
             producer: Producer {
                 name: "vigil".into(),
@@ -205,6 +245,10 @@ impl Delivery {
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         act(&mut buffer)
     }
+}
+
+pub(super) fn holdable(accepted: usize, unaccepted: usize, from_the_buffer: usize) -> bool {
+    unaccepted > 0 && accepted + unaccepted <= from_the_buffer
 }
 
 fn said(reporter: &str, flow: Flow, held: &Held) -> Vec<Finding> {

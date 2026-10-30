@@ -3,9 +3,10 @@ use std::path::{Path, PathBuf};
 
 use vigil_model::Finding;
 
+use super::batch::{BatchFile, BatchRecord};
 use super::journal::Journal;
 use super::limits::Limits;
-use crate::{Counted, Flow, Held, StoreError};
+use crate::{Counted, Flow, Held, HeldBatch, StoreError};
 
 pub struct Outgoing {
     name: String,
@@ -15,6 +16,8 @@ pub struct Outgoing {
     dropped: u64,
     dropped_since_empty: u64,
     damaged: usize,
+    batch_file: BatchFile,
+    batch: Option<HeldBatch>,
 }
 
 impl Outgoing {
@@ -23,6 +26,7 @@ impl Outgoing {
         path: PathBuf,
         limits: Limits,
     ) -> Result<Self, StoreError> {
+        let batch_file = BatchFile::beside(&path);
         let (journal, replay) = Journal::open(path)?;
         let mut outgoing = Outgoing {
             name: name.into(),
@@ -32,7 +36,10 @@ impl Outgoing {
             dropped: 0,
             dropped_since_empty: 0,
             damaged: replay.damaged,
+            batch_file,
+            batch: None,
         };
+        outgoing.batch = outgoing.recall_batch();
         outgoing.enforce()?;
         Ok(outgoing)
     }
@@ -55,6 +62,35 @@ impl Outgoing {
 
     pub fn is_empty(&self) -> bool {
         self.waiting.is_empty()
+    }
+
+    pub fn held_batch(&self) -> Option<HeldBatch> {
+        self.batch.clone()
+    }
+
+    pub fn hold_batch(
+        &mut self,
+        batch_id: impl Into<String>,
+        count: usize,
+    ) -> Result<(), StoreError> {
+        let held = HeldBatch {
+            batch_id: batch_id.into(),
+            findings: count,
+        };
+        if self.batch.as_ref() == Some(&held) {
+            return Ok(());
+        }
+        let record = self.record_of(&held).ok_or_else(|| {
+            StoreError::Corrupt(format!(
+                "a batch of {count} cannot be held by a buffer of {}",
+                self.waiting.len()
+            ))
+        })?;
+
+        self.forget_batch();
+        self.batch_file.write(&record)?;
+        self.batch = Some(held);
+        Ok(())
     }
 
     pub fn keep(&mut self, findings: &[Finding]) -> Result<Flow, StoreError> {
@@ -84,6 +120,7 @@ impl Outgoing {
         for _ in 0..count {
             self.waiting.pop_front();
         }
+        self.forget_batch();
         self.rewrite()?;
 
         if !self.waiting.is_empty() || self.dropped_since_empty == 0 {
@@ -147,7 +184,44 @@ impl Outgoing {
         for _ in 0..count {
             self.waiting.pop_front();
         }
+        if count > 0 {
+            self.forget_batch();
+        }
         count as u64
+    }
+
+    fn recall_batch(&self) -> Option<HeldBatch> {
+        let recorded = self.batch_file.read();
+        let held = recorded.as_ref().map(|record| HeldBatch {
+            batch_id: record.batch_id.clone(),
+            findings: record.findings,
+        });
+
+        match held {
+            Some(held) if self.record_of(&held) == recorded => Some(held),
+            _ => {
+                self.batch_file.forget();
+                None
+            }
+        }
+    }
+
+    fn record_of(&self, held: &HeldBatch) -> Option<BatchRecord> {
+        if held.findings == 0 || held.findings > self.waiting.len() {
+            return None;
+        }
+        Some(BatchRecord {
+            batch_id: held.batch_id.clone(),
+            findings: held.findings,
+            first_event_id: self.waiting.front()?.event_id.clone(),
+            last_event_id: self.waiting.get(held.findings - 1)?.event_id.clone(),
+        })
+    }
+
+    fn forget_batch(&mut self) {
+        if self.batch.take().is_some() {
+            self.batch_file.forget();
+        }
     }
 
     fn rewrite(&mut self) -> Result<(), StoreError> {

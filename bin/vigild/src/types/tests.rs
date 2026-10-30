@@ -7,6 +7,7 @@ use vigil_report::{ReportError, Reporter};
 use vigil_store::{Limits, Outgoing};
 
 use super::Delivery;
+use super::delivery::holdable;
 use crate::socket::{Shared, fixture};
 
 struct Scripted {
@@ -14,6 +15,7 @@ struct Scripted {
     refusing: AtomicBool,
     malformed: AtomicBool,
     taken: StandardMutex<Vec<Finding>>,
+    attempts: StandardMutex<Vec<(String, Vec<String>)>>,
     only: Option<&'static str>,
 }
 
@@ -24,6 +26,7 @@ impl Scripted {
             refusing: AtomicBool::new(false),
             malformed: AtomicBool::new(false),
             taken: StandardMutex::new(Vec::new()),
+            attempts: StandardMutex::new(Vec::new()),
             only: None,
         }
     }
@@ -36,6 +39,10 @@ impl Scripted {
             .map(|finding| finding.finding_key.clone())
             .collect()
     }
+
+    fn attempts(&self) -> Vec<(String, Vec<String>)> {
+        self.attempts.lock().expect("not poisoned").clone()
+    }
 }
 
 impl Reporter for Scripted {
@@ -44,6 +51,14 @@ impl Reporter for Scripted {
     }
 
     fn send(&self, envelope: &Envelope) -> Result<vigil_report::Delivery, ReportError> {
+        self.attempts.lock().expect("not poisoned").push((
+            envelope.batch_id.clone(),
+            envelope
+                .findings
+                .iter()
+                .map(|finding| finding.finding_key.clone())
+                .collect(),
+        ));
         if self.malformed.load(Ordering::Relaxed) {
             return Err(ReportError::Malformed("no retry fixes this".into()));
         }
@@ -292,4 +307,175 @@ fn a_buffer_holds_only_what_its_own_receiver_asked_for() {
         "a receiver that filters is a receiver that never sees what it filtered: {lines}"
     );
     let _ = std::fs::remove_file(&path);
+}
+
+fn batch_file(path: &std::path::Path) -> std::path::PathBuf {
+    path.with_extension("batch")
+}
+
+fn named(keys: &[&str]) -> Vec<String> {
+    keys.iter().map(|key| key.to_string()).collect()
+}
+
+#[test]
+fn a_retry_carries_the_same_batch_id_and_the_same_findings() {
+    let path = temporary_path("same-batch");
+    let receiver = std::sync::Arc::new(Scripted::new("ndjson"));
+    receiver.refusing.store(true, Ordering::Relaxed);
+    let delivery = delivery(receiver.clone(), buffer(&path, Limits::outgoing()));
+
+    delivery.send(&[found("a"), found("b"), found("c")]);
+    delivery.send(&[found("d")]);
+
+    let attempts = receiver.attempts();
+    assert_eq!(attempts.len(), 2, "{attempts:?}");
+    assert_eq!(
+        attempts[1], attempts[0],
+        "a receiver tells a retry from a new batch by its id, and only if the id stays"
+    );
+    assert_eq!(attempts[1].1, named(&["a", "b", "c"]));
+    let _ = std::fs::remove_file(&path);
+    let _ = std::fs::remove_file(batch_file(&path));
+}
+
+#[test]
+fn findings_found_after_a_refusal_go_in_a_batch_of_their_own() {
+    let path = temporary_path("own-batch");
+    let receiver = std::sync::Arc::new(Scripted::new("ndjson"));
+    receiver.refusing.store(true, Ordering::Relaxed);
+    let delivery = delivery(receiver.clone(), buffer(&path, Limits::outgoing()));
+
+    delivery.send(&[found("a"), found("b"), found("c")]);
+    receiver.refusing.store(false, Ordering::Relaxed);
+    delivery.send(&[found("d"), found("e")]);
+
+    let attempts = receiver.attempts();
+    assert_eq!(attempts.len(), 3, "{attempts:?}");
+    assert_eq!(attempts[1], attempts[0]);
+    assert_ne!(attempts[2].0, attempts[0].0);
+    assert_eq!(
+        attempts[2].1,
+        named(&["d", "e"]),
+        "what came after the refusal is a new batch, not a larger copy of the old one"
+    );
+    let _ = std::fs::remove_file(&path);
+}
+
+#[test]
+fn a_retry_after_a_restart_carries_the_batch_id_from_before_it() {
+    let path = temporary_path("restart-batch");
+    let before = {
+        let receiver = std::sync::Arc::new(Scripted::new("ndjson"));
+        receiver.refusing.store(true, Ordering::Relaxed);
+        let delivery = delivery(receiver.clone(), buffer(&path, Limits::outgoing()));
+        delivery.send(&[found("a"), found("b")]);
+        receiver.attempts()
+    };
+
+    let receiver = std::sync::Arc::new(Scripted::new("ndjson"));
+    let delivery = delivery(receiver.clone(), buffer(&path, Limits::outgoing()));
+    delivery.replay();
+
+    assert_eq!(
+        receiver.attempts(),
+        before,
+        "a restart while the receiver is down is the retry that matters most"
+    );
+    assert!(
+        !batch_file(&path).exists(),
+        "and once taken it is forgotten"
+    );
+    let _ = std::fs::remove_file(&path);
+}
+
+#[test]
+fn a_batch_holding_findings_the_buffer_never_kept_is_not_held() {
+    assert!(holdable(0, 3, 3), "a batch wholly from the buffer is held");
+    assert!(holdable(2, 3, 5));
+    assert!(
+        !holdable(0, 3, 2),
+        "a finding the buffer never kept cannot be sent again, so the batch cannot be either"
+    );
+    assert!(!holdable(2, 3, 4));
+    assert!(!holdable(0, 0, 4), "and an empty batch is not a batch");
+}
+
+#[test]
+fn a_batch_no_retry_can_fix_is_not_held() {
+    let path = temporary_path("malformed-batch");
+    let receiver = std::sync::Arc::new(Scripted::new("ndjson"));
+    receiver.refusing.store(true, Ordering::Relaxed);
+    let delivery = delivery(receiver.clone(), buffer(&path, Limits::outgoing()));
+
+    delivery.send(&[found("a")]);
+    assert!(batch_file(&path).exists(), "a refused batch is held");
+    receiver.malformed.store(true, Ordering::Relaxed);
+    delivery.send(&[]);
+    assert!(
+        !batch_file(&path).exists(),
+        "a batch that no retry can fix is not waiting for one"
+    );
+    receiver.malformed.store(false, Ordering::Relaxed);
+    receiver.refusing.store(false, Ordering::Relaxed);
+    delivery.send(&[found("b")]);
+
+    let attempts = receiver.attempts();
+    assert_eq!(attempts.len(), 3, "{attempts:?}");
+    assert_ne!(attempts[2].0, attempts[0].0);
+    assert_eq!(attempts[2].1, named(&["b"]));
+    let _ = std::fs::remove_file(&path);
+}
+
+#[test]
+fn a_delivery_accepted_at_once_writes_no_batch_file() {
+    let path = temporary_path("no-batch");
+    let receiver = std::sync::Arc::new(Scripted::new("ndjson"));
+    let delivery = delivery(receiver.clone(), buffer(&path, Limits::outgoing()));
+
+    delivery.send(&[found("a"), found("b")]);
+
+    assert_eq!(receiver.keys(), named(&["a", "b"]));
+    assert!(
+        !batch_file(&path).exists(),
+        "the price of a held batch is paid on a refusal, never on the ordinary path"
+    );
+    let _ = std::fs::remove_file(&path);
+}
+
+#[test]
+fn one_batch_id_never_goes_out_with_two_different_sets_of_findings() {
+    let path = temporary_path("one-id");
+    let receiver = std::sync::Arc::new(Scripted::new("ndjson"));
+    receiver.refusing.store(true, Ordering::Relaxed);
+    let delivery = delivery(
+        receiver.clone(),
+        buffer(
+            &path,
+            Limits {
+                findings: 4,
+                journal_bytes: 64 * 1024,
+            },
+        ),
+    );
+
+    delivery.send(&[found("a"), found("b"), found("c")]);
+    delivery.send(&[found("d")]);
+    delivery.send(&[found("e"), found("f")]);
+    receiver.refusing.store(false, Ordering::Relaxed);
+    delivery.send(&[found("g")]);
+
+    let mut seen: std::collections::BTreeMap<String, Vec<String>> = Default::default();
+    for (batch_id, keys) in receiver.attempts() {
+        let first = seen.entry(batch_id.clone()).or_insert_with(|| keys.clone());
+        assert_eq!(
+            *first, keys,
+            "batch {batch_id} went out as {first:?} and again as {keys:?}"
+        );
+    }
+    assert!(
+        !receiver.keys().contains(&"a".to_string()),
+        "the ceiling displaced the oldest, and the batch they headed went with them"
+    );
+    let _ = std::fs::remove_file(&path);
+    let _ = std::fs::remove_file(batch_file(&path));
 }
