@@ -109,6 +109,8 @@ fn silencing_a_finding_writes_into_the_consoles_own_file_and_the_list_shows_it_w
     let configuration = std::fs::read_to_string(&path).expect("readable");
 
     press(&mut app, KeyCode::Char('d'));
+
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "the staging api, expected here");
     let said = drawn_at(&app, 400, 30);
     to_the_silenced(&mut app);
@@ -129,6 +131,7 @@ fn silencing_a_finding_writes_into_the_consoles_own_file_and_the_list_shows_it_w
 fn reporting_an_entry_again_takes_it_out_of_the_file_that_holds_it_and_only_that_entry() {
     let (mut app, _, directory) = apart();
     press(&mut app, KeyCode::Char('d'));
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "the staging api, expected here");
     to_the_silenced(&mut app);
 
@@ -169,6 +172,7 @@ fn an_entry_already_out_of_its_file_is_not_taken_out_twice_and_says_why() {
 fn an_object_reported_again_comes_back_to_the_findings_this_console_took_it_off() {
     let (mut app, _, _) = apart();
     press(&mut app, KeyCode::Char('d'));
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "ours");
     assert!(!drawn_at(&app, 200, 30).contains("A new listening port"));
 

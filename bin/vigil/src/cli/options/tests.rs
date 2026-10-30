@@ -287,3 +287,28 @@ fn on_linux_the_console_reads_the_socket_the_daemon_opens_under_run() {
 fn on_macos_the_console_reads_the_socket_the_daemon_opens_under_var_run() {
     assert_eq!(DEFAULT_SOCKET, "/var/run/vigil/vigil.sock");
 }
+
+#[test]
+fn a_suppression_can_be_asked_for_by_program_and_pattern_without_naming_an_object() {
+    let parsed = parse(&[
+        "suppress",
+        "add",
+        "--program",
+        "netbird",
+        "--match",
+        "port.listen|udp|*",
+        "--reason",
+        "vpn mesh",
+    ])
+    .expect("parses");
+
+    match parsed.command {
+        Command::Suppress(suppress) => {
+            let asked = suppress.options();
+            assert!(asked.keys.is_empty());
+            assert_eq!(asked.program.as_deref(), Some("netbird"));
+            assert_eq!(asked.pattern.as_deref(), Some("port.listen|udp|*"));
+        }
+        other => panic!("{other:?}"),
+    }
+}

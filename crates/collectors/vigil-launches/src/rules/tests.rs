@@ -84,3 +84,31 @@ fn a_launch_snapshot_only_ever_gains_keys_and_the_rules_say_nothing_about_anythi
     assert!(launches(&removed).is_empty());
     assert!(launches(&changed).is_empty());
 }
+
+#[test]
+fn every_finding_about_a_launch_names_the_program_for_a_suppression_to_match() {
+    let changes = [
+        Change::Added {
+            key: "run|alice|/usr/bin/nmap".into(),
+            after: fixture::launch("alice", 1000, "/usr/bin/nmap"),
+        },
+        Change::Added {
+            key: "run|alice|/dev/shm/payload".into(),
+            after: fixture::launch("alice", 1000, "/dev/shm/payload"),
+        },
+        Change::Added {
+            key: "run|alice|/opt/build/tool".into(),
+            after: fixture::launch_of_a_missing_program("alice", 1000, "/opt/build/tool"),
+        },
+    ];
+    let expected = ["/usr/bin/nmap", "/dev/shm/payload", "/opt/build/tool"];
+
+    for (change, program) in changes.iter().zip(expected) {
+        let fired =
+            vigil_rules::programs_for(super::set::launch_rules(), std::slice::from_ref(change));
+        assert!(!fired.is_empty(), "{change:?} fired nothing");
+        for (kind, named) in fired {
+            assert_eq!(named.as_deref(), Some(program), "{kind}");
+        }
+    }
+}

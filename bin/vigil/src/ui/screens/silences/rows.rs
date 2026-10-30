@@ -59,11 +59,7 @@ pub fn shown(silences: &Silences, running: Option<&[String]>) -> Vec<Shown> {
 }
 
 fn object(suppression: &Suppression) -> String {
-    match (&suppression.finding_key, &suppression.finding_key_prefix) {
-        (Some(exact), _) => exact.clone(),
-        (_, Some(prefix)) => format!("{prefix}*"),
-        _ => "anywhere".to_string(),
-    }
+    suppression.object()
 }
 
 fn until(moment: &str) -> String {

@@ -17,6 +17,8 @@ fn the_panel_of_a_finding_offers_the_deed_and_the_key_that_does_it() {
     assert!(page.contains(Deed::Remove.alone()), "{page}");
 
     press(&mut app, KeyCode::Char('d'));
+
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "ours");
 
     assert_eq!(
@@ -36,6 +38,8 @@ fn the_file_a_finding_is_silenced_in_is_the_one_the_daemon_says_it_read() {
     into(&mut app, Screen::FINDINGS, 200, 30);
 
     press(&mut app, KeyCode::Char('d'));
+
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "ours");
 
     assert_eq!(
@@ -57,6 +61,8 @@ fn a_file_named_on_the_command_line_outranks_the_one_the_daemon_answered_with() 
     into(&mut app, Screen::FINDINGS, 200, 30);
 
     press(&mut app, KeyCode::Char('d'));
+
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "ours");
 
     assert_eq!(silenced(&named).len(), 1);
@@ -72,6 +78,8 @@ fn an_agent_that_does_not_say_which_file_it_read_is_answered_with_the_one_the_pa
     into(&mut app, Screen::FINDINGS, 200, 30);
 
     press(&mut app, KeyCode::Char('d'));
+
+    press(&mut app, KeyCode::Char('o'));
     because(&mut app, "ours");
 
     let page = drawn_at(&app, 200, 30);

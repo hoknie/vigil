@@ -8,10 +8,23 @@ use crate::config;
 pub struct Naming {
     #[arg(
         value_name = "OBJECT",
-        required = true,
         help = "The object key, as the console draws it on the finding"
     )]
     pub keys: Vec<String>,
+
+    #[arg(
+        long,
+        value_name = "PATTERN",
+        help = "Take out the entries that name this program, written exactly as in the file"
+    )]
+    pub program: Option<String>,
+
+    #[arg(
+        long = "match",
+        value_name = "PATTERN",
+        help = "Take out the entries that name this key pattern, written exactly as in the file"
+    )]
+    pub pattern: Option<String>,
 
     #[arg(
         long,

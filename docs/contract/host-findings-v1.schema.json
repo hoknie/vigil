@@ -329,7 +329,7 @@
           "items": {
             "type": "string"
           },
-          "description": "JSON pointers of fields scrubbed on the agent before anything was written to disk. A listed field is hidden, not absent."
+          "description": "JSON pointers of fields scrubbed on the agent before anything was written to disk. A listed field is hidden, not absent. A `*` segment extends JSON Pointer to mean every element of that array."
         },
         "rule": {
           "type": [

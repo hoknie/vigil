@@ -35,6 +35,10 @@ impl App {
                 self.chose_to_stop_watching();
                 return;
             }
+            Choosing::Silence => {
+                self.chose_how_to_silence(at);
+                return;
+            }
             Choosing::Filter if holding(self.nav.at().name()).is_some() => {
                 match self.pane_kinds().is_empty() {
                     true => self.narrowed_to_a_facet(at),

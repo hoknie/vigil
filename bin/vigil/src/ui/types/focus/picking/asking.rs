@@ -6,6 +6,7 @@ use crate::ui::Deed;
 pub struct Asking {
     deed: Deed,
     keys: Vec<String>,
+    programs: Vec<(String, Option<String>)>,
     reason: String,
 }
 
@@ -23,8 +24,43 @@ impl Asking {
         Some(Asking {
             deed,
             keys,
+            programs: Vec::new(),
             reason: String::new(),
         })
+    }
+
+    pub fn about_programs(deed: Deed, reached: &[&Finding], by_kind: bool) -> Option<Asking> {
+        let mut programs: Vec<(String, Option<String>)> = Vec::new();
+        for finding in reached {
+            let program = finding.program()?.to_string();
+            let kind = by_kind.then(|| finding.kind.as_str().to_string());
+            if !programs.contains(&(program.clone(), kind.clone())) {
+                programs.push((program, kind));
+            }
+        }
+        if programs.is_empty() {
+            return None;
+        }
+        Some(Asking {
+            deed,
+            keys: Vec::new(),
+            programs,
+            reason: String::new(),
+        })
+    }
+
+    pub fn programs(&self) -> &[(String, Option<String>)] {
+        &self.programs
+    }
+
+    fn what(&self) -> String {
+        match (self.programs.as_slice(), self.keys.as_slice()) {
+            ([(program, Some(kind))], _) => format!("{kind} from {program}"),
+            ([(program, None)], _) => format!("everything from {program}"),
+            ([], [key]) => key.clone(),
+            ([], many) => format!("{} object(s)", many.len()),
+            (many, _) => format!("{} entry(ies)", many.len()),
+        }
     }
 
     pub fn deed(&self) -> Deed {
@@ -54,10 +90,7 @@ impl Asking {
         let leads = [
             format!(
                 " why is {} expected on this host? (Enter writes it, Esc leaves it) ",
-                match self.keys.len() {
-                    1 => self.keys[0].clone(),
-                    many => format!("{many} object(s)"),
-                }
+                self.what()
             ),
             " why? (Enter writes it, Esc leaves it) ".to_string(),
             " reason (Enter writes it, Esc leaves it) ".to_string(),
@@ -184,5 +217,27 @@ mod tests {
                 "the end of what is being typed is the part a reader is looking at: {line}"
             );
         }
+    }
+
+    #[test]
+    fn findings_of_one_program_and_kind_are_one_entry_and_another_kind_is_another() {
+        let mut all = findings();
+        all[1].kind = vigil_model::Kind::from("port.listen.owner_changed".to_string());
+        let reached: Vec<&Finding> = all.iter().collect();
+
+        let by_kind = Asking::about_programs(Deed::Remove, &reached, true).expect("programs");
+        let whole = Asking::about_programs(Deed::Remove, &reached, false).expect("programs");
+
+        assert_eq!(by_kind.programs().len(), 2, "{:?}", by_kind.programs());
+        assert_eq!(whole.programs().len(), 1, "{:?}", whole.programs());
+        assert!(whole.line(120).contains("everything from /tmp/.x/nc"));
+    }
+
+    #[test]
+    fn a_finding_without_a_program_is_nothing_to_silence_by_program() {
+        let mut all = findings();
+        all[0].after = None;
+
+        assert_eq!(Asking::about_programs(Deed::Remove, &[&all[0]], true), None);
     }
 }
