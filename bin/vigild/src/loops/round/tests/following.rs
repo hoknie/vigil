@@ -263,3 +263,46 @@ fn a_collector_switched_off_by_a_panic_reads_again_once_its_block_changes() {
     );
     let _ = std::fs::remove_dir_all(&directory);
 }
+
+#[test]
+fn a_program_silenced_in_the_directory_is_not_reported_from_the_next_round_on_whatever_port_it_opens()
+ {
+    let mut it = watching(
+        "following-program",
+        Health::Ok,
+        vec![
+            snapshot(&[443]),
+            snapshot(&[443, 8080]),
+            snapshot(&[443, 9090]),
+        ],
+    );
+    let directory = temporary_directory("following-program-configuration");
+    std::fs::create_dir_all(directory.join("suppressions")).expect("a directory");
+    let path = directory.join("vigil.yaml");
+    written(&path, "suppressions_path: suppressions\n");
+    let name = path.to_str().expect("utf-8");
+    it.round.silences = crate::config::Silences::of(name, &load(name).expect("loads"));
+    let mut said = Said::about([("network", "ok".to_string())]);
+
+    written(
+        &directory.join("suppressions").join("console.yaml"),
+        "suppressions:\n  - program: nginx\n    finding_key_match: \"port.listen|tcp|*\"\n    reason: the proxy moves its ports\n",
+    );
+    it.round.follow_the_file(&mut said);
+
+    let silence = it.round.shared.with(|state| state.agent().silence);
+    assert_eq!(
+        silence.suppressions,
+        vec!["program nginx · port.listen|tcp|* — the proxy moves its ports".to_string()],
+        "the status names the program, so a quiet screen is explained on the screen"
+    );
+    it.round.read(0, &mut said);
+    it.round.read(0, &mut said);
+    it.round.read(0, &mut said);
+    assert!(
+        raised(&it.round).is_empty(),
+        "every port the program opened or closed after the entry was written is covered: {:?}",
+        raised(&it.round)
+    );
+    assert!(it.round.policy.suppressed() >= 2);
+}

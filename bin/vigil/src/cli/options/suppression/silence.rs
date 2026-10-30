@@ -8,7 +8,6 @@ use crate::config;
 pub struct Silence {
     #[arg(
         value_name = "OBJECT",
-        required = true,
         help = "The object key, as the console draws it on the finding"
     )]
     pub keys: Vec<String>,
@@ -28,6 +27,20 @@ pub struct Silence {
         help = "Cover every object whose key begins with what was named"
     )]
     pub prefix: bool,
+
+    #[arg(
+        long,
+        value_name = "PATTERN",
+        help = "Only findings about this program: its file name, or its path when the pattern has a /; * stands for anything"
+    )]
+    pub program: Option<String>,
+
+    #[arg(
+        long = "match",
+        value_name = "PATTERN",
+        help = "Every object whose whole key fits this pattern, instead of naming objects; * stands for anything"
+    )]
+    pub pattern: Option<String>,
 
     #[arg(
         short,

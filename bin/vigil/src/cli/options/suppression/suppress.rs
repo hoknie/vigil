@@ -20,12 +20,16 @@ impl Suppress {
                 kind: asked.kind.clone(),
                 until: asked.until.clone(),
                 prefix: asked.prefix,
+                program: asked.program.clone(),
+                pattern: asked.pattern.clone(),
                 path: asked.config.clone(),
                 file: asked.file.clone(),
                 dry_run: asked.dry_run,
             },
             Silencing::Remove(asked) => config::Options {
                 keys: asked.keys.clone(),
+                program: asked.program.clone(),
+                pattern: asked.pattern.clone(),
                 path: asked.config.clone(),
                 dry_run: asked.dry_run,
                 ..config::Options::default()

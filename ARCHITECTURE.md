@@ -571,7 +571,9 @@ wrong shape.
 
 ## 7. Identifiers and data
 
-- **`host_id`** is a keyed hash of `/etc/machine-id`; the raw value never leaves the host. **The
+- **`host_id`** is a keyed hash of `/etc/machine-id` (then `/var/lib/dbus/machine-id`; on macOS
+  the hardware UUID from `gethostuuid`), and `tags.host_id_source` names which; the raw value
+  never leaves the host. **The
   field name and the file name differ on purpose:** "host" is what the whole product calls the
   node it watches, while `machine-id` is the kernel's file name and cannot be renamed. A test in
   `bin/vigild/src/identity/host.rs` fails if the path is "corrected".
@@ -639,8 +641,9 @@ unrecorded violation.
 | Where | What | Why |
 |---|---|---|
 | `crates/collectors/vigil-<subject>/src/fixture/`, `crates/core/vigil-rules/src/fixture/`, `bin/vigil/src/ui/fixture/`, `bin/vigild/src/socket/fixture/` | the kind is named in the singular, contrary to §3.3.1 | The name predates the definition of the kind and is shared by all sides of the wire: `fixture::` appears in more than sixty console source files. Renaming is a purely mechanical edit, and combining it with a substantive change would hide that change in noise. The rename should land as a standalone edit; until then the debt is recorded here. |
-| `crates/core/vigil-config/src/helpers/write.rs`, `helpers/places.rs`, `services/sources.rs` | io in `core/`, the only io in that layer | The crate exists to own a **file on disk**, and the files that file points at: the daemon and the console read suppressions from the same `suppressions_path` and must agree on which files that means. Both programs write suppressions (`vigil suppress` and a key on the findings screen), and `vigild configure` and `vigild collector` write the same file. Without a shared crate, the same 0600 write ("write to a temporary file, rename it, keep the previous version as `.previous`") would live in two binaries that must stay byte-identical and would drift apart on the first edit. Its dependencies keep the boundary tight: `vigil-config` links none of our crates, performs two kinds of io (`write`, and reading the files a path names: `files_in`, `gathered`, `sources`), and is invisible to `vigil-model` and `vigil-rules`. |
+| `crates/core/vigil-config/src/helpers/write.rs`, `helpers/places.rs`, `services/sources.rs` | io in `core/`, one of the two places in that layer that touch files (the other is the next row) | The crate exists to own a **file on disk**, and the files that file points at: the daemon and the console read suppressions from the same `suppressions_path` and must agree on which files that means. Both programs write suppressions (`vigil suppress` and a key on the findings screen), and `vigild configure` and `vigild collector` write the same file. Without a shared crate, the same 0600 write ("write to a temporary file, rename it, keep the previous version as `.previous`") would live in two binaries that must stay byte-identical and would drift apart on the first edit. Its dependencies keep the boundary tight: `vigil-config` links none of our crates, performs two kinds of io (`write`, and reading the files a path names: `files_in`, `gathered`, `sources`), and is invisible to `vigil-model` and `vigil-rules`. |
 
+| `crates/core/vigil-model/src/snapshot/golden.rs` (`Golden`) | file io in `vigil-model`, which §1 keeps free of io, and it is public outside a test build | The golden samples (§3.3.1) are checked by every side that links the vocabulary: the collector crates, both binaries and `vigil-model` itself. Their fixture tests live in other crates, so the reader and writer of `golden/` has to be an ordinary public item of the one crate all of them already link; a `cfg(test)` item is invisible across crates, and a separate test-support crate would be one more crate pinned to the same directory. `Golden` is only called from tests and `just golden`: nothing on the watch path, no rule and no sink reaches it. |
 ---
 
 ## 11. Recipes

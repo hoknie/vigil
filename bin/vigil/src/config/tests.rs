@@ -44,6 +44,7 @@ fn an_entry_written_here_is_one_the_daemon_reads_back_and_the_rest_of_the_file_i
     assert!(held[0].covers(
         "port.listen|tcp|0.0.0.0:4444",
         "port.listen.new",
+        None,
         "2026-09-13T10:00:00.000Z"
     ));
     assert!(
@@ -320,4 +321,132 @@ fn on_linux_the_console_edits_the_configuration_the_packages_install_under_etc()
 #[test]
 fn on_macos_the_console_edits_the_configuration_the_package_installs_under_usr_local() {
     assert_eq!(super::DEFAULT_PATH, "/usr/local/etc/vigil/vigil.yaml");
+}
+
+fn tunnel(path: &str) -> Options {
+    Options {
+        program: Some("netbird".into()),
+        pattern: Some("port.listen|udp|*".into()),
+        reason: "vpn mesh".into(),
+        path: path.to_string(),
+        ..Options::default()
+    }
+}
+
+#[test]
+fn a_program_that_moves_its_ports_is_written_as_one_entry_without_naming_an_object() {
+    let path = temporary("tunnel.yaml");
+
+    let done = add(&tunnel(&path)).expect("writes");
+
+    assert_eq!(done.entries, 1);
+    let held = silenced(&std::fs::read_to_string(&path).expect("readable")).expect("loads");
+    assert_eq!(held.len(), 1);
+    assert_eq!(held[0].program.as_deref(), Some("netbird"));
+    assert_eq!(
+        held[0].finding_key_match.as_deref(),
+        Some("port.listen|udp|*")
+    );
+    assert!(held[0].covers(
+        "port.listen|udp|0.0.0.0:41234",
+        "port.listen.new",
+        Some("/usr/bin/netbird"),
+        "2026-10-30T10:00:00.000Z"
+    ));
+    assert!(
+        done.said
+            .iter()
+            .any(|line| line.contains("program: netbird")),
+        "{done:#?}"
+    );
+}
+
+#[test]
+fn a_pattern_beside_a_named_object_is_refused_because_it_names_the_object_twice() {
+    let path = temporary("both.yaml");
+
+    let refused = add(&Options {
+        keys: vec!["port.listen|tcp|0.0.0.0:8080".into()],
+        ..tunnel(&path)
+    })
+    .expect_err("refused");
+
+    assert!(
+        refused.contains("either by its keys or by --match"),
+        "{refused}"
+    );
+    assert_eq!(std::fs::read_to_string(&path).expect("readable"), SHIPPED);
+}
+
+#[test]
+fn a_program_of_stars_is_refused_with_the_words_the_daemon_would_use() {
+    let path = temporary("stars.yaml");
+
+    let refused = add(&Options {
+        program: Some("*".into()),
+        pattern: None,
+        ..tunnel(&path)
+    })
+    .expect_err("refused");
+
+    assert!(refused.contains("matches every program"), "{refused}");
+    assert_eq!(std::fs::read_to_string(&path).expect("readable"), SHIPPED);
+}
+
+#[test]
+fn nothing_named_at_all_is_refused_rather_than_written_as_an_entry_silencing_nothing() {
+    let path = temporary("nothing.yaml");
+
+    let refused = add(&Options {
+        reason: "why".into(),
+        path: path.clone(),
+        ..Options::default()
+    })
+    .expect_err("refused");
+
+    assert!(refused.contains("silences nothing"), "{refused}");
+}
+
+#[test]
+fn taking_out_a_program_and_its_pattern_leaves_the_same_program_narrowed_to_a_kind() {
+    let path = temporary("take-tunnel.yaml");
+    add(&tunnel(&path)).expect("writes");
+    add(&Options {
+        kind: Some("port.listen.new".into()),
+        pattern: None,
+        ..tunnel(&path)
+    })
+    .expect("writes");
+
+    let done = remove(&Options {
+        program: Some("netbird".into()),
+        pattern: Some("port.listen|udp|*".into()),
+        path: path.clone(),
+        ..Options::default()
+    })
+    .expect("takes out");
+
+    assert_eq!(done.entries, 1);
+    let held = silenced(&std::fs::read_to_string(&path).expect("readable")).expect("loads");
+    assert_eq!(held.len(), 1);
+    assert_eq!(held[0].kind.as_deref(), Some("port.listen.new"));
+}
+
+#[test]
+fn a_program_and_its_pattern_are_listed_the_way_the_daemon_describes_them() {
+    let path = temporary("list-tunnel.yaml");
+    add(&tunnel(&path)).expect("writes");
+
+    let said = list(&Options {
+        path,
+        ..Options::default()
+    })
+    .expect("reads");
+
+    assert!(
+        said.said
+            .iter()
+            .any(|line| line.trim() == "program netbird · port.listen|udp|* — vpn mesh"),
+        "{said:#?}"
+    );
 }

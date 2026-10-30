@@ -1,10 +1,13 @@
 use std::collections::BTreeSet;
+use std::path::PathBuf;
 
+use vigil_config::Suppression;
 use vigil_model::Finding;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Dismissed {
     objects: BTreeSet<String>,
+    entries: Vec<(PathBuf, Suppression)>,
 }
 
 impl Default for Dismissed {
@@ -17,6 +20,7 @@ impl Dismissed {
     pub const fn none() -> Dismissed {
         Dismissed {
             objects: BTreeSet::new(),
+            entries: Vec::new(),
         }
     }
 
@@ -24,12 +28,28 @@ impl Dismissed {
         self.objects.extend(keys);
     }
 
+    pub fn silence_entries(&mut self, file: PathBuf, entries: Vec<Suppression>) {
+        for entry in entries {
+            if !self
+                .entries
+                .iter()
+                .any(|(_, held)| held.says_the_same_as(&entry))
+            {
+                self.entries.push((file.clone(), entry));
+            }
+        }
+    }
+
+    pub fn entries(&self) -> &[(PathBuf, Suppression)] {
+        &self.entries
+    }
+
     pub fn objects(&self) -> Vec<String> {
         self.objects.iter().cloned().collect()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.objects.is_empty()
+        self.objects.is_empty() && self.entries.is_empty()
     }
 
     pub fn forget(&mut self, key: &str) {
@@ -38,16 +58,29 @@ impl Dismissed {
 
     pub fn bring_back(&mut self) {
         self.objects.clear();
+        self.entries.clear();
     }
 
     pub fn keeping<'a>(&self, passing: Vec<&'a Finding>) -> Vec<&'a Finding> {
-        match self.objects.is_empty() {
+        match self.is_empty() {
             true => passing,
             false => passing
                 .into_iter()
                 .filter(|finding| !self.objects.contains(&finding.finding_key))
+                .filter(|finding| !self.covered(finding))
                 .collect(),
         }
+    }
+
+    fn covered(&self, finding: &Finding) -> bool {
+        self.entries.iter().any(|(_, entry)| {
+            entry.covers(
+                &finding.finding_key,
+                finding.kind.as_str(),
+                finding.program(),
+                &finding.observed_at,
+            )
+        })
     }
 
     pub fn settle(&mut self, findings: &[Finding]) {

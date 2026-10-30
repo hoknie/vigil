@@ -8,6 +8,7 @@ pub enum Choosing {
     Control(ControlTarget),
     Delete(AccountObject),
     Unwatch,
+    Silence,
 }
 
 impl Choosing {
@@ -21,6 +22,7 @@ impl Choosing {
             Choosing::Control(ControlTarget::Cron) => "do this to the line:",
             Choosing::Delete(_) => "delete them:",
             Choosing::Unwatch => "stop watching it:",
+            Choosing::Silence => "silence:",
         }
     }
 
