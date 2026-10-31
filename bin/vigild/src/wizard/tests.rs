@@ -354,11 +354,13 @@ fn the_shipped_blocks_write_out_the_defaults_and_switch_nothing_on() {
 
 #[test]
 fn every_key_in_the_shipped_files_has_a_comment_above_it() {
-    let mut texts: Vec<(&str, &str)> = vec![("vigil.yaml", CONFIGURATION)];
+    let mut texts: Vec<(&str, &str)> = vec![
+        ("vigil.yaml", CONFIGURATION),
+        (WATCH_LIST.path, WATCH_LIST.text),
+    ];
     texts.extend(
         COLLECTORS
             .iter()
-            .filter(|shipped| shipped.path != "collectors/files.yaml")
             .map(|shipped| (shipped.path, shipped.text)),
     );
 
@@ -366,7 +368,7 @@ fn every_key_in_the_shipped_files_has_a_comment_above_it() {
         let lines: Vec<&str> = text.lines().collect();
         for (index, line) in lines.iter().enumerate() {
             let held = line.trim_start();
-            if held.is_empty() || held.starts_with('#') || held == "---" {
+            if held.is_empty() || held.starts_with('#') || held.starts_with("- ") || held == "---" {
                 continue;
             }
             let above = lines[..index]

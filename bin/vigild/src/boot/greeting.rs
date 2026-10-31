@@ -5,6 +5,7 @@ use vigil_model::{Finding, Host};
 
 use crate::Config;
 use crate::helpers::agent_finding;
+use crate::identity::Moved;
 use crate::loops::Watch;
 use crate::socket::switched_off_reason;
 
@@ -12,6 +13,8 @@ pub struct Greeting<'a> {
     pub config_path: &'a str,
     pub config: &'a Config,
     pub host: &'a Host,
+    pub moved: Option<&'a Moved>,
+    pub identity_said: &'a [String],
     pub watches: &'a [Watch],
     pub switched_off: &'a [String],
     pub reporters: usize,
@@ -28,6 +31,9 @@ impl Greeting<'_> {
             self.config.state_dir,
             self.reporters
         );
+        for line in self.identity_said {
+            eprintln!("{line}");
+        }
         self.say_reporters();
         self.say_collectors();
         self.say_health();
@@ -41,6 +47,9 @@ impl Greeting<'_> {
 
     pub fn findings(&self) -> Vec<Finding> {
         let mut findings = Vec::new();
+        if let Some(moved) = self.moved {
+            findings.push(agent_finding::clone_suspected(moved));
+        }
 
         for watch in self.watches {
             match watch.health() {
@@ -177,7 +186,7 @@ mod tests {
             file: PathBuf::from(file),
             enabled,
             schedule: None,
-            settings: serde_yaml::Mapping::new(),
+            settings: yaml_serde::Mapping::new(),
         }
     }
 

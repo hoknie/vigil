@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use serde_json::Value;
-use serde_yaml::{Mapping, Value as Yaml};
+use yaml_serde::{Mapping, Value as Yaml};
 
 pub struct Read {
     pub of_the_daemon: Yaml,
@@ -9,7 +9,7 @@ pub struct Read {
 }
 
 pub fn read(text: &str, keys: &[&'static str]) -> Result<Read, String> {
-    let document: Yaml = serde_yaml::from_str(text).map_err(|error| error.to_string())?;
+    let document: Yaml = yaml_serde::from_str(text).map_err(|error| error.to_string())?;
 
     let Yaml::Mapping(written) = document else {
         if document.is_null() {

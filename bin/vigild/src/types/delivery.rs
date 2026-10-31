@@ -1,3 +1,4 @@
+use std::cell::OnceCell;
 use std::sync::Mutex;
 
 use vigil_model::{BufferStatus, Envelope, Finding, Host, Producer, SCHEMA_VERSION, Uuid7};
@@ -20,10 +21,13 @@ struct Line {
     buffer: Mutex<Outgoing>,
 }
 
+type Addresses = Box<dyn Fn() -> Vec<String> + Send + Sync>;
+
 pub struct Delivery {
     host: Host,
     lines: Vec<Line>,
     shared: Shared,
+    addresses: Addresses,
 }
 
 impl Delivery {
@@ -46,11 +50,24 @@ impl Delivery {
             host,
             lines,
             shared,
+            addresses: Box::new(crate::identity::addresses),
+        }
+    }
+
+    #[cfg(test)]
+    pub fn reading_addresses_with(
+        self,
+        addresses: impl Fn() -> Vec<String> + Send + Sync + 'static,
+    ) -> Self {
+        Delivery {
+            addresses: Box::new(addresses),
+            ..self
         }
     }
 
     pub fn replay(&self) -> Vec<Finding> {
         let mut raised = Vec::new();
+        let fresh = OnceCell::new();
 
         for line in &self.lines {
             let waiting = self.with_buffer(line, |buffer| buffer.held());
@@ -62,7 +79,7 @@ impl Delivery {
                     waiting.oldest_at.as_deref().unwrap_or("unknown"),
                 );
             }
-            raised.extend(self.hand_to(line, &[]));
+            raised.extend(self.hand_to(line, &[], &fresh));
         }
 
         raised
@@ -70,9 +87,10 @@ impl Delivery {
 
     pub fn send(&self, findings: &[Finding]) -> Vec<Finding> {
         let mut raised = Vec::new();
+        let fresh = OnceCell::new();
 
         for line in &self.lines {
-            raised.extend(self.hand_to(line, findings));
+            raised.extend(self.hand_to(line, findings, &fresh));
         }
 
         raised
@@ -108,7 +126,12 @@ impl Delivery {
             .collect()
     }
 
-    fn hand_to(&self, line: &Line, findings: &[Finding]) -> Vec<Finding> {
+    fn hand_to(
+        &self,
+        line: &Line,
+        findings: &[Finding],
+        fresh: &OnceCell<Vec<String>>,
+    ) -> Vec<Finding> {
         let name = line.reporter.name().to_string();
         let wanted: Vec<Finding> = findings
             .iter()
@@ -138,7 +161,7 @@ impl Delivery {
             return raised;
         }
 
-        let pushed = self.push(line, &pending, batch);
+        let pushed = self.push(line, &pending, batch, fresh);
         let accepted = pushed.accepted;
         let (drained, held) = self.with_buffer(line, |buffer| {
             let drained = match buffer.delivered(accepted.min(from_the_buffer)) {
@@ -171,7 +194,13 @@ impl Delivery {
         raised
     }
 
-    fn push(&self, line: &Line, pending: &[Finding], batch: Option<HeldBatch>) -> Pushed {
+    fn push(
+        &self,
+        line: &Line,
+        pending: &[Finding],
+        batch: Option<HeldBatch>,
+        fresh: &OnceCell<Vec<String>>,
+    ) -> Pushed {
         let mut accepted = 0;
         let mut refused = None;
 
@@ -187,7 +216,10 @@ impl Delivery {
             .chain(rest.chunks(BATCH).map(|chunk| (uuid7::mint(), chunk)));
 
         for (batch_id, chunk) in chunks {
-            match line.reporter.send(&self.envelope(batch_id.clone(), chunk)) {
+            match line
+                .reporter
+                .send(&self.envelope(batch_id.clone(), chunk, fresh))
+            {
                 Ok(_) => accepted += chunk.len(),
                 Err(ReportError::Malformed(what)) => {
                     eprintln!(
@@ -224,7 +256,14 @@ impl Delivery {
         }
     }
 
-    fn envelope(&self, batch_id: Uuid7, findings: &[Finding]) -> Envelope {
+    fn envelope(
+        &self,
+        batch_id: Uuid7,
+        findings: &[Finding],
+        fresh: &OnceCell<Vec<String>>,
+    ) -> Envelope {
+        let mut host = self.host.clone();
+        host.addresses = fresh.get_or_init(|| (self.addresses)()).clone();
         Envelope {
             schema_version: SCHEMA_VERSION,
             batch_id,
@@ -233,7 +272,7 @@ impl Delivery {
                 name: "vigil".into(),
                 version: env!("CARGO_PKG_VERSION").into(),
             },
-            host: self.host.clone(),
+            host,
             findings: findings.to_vec(),
         }
     }

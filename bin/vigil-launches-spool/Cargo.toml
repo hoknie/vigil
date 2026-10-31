@@ -11,7 +11,7 @@ path = "src/main.rs"
 [dependencies]
 vigil-launches = { path = "../../crates/collectors/vigil-launches" }
 vigil-config = { path = "../../crates/core/vigil-config" }
-serde_yaml.workspace = true
+yaml_serde.workspace = true
 
 [dev-dependencies]
 vigil-collect = { path = "../../crates/core/vigil-collect" }

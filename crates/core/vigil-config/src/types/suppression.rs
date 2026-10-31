@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::helpers::moment::moment;
 use crate::helpers::pattern::{matches, matches_everything};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -24,7 +25,7 @@ enum Key<'a> {
 }
 
 impl Suppression {
-    pub fn validate(&self) -> Result<(), String> {
+    pub fn validate(&mut self) -> Result<(), String> {
         let named: Vec<&str> = [
             ("finding_key", &self.finding_key),
             ("finding_key_prefix", &self.finding_key_prefix),
@@ -63,6 +64,9 @@ impl Suppression {
         }
         if self.reason.trim().is_empty() {
             return Err("a suppression needs a reason".into());
+        }
+        if let Some(written) = &self.until {
+            self.until = Some(moment(written)?);
         }
         Ok(())
     }
@@ -168,7 +172,7 @@ mod tests {
 
     #[test]
     fn a_kind_on_its_own_covers_that_statement_anywhere_on_the_host() {
-        let entry = Suppression {
+        let mut entry = Suppression {
             kind: Some("port.listen.removed".into()),
             reason: "we do not care when services stop here".into(),
             ..Suppression::default()
@@ -295,7 +299,7 @@ mod tests {
 
     #[test]
     fn an_entry_written_before_programs_and_patterns_still_reads_as_it_did() {
-        let entry: Suppression = serde_yaml::from_str(
+        let mut entry: Suppression = yaml_serde::from_str(
             "finding_key_prefix: \"port.listen|tcp|10.0.0.5:\"\nkind: port.listen.new\nreason: lab\n",
         )
         .expect("an old entry loads");
@@ -307,8 +311,8 @@ mod tests {
 
     #[test]
     fn an_entry_naming_a_program_alone_is_a_statement_of_its_own() {
-        let entry: Suppression =
-            serde_yaml::from_str("program: netbird\nreason: vpn mesh changes its ports\n")
+        let mut entry: Suppression =
+            yaml_serde::from_str("program: netbird\nreason: vpn mesh changes its ports\n")
                 .expect("a program alone loads");
 
         assert!(entry.validate().is_ok());
@@ -316,7 +320,7 @@ mod tests {
 
     #[test]
     fn an_entry_that_names_nothing_lists_every_way_there_is_to_name_something() {
-        let entry = Suppression {
+        let mut entry = Suppression {
             reason: "nothing to silence".into(),
             ..Suppression::default()
         };
@@ -329,7 +333,7 @@ mod tests {
 
     #[test]
     fn a_key_named_in_two_ways_is_refused_and_the_two_are_named() {
-        let entry = Suppression {
+        let mut entry = Suppression {
             finding_key_prefix: Some("port.listen|udp|".into()),
             finding_key_match: Some("port.listen|udp|*".into()),
             reason: "two ways".into(),
@@ -344,12 +348,12 @@ mod tests {
 
     #[test]
     fn a_pattern_of_stars_alone_is_refused_because_it_would_be_a_kind_in_disguise() {
-        let program = Suppression {
+        let mut program = Suppression {
             program: Some("*".into()),
             reason: "anything".into(),
             ..Suppression::default()
         };
-        let key = Suppression {
+        let mut key = Suppression {
             finding_key_match: Some("**".into()),
             reason: "anything".into(),
             ..Suppression::default()
@@ -516,5 +520,69 @@ mod tests {
             !pattern.says_the_same_as(&suppression(None, Some("port.listen|udp|*"))),
             "a pattern and a prefix spelled alike cover different things"
         );
+    }
+
+    fn until(written: &str) -> Suppression {
+        let mut entry = suppression(Some("port.listen|tcp|0.0.0.0:8080"), None);
+        entry.until = Some(written.to_string());
+        entry
+    }
+
+    fn covered_at(entry: &Suppression, now: &str) -> bool {
+        entry.covers("port.listen|tcp|0.0.0.0:8080", "port.listen.new", None, now)
+    }
+
+    #[test]
+    fn an_until_written_as_a_date_expires_at_the_start_of_that_day() {
+        let mut entry = until("2026-12-31");
+
+        entry.validate().expect("a date is a moment");
+
+        assert_eq!(entry.until.as_deref(), Some("2026-12-31T00:00:00.000Z"));
+        assert!(covered_at(&entry, "2026-12-30T23:59:59.999Z"));
+        assert!(!covered_at(&entry, "2026-12-31T00:00:00.000Z"));
+    }
+
+    #[test]
+    fn an_until_with_an_offset_expires_at_that_moment_in_utc() {
+        let mut entry = until("2026-12-31T03:00:00+03:00");
+
+        entry.validate().expect("an offset is a moment");
+
+        assert!(
+            !covered_at(&entry, "2026-12-31T00:30:00.000Z"),
+            "compared as written, 03:00 is later than 00:30 and the entry would still silence \
+             what the operator meant it to stop silencing three hours ago"
+        );
+    }
+
+    #[test]
+    fn an_until_the_agent_cannot_compare_stops_the_entry_rather_than_never_expiring() {
+        let mut entry = until("31.12.2026");
+
+        assert_eq!(
+            entry.validate(),
+            Err(
+                "until: \"31.12.2026\" is not a moment this agent can compare with. Write \
+                 2026-12-31 or 2026-12-31T00:00:00.000Z"
+                    .to_string()
+            ),
+            "compared as written, \"3\" is later than \"2\" and the entry never expires"
+        );
+        let refused = crate::helpers::reading::silenced(
+            "suppressions:\n  - finding_key: x\n    reason: test\n    until: 2026-02-30\n",
+        )
+        .expect_err("must not be read");
+        assert!(refused.starts_with("suppression #1: until:"), "{refused}");
+    }
+
+    #[test]
+    fn an_entry_written_by_the_console_reads_back_unchanged() {
+        let mut entry = until("2026-12-31T00:00:00.000Z");
+        let written = entry.clone();
+
+        entry.validate().expect("the agent's own form");
+
+        assert_eq!(entry, written);
     }
 }

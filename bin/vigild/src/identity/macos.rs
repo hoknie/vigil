@@ -17,6 +17,10 @@ pub fn host_id() -> (Vec<u8>, String) {
     }
 }
 
+pub fn hardware_id() -> Option<Vec<u8>> {
+    None
+}
+
 pub fn boot_id() -> String {
     said("kern.bootsessionuuid").unwrap_or_default()
 }

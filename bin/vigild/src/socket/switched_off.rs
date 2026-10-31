@@ -43,7 +43,7 @@ mod tests {
                 file: PathBuf::from("/etc/vigil/collectors/files.yaml"),
                 enabled: false,
                 schedule: None,
-                settings: serde_yaml::Mapping::new(),
+                settings: yaml_serde::Mapping::new(),
             }],
         );
 

@@ -247,8 +247,8 @@ fn shipped_collectors() -> Vec<String> {
     let mut names = Vec::new();
     for entry in fs::read_dir(&directory).expect("config/collectors") {
         let text = fs::read_to_string(entry.expect("an entry").path()).expect("a file");
-        for document in serde_yaml::Deserializer::from_str(&text) {
-            let value = <serde_yaml::Value as serde::Deserialize>::deserialize(document)
+        for document in yaml_serde::Deserializer::from_str(&text) {
+            let value = <yaml_serde::Value as serde::Deserialize>::deserialize(document)
                 .expect("a document");
             if let Some(mapping) = value.as_mapping() {
                 names.extend(

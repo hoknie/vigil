@@ -25,7 +25,7 @@ pub fn load(path: &str) -> Result<Config, ConfigError> {
         cause,
     })?;
     let mut config: Config =
-        serde_yaml::from_value(read.of_the_daemon).map_err(|e| ConfigError {
+        yaml_serde::from_value(read.of_the_daemon).map_err(|e| ConfigError {
             path: path.to_string(),
             cause: e.to_string(),
         })?;
@@ -36,7 +36,7 @@ pub fn load(path: &str) -> Result<Config, ConfigError> {
         cause,
     })?;
 
-    for (index, suppression) in config.suppressions.iter().enumerate() {
+    for (index, suppression) in config.suppressions.iter_mut().enumerate() {
         suppression.validate().map_err(|cause| ConfigError {
             path: path.to_string(),
             cause: format!("suppression #{}: {cause}", index + 1),

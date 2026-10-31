@@ -172,8 +172,8 @@ fn of_the_things_going_away_in_this_family_a_cron_line_is_the_one_that_is_report
     assert_eq!(
         gone.len(),
         1,
-        "a line that left a crontab is reported since 2026-09-16, by the owner's decision \
-         (docs/designs/2026-09-16-DESIGN-console-units.md): the console can comment one out, \
+        "a line that left a crontab is reported since 2026-09-16, by the owner's decision: \
+         the console can comment one out, \
          so a job that stops being scheduled is now something this agent may have done, and \
          the reading has to say so either way"
     );

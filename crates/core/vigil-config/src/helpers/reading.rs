@@ -16,9 +16,9 @@ struct Apart {
 }
 
 pub fn silenced(text: &str) -> Result<Vec<Suppression>, String> {
-    let held: Held = serde_yaml::from_str(text).map_err(|error| error.to_string())?;
+    let mut held: Held = yaml_serde::from_str(text).map_err(|error| error.to_string())?;
 
-    for (index, suppression) in held.suppressions.iter().enumerate() {
+    for (index, suppression) in held.suppressions.iter_mut().enumerate() {
         suppression
             .validate()
             .map_err(|cause| format!("suppression #{}: {cause}", index + 1))?;
@@ -27,14 +27,14 @@ pub fn silenced(text: &str) -> Result<Vec<Suppression>, String> {
 }
 
 pub fn apart(text: &str) -> Result<Vec<Suppression>, String> {
-    let document: serde_yaml::Value =
-        serde_yaml::from_str(text).map_err(|error| error.to_string())?;
+    let document: yaml_serde::Value =
+        yaml_serde::from_str(text).map_err(|error| error.to_string())?;
     if document.is_null() {
         return Ok(Vec::new());
     }
-    let held: Apart = serde_yaml::from_value(document).map_err(|error| error.to_string())?;
+    let mut held: Apart = yaml_serde::from_value(document).map_err(|error| error.to_string())?;
 
-    for (index, suppression) in held.suppressions.iter().enumerate() {
+    for (index, suppression) in held.suppressions.iter_mut().enumerate() {
         suppression
             .validate()
             .map_err(|cause| format!("suppression #{}: {cause}", index + 1))?;

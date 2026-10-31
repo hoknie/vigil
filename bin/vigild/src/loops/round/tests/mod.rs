@@ -1,3 +1,4 @@
+mod baseline;
 mod complaints;
 mod following;
 mod harness;

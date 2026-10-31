@@ -196,3 +196,57 @@ fn a_memory_ceiling_is_not_answered_with_a_reading_period() {
         "reading less often does not give memory back"
     );
 }
+
+fn moved(install_id: Option<&str>) -> crate::identity::Moved {
+    crate::identity::Moved {
+        previous_install_id: "0192f0a0-0000-7000-8000-00000000000a".into(),
+        install_id: install_id.map(str::to_string),
+        previous_host_id: "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1".into(),
+        host_id: "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3".into(),
+        change: crate::identity::Change {
+            host_id: true,
+            hardware: false,
+        },
+    }
+}
+
+#[test]
+fn a_moved_installation_raises_one_high_clone_suspected_keyed_by_its_previous_install_and_naming_the_new_one()
+ {
+    let finding = super::clone_suspected(&moved(Some("0192f0a0-0000-7000-8000-00000000000b")));
+
+    assert_eq!(finding.kind, Kind::Known(KnownKind::AgentCloneSuspected));
+    assert_eq!(finding.severity, vigil_model::Severity::High);
+    assert_eq!(
+        finding.finding_key, "agent.clone|0192f0a0-0000-7000-8000-00000000000a",
+        "keyed by the installation that was copied, so the receiver links the clone to it"
+    );
+    let said: String = finding
+        .evidence
+        .iter()
+        .map(|evidence| evidence.value.clone())
+        .collect::<Vec<_>>()
+        .join(" · ");
+    assert!(
+        said.contains("0192f0a0-0000-7000-8000-00000000000b"),
+        "{said}"
+    );
+}
+
+#[test]
+fn the_clone_finding_says_which_identifier_moved_and_never_the_hardware_hash() {
+    let mut hardware = moved(Some("0192f0a0-0000-7000-8000-00000000000b"));
+    hardware.change = crate::identity::Change {
+        host_id: false,
+        hardware: true,
+    };
+
+    let finding = super::clone_suspected(&hardware);
+
+    let said = serde_json::to_string(&finding).expect("plain data");
+    assert!(said.contains("hardware identifier changed"), "{said}");
+    assert!(
+        !said.contains("hardware_id"),
+        "the hardware hash stays in the state directory and is never published: {said}"
+    );
+}

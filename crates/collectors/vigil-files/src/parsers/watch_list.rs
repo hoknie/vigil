@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use serde_yaml::{Mapping, Value};
+use yaml_serde::{Mapping, Value};
 
 use crate::types::{Devices, Size, WatchList, Watched};
 
@@ -15,10 +15,10 @@ struct Written {
 }
 
 pub fn watch_list_in(text: &str) -> Result<WatchList, String> {
-    let document: Value = serde_yaml::from_str(text).map_err(|error| error.to_string())?;
+    let document: Value = yaml_serde::from_str(text).map_err(|error| error.to_string())?;
     let written: Written = match document {
         Value::Null => Written::default(),
-        document => serde_yaml::from_value(document).map_err(|error| error.to_string())?,
+        document => yaml_serde::from_value(document).map_err(|error| error.to_string())?,
     };
 
     let mut files: Vec<Watched> = Vec::new();
@@ -63,7 +63,7 @@ fn pair_of(mut pair: Mapping) -> Result<Watched, String> {
     let size = match pair.remove(MAX_FILE_SIZE) {
         None => None,
         Some(value) => Some(
-            serde_yaml::from_value::<Size>(value)
+            yaml_serde::from_value::<Size>(value)
                 .map_err(|error| format!("{MAX_FILE_SIZE}: {error}"))?
                 .bytes(),
         ),

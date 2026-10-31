@@ -9,7 +9,7 @@ engines and writes what each one printed, whole, `0600`, to
 The daemon starts no program of its own, and a docker or podman client is root on this host in
 one step. So the privileged half of this reading is a unit an operator can read and switch
 off — `systemctl mask vigil-containers.timer` — exactly as `vigil-firewall.service` is for
-`nft` (`openspec/decisions/0049-container-engines-are-read-from-a-timer-dump-not-the-engine-socket.md`).
+`nft`.
 
 ## What it runs
 
@@ -31,8 +31,8 @@ One document per engine, built as `serde_json` and renamed into place, so a read
 half a dump:
 
 - an engine that is not installed → `"state": "absent"` with the paths it looked in. That is
-  not the same document as an engine that failed, and the reader must be able to tell
-  (trap 1 in `CLAUDE.md`);
+  not the same document as an engine that failed, and the reader must be able to tell, or it
+  reads silence as a host with nothing on it;
 - an engine that is installed → `"state": "present"`, the program it ran, and one entry per
   subject with `state` (`answered`, `failed`, `timed_out`), the argument list, how long it
   took, what it printed verbatim, and whatever the engine wrote on standard error.
@@ -40,7 +40,7 @@ half a dump:
 Each document also names, in `previous_taken_at`, the `taken_at` of the document it replaces,
 when that one could be read. The agent calls a dump stale by the period two documents show
 rather than by a number written down beside the timer, so the period is changed in the timer
-alone (`openspec/decisions/0058-the-engine-dump-period-is-observed-from-the-dumps.md`). A first
+alone. A first
 dump, or one replacing a torn file, names no previous moment.
 
 It decides nothing else. Projection, stabilisation and the hiding of secrets are in

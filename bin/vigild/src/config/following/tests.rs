@@ -527,3 +527,27 @@ fn a_bad_edit_to_a_file_of_collectors_keeps_what_is_watched_and_is_said_once() {
     );
     assert_eq!(mended.refollowed.len(), 1, "{:?}", mended.said);
 }
+
+#[test]
+fn an_until_broken_on_the_fly_keeps_what_was_silenced() {
+    let bench = Bench::new("silence-until", POINTING);
+    bench.silenced("deploy.yaml", DOCKER);
+    let mut silences = bench.silences();
+
+    bench.silenced(
+        "deploy.yaml",
+        "suppressions:\n  - finding_key: \"user|group|docker\"\n    reason: the deploy user belongs there\n    until: 31.12.2026\n",
+    );
+    let broken = silences.look();
+
+    assert!(
+        broken.suppressions.is_none(),
+        "a set that loses an entry to a typo silences less than the operator thinks: {:?}",
+        broken.said
+    );
+    assert!(
+        broken.said[0].contains("deploy.yaml") && broken.said[0].contains("31.12.2026"),
+        "{}",
+        broken.said[0]
+    );
+}

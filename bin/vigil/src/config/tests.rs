@@ -450,3 +450,41 @@ fn a_program_and_its_pattern_are_listed_the_way_the_daemon_describes_them() {
         "{said:#?}"
     );
 }
+
+#[test]
+fn an_until_with_an_offset_is_written_as_the_moment_the_daemon_compares() {
+    let path = temporary("offset.yaml");
+    let mut options = silencing(&path, "port.listen|tcp|0.0.0.0:4444");
+    options.until = Some("2026-12-31T03:00:00+03:00".into());
+
+    add(&options).expect("writes");
+
+    let after = std::fs::read_to_string(&path).expect("readable");
+    let held = silenced(&after).expect("the daemon would read it");
+    assert_eq!(
+        held[0].until.as_deref(),
+        Some("2026-12-31T00:00:00.000Z"),
+        "{after}"
+    );
+}
+
+#[test]
+fn a_day_that_does_not_exist_is_refused_and_the_file_is_not_touched() {
+    let path = temporary("no-such-day.yaml");
+    let mut options = silencing(&path, "port.listen|tcp|0.0.0.0:4444");
+    options.until = Some("2026-02-30".into());
+
+    let refused = add(&options).expect_err("must not be written");
+
+    assert_eq!(
+        refused,
+        "until: \"2026-02-30\" is not a moment this agent can compare with. Write 2026-12-31 \
+         or 2026-12-31T00:00:00.000Z"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&path).expect("readable"),
+        SHIPPED,
+        "the console and the daemon read the same until, so the console refuses what the \
+         daemon would"
+    );
+}

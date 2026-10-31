@@ -25,42 +25,6 @@ pub fn known(named: &str) -> Result<String, String> {
     })
 }
 
-pub fn moment(written: &str) -> Result<String, String> {
-    let refusal = || {
-        format!(
-            "until: {written:?} is not a moment this agent can compare with. Write \
-             2026-12-31 or 2026-12-31T00:00:00.000Z"
-        )
-    };
-
-    let (date, rest) = match written.split_once('T') {
-        None => (written, "00:00:00.000"),
-        Some((date, time)) => (date, time.trim_end_matches('Z')),
-    };
-    if !shaped(date, "0000-00-00") {
-        return Err(refusal());
-    }
-    let time = match rest.len() {
-        8 => format!("{rest}.000"),
-        _ => rest.to_string(),
-    };
-    if !shaped(&time, "00:00:00.000") {
-        return Err(refusal());
-    }
-    Ok(format!("{date}T{time}Z"))
-}
-
-fn shaped(text: &str, like: &str) -> bool {
-    text.len() == like.len()
-        && text
-            .chars()
-            .zip(like.chars())
-            .all(|(had, wanted)| match wanted {
-                '0' => had.is_ascii_digit(),
-                other => had == other,
-            })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -88,37 +52,5 @@ mod tests {
         let refused = known("nonsense").expect_err("must not be accepted");
 
         assert!(refused.contains("draws the kind"), "{refused}");
-    }
-
-    #[test]
-    fn a_date_on_its_own_becomes_the_moment_that_day_begins() {
-        assert_eq!(
-            moment("2026-12-31"),
-            Ok("2026-12-31T00:00:00.000Z".to_string())
-        );
-    }
-
-    #[test]
-    fn the_shape_the_agent_writes_its_own_moments_in_is_taken_unchanged() {
-        assert_eq!(
-            moment("2026-12-31T09:30:00.000Z"),
-            Ok("2026-12-31T09:30:00.000Z".to_string())
-        );
-        assert_eq!(
-            moment("2026-12-31T09:30:00Z"),
-            Ok("2026-12-31T09:30:00.000Z".to_string()),
-            "a moment without the milliseconds is a moment, and it is compared as text"
-        );
-    }
-
-    #[test]
-    fn a_moment_of_another_shape_is_refused_rather_than_compared_as_letters() {
-        for written in ["31/12/2026", "tomorrow", "2026-12", "2026-12-31 09:30", ""] {
-            let refused = moment(written).expect_err("must not be accepted");
-            assert!(
-                refused.contains("2026-12-31T00:00:00.000Z"),
-                "the shape that works is in the refusal: {refused}"
-            );
-        }
     }
 }

@@ -35,6 +35,12 @@ impl Round {
                 let fresh = self.remember(&tick.findings);
                 self.publish(self.taken(index, duration_ms, &tick), &fresh);
                 self.report(name, &tick, &fresh);
+                if tick.baseline {
+                    self.raise(vec![agent_finding::baseline_ready(
+                        name,
+                        tick.snapshot.items.len(),
+                    )]);
+                }
 
                 let had_failed = said.reading_again(name);
                 if had_failed {

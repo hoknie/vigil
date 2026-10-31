@@ -185,6 +185,13 @@ pub fn raised(round: &Round) -> Vec<Finding> {
     round.shared.with(|state| state.latest_findings(None))
 }
 
+pub fn about_the_host(round: &Round) -> Vec<Finding> {
+    raised(round)
+        .into_iter()
+        .filter(|finding| finding.kind.as_str() != "agent.baseline.ready")
+        .collect()
+}
+
 pub fn shown(round: &Round) -> CollectorState {
     round.shared.with(|state| {
         state

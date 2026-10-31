@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://vigil.invalid/contract/host-findings-v1.schema.json",
   "title": "host-findings/v1",
-  "description": "One POST body of the host-findings format: producer, host, and findings. Owned and published by the vigil repository; field reference in docs/contract/host-findings-v1.md. A receiver accepts its own MAJOR at any MINOR and the whole previous MAJOR.",
+  "description": "One POST body of the host-findings format: producer, host, and findings. Owned and published by the vigil repository. A receiver accepts its own MAJOR at any MINOR and the whole previous MAJOR.",
   "type": "object",
   "required": [
     "schema_version",
@@ -86,6 +86,7 @@
           "type": "string"
         },
         "fqdn": {
+          "description": "The full name of the host, decided at start without asking DNS or the network: the hostname when it has a dot, otherwise the first name of the /etc/hosts line naming the hostname. A name ending in .local and localhost are never sent. Omitted when not decided.",
           "type": [
             "string",
             "null"
@@ -119,6 +120,7 @@
           }
         },
         "addresses": {
+          "description": "The IPv4 and IPv6 addresses of the interfaces that are up, without loopback (127.0.0.0/8, ::1) and link-local (169.254.0.0/16, fe80::/10), sorted, without repeats, at most 32. Read again for every document, so a document carries the addresses of the moment it is sent. Omitted when there are none.",
           "type": "array",
           "items": {
             "type": "string"

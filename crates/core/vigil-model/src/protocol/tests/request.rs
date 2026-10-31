@@ -32,8 +32,7 @@ fn three_requests_do_something_on_the_host_and_all_three_are_named_here() {
         "this protocol held three questions and no verb until 2026-09-14, when the owner \
          put in kill on purpose, and later that day change, for the accounts of this host, \
          with the decision taken again; control, for what this host starts by itself, was \
-         taken the same way on 2026-09-16 \
-         (docs/designs/2026-09-16-DESIGN-console-units.md). A fourth verb arriving without \
+         taken the same way on 2026-09-16. A fourth verb arriving without \
          that decision being taken a fourth time is the failure this test exists to make \
          loud."
     );

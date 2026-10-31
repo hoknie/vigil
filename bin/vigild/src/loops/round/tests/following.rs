@@ -6,7 +6,7 @@ use vigil_model::Snapshot;
 use vigil_module::{Module, Settings};
 use vigil_rules::RuleSet;
 
-use super::harness::{raised, snapshot, temporary_directory, watching};
+use super::harness::{about_the_host, raised, snapshot, temporary_directory, watching};
 use crate::config::{Followed, Stamp, load};
 use crate::types::Said;
 
@@ -199,9 +199,9 @@ fn an_object_silenced_in_the_directory_is_not_reported_from_the_next_round_on() 
     it.round.read(0, &mut said);
     it.round.read(0, &mut said);
     assert!(
-        raised(&it.round).is_empty(),
+        about_the_host(&it.round).is_empty(),
         "the port that opened after the entry was written is covered by it: {:?}",
-        raised(&it.round)
+        about_the_host(&it.round)
     );
     assert_eq!(it.round.policy.suppressed(), 1);
 }
@@ -300,9 +300,9 @@ fn a_program_silenced_in_the_directory_is_not_reported_from_the_next_round_on_wh
     it.round.read(0, &mut said);
     it.round.read(0, &mut said);
     assert!(
-        raised(&it.round).is_empty(),
+        about_the_host(&it.round).is_empty(),
         "every port the program opened or closed after the entry was written is covered: {:?}",
-        raised(&it.round)
+        about_the_host(&it.round)
     );
     assert!(it.round.policy.suppressed() >= 2);
 }

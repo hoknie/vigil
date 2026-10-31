@@ -4,7 +4,7 @@ use std::time::Instant;
 use vigil_collect::Health;
 use vigil_model::CollectorState;
 
-use super::harness::{raised, shown, snapshot, watching};
+use super::harness::{about_the_host, raised, shown, snapshot, watching};
 use crate::types::Said;
 
 #[test]
@@ -163,8 +163,8 @@ fn a_reading_of_a_collector_that_is_still_well_says_nothing_about_its_health() {
             .collect::<Vec<_>>()
     );
     assert_eq!(
-        raised(&it.round).len(),
+        about_the_host(&it.round).len(),
         1,
-        "and the finding about the port that appeared is the only one"
+        "and the finding about the port that appeared is the only one about the host"
     );
 }

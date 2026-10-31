@@ -1,12 +1,12 @@
 use std::path::{Path, PathBuf};
 
 use vigil_config::{
-    Edit, Entry, Installation, Naming, Source, Suppression, apart, silenced, write,
+    Edit, Entry, Installation, Naming, Source, Suppression, apart, moment, silenced, write,
 };
 
 use super::done::Done;
 use super::options::Options;
-use super::shape::{known, moment};
+use super::shape::known;
 
 pub const DEFAULT_PATH: &str = Installation::here().configuration;
 

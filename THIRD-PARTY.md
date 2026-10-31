@@ -11,7 +11,7 @@ This file is generated from the resolved dependency graph — do not edit by han
 | Component | Used by | Why it is here                                                                        |
 |---|---|---------------------------------------------------------------------------------------|
 | `serde`, `serde_json` | `vigil-model`, `vigil-rules`, `vigil-report` | The wire contract is JSON; hand-rolling it would be a worse dependency than this one. |
-| `serde_yaml` | `vigild` | The configuration file an operator edits.                                             |
+| `yaml_serde` | `vigild`, `vigil` | The configuration file an operator edits; the maintained continuation of `serde_yaml`.  |
 | `ratatui` (+ `crossterm`) | `vigil` | The console. Deliberately absent from the daemon.                                     |
 | `clap` | `vigil`, `vigild` | The command line of both binaries.                                                    |
 | `sha2` | `vigild`, `vigil-collect` | SHA-256 and for SSH key fingerprints.                                                 |

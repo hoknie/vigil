@@ -2,6 +2,7 @@ mod helpers;
 mod services;
 mod types;
 
+pub use helpers::moment::moment;
 pub use helpers::places::{files_in, is_a_directory, pointed_at, resolved};
 pub use helpers::reading::{apart, silenced};
 pub use helpers::write::{Written, write};

@@ -9,7 +9,7 @@ struct Held {
 }
 
 pub fn watching_in(text: &str) -> Result<Watching, String> {
-    let held: Held = serde_yaml::from_str(text).map_err(|error| error.to_string())?;
+    let held: Held = yaml_serde::from_str(text).map_err(|error| error.to_string())?;
     held.files.check()?;
 
     Ok(held.files)

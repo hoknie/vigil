@@ -396,3 +396,27 @@ fn a_file_of_reporters_is_held_to_the_rules_the_configuration_is_and_names_itsel
         "a misspelled key in a file of reporters is a receiver somebody believes is sent to: {error}"
     );
 }
+
+#[test]
+fn a_suppression_file_with_an_until_nobody_can_compare_does_not_start_the_daemon() {
+    let directory = bench("until-unreadable");
+    let path = directory.join("vigil.yaml");
+    std::fs::write(&path, "suppressions_path: suppressions\n").expect("write");
+    std::fs::create_dir_all(directory.join("suppressions")).expect("a directory");
+    std::fs::write(
+        directory.join("suppressions").join("deploy.yaml"),
+        "suppressions:\n  - finding_key: \"user|group|docker\"\n    reason: x\n  - kind: port.listen.new\n    reason: y\n    until: 31.12.2026\n",
+    )
+    .expect("write");
+
+    let error = load(path.to_str().expect("utf-8")).expect_err("must not be accepted");
+
+    assert!(error.cause.contains("deploy.yaml"), "{error}");
+    assert!(error.cause.contains("suppression #2"), "{error}");
+    assert!(
+        error
+            .cause
+            .contains("is not a moment this agent can compare with"),
+        "compared as written, it would never expire: {error}"
+    );
+}

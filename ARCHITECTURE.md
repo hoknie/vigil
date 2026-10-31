@@ -428,7 +428,9 @@ Content that would otherwise be a comment goes elsewhere:
   decision it follows from, its dependencies and a context graph;
 - **prose for an operator goes into the systemd units, the conffiles installed from
   `packaging/audit/`, and `docs/contract/`** — places that are read without the source code.
-  `config/vigil.example.yaml` lists the defaults and nothing more.
+  The shipped configuration files (`config/vigil.example.yaml`, `config/watch_fs.yaml`,
+  `config/collectors/*.yaml`) carry a comment above every key, for the operator who reads them
+  in `/etc`; a test fails if a key arrives without one.
 
 **Shipped text never mentions internal process.** Code, logs and the console contain no phases,
 epics or document names: someone reading a log line has no idea what "stage 3" means, and six
@@ -580,7 +582,12 @@ wrong shape.
 - **`install_id`** is generated on first start and persisted in the state directory. **A clone
   carries the identity of its source:** an image captured after installation brings the same
   pair of identifiers, and that pair is how a clone is detected. The agent has to report it at
-  first contact, well before any incident.
+  first contact, well before any incident. The agent also keeps the machine its installation was
+  set up on (`installed_on` in the state directory: the `host_id` and, on Linux, a keyed hash of
+  the hardware UUID); an installation that starts on another machine raises
+  `agent.clone_suspected` at start, keyed by its old `install_id`, and reports under a new one from
+  then on. Two live clones that share every identifier stay the receiver's to tell apart, by the
+  `addresses` each document carries.
 - **`event_id`** is a UUIDv7: the embedded timestamp lets records sort without a separate field
   and makes duplicates visible to the receiver.
 - **`finding_key`** identifies what a finding **is**, independent of when it happened. Key and

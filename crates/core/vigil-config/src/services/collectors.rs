@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
-use serde_yaml::{Mapping, Value};
+use yaml_serde::{Mapping, Value};
 
 use crate::helpers::places::{files_in, pointed_at};
 use crate::types::block::Block;
@@ -40,7 +40,7 @@ pub fn blocks_in(file: &Path, text: &str) -> Result<Vec<Block>, String> {
     let said = |cause: String| format!("{}: {cause}", file.display());
     let mut blocks = Vec::new();
 
-    for document in serde_yaml::Deserializer::from_str(text) {
+    for document in yaml_serde::Deserializer::from_str(text) {
         let value = Value::deserialize(document).map_err(|error| said(error.to_string()))?;
         let written = match value {
             Value::Null => continue,

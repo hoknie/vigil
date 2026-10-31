@@ -7,3 +7,4 @@ mod removing;
 mod sources;
 mod switching;
 mod watching;
+mod yaml_forms;

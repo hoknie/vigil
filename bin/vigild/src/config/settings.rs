@@ -183,7 +183,7 @@ mod tests {
     #[test]
     fn a_file_that_switches_killing_on_has_switched_neither_accounts_nor_units_on() {
         let config: Config =
-            serde_yaml::from_str("killing:\n  from_the_console: true\n").expect("parses");
+            yaml_serde::from_str("killing:\n  from_the_console: true\n").expect("parses");
 
         assert!(config.killing.from_the_console);
         assert!(!config.accounts.from_the_console);

@@ -16,6 +16,7 @@ struct Scripted {
     malformed: AtomicBool,
     taken: StandardMutex<Vec<Finding>>,
     attempts: StandardMutex<Vec<(String, Vec<String>)>>,
+    documents: StandardMutex<Vec<serde_json::Value>>,
     only: Option<&'static str>,
 }
 
@@ -27,6 +28,7 @@ impl Scripted {
             malformed: AtomicBool::new(false),
             taken: StandardMutex::new(Vec::new()),
             attempts: StandardMutex::new(Vec::new()),
+            documents: StandardMutex::new(Vec::new()),
             only: None,
         }
     }
@@ -51,6 +53,10 @@ impl Reporter for Scripted {
     }
 
     fn send(&self, envelope: &Envelope) -> Result<vigil_report::Delivery, ReportError> {
+        self.documents
+            .lock()
+            .expect("not poisoned")
+            .push(serde_json::to_value(envelope).expect("plain data"));
         self.attempts.lock().expect("not poisoned").push((
             envelope.batch_id.clone(),
             envelope
@@ -478,4 +484,57 @@ fn one_batch_id_never_goes_out_with_two_different_sets_of_findings() {
     );
     let _ = std::fs::remove_file(&path);
     let _ = std::fs::remove_file(batch_file(&path));
+}
+
+#[test]
+fn a_document_carries_the_addresses_the_host_has_when_it_is_sent() {
+    let path = temporary_path("addresses");
+    let receiver = std::sync::Arc::new(Scripted::new("ndjson"));
+    let calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let counted = calls.clone();
+    let delivery = delivery(receiver.clone(), buffer(&path, Limits::outgoing()))
+        .reading_addresses_with(move || match counted.fetch_add(1, Ordering::Relaxed) {
+            0 => vec!["10.0.4.17".to_string()],
+            _ => vec!["10.0.4.40".to_string()],
+        });
+
+    delivery.send(&[found("a"), found("b")]);
+    delivery.send(&[]);
+    delivery.send(&[found("c")]);
+
+    let documents = receiver.documents.lock().expect("not poisoned").clone();
+    assert_eq!(documents.len(), 2, "{documents:?}");
+    assert_eq!(
+        documents[0]["host"]["addresses"],
+        serde_json::json!(["10.0.4.17"])
+    );
+    assert_eq!(
+        documents[1]["host"]["addresses"],
+        serde_json::json!(["10.0.4.40"]),
+        "an address the host was given by DHCP since the start is the one the next document carries"
+    );
+    assert_eq!(
+        calls.load(Ordering::Relaxed),
+        2,
+        "the addresses are read when something is sent, not on a round with nothing to send"
+    );
+    let _ = std::fs::remove_file(&path);
+}
+
+#[test]
+fn a_host_with_no_address_but_loopback_sends_no_addresses_field() {
+    let path = temporary_path("no-addresses");
+    let receiver = std::sync::Arc::new(Scripted::new("ndjson"));
+    let delivery = delivery(receiver.clone(), buffer(&path, Limits::outgoing()))
+        .reading_addresses_with(Vec::new);
+
+    delivery.send(&[found("a")]);
+
+    let documents = receiver.documents.lock().expect("not poisoned").clone();
+    assert!(
+        documents[0]["host"].get("addresses").is_none(),
+        "an empty list is no field, not a list saying the host has no address: {}",
+        documents[0]["host"]
+    );
+    let _ = std::fs::remove_file(&path);
 }

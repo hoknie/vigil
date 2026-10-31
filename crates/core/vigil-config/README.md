@@ -15,7 +15,12 @@ touches files (`ARCHITECTURE.md` §10).
 ## A suppression entry
 
 One entry is one statement of what the host is expected to do, always with a `reason`, and
-optionally an `until` after which it stops covering anything. It names at least one of:
+optionally an `until` after which it stops covering anything. `until` is a date (`2026-12-31`,
+the start of that day in UTC) or an RFC 3339 moment with `Z` or an offset
+(`2026-12-31T03:00:00+03:00`). It is read when the file is read and turned into the moment the
+agent compares with (`2026-12-31T00:00:00.000Z`); a day that does not exist, or any other form,
+makes the entry an error rather than one that never expires. The daemon and the console read it
+with the same function. An entry names at least one of:
 
 - the object, in one of three ways — `finding_key` (exactly), `finding_key_prefix` (the key
   begins with it) or `finding_key_match` (the whole key fits a pattern);
@@ -42,7 +47,7 @@ that silences and the console that hides.
 
 ## Dependencies
 
-`serde`, `serde_yaml`. No crate of ours.
+`serde`, `yaml_serde`. No crate of ours.
 
 ## Context
 

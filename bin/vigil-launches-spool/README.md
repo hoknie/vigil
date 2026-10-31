@@ -36,7 +36,7 @@ waiting on its own audit.
 ## Dependencies
 
 `vigil-launches` (the parser of eslogger's JSON, the records, the spool writer and the status),
-`vigil-config` (the configuration and its collectors directory), `serde_yaml`.
+`vigil-config` (the configuration and its collectors directory), `yaml_serde`.
 
 ## Context
 

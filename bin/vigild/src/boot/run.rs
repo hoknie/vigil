@@ -14,7 +14,8 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let config = config::load(config_path)?;
     let state_dir = Path::new(&config.state_dir);
 
-    let host = identity::describe(state_dir)?;
+    let described = identity::describe(state_dir)?;
+    let host = described.host;
     let reporters = reporters::build(&config.reporters)?;
     let buffers = outgoing::open(state_dir, &reporters)?;
     let (mut watches, switched_off) = watches::open(&config)?;
@@ -45,6 +46,8 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         config_path,
         config: &config,
         host: &host,
+        moved: described.moved.as_ref(),
+        identity_said: &described.said,
         watches: &watches,
         switched_off: &switched_off,
         reporters: reporters.len(),

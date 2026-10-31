@@ -5,12 +5,11 @@ findings, and the findings each receiver has not taken yet.
 
 ## The decision it follows from
 
-The local store is files, not a database (`openspec/decisions/0019-local-store-is-files-not-a-database.md`):
+The local store is files, not a database:
 an append-only NDJSON journal of findings and one JSON snapshot per collector, so a restart
 continues watching instead of learning the host again, and history is read at an incident with
 `cat` and `jq`. Every write is atomic, durable and `0600`, and a damaged file costs what it held
-rather than the start of the daemon
-(`openspec/decisions/0020-store-writes-are-atomic-durable-and-never-refuse.md`).
+rather than the start of the daemon.
 
 The `Store` port and the conformance suite in `conformance` say what any backend must do; the
 files backend behind the `files` feature is the one there is.
@@ -24,8 +23,7 @@ files backend behind the `files` feature is the one there is.
 - `outgoing/<receiver>.batch` — the batch a receiver refused, while there is one: its
   `batch_id`, how many findings from the head of the buffer it holds, and the `event_id` of the
   first and the last of them. The next attempt, in this run or after a restart, sends exactly
-  that batch under that id, so a receiver can tell a retry from a new batch
-  (`openspec/decisions/0057-a-retry-sends-the-same-batch-held-beside-the-outgoing-buffer.md`).
+  that batch under that id, so a receiver can tell a retry from a new batch.
   It is written only on a refusal and removed when the batch is taken, when no retry can fix it,
   or when the buffer no longer starts with those findings — the ceiling displaced some, or the
   files no longer agree when the buffer is opened. A delivery taken at once never writes it.

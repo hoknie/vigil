@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use serde::de::DeserializeOwned;
-use serde_yaml::Value as Yaml;
 use vigil_config::{Block, COLLECTORS_PATH, blocks};
+use yaml_serde::Value as Yaml;
 
 use super::settings::{Accounts, Killing, Units};
 use super::split::Read;
@@ -133,7 +133,7 @@ fn said(config: &mut Config, verb: &str, value: Yaml) -> Result<(), String> {
 }
 
 fn verb_of<T: DeserializeOwned>(verb: &str, value: Yaml) -> Result<T, String> {
-    serde_yaml::from_value(value).map_err(|error| format!("{verb}: {error}"))
+    yaml_serde::from_value(value).map_err(|error| format!("{verb}: {error}"))
 }
 
 fn written_keys(block: &Block) -> String {

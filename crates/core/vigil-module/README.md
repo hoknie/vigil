@@ -4,8 +4,7 @@ What a subject watched by this agent tells the two binaries about itself.
 
 ## The decision it follows from
 
-One subject is one crate — reading, parsers, rules and screen together
-(`docs/designs/2026-09-12-DESIGN-modules.md`). That only pays if the binaries stop keeping
+One subject is one crate — reading, parsers, rules and screen together. That only pays if the binaries stop keeping
 lists of what exists: a table of collector names, a table pairing a collector with its rules,
 a numbered list of screens, a map from a finding to the row it is about. Every such table is
 a place a new module is forgotten, and forgotten quietly.

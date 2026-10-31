@@ -16,16 +16,16 @@ pub fn resolved(configuration: &Path, written: &str) -> PathBuf {
 }
 
 pub fn pointed_at(configuration: &Path, text: &str, key: &str) -> Result<Option<PathBuf>, String> {
-    let document: serde_yaml::Value =
-        serde_yaml::from_str(text).map_err(|error| error.to_string())?;
+    let document: yaml_serde::Value =
+        yaml_serde::from_str(text).map_err(|error| error.to_string())?;
 
     match document.get(key) {
         None => Ok(None),
-        Some(serde_yaml::Value::Null) => Ok(None),
-        Some(serde_yaml::Value::String(written)) if written.trim().is_empty() => Err(format!(
+        Some(yaml_serde::Value::Null) => Ok(None),
+        Some(yaml_serde::Value::String(written)) if written.trim().is_empty() => Err(format!(
             "{key} is empty; name a file or a directory, or leave the key out"
         )),
-        Some(serde_yaml::Value::String(written)) => Ok(Some(resolved(configuration, written))),
+        Some(yaml_serde::Value::String(written)) => Ok(Some(resolved(configuration, written))),
         Some(_) => Err(format!(
             "{key} is a path to a file or a directory, written as text"
         )),

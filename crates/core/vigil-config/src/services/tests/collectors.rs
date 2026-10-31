@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use serde_yaml::Value;
+use yaml_serde::Value;
 
 use crate::{blocks, blocks_in, collectors_path, seconds};
 
@@ -48,7 +48,7 @@ fn a_file_may_hold_several_documents_and_each_names_its_collectors() {
     );
     assert_eq!(
         read[1].settings.get("engines"),
-        Some(&serde_yaml::from_str::<Value>("[docker, podman]").expect("yaml"))
+        Some(&yaml_serde::from_str::<Value>("[docker, podman]").expect("yaml"))
     );
 }
 
@@ -112,11 +112,11 @@ fn a_period_is_seconds_or_a_number_with_its_unit() {
         ("1h", 3600),
         ("45 s", 45),
     ] {
-        let value = serde_yaml::from_str::<Value>(written).expect("yaml");
+        let value = yaml_serde::from_str::<Value>(written).expect("yaml");
         assert_eq!(seconds(&value), Ok(expected), "{written}");
     }
     for refused in ["0", "-5", "5 minutes", "1d", "soon", "[1]", "0s"] {
-        let value = serde_yaml::from_str::<Value>(refused).expect("yaml");
+        let value = yaml_serde::from_str::<Value>(refused).expect("yaml");
         assert!(seconds(&value).is_err(), "{refused}");
     }
 }

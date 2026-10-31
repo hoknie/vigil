@@ -70,12 +70,12 @@ pub fn reporters(at: &Path) -> Result<Vec<Reporters>, String> {
 }
 
 fn receivers(text: &str) -> Result<Vec<Receiver>, String> {
-    let document: serde_yaml::Value =
-        serde_yaml::from_str(text).map_err(|error| error.to_string())?;
+    let document: yaml_serde::Value =
+        yaml_serde::from_str(text).map_err(|error| error.to_string())?;
     if document.is_null() {
         return Ok(Vec::new());
     }
-    let held: Held = serde_yaml::from_value(document).map_err(|error| error.to_string())?;
+    let held: Held = yaml_serde::from_value(document).map_err(|error| error.to_string())?;
 
     for (index, receiver) in held.reporters.iter().enumerate() {
         if let Receiver::Syslog { facility } = receiver {

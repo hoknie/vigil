@@ -74,10 +74,7 @@ fn the_four_places_that_start_a_program_are_the_operators_command_the_kill_the_a
          switching killing on in vigil.yaml, the change to an account a person saved at the \
          console after switching accounts on, and the systemctl a person asked for on the \
          startup screen after switching units on. The second and the third were added on \
-         2026-09-14 and the fourth on 2026-09-16, each with the trade-off stated: see \
-         docs/designs/2026-09-14-DESIGN-console-kill.md, \
-         docs/designs/2026-09-14-DESIGN-console-accounts.md and \
-         docs/designs/2026-09-16-DESIGN-console-units.md. A fifth place is a path from a \
+         2026-09-14 and the fourth on 2026-09-16, each with the trade-off stated. A fifth place is a path from a \
          reading, a rule or an unasked-for message to execution on the host, and that is the \
          failure the contract has no reverse channel for"
     );

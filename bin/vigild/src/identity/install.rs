@@ -28,6 +28,12 @@ pub fn install_id(state_dir: &Path) -> Result<Uuid7, String> {
     Ok(minted)
 }
 
+pub fn replace(state_dir: &Path) -> Result<Uuid7, String> {
+    let minted = uuid7::mint();
+    write_owner_only(&state_dir.join(FILE), &format!("{minted}\n"))?;
+    Ok(minted)
+}
+
 fn write_owner_only(path: &Path, contents: &str) -> Result<(), String> {
     use std::io::Write;
 

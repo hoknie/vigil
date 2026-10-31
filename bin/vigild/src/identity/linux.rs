@@ -15,6 +15,12 @@ pub fn host_id() -> (Vec<u8>, String) {
     (hostname().into_bytes(), "hostname".to_string())
 }
 
+pub fn hardware_id() -> Option<Vec<u8>> {
+    read_trimmed("/sys/class/dmi/id/product_uuid")
+        .filter(|text| !text.is_empty())
+        .map(String::into_bytes)
+}
+
 pub fn boot_id() -> String {
     read_trimmed("/proc/sys/kernel/random/boot_id").unwrap_or_default()
 }

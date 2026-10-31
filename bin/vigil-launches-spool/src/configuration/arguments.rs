@@ -1,8 +1,8 @@
 use std::fs;
 use std::path::Path;
 
-use serde_yaml::Value;
 use vigil_config::{blocks, collectors_path};
+use yaml_serde::Value;
 
 const BLOCK: &str = "launches";
 
@@ -21,7 +21,7 @@ pub fn records_arguments(configuration: &Path) -> Result<bool, String> {
             .filter(|block| block.enabled)
             .map(|block| Value::Mapping(block.settings)),
         None => {
-            let document: Value = serde_yaml::from_str(&text)
+            let document: Value = yaml_serde::from_str(&text)
                 .map_err(|error| format!("{}: {error}", configuration.display()))?;
             document
                 .get(BLOCK)

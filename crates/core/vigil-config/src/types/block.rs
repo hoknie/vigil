@@ -6,5 +6,5 @@ pub struct Block {
     pub file: PathBuf,
     pub enabled: bool,
     pub schedule: Option<u32>,
-    pub settings: serde_yaml::Mapping,
+    pub settings: yaml_serde::Mapping,
 }
