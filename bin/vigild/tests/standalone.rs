@@ -25,6 +25,24 @@ fn nothing_in_the_dependency_graph_belongs_to_another_product() {
 }
 
 #[test]
+fn no_async_runtime_is_in_the_dependency_graph() {
+    let graph = resolved_graph();
+
+    let runtimes: Vec<&str> = graph
+        .iter()
+        .map(String::as_str)
+        .filter(|name| ["tokio", "async-std", "async_std"].contains(name))
+        .collect();
+
+    assert!(
+        runtimes.is_empty(),
+        "vigil links {runtimes:?}. The agent reads, compares and reports on plain threads: an \
+         async runtime is a scheduler, a thread pool and a dependency tree it does not need, \
+         paid for on every host it watches. A transitive edge counts."
+    );
+}
+
+#[test]
 fn the_graph_is_read_whole_so_a_transitive_edge_cannot_hide_in_it() {
     let graph = resolved_graph();
 

@@ -5,6 +5,7 @@ use ratatui::widgets::{Paragraph, Widget};
 use super::*;
 use crate::ui::fixture;
 use crate::ui::helpers::words::text;
+use vigil_model::KillTarget;
 
 fn drawn(acts: Acts, at: Option<usize>, width: u16) -> String {
     let said = laid(acts, at, fixture::look(), width as usize).0;

@@ -8,6 +8,7 @@ use vigil_model::Snapshot;
 use super::files::{BOOT_ID, MEMINFO, MOUNTS, STAT, UPTIME};
 use super::*;
 use crate::parsers::BOOT;
+use vigil_collect::{Collector, Health};
 
 const MEMORY: &str = "memory|summary";
 

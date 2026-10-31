@@ -2,6 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use super::*;
+use vigil_collect::{CollectError, Collector, Health};
 
 const ID: &str = "3ab1c0f2d4e5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5";
 

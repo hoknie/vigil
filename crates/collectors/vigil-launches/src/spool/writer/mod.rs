@@ -1,21 +1,9 @@
 mod on_disk;
 mod report;
-mod writing;
-
+mod spool_writer;
 #[cfg(test)]
 mod tests;
-
-use std::fs::File;
-use std::path::PathBuf;
-
+mod writing;
 pub use report::Report;
 
-pub struct SpoolWriter {
-    path: PathBuf,
-    ceiling: u64,
-    file: File,
-    bytes: u64,
-    pending: Vec<u8>,
-    resyncing: bool,
-    report: Report,
-}
+pub use spool_writer::*;

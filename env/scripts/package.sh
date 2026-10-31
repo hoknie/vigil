@@ -21,9 +21,9 @@ BINARIES="$OUT/bin/$TARGET"
 
 say() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 
-WORK=""
-# shellcheck disable=SC2086  # WORK is a space-separated list of mktemp directories
-cleanup() { [ -n "$WORK" ] || return 0; rm -rf $WORK; }
+TEMPORARY_DIRECTORIES=""
+# shellcheck disable=SC2086
+cleanup() { [ -n "$TEMPORARY_DIRECTORIES" ] || return 0; rm -rf $TEMPORARY_DIRECTORIES; }
 trap cleanup EXIT
 
 
@@ -109,7 +109,7 @@ stage() {
 
 build_deb() {
     command -v dpkg-deb >/dev/null || { echo "package: no dpkg-deb here" >&2; exit 2; }
-    local tree; tree="$(mktemp -d)"; WORK="$WORK $tree"
+    local tree; tree="$(mktemp -d)"; TEMPORARY_DIRECTORIES="$TEMPORARY_DIRECTORIES $tree"
 
     say "staging the install tree"
     stage "$tree"
@@ -141,7 +141,7 @@ build_rpm() {
     command -v rpmbuild >/dev/null || { echo "package: no rpmbuild" >&2; exit 2; }
     local tree; tree="$(mktemp -d)"
     local build; build="$(mktemp -d)"
-    WORK="$WORK $tree $build"
+    TEMPORARY_DIRECTORIES="$TEMPORARY_DIRECTORIES $tree $build"
 
     say "staging the install tree"
     stage "$tree"

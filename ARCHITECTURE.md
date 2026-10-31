@@ -134,12 +134,16 @@ bin/vigil-audit-plugin ──► collectors/vigil-launches
 no `fn`/`impl`, no constants, no tests. All logic lives in named sibling files that the root
 declares and, where needed, re-exports. Tests for a kind folder live in a `tests.rs` next to it.
 
-**The only exception is a split impl (§3.6):** when a `<type>/` folder splits a large `impl`
-of one type into concern files, its `mod.rs` holds the `struct` itself and the skeleton of the
-trait impl, so that the child modules can see private fields. The exception does **not** cover
-free functions, constants or tests.
+**There is no exception, a split impl (§3.6) included.** The type goes in a file beside the root,
+named after it — or after what it is where the type shares the folder's name, because clippy
+refuses `app/app.rs` (`module_inception`): `ui/app/console.rs` holds `App` — with the fields its concern files read marked `pub(super)`: from that file,
+`pub(super)` reaches the folder and everything under it, which is exactly what a private field
+declared in the root reached.
 
 Any `mod.rs`/`lib.rs` should give a map of its module within five seconds, without reading code.
+
+The rule is held by `a_module_root_only_declares_and_re_exports` in `bin/vigild/tests/kinds.rs`:
+after the attributes are set aside, every line of a root is a `mod`, a `use` or blank.
 
 ### 3.2. One logical element per file
 
@@ -271,6 +275,15 @@ This rule is strict and has no exceptions for small cases.
 | `cli/` | argument parsing and output formatting | everything else |
 | `fixture/` | reference readings and answers, one file per snapshot or answer kind | assertions (those go in `tests.rs`), io, domain decisions |
 | `tests.rs` | unit tests for its kind folder, placed next to it | tests for a neighbouring kind |
+
+**What a test holds and what review holds.** `bin/vigild/tests/kinds.rs` fails the gate on the
+three things that can be read off a path or a line: a folder named after a Rust construct or a
+catch-all (`structs/`, `utils/`, `misc/`, …) or a file named `misc.rs`, `common.rs`, `utils.rs`
+or `util.rs`; a kind folder inside a kind folder of another kind (`collectors/helpers/`); and a
+module root that holds code. What needs judgement stays with review: the threshold of roughly
+twelve files, whether a folder is a kind or a domain (`bin/vigild/src/collector/` is a domain,
+and its name alone cannot say so), the singular or plural of a name, and whether a folder is
+named with a noun.
 
 **`fixture/` is a kind with a narrow purpose.** It exists on both sides of the wire
 (`crates/collectors/vigil-<subject>/src/fixture/`, `crates/core/vigil-rules/src/fixture/`,
@@ -417,7 +430,16 @@ must leave its neighbours unaffected.
 ### 3.5. Comments in code
 
 **`.rs` files contain no comments**: no `//`, no `///`, no `//!`. The decision was made while
-preparing the code for publication and is enforced in code review.
+preparing the code for publication and is held by `bin/vigild/tests/comments.rs`, which reads
+every `.rs` file in `crates/` and `bin/` with a lexer that knows strings, raw strings and
+character literals, so `"//"` inside a literal is not a comment and a comment is never missed.
+
+**The build and packaging files carry no prose in comments either**: `Cargo.toml`, the
+`justfile` and `env/justice/*.just`, `env/docker/`, `env/scripts/`, `packaging/` and the CI
+workflow. The same test reads them. What a tool reads stays: a shebang, `# shellcheck` and
+`# syntax=` directives, and the one line above a `just` recipe that `just --list` prints. The
+systemd units under `packaging/systemd/` and the conffiles under `packaging/audit/` are
+operator prose and are not read by it.
 
 Content that would otherwise be a comment goes elsewhere:
 
@@ -461,10 +483,10 @@ constraints determine the layout:
 - **a trait impl must stay in one block**, with all trait methods together. A large trait impl is
   therefore kept thin: its methods **delegate** to inherent methods in concern files;
 - **private fields are visible only to the type's module and its descendants.** Concern files
-  that read private state must be **child modules** of the type: a `<type>/` folder with a
-  `mod.rs` (the `struct` itself plus the trait impl skeleton) and `<concern>.rs` children. Flat
-  sibling files require `pub(crate)` fields, which is acceptable only where the field is shared
-  anyway.
+  that read private state live in a `<type>/` folder: a declarations-only `mod.rs`, the
+  `struct` and the trait impl skeleton in `<type>.rs` with those fields `pub(super)`, and
+  `<concern>.rs` beside it. Fields visible further than the folder (`pub(crate)`) are acceptable
+  only where the field is shared anyway.
 
 In short, §3.2 means **one cohesive unit per file**.
 
@@ -497,7 +519,8 @@ It follows that:
   wait forever;
 - **the product has no async runtime.** This is a measured decision: the agent runs a handful of
   threads, and a runtime would add dependencies, static binary size and build time on the
-  customer's host (§6, "Measure first").
+  customer's host (§6, "Measure first"). `no_async_runtime_is_in_the_dependency_graph` in
+  `bin/vigild/tests/standalone.rs` fails if one arrives.
 
 **Resource budgets.** These limits are requirements: the agent runs on the customer's host, and a
 customer disables a resource-hungry agent first.
@@ -626,11 +649,11 @@ suite (samples that must be accepted and samples that must be rejected). Rules f
 | Tests | `cargo test --workspace`; no host state, no network | ✅ |
 | Linux-specific code | `just docker-gates all` — the same gate on musl | ✅ |
 | Console keyboard handling | `just docker-gates console-pty` — under a real terminal | ✅ |
-| README in every crate | purpose, decision, dependencies, graph | ✅ |
-| Comments in `.rs` | none (§3.5) | ✅ zero |
+| README in every crate | purpose, decision, dependencies, graph | ✅ held by `bin/vigild/tests/readmes.rs` |
+| Comments in `.rs` and build files | none (§3.5) | ✅ held by `bin/vigild/tests/comments.rs` |
 | `#[allow(...)]` in the tree | forbidden; fix the cause of the warning | ✅ zero |
 | `main.rs` is a shim, the root is in `boot/` | all three binaries | ✅ |
-| Module roots contain declarations only | `mod.rs`/`lib.rs` without logic or tests | ✅ |
+| Module roots contain declarations only | `mod.rs`/`lib.rs` without logic or tests | ✅ held by `bin/vigild/tests/kinds.rs` |
 | A kind is a plural folder | `ports/`, `parsers/`, `collectors/`, `rules/`, `sinks/`, `types/`, `helpers/` | ✅ |
 | Kind folders are nouns | `socket/`, `loops/`, `wizard/` | ✅ |
 | Grouping an overgrown kind | >12 files ⇒ subfolders of the same kind | ✅ no folder above 12 files |

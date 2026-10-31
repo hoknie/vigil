@@ -1,6 +1,7 @@
 use super::*;
 use crate::parsers::SessionSource;
 use sessions::read_sessions;
+use vigil_collect::{Collector, Health};
 
 #[test]
 fn reads_this_host_and_names_itself_in_the_snapshot() {
