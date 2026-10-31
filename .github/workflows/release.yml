@@ -108,7 +108,7 @@ jobs:
 
   macos:
     needs: gate
-    runs-on: macos-14
+    runs-on: macos-15
     env:
       TARGET: universal-apple-darwin
       TAG: ${{ github.ref_name }}
