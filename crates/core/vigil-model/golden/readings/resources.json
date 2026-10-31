@@ -7,6 +7,12 @@
       "booted_at": 1757419200,
       "readable": true
     },
+    "cpu|summary": {
+      "busy_percent_step": 20,
+      "processors": 4,
+      "readable": true,
+      "window_seconds": 900
+    },
     "fs|/": {
       "device": "/dev/sda1",
       "free_inodes_percent_step": 85,
@@ -63,6 +69,7 @@
       "type": "ext4"
     },
     "memory|summary": {
+      "available_percent_step": 60,
       "readable": true,
       "swap_total_bytes": 1073737728,
       "total_bytes": 8232091648

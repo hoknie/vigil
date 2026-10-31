@@ -118,6 +118,9 @@ fn a_larger_reading_with_ties_and_programs_sharing_a_name_lists_from_the_index_a
     for pane in panes() {
         let showing = Showing::default().opening(&opened);
         the_index_lists_every_search_and_sort_as_the_rows_do_in(pane.as_ref(), &reading, showing);
+        if !matches!(pane.name(), "sockets" | "by program") {
+            continue;
+        }
         assert!(
             indexed(pane.as_ref(), &reading, &showing) > 250,
             "a larger reading is what puts many rows under one user, one program and one pid"

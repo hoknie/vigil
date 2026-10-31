@@ -9,6 +9,7 @@ mod footer;
 mod gathering;
 mod listening;
 mod notices;
+mod pairs;
 mod programs;
 mod tally;
 

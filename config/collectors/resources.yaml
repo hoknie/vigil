@@ -9,3 +9,9 @@ resources:
   disk_free_percent: 10
   # A filesystem with free inodes under this percentage is reported as a finding.
   inode_free_percent: 10
+  # Processors busy on average at least this percentage over the last 15 minutes are reported
+  # as a finding, once each time the average climbs to it.
+  cpu_busy_percent: 90
+  # Memory available under this percentage is reported as a finding, once each time it falls
+  # under it.
+  memory_available_percent: 10

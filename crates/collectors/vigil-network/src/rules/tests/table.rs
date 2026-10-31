@@ -174,3 +174,37 @@ fn the_row_counting_the_unix_sockets_with_no_name_reaches_no_rule_at_all() {
 
     assert!(ports(&change).is_empty());
 }
+
+#[test]
+fn an_outbound_pair_is_never_mistaken_for_a_new_listening_port() {
+    for (key, after) in [
+        (
+            "outbound|tcp|203.0.113.10:443|/usr/bin/curl",
+            serde_json::json!({
+                "protocol": "tcp", "remote_address": "203.0.113.10", "remote_port": 443,
+                "program": "/usr/bin/curl", "program_deleted": false, "uid": 0, "user": "root",
+                "owner_resolved": true,
+            }),
+        ),
+        (
+            "inbound|tcp|22|198.51.100.5|/usr/sbin/sshd",
+            serde_json::json!({
+                "protocol": "tcp", "local_port": 22, "remote_address": "198.51.100.5",
+                "program": "/usr/sbin/sshd", "program_deleted": false, "uid": 0, "user": "root",
+                "owner_resolved": true,
+            }),
+        ),
+    ] {
+        let found = crate::rules::verdict::ports(&vigil_model::Change::Added {
+            key: key.into(),
+            after,
+        });
+
+        assert!(
+            found
+                .iter()
+                .all(|(_, kind)| !kind.starts_with("port.listen")),
+            "{key}: a conversation is not a door: {found:?}"
+        );
+    }
+}

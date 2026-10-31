@@ -152,12 +152,18 @@ fn every_row_is_keyed_the_way_the_rules_read_it() {
     let _listener = TcpListener::bind("127.0.0.1:0").expect("a port");
 
     for (key, item) in &read().items {
+        if key.ends_with("|beyond") {
+            assert!(item["count"].as_u64().is_some(), "{key} counts nothing");
+            continue;
+        }
         assert!(item.get("owner_resolved").is_some(), "{key} lost its flag");
         match key.split_once('|') {
             Some(("tcp" | "tcp6" | "udp" | "udp6", rest)) => {
                 assert!(rest.contains(':'), "key shape: {key}")
             }
             Some(("unix", rest)) => assert!(!rest.is_empty(), "key shape: {key}"),
+            Some(("outbound", rest)) => assert_eq!(rest.split('|').count(), 3, "key shape: {key}"),
+            Some(("inbound", rest)) => assert_eq!(rest.split('|').count(), 4, "key shape: {key}"),
             _ => panic!("key shape: {key}"),
         }
     }

@@ -19,6 +19,12 @@ impl NetworkCollector {
     }
 }
 
+impl NetworkCollector {
+    pub fn reading_connections(self, _connections: bool) -> Self {
+        self
+    }
+}
+
 impl Collector for NetworkCollector {
     fn name(&self) -> &'static str {
         self.absent.name()

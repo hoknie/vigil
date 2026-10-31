@@ -93,7 +93,11 @@ fn a_reading_of_macos_has_the_shape_of_the_reading_the_rules_and_the_console_wer
     )
     .expect("a shape");
 
-    let drift = outside_the_sample(&Shape::of(&read()), &sample, &["memory.swap_total_bytes"]);
+    let drift = outside_the_sample(
+        &Shape::of(&read()),
+        &sample,
+        &["memory.swap_total_bytes", "cpu.busy_percent_step"],
+    );
 
     assert!(drift.is_empty(), "{drift:#?}");
 }
@@ -147,4 +151,28 @@ fn a_restarted_agent_holds_the_boot_time_it_had_published_before() {
     let read = collector.collect().expect("read");
 
     assert_eq!(read.items[BOOT]["booted_at"], 1_789_538_653);
+}
+
+#[test]
+fn a_mac_read_without_root_names_its_processors_and_available_memory() {
+    let snapshot = read();
+
+    let processors = &snapshot.items["cpu|summary"];
+    assert!(
+        processors["processors"]
+            .as_u64()
+            .is_some_and(|count| count > 0),
+        "{processors}"
+    );
+    assert!(
+        processors["busy_percent_step"].is_null(),
+        "one reading is not fifteen minutes of them: {processors}"
+    );
+    let memory = &snapshot.items["memory|summary"];
+    assert!(
+        memory["available_percent_step"]
+            .as_u64()
+            .is_some_and(|step| step <= 100 && step % 5 == 0),
+        "{memory}"
+    );
 }

@@ -10,6 +10,7 @@ vigil-collect = { path = "../../core/vigil-collect" }
 vigil-rules = { path = "../../core/vigil-rules" }
 vigil-module = { path = "../../core/vigil-module" }
 vigil-view = { path = "../../core/vigil-view" }
+serde.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]

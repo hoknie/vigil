@@ -7,7 +7,8 @@ use super::files::{Refusal, UPTIME};
 use super::source::TOLERANCE_SECONDS;
 use vigil_collect::{CollectError, steadied};
 
-use crate::parsers::{BOOT, ResourcesReading, booted_at_of, resources_snapshot};
+use crate::helpers::Sample;
+use crate::parsers::{BOOT, ProcessorReading, ResourcesReading, booted_at_of, resources_snapshot};
 
 impl ResourcesCollector {
     pub(super) fn reading(&self) -> Result<Snapshot, CollectError> {
@@ -17,6 +18,7 @@ impl ResourcesCollector {
             boot_id: boot_id.as_deref(),
             booted_at: self.moment_this_host_booted(),
             memory: self.files.memory().ok(),
+            processors: self.processors(),
             filesystems: &filesystems,
         };
 
@@ -43,6 +45,25 @@ impl ResourcesCollector {
         *held = Some(published);
 
         Some(published)
+    }
+
+    fn processors(&self) -> Option<ProcessorReading> {
+        let counters = self.files.processors().ok()?;
+        let busy = self
+            .busy
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .push(Sample {
+                at_seconds: self.started.elapsed().as_secs(),
+                total: counters.total,
+                busy: counters.busy,
+            });
+
+        Some(ProcessorReading {
+            processors: counters.processors,
+            busy_percent_step: busy.percent_step,
+            window_seconds: busy.window_seconds,
+        })
     }
 
     fn held(&self) -> MutexGuard<'_, Option<i64>> {

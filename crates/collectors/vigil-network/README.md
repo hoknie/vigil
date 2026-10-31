@@ -1,6 +1,7 @@
 # vigil-network
 
-The sockets this host listens on, and the process holding each one.
+The sockets this host listens on, the process holding each one, and the conversations this host
+holds, as pairs of a program and a peer.
 
 ## The decision it follows from
 

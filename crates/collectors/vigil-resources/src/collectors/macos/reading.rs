@@ -5,8 +5,9 @@ use vigil_model::Snapshot;
 
 use super::ResourcesCollector;
 use super::filesystems::filesystems;
-use super::source::{BOOT_TIME, TOLERANCE_SECONDS, boot_session, memory};
-use crate::parsers::{BOOT, ResourcesReading, booted_at_of, resources_snapshot};
+use super::source::{BOOT_TIME, TOLERANCE_SECONDS, boot_session, memory, processors};
+use crate::helpers::Sample;
+use crate::parsers::{BOOT, ProcessorReading, ResourcesReading, booted_at_of, resources_snapshot};
 
 impl ResourcesCollector {
     pub(super) fn reading(&self) -> Result<Snapshot, CollectError> {
@@ -16,6 +17,7 @@ impl ResourcesCollector {
             boot_id: boot_id.as_deref(),
             booted_at: self.moment_this_host_booted(),
             memory: memory(),
+            processors: self.processors(),
             filesystems: &filesystems,
         };
 
@@ -26,6 +28,25 @@ impl ResourcesCollector {
             ))),
             false => Ok(resources_snapshot(&(self.now)(), &reading)),
         }
+    }
+
+    fn processors(&self) -> Option<ProcessorReading> {
+        let counters = processors()?;
+        let busy = self
+            .busy
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .push(Sample {
+                at_seconds: self.started.elapsed().as_secs(),
+                total: counters.total,
+                busy: counters.busy,
+            });
+
+        Some(ProcessorReading {
+            processors: counters.processors,
+            busy_percent_step: busy.percent_step,
+            window_seconds: busy.window_seconds,
+        })
     }
 
     pub(super) fn remember(&self, previous: &Snapshot) {

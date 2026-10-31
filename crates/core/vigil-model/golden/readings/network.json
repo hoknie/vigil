@@ -2,6 +2,36 @@
   "source": "network",
   "taken_at": "2026-09-09T09:00:00.000Z",
   "items": {
+    "inbound|tcp|22|198.51.100.5|/usr/sbin/sshd": {
+      "local_port": 22,
+      "owner_resolved": true,
+      "program": "/usr/sbin/sshd",
+      "program_deleted": false,
+      "protocol": "tcp",
+      "remote_address": "198.51.100.5",
+      "uid": 0,
+      "user": "root"
+    },
+    "outbound|tcp|203.0.113.10:443|/usr/bin/curl": {
+      "owner_resolved": true,
+      "program": "/usr/bin/curl",
+      "program_deleted": false,
+      "protocol": "tcp",
+      "remote_address": "203.0.113.10",
+      "remote_port": 443,
+      "uid": 0,
+      "user": "root"
+    },
+    "outbound|tcp|203.0.113.7:4444|/tmp/.x/nc": {
+      "owner_resolved": true,
+      "program": "/tmp/.x/nc",
+      "program_deleted": true,
+      "protocol": "tcp",
+      "remote_address": "203.0.113.7",
+      "remote_port": 4444,
+      "uid": 33,
+      "user": "www-data"
+    },
     "tcp6|:::443": {
       "address": "::",
       "owner_resolved": true,

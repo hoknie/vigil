@@ -1,7 +1,19 @@
 use serde_json::Value;
 use vigil_view::basename;
 
+use vigil_model::Snapshot;
+
 use crate::types::SocketView;
+
+pub(super) fn is_a_door(key: &str) -> bool {
+    !(key.starts_with("outbound|")
+        || key.starts_with("inbound|")
+        || key.starts_with("connections|"))
+}
+
+pub(super) fn doors(reading: &Snapshot) -> impl Iterator<Item = (&String, &Value)> {
+    reading.items.iter().filter(|(key, _)| is_a_door(key))
+}
 
 pub(super) fn protocol<'a>(item: &'a Value, key: &'a str) -> &'a str {
     item.get("protocol")

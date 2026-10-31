@@ -2,7 +2,8 @@ use serde_json::Value;
 
 pub struct SocketView<'a>(&'a Value);
 
-const WRITABLE_PATHS: &[&str] = &["/tmp/", "/var/tmp/", "/dev/shm/", "/home/", "/run/user/"];
+pub(crate) const WRITABLE_PATHS: &[&str] =
+    &["/tmp/", "/var/tmp/", "/dev/shm/", "/home/", "/run/user/"];
 
 impl<'a> SocketView<'a> {
     pub fn new(value: &'a Value) -> Self {

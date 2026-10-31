@@ -21,6 +21,32 @@
         "always": true
       }
     },
+    "cpu": {
+      "busy_percent_step": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "processors": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "readable": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "window_seconds": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      }
+    },
     "fs": {
       "device": {
         "types": [
@@ -79,6 +105,12 @@
       }
     },
     "memory": {
+      "available_percent_step": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
       "readable": {
         "types": [
           "boolean"

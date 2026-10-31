@@ -4,11 +4,19 @@ const KIBIBYTE: u64 = 1024;
 pub struct MemoryFacts {
     pub total_bytes: u64,
     pub swap_total_bytes: Option<u64>,
+    pub available_percent_step: Option<u64>,
+}
+
+const AVAILABLE_STEP: u64 = 5;
+
+pub fn available_step(percent: u64) -> u64 {
+    percent.min(100) / AVAILABLE_STEP * AVAILABLE_STEP
 }
 
 pub fn parse_meminfo(text: &str) -> Option<MemoryFacts> {
     let mut total_bytes = None;
     let mut swap_total_bytes = None;
+    let mut available_bytes = None;
 
     for line in text.lines() {
         let Some((name, rest)) = line.split_once(':') else {
@@ -17,13 +25,23 @@ pub fn parse_meminfo(text: &str) -> Option<MemoryFacts> {
         match name {
             "MemTotal" => total_bytes = bytes(rest),
             "SwapTotal" => swap_total_bytes = bytes(rest),
+            "MemAvailable" => available_bytes = bytes(rest),
             _ => {}
         }
     }
 
+    let total_bytes: u64 = total_bytes?;
+    let available_percent_step = match (available_bytes, total_bytes) {
+        (Some(available), total) if total > 0 => Some(available_step(
+            (u128::from(available) * 100 / u128::from(total)) as u64,
+        )),
+        _ => None,
+    };
+
     Some(MemoryFacts {
-        total_bytes: total_bytes?,
+        total_bytes,
         swap_total_bytes,
+        available_percent_step,
     })
 }
 
@@ -90,5 +108,25 @@ mod tests {
         assert_eq!(parse_meminfo("MemTotal: plenty\n"), None);
         assert_eq!(parse_meminfo("MemTotal:        8039152 MB\n"), None);
         assert_eq!(parse_meminfo("MemFree:          311104 kB\n"), None);
+    }
+
+    #[test]
+    fn available_memory_is_written_as_a_step_and_never_as_bytes() {
+        let facts = parse_meminfo(FROM_A_HOST_WITH_SWAP).expect("reads");
+
+        assert_eq!(
+            facts.available_percent_step,
+            Some(60),
+            "5120884 of 8039152 is 63 per cent, and the step below it is 60"
+        );
+        assert_eq!(available_step(13), 10);
+        assert_eq!(available_step(100), 100);
+    }
+
+    #[test]
+    fn a_kernel_without_mem_available_reports_no_available_memory_rather_than_none() {
+        let facts = parse_meminfo("MemTotal:        8039152 kB\n").expect("reads");
+
+        assert_eq!(facts.available_percent_step, None);
     }
 }

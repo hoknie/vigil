@@ -5,7 +5,8 @@ use std::path::{Path, PathBuf};
 use vigil_collect::holds_files_of_this_host;
 
 use crate::parsers::{
-    MemoryFacts, MountPoint, parse_boot_id, parse_meminfo, parse_mounts, parse_uptime_seconds,
+    MemoryFacts, MountPoint, ProcessorCounters, parse_boot_id, parse_meminfo, parse_mounts,
+    parse_proc_stat, parse_uptime_seconds,
 };
 
 pub(super) const BOOT_ID: &str = "sys/kernel/random/boot_id";
@@ -15,6 +16,8 @@ pub(super) const UPTIME: &str = "uptime";
 pub(super) const MEMINFO: &str = "meminfo";
 
 pub(super) const MOUNTS: &str = "self/mounts";
+
+pub(super) const STAT: &str = "stat";
 
 const CEILING_BYTES: u64 = 128 * 1024;
 
@@ -55,6 +58,11 @@ impl Files {
     pub(super) fn memory(&self) -> Result<MemoryFacts, Refusal> {
         let text = read(&self.path(MEMINFO))?;
         parse_meminfo(&text).ok_or(Refusal::Unreadable)
+    }
+
+    pub(super) fn processors(&self) -> Result<ProcessorCounters, Refusal> {
+        let text = read(&self.path(STAT))?;
+        parse_proc_stat(&text).ok_or(Refusal::Unreadable)
     }
 
     pub(super) fn mounted(&self) -> Result<Vec<MountPoint>, Refusal> {

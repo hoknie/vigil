@@ -1859,6 +1859,7 @@ name = "vigil-network"
 version = "1.0.10"
 dependencies = [
  "libc",
+ "serde",
  "serde_json",
  "vigil-collect",
  "vigil-model",
@@ -1904,6 +1905,7 @@ dependencies = [
 name = "vigil-resources"
 version = "1.0.10"
 dependencies = [
+ "libc",
  "rustix",
  "serde",
  "serde_json",

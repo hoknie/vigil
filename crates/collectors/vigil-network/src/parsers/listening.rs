@@ -20,12 +20,15 @@ pub const SOURCE: &str = "network";
 
 const UNNAMED_KEY: &str = "unix|unnamed";
 
+pub const SWITCHED_OFF: &str = "connections|off";
+
 pub struct SocketsReading<'a> {
     pub network: &'a [SocketRow],
     pub unix: &'a [UnixSocketRow],
     pub unnamed_unix: usize,
     pub owners: &'a BTreeMap<u64, ProcessOwner>,
     pub users: &'a BTreeMap<u32, String>,
+    pub pairs: Option<&'a BTreeMap<String, Value>>,
 }
 
 pub fn listening_snapshot(taken_at: &str, reading: &SocketsReading<'_>) -> Snapshot {
@@ -33,6 +36,16 @@ pub fn listening_snapshot(taken_at: &str, reading: &SocketsReading<'_>) -> Snaps
 
     add_network(&mut snapshot, reading);
     add_unix(&mut snapshot, reading);
+    match reading.pairs {
+        Some(pairs) => snapshot
+            .items
+            .extend(pairs.iter().map(|(key, row)| (key.clone(), row.clone()))),
+        None => {
+            snapshot
+                .items
+                .insert(SWITCHED_OFF.to_string(), json!({ "read": false }));
+        }
+    }
 
     snapshot
 }

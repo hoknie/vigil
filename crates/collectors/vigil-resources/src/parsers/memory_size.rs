@@ -6,6 +6,7 @@ pub fn parse_memory_size(bytes: &[u8]) -> Option<MemoryFacts> {
     (total_bytes > 0).then_some(MemoryFacts {
         total_bytes,
         swap_total_bytes: None,
+        available_percent_step: None,
     })
 }
 

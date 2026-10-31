@@ -3,7 +3,8 @@ use std::collections::BTreeMap;
 use vigil_model::Snapshot;
 
 use crate::parsers::{
-    ProcessOwner, Protocol, SocketsReading, listening_snapshot, parse_net_table, parse_unix_table,
+    PairsReading, ProcessOwner, Protocol, SocketsReading, connection_pairs, listening_snapshot,
+    parse_net_table, parse_unix_table,
 };
 
 const TCP: &str = "\
@@ -11,6 +12,10 @@ const TCP: &str = "\
    0: 00000000:0016 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 20480 1
    1: 0100007F:1538 00000000:0000 0A 00000000:00000000 00:00000000 00000000   106        0 23901 1
    2: 00000000:115C 00000000:0000 0A 00000000:00000000 00:00000000 00000000    33        0 23902 1
+   3: 1104000A:C350 0A7100CB:01BB 01 00000000:00000000 00:00000000 00000000     0        0 30001 1
+   4: 1104000A:C351 077100CB:115C 01 00000000:00000000 00:00000000 00000000    33        0 30002 1
+   5: 1104000A:0016 056433C6:D431 01 00000000:00000000 00:00000000 00000000     0        0 30003 1
+   6: 0100007F:C352 0100007F:1538 01 00000000:00000000 00:00000000 00000000  1000        0 30004 1
 ";
 
 const TCP6: &str = "\
@@ -62,6 +67,23 @@ fn owners() -> BTreeMap<u64, ProcessOwner> {
         ),
         (23902, owner(2291, None, None, 33)),
         (
+            30001,
+            owner(
+                1500,
+                Some("/usr/bin/curl"),
+                Some("curl https://203.0.113.10/health"),
+                0,
+            ),
+        ),
+        (
+            30002,
+            owner(2600, Some("/tmp/.x/nc"), Some("nc 203.0.113.7 4444"), 33),
+        ),
+        (
+            30003,
+            owner(3100, Some("/usr/sbin/sshd"), Some("sshd: alice [priv]"), 0),
+        ),
+        (
             20500,
             owner(
                 1042,
@@ -101,7 +123,9 @@ fn owners() -> BTreeMap<u64, ProcessOwner> {
 }
 
 pub fn network() -> Snapshot {
-    let mut network = parse_net_table(TCP, Protocol::Tcp).listening;
+    let tcp = parse_net_table(TCP, Protocol::Tcp);
+    let established = tcp.established;
+    let mut network = tcp.listening;
     network.extend(parse_net_table(TCP6, Protocol::Tcp6).listening);
     network.extend(parse_net_table(UDP, Protocol::Udp).listening);
     network.extend(parse_net_table(UDP6, Protocol::Udp6).listening);
@@ -114,6 +138,13 @@ pub fn network() -> Snapshot {
         (101, "systemd-resolve".to_string()),
     ]);
 
+    let pairs = connection_pairs(&PairsReading {
+        listening: &network,
+        established: &established,
+        owners: &owners,
+        users: &users,
+    });
+
     listening_snapshot(
         "2026-09-09T09:00:00.000Z",
         &SocketsReading {
@@ -122,6 +153,7 @@ pub fn network() -> Snapshot {
             unnamed_unix: unix.unnamed,
             owners: &owners,
             users: &users,
+            pairs: Some(&pairs),
         },
     )
 }

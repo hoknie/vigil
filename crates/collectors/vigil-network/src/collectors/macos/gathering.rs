@@ -3,11 +3,12 @@ use std::collections::{BTreeMap, BTreeSet};
 use vigil_collect::{CollectError, processes_running};
 
 use super::descriptors::{open_descriptors, socket_information};
-use crate::parsers::{Door, SocketRow, UnixSocketRow, door_of, socket_descriptors};
+use crate::parsers::{Connection, Door, SocketRow, UnixSocketRow, door_of, socket_descriptors};
 
 #[derive(Default)]
 pub(super) struct Gathered {
     pub(super) network: BTreeMap<u64, SocketRow>,
+    pub(super) established: BTreeMap<u64, Connection>,
     pub(super) unix: BTreeMap<u64, UnixSocketRow>,
     pub(super) unnamed: BTreeSet<u64>,
     pub(super) holders: BTreeMap<u64, u32>,
@@ -61,6 +62,11 @@ impl Gathered {
             Door::Network(row) => {
                 let handle = row.inode;
                 self.network.entry(handle).or_insert(row);
+                handle
+            }
+            Door::Established(connection) => {
+                let handle = connection.inode;
+                self.established.entry(handle).or_insert(connection);
                 handle
             }
             Door::Unix(row) => {

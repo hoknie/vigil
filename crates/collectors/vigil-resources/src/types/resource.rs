@@ -3,6 +3,7 @@ use serde_json::Value;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Family {
     Boot,
+    Processors,
     Memory,
     Filesystem,
 }
@@ -11,6 +12,8 @@ const BOOT: &str = "boot";
 
 const MEMORY: &str = "memory";
 
+const PROCESSORS: &str = "cpu";
+
 const FILESYSTEM: &str = "fs";
 
 impl Family {
@@ -18,6 +21,7 @@ impl Family {
         match key.split('|').next()? {
             BOOT => Some(Family::Boot),
             MEMORY => Some(Family::Memory),
+            PROCESSORS => Some(Family::Processors),
             FILESYSTEM => Some(Family::Filesystem),
             _ => None,
         }
@@ -27,6 +31,7 @@ impl Family {
         match self {
             Family::Boot => BOOT,
             Family::Memory => MEMORY,
+            Family::Processors => "processors",
             Family::Filesystem => "filesystem",
         }
     }
@@ -72,6 +77,22 @@ impl<'a> ResourceView<'a> {
 
     pub fn read_only(&self) -> bool {
         self.value["read_only"].as_bool().unwrap_or(false)
+    }
+
+    pub fn processors(&self) -> u64 {
+        self.value["processors"].as_u64().unwrap_or(0)
+    }
+
+    pub fn busy_percent_step(&self) -> Option<u64> {
+        self.value["busy_percent_step"].as_u64()
+    }
+
+    pub fn window_seconds(&self) -> u64 {
+        self.value["window_seconds"].as_u64().unwrap_or(0)
+    }
+
+    pub fn available_percent_step(&self) -> Option<u64> {
+        self.value["available_percent_step"].as_u64()
     }
 
     pub fn total_bytes(&self) -> u64 {

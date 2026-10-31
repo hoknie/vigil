@@ -1,6 +1,7 @@
 # vigil-resources
 
-The boot this host is running, the moment it started, its clock and the room left on its filesystems.
+The boot this host is running, the moment it started, its clock, how busy its processors are,
+how much of its memory is available and the room left on its filesystems.
 
 ## The decision it follows from
 

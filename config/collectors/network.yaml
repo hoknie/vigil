@@ -3,3 +3,6 @@
 network:
   # How often this collector reads: a number of seconds, or 30s, 5m, 1h.
   schedule: 30
+  # Whether the connections this host holds are read as pairs: a program and the peer it talks
+  # to, and a peer and the port of this host it talks to. Off reads the listening sockets alone.
+  connections: true

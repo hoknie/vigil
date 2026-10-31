@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.9",
+  "batch_id": "0193a1c2-7e10-7b22-9c04-6e1d2a8b4f78",
+  "sent_at": "2026-10-31T09:05:02.311Z",
+  "producer": {
+    "name": "vigil",
+    "version": "1.0.10"
+  },
+  "host": {
+    "host_id": "4c2a9e71d0b84f5ea6c3b19d7e20f851",
+    "install_id": "0193a0f1-2b44-7c10-8e21-5f0a2b6c9d33",
+    "boot_id": "9d1e7c42-3b6a-4f08-a1c5-7e2f0b9d4a61",
+    "hostname": "web-1",
+    "os": {
+      "family": "linux",
+      "distro": "debian",
+      "version": "13",
+      "kernel": "6.12.0",
+      "arch": "x86_64"
+    },
+    "addresses": [
+      "10.0.4.21"
+    ],
+    "tags": {
+      "host_id_source": "/etc/machine-id"
+    }
+  },
+  "findings": [
+    {
+      "event_id": "0193a1c2-8b31-7c08-8a17-3d5b9c0e2f92",
+      "finding_key": "connection.outbound|tcp|203.0.113.7:4444|/tmp/.x/nc",
+      "kind": "connection.from_writable_path",
+      "severity": "critical",
+      "state": "open",
+      "observed_at": "2026-10-31T09:05:00.104Z",
+      "first_seen_at": "2026-10-31T09:05:00.104Z",
+      "occurrences": 1,
+      "title": "/tmp/.x/nc as www-data is talking to 203.0.113.7:4444",
+      "subject": {
+        "type": "connection",
+        "key": {
+          "protocol": "tcp",
+          "remote_address": "203.0.113.7",
+          "remote_port": 4444,
+          "executable": "/tmp/.x/nc"
+        }
+      },
+      "after": {
+        "protocol": "tcp",
+        "remote_address": "203.0.113.7",
+        "remote_port": 4444,
+        "program": "/tmp/.x/nc",
+        "program_deleted": true,
+        "uid": 33,
+        "user": "www-data",
+        "owner_resolved": true
+      },
+      "evidence": [
+        {
+          "kind": "path",
+          "value": "/tmp/.x/nc (deleted from disk while still running)"
+        }
+      ],
+      "rule": "outbound_from_writable_path"
+    }
+  ]
+}

@@ -8,8 +8,8 @@ use vigil_collect::{CollectError, Collector, Health, parse_passwd};
 
 use super::socket_owner::resolve_owners;
 use crate::parsers::{
-    Protocol, SocketRow, SocketsReading, UnixSocketRow, listening_snapshot, parse_net_table,
-    parse_unix_table,
+    Connection, PairsReading, Protocol, SocketRow, SocketsReading, UnixSocketRow, connection_pairs,
+    listening_snapshot, parse_net_table, parse_unix_table,
 };
 
 const TABLES: &[(&str, Protocol)] = &[
@@ -23,11 +23,22 @@ const UNIX_TABLE: &str = "/proc/net/unix";
 
 pub struct NetworkCollector {
     now: Box<dyn Fn() -> Rfc3339 + Send + Sync>,
+    connections: bool,
 }
 
 impl NetworkCollector {
     pub fn new(now: impl Fn() -> Rfc3339 + Send + Sync + 'static) -> Self {
-        NetworkCollector { now: Box::new(now) }
+        NetworkCollector {
+            now: Box::new(now),
+            connections: true,
+        }
+    }
+
+    pub fn reading_connections(self, connections: bool) -> Self {
+        NetworkCollector {
+            connections,
+            ..self
+        }
     }
 }
 
@@ -85,6 +96,7 @@ impl Collector for NetworkCollector {
 
     fn collect(&self) -> Result<Snapshot, CollectError> {
         let mut rows: Vec<SocketRow> = Vec::new();
+        let mut established: Vec<Connection> = Vec::new();
         let mut unparsed = 0usize;
         let mut read_any = false;
 
@@ -95,6 +107,9 @@ impl Collector for NetworkCollector {
                     let table = parse_net_table(&text, *protocol);
                     unparsed += table.unparsed;
                     rows.extend(table.listening);
+                    if self.connections {
+                        established.extend(table.established);
+                    }
                 }
                 Err(error) if error.kind() == ErrorKind::NotFound => {}
                 Err(error) if error.kind() == ErrorKind::PermissionDenied => {
@@ -138,12 +153,22 @@ impl Collector for NetworkCollector {
             .iter()
             .map(|row| row.inode)
             .chain(unix_rows.iter().map(|row| row.inode))
+            .chain(established.iter().map(|connection| connection.inode))
             .collect();
         let owners = resolve_owners(&inodes).by_inode;
 
         let users = fs::read_to_string("/etc/passwd")
             .map(|text| parse_passwd(&text))
             .unwrap_or_default();
+
+        let pairs = self.connections.then(|| {
+            connection_pairs(&PairsReading {
+                listening: &rows,
+                established: &established,
+                owners: &owners,
+                users: &users,
+            })
+        });
 
         Ok(listening_snapshot(
             &(self.now)(),
@@ -153,6 +178,7 @@ impl Collector for NetworkCollector {
                 unnamed_unix,
                 owners: &owners,
                 users: &users,
+                pairs: pairs.as_ref(),
             },
         ))
     }
@@ -188,6 +214,10 @@ mod tests {
         assert_eq!(snapshot.source, "network");
         assert_eq!(snapshot.taken_at, "2026-09-08T12:00:00.000Z");
         for (key, item) in &snapshot.items {
+            if key.ends_with("|beyond") {
+                assert!(item["count"].as_u64().is_some(), "{key} counts nothing");
+                continue;
+            }
             assert!(item.get("owner_resolved").is_some(), "{key} lost its flag");
             match key.split_once('|') {
                 Some(("tcp" | "tcp6" | "udp" | "udp6", rest)) => {
@@ -197,6 +227,12 @@ mod tests {
                     rest.starts_with('/') || rest.starts_with('@') || rest == "unnamed",
                     "key shape: {key}"
                 ),
+                Some(("outbound", rest)) => {
+                    assert_eq!(rest.split('|').count(), 3, "key shape: {key}")
+                }
+                Some(("inbound", rest)) => {
+                    assert_eq!(rest.split('|').count(), 4, "key shape: {key}")
+                }
                 _ => panic!("key shape: {key}"),
             }
         }

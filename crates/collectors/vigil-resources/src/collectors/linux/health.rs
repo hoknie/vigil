@@ -1,5 +1,5 @@
 use super::ResourcesCollector;
-use super::files::{BOOT_ID, Files, MEMINFO, Refusal, UPTIME};
+use super::files::{BOOT_ID, Files, MEMINFO, Refusal, STAT, UPTIME};
 use vigil_collect::Health;
 
 const WHICH_BOOT: &str = "which boot this host is running is unknown, so a restart of it cannot be told from a host \
@@ -10,12 +10,18 @@ const WHEN_IT_BOOTED: &str = "the moment this host booted is unknown, so a clock
 
 const HOW_BIG: &str = "the memory and the swap this host has are unknown";
 
+const HOW_BUSY: &str = "how busy the processors of this host are will not be seen";
+
+const NO_AVAILABLE: &str =
+    "memory available is not reported by this kernel, so memory running out will not be seen";
+
 impl ResourcesCollector {
     pub(super) fn health(&self) -> Health {
         let files = [
             (self.files.boot_id().err(), BOOT_ID, WHICH_BOOT),
             (self.files.uptime_seconds().err(), UPTIME, WHEN_IT_BOOTED),
             (self.files.memory().err(), MEMINFO, HOW_BIG),
+            (self.files.processors().err(), STAT, HOW_BUSY),
         ];
         let read_nothing = files.iter().all(|(refusal, ..)| refusal.is_some());
 
@@ -25,6 +31,13 @@ impl ResourcesCollector {
                 refusal.map(|refusal| said(&self.files, refusal, file, lost))
             })
             .collect();
+        if self
+            .files
+            .memory()
+            .is_ok_and(|memory| memory.available_percent_step.is_none())
+        {
+            complaints.push(NO_AVAILABLE.to_string());
+        }
         let (filesystems, unmeasured) = self.filesystems();
         complaints.extend(unmeasured);
 

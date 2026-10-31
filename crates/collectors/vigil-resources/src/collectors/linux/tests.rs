@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicI64, Ordering};
 
 use vigil_model::Snapshot;
 
-use super::files::{BOOT_ID, MEMINFO, MOUNTS, UPTIME};
+use super::files::{BOOT_ID, MEMINFO, MOUNTS, STAT, UPTIME};
 use super::*;
 use crate::parsers::BOOT;
 
@@ -22,6 +22,11 @@ const MEMORY_OF_A_SMALL_HOST: &str = "MemTotal:        8039152 kB\n\
      SwapFree:        1048572 kB\n";
 
 const FIRST_UPTIME: i64 = 128_142;
+
+const COUNTERS_OF_TWO_PROCESSORS: &str = "cpu  4705 356 584 3699 23 23 0 0 0 0\n\
+     cpu0 2352 178 292 1849 11 11 0 0 0 0\n\
+     cpu1 2353 178 292 1850 12 12 0 0 0 0\n\
+     intr 114930548\n";
 
 struct Bench {
     directory: PathBuf,
@@ -47,6 +52,7 @@ impl Bench {
         };
         bench.write(BOOT_ID, &format!("{ONE_BOOT}\n"));
         bench.write(MEMINFO, MEMORY_OF_A_SMALL_HOST);
+        bench.write(STAT, COUNTERS_OF_TWO_PROCESSORS);
         bench.uptime_reads(FIRST_UPTIME);
         bench.mounts_are(&bench.directory.display().to_string(), "ext4");
         bench
@@ -285,6 +291,7 @@ fn the_files_this_collector_reads_fail_in_different_ways_and_none_of_them_is_an_
 
     bench.remove(UPTIME);
     bench.remove(MOUNTS);
+    bench.remove(STAT);
     let nothing = collector.available();
     assert!(matches!(nothing, Health::Unavailable(_)), "{nothing:?}");
     assert!(
@@ -294,4 +301,41 @@ fn the_files_this_collector_reads_fail_in_different_ways_and_none_of_them_is_an_
 
     assert_ne!(said(&without_memory), said(&without_boot_id));
     assert_ne!(said(&without_boot_id), said(&nothing));
+}
+
+#[test]
+fn an_unreadable_proc_stat_is_a_complaint_and_no_processor_row() {
+    let bench = Bench::new("no-stat");
+    let collector = bench.collector();
+    bench.remove(STAT);
+
+    let health = collector.available();
+
+    assert!(matches!(health, Health::Degraded(_)), "{health:?}");
+    assert!(
+        said(&health).contains("how busy the processors of this host are will not be seen"),
+        "{health:?}"
+    );
+    assert!(
+        !collector
+            .collect()
+            .expect("still reads")
+            .items
+            .contains_key("cpu|summary"),
+        "a host whose processors could not be read carries no row saying they are idle"
+    );
+}
+
+#[test]
+fn the_first_readings_after_a_start_name_the_processors_and_not_their_busyness() {
+    let bench = Bench::new("first");
+    let collector = bench.collector();
+
+    let first = collector.collect().expect("reads");
+
+    let row = &first.items["cpu|summary"];
+    assert_eq!(row["processors"], 2);
+    assert!(row["busy_percent_step"].is_null(), "{row}");
+    assert_eq!(collector.available(), Health::Ok);
+    assert_eq!(first.items[MEMORY]["available_percent_step"], 60);
 }

@@ -82,6 +82,11 @@ pub fn resources() -> Snapshot {
             boot_id: parse_boot_id(BOOT_ID).as_deref(),
             booted_at: Some(READ_AT - i64::try_from(uptime).expect("seconds")),
             memory: Some(memory),
+            processors: Some(crate::parsers::ProcessorReading {
+                processors: 4,
+                busy_percent_step: Some(20),
+                window_seconds: 900,
+            }),
             filesystems: &filesystems,
         },
     )

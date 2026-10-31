@@ -132,4 +132,28 @@ pub fn snapshot() -> Snapshot {
             "unix|unnamed",
             json!({"protocol": "unix", "count": 1, "owner_resolved": false}),
         )
+        .with(
+            "outbound|tcp|203.0.113.10:443|/usr/bin/curl",
+            json!({
+                "protocol": "tcp", "remote_address": "203.0.113.10", "remote_port": 443,
+                "program": "/usr/bin/curl", "program_deleted": false, "uid": 0,
+                "user": "root", "owner_resolved": true,
+            }),
+        )
+        .with(
+            "outbound|tcp|203.0.113.7:4444|/tmp/.x/nc",
+            json!({
+                "protocol": "tcp", "remote_address": "203.0.113.7", "remote_port": 4444,
+                "program": "/tmp/.x/nc", "program_deleted": true, "uid": 33,
+                "user": "www-data", "owner_resolved": true,
+            }),
+        )
+        .with(
+            "inbound|tcp|443|198.51.100.5|/usr/sbin/nginx",
+            json!({
+                "protocol": "tcp", "local_port": 443, "remote_address": "198.51.100.5",
+                "program": "/usr/sbin/nginx", "program_deleted": false, "uid": 0,
+                "user": "root", "owner_resolved": true,
+            }),
+        )
 }

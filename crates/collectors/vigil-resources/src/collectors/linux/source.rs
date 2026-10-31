@@ -39,6 +39,8 @@ impl ResourcesCollector {
             files: Files::under(proc_directory),
             blocks: Sysfs::under(sys_directory),
             booted_at: Mutex::new(None),
+            busy: Mutex::new(crate::helpers::BusyWindow::default()),
+            started: std::time::Instant::now(),
         }
     }
 }

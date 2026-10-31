@@ -11,6 +11,7 @@ mod storage;
 mod tests;
 
 use std::sync::Mutex;
+use std::time::Instant;
 
 use vigil_model::{Rfc3339, Snapshot};
 
@@ -26,6 +27,8 @@ pub struct ResourcesCollector {
     files: Files,
     blocks: Sysfs,
     booted_at: Mutex<Option<i64>>,
+    busy: Mutex<crate::helpers::BusyWindow>,
+    started: Instant,
 }
 
 impl Collector for ResourcesCollector {

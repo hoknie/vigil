@@ -1,6 +1,106 @@
 {
   "source": "network",
   "classes": {
+    "inbound": {
+      "local_port": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "owner_resolved": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "program": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "program_deleted": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "protocol": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "remote_address": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "uid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "user": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "outbound": {
+      "owner_resolved": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "program": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "program_deleted": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "protocol": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "remote_address": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "remote_port": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "uid": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "user": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
     "tcp": {
       "address": {
         "types": [

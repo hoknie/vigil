@@ -10,12 +10,22 @@ pub const BOOT: &str = "boot|current";
 
 pub const MEMORY: &str = "memory|summary";
 
+pub const CPU: &str = "cpu|summary";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ProcessorReading {
+    pub processors: u64,
+    pub busy_percent_step: Option<u64>,
+    pub window_seconds: u64,
+}
+
 pub const FILESYSTEM: &str = "fs";
 
 pub struct ResourcesReading<'a> {
     pub boot_id: Option<&'a str>,
     pub booted_at: Option<i64>,
     pub memory: Option<MemoryFacts>,
+    pub processors: Option<ProcessorReading>,
     pub filesystems: &'a [Filesystem],
 }
 
@@ -24,6 +34,7 @@ impl ResourcesReading<'_> {
         self.boot_id.is_none()
             && self.booted_at.is_none()
             && self.memory.is_none()
+            && self.processors.is_none()
             && self.filesystems.is_empty()
     }
 }
@@ -32,6 +43,7 @@ pub fn resources_snapshot(taken_at: &str, reading: &ResourcesReading<'_>) -> Sna
     let mut snapshot = Snapshot::new(SOURCE, taken_at.to_string());
 
     add_boot(&mut snapshot, reading);
+    add_processors(&mut snapshot, reading);
     add_memory(&mut snapshot, reading);
     add_filesystems(&mut snapshot, reading);
 
@@ -59,6 +71,23 @@ fn add_memory(snapshot: &mut Snapshot, reading: &ResourcesReading<'_>) {
         json!({
             "total_bytes": memory.total_bytes,
             "swap_total_bytes": memory.swap_total_bytes,
+            "available_percent_step": memory.available_percent_step,
+            "readable": true,
+        }),
+    );
+}
+
+fn add_processors(snapshot: &mut Snapshot, reading: &ResourcesReading<'_>) {
+    let Some(processors) = reading.processors else {
+        return;
+    };
+
+    snapshot.items.insert(
+        CPU.to_string(),
+        json!({
+            "processors": processors.processors,
+            "busy_percent_step": processors.busy_percent_step,
+            "window_seconds": processors.window_seconds,
             "readable": true,
         }),
     );
@@ -102,6 +131,7 @@ mod tests {
         MemoryFacts {
             total_bytes: 8_039_152 * 1024,
             swap_total_bytes: Some(1_048_572 * 1024),
+            available_percent_step: Some(60),
         }
     }
 
@@ -128,6 +158,7 @@ mod tests {
             boot_id,
             booted_at,
             memory: Some(host()),
+            processors: None,
             filesystems,
         }
     }
@@ -190,6 +221,7 @@ mod tests {
                 boot_id: Some(BOOT_ID),
                 booted_at: Some(1_757_419_200),
                 memory: None,
+                processors: None,
                 filesystems: &[],
             },
         );
@@ -251,10 +283,40 @@ mod tests {
             boot_id: None,
             booted_at: None,
             memory: None,
+            processors: None,
             filesystems: &[],
         };
 
         assert!(nothing.says_nothing());
         assert!(!reading(None, Some(1), &[]).says_nothing());
+    }
+
+    #[test]
+    fn the_processors_are_a_row_of_their_own_and_an_unknown_busyness_is_written_as_null() {
+        let mut taken = reading(Some(BOOT_ID), Some(1), &[]);
+        taken.processors = Some(ProcessorReading {
+            processors: 4,
+            busy_percent_step: None,
+            window_seconds: 900,
+        });
+
+        let snapshot = resources_snapshot(AT, &taken);
+
+        let row = &snapshot.items[CPU];
+        assert_eq!(row["processors"], 4);
+        assert!(
+            row["busy_percent_step"].is_null(),
+            "a busyness not known yet is null, never zero: {row}"
+        );
+        assert_eq!(row["window_seconds"], 900);
+        assert_eq!(snapshot.items[MEMORY]["available_percent_step"], 60);
+        assert!(snapshot.items[MEMORY].get("available_bytes").is_none());
+    }
+
+    #[test]
+    fn a_host_whose_processors_could_not_be_read_carries_no_processor_row() {
+        let snapshot = resources_snapshot(AT, &reading(Some(BOOT_ID), Some(1), &[]));
+
+        assert!(!snapshot.items.contains_key(CPU));
     }
 }

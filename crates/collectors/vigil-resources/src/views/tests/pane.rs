@@ -38,8 +38,9 @@ fn the_boot_and_the_memory_are_read_before_the_filesystems_this_host_holds_its_f
         .collect();
 
     assert_eq!(kinds.first(), Some(&"boot"), "{kinds:?}");
-    assert_eq!(kinds.get(1), Some(&"memory"), "{kinds:?}");
-    assert!(kinds[2..].iter().all(|kind| *kind == "fs"), "{kinds:?}");
+    assert_eq!(kinds.get(1), Some(&"cpu"), "{kinds:?}");
+    assert_eq!(kinds.get(2), Some(&"memory"), "{kinds:?}");
+    assert!(kinds[3..].iter().all(|kind| *kind == "fs"), "{kinds:?}");
 }
 
 #[test]

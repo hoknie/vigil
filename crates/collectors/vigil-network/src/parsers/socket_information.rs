@@ -1,6 +1,6 @@
 use std::net::{Ipv4Addr, Ipv6Addr};
 
-use super::proc_net::{Protocol, SocketRow};
+use super::proc_net::{Connection, Protocol, SocketRow};
 use super::proc_net_unix::{UnixKind, UnixSocketRow};
 
 pub const SOCKET_INFORMATION_BYTES: usize = 792;
@@ -26,6 +26,8 @@ const LOCAL_PORT: usize = 268;
 const VERSION: usize = 288;
 
 const LOCAL_ADDRESS: usize = 312;
+
+const FOREIGN_ADDRESS: usize = 296;
 
 const TCP_STATE: usize = 344;
 
@@ -53,11 +55,14 @@ const IPV6_PART: u8 = 2;
 
 const LISTENING: i32 = 1;
 
+const ESTABLISHED: i32 = 4;
+
 const ACCEPTING: i16 = 0x0002;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Door {
     Network(SocketRow),
+    Established(Connection),
     Unix(UnixSocketRow),
     UnnamedUnix(u64),
     Ignored,
@@ -78,10 +83,44 @@ pub fn door_of(bytes: &[u8]) -> Option<Door> {
 }
 
 fn tcp(bytes: &[u8], handle: u64) -> Option<Door> {
-    if signed(bytes, TCP_STATE)? != LISTENING {
-        return Some(Door::Ignored);
+    match signed(bytes, TCP_STATE)? {
+        LISTENING => network(bytes, handle, false),
+        ESTABLISHED => established(bytes, handle),
+        _ => Some(Door::Ignored),
     }
-    network(bytes, handle, false)
+}
+
+fn established(bytes: &[u8], handle: u64) -> Option<Door> {
+    let Door::Network(local) = network(bytes, handle, false)? else {
+        return Some(Door::Ignored);
+    };
+    let remote_address = address_at(bytes, FOREIGN_ADDRESS)?;
+
+    Some(Door::Established(Connection {
+        protocol: local.protocol,
+        local_address: local.address,
+        local_port: local.port,
+        remote_address,
+        remote_port: port(bytes, FOREIGN_PORT)?,
+        uid: local.uid,
+        inode: handle,
+    }))
+}
+
+fn address_at(bytes: &[u8], at: usize) -> Option<String> {
+    let version = *bytes.get(VERSION)?;
+    let held = bytes.get(at..at + 16)?;
+
+    match signed(bytes, FAMILY)? {
+        FAMILY_INTERNET => Some(Ipv4Addr::new(held[12], held[13], held[14], held[15]).to_string()),
+        FAMILY_INTERNET_6 if version & IPV6_PART == 0 && version & ONLY_VERSION_4 != 0 => Some(
+            Ipv4Addr::new(held[12], held[13], held[14], held[15])
+                .to_ipv6_mapped()
+                .to_string(),
+        ),
+        FAMILY_INTERNET_6 => Some(Ipv6Addr::from(<[u8; 16]>::try_from(held).ok()?).to_string()),
+        _ => None,
+    }
 }
 
 fn udp(bytes: &[u8], handle: u64) -> Option<Door> {
@@ -224,6 +263,11 @@ impl Sample {
         self
     }
 
+    fn peer(mut self, foreign: [u8; 16]) -> Sample {
+        self.bytes[FOREIGN_ADDRESS..FOREIGN_ADDRESS + 16].copy_from_slice(&foreign);
+        self
+    }
+
     fn owned(mut self, uid: u32, handle: u64) -> Sample {
         self.bytes[OWNER..OWNER + 4].copy_from_slice(&uid.to_ne_bytes());
         self.bytes[HANDLE..HANDLE + 8].copy_from_slice(&handle.to_ne_bytes());
@@ -274,10 +318,32 @@ mod tests {
     }
 
     #[test]
-    fn a_tcp_conversation_is_not_a_door() {
-        let established = Sample::tcp(FAMILY_INTERNET, 4).port(50123, 443);
+    fn a_tcp_conversation_is_not_a_door_but_a_connection_with_both_of_its_ends() {
+        let established = Sample::tcp(FAMILY_INTERNET, ESTABLISHED)
+            .port(50123, 443)
+            .address(ONLY_VERSION_4, v4([10, 0, 4, 17]))
+            .peer(v4([203, 0, 113, 10]))
+            .owned(501, 0xbeef);
 
-        assert_eq!(door_of(&established.bytes), Some(Door::Ignored));
+        assert_eq!(
+            door_of(&established.bytes),
+            Some(Door::Established(Connection {
+                protocol: Protocol::Tcp,
+                local_address: "10.0.4.17".into(),
+                local_port: 50123,
+                remote_address: "203.0.113.10".into(),
+                remote_port: 443,
+                uid: 501,
+                inode: 0xbeef,
+            }))
+        );
+    }
+
+    #[test]
+    fn a_connection_in_a_state_other_than_established_is_neither_door_nor_conversation() {
+        let opening = Sample::tcp(FAMILY_INTERNET, 2).port(50123, 443);
+
+        assert_eq!(door_of(&opening.bytes), Some(Door::Ignored));
     }
 
     #[test]

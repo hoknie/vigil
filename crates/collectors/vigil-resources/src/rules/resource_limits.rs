@@ -4,11 +4,17 @@ pub const DISK_FREE_PERCENT: u32 = 10;
 
 pub const INODE_FREE_PERCENT: u32 = 10;
 
+pub const CPU_BUSY_PERCENT: u32 = 90;
+
+pub const MEMORY_AVAILABLE_PERCENT: u32 = 10;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ResourceLimits {
     pub clock_skew_seconds: i64,
     pub disk_free_percent: u64,
     pub inode_free_percent: u64,
+    pub cpu_busy_percent: u64,
+    pub memory_available_percent: u64,
 }
 
 impl Default for ResourceLimits {
@@ -17,6 +23,8 @@ impl Default for ResourceLimits {
             clock_skew_seconds: i64::from(CLOCK_SKEW_SECONDS),
             disk_free_percent: u64::from(DISK_FREE_PERCENT),
             inode_free_percent: u64::from(INODE_FREE_PERCENT),
+            cpu_busy_percent: u64::from(CPU_BUSY_PERCENT),
+            memory_available_percent: u64::from(MEMORY_AVAILABLE_PERCENT),
         }
     }
 }
@@ -28,6 +36,14 @@ impl ResourceLimits {
 
     pub fn below_the_inode_limit(&self, step: Option<u64>) -> bool {
         matches!(step, Some(step) if step < self.inode_free_percent)
+    }
+
+    pub fn at_the_cpu_limit(&self, step: Option<u64>) -> bool {
+        matches!(step, Some(step) if step >= self.cpu_busy_percent)
+    }
+
+    pub fn below_the_memory_limit(&self, step: Option<u64>) -> bool {
+        matches!(step, Some(step) if step < self.memory_available_percent)
     }
 }
 

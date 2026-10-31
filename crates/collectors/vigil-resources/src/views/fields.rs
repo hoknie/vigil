@@ -8,6 +8,16 @@ const UNSAID: &str = "—";
 pub fn what(family: Family, item: &Value) -> String {
     match family {
         Family::Boot => "this host's boot".to_string(),
+        Family::Processors => match item["busy_percent_step"].as_u64() {
+            Some(step) => format!(
+                "{} processors, {step}% busy over 15 min",
+                number(item, "processors")
+            ),
+            None => format!(
+                "{} processors, busy: not known yet",
+                number(item, "processors")
+            ),
+        },
         Family::Memory => "memory and swap".to_string(),
         Family::Filesystem => text(item, "mount").to_string(),
     }
@@ -16,6 +26,7 @@ pub fn what(family: Family, item: &Value) -> String {
 pub fn free(family: Family, item: &Value) -> String {
     match family {
         Family::Filesystem => percent(item, "free_percent_step"),
+        Family::Memory => percent(item, "available_percent_step"),
         _ => UNSAID.to_string(),
     }
 }
@@ -30,7 +41,7 @@ pub fn free_inodes(family: Family, item: &Value) -> String {
 pub fn held(family: Family, item: &Value) -> String {
     match family {
         Family::Filesystem | Family::Memory => bytes(number(item, "total_bytes")),
-        Family::Boot => UNSAID.to_string(),
+        Family::Boot | Family::Processors => UNSAID.to_string(),
     }
 }
 
@@ -42,6 +53,7 @@ pub fn kind_of_store(family: Family, item: &Value) -> String {
             None => format!("swap {UNSAID}"),
         },
         Family::Boot => booted(item),
+        Family::Processors => format!("over {} s", number(item, "window_seconds")),
     }
 }
 
@@ -49,7 +61,7 @@ pub fn device(family: Family, item: &Value) -> String {
     match family {
         Family::Filesystem => text(item, "device").to_string(),
         Family::Boot => short(text(item, "boot_id")).to_string(),
-        Family::Memory => UNSAID.to_string(),
+        Family::Memory | Family::Processors => UNSAID.to_string(),
     }
 }
 
@@ -116,6 +128,12 @@ pub fn means(family: Family, item: &Value) -> Vec<String> {
                     .to_string(),
             ],
         },
+        Family::Processors => vec![
+            "How busy the processors are is an average over the last 15 minutes, read in steps \
+             of ten percent, so a build of a few minutes does not move it. For the first 15 \
+             minutes after the agent starts it is not known yet."
+                .to_string(),
+        ],
         Family::Memory => match readable(item) {
             true => Vec::new(),
             false => vec![

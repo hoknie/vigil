@@ -1,4 +1,7 @@
 use std::sync::Mutex;
+use std::time::Instant;
+
+use crate::helpers::BusyWindow;
 
 use vigil_collect::{CollectError, Collector, Health};
 use vigil_model::{Rfc3339, Snapshot};
@@ -9,6 +12,8 @@ pub struct ResourcesCollector {
     pub(super) now: Box<dyn Fn() -> Rfc3339 + Send + Sync>,
     pub(super) booted: Box<dyn Fn() -> Option<i64> + Send + Sync>,
     pub(super) booted_at: Mutex<Option<i64>>,
+    pub(super) busy: Mutex<BusyWindow>,
+    pub(super) started: Instant,
 }
 
 impl ResourcesCollector {
@@ -24,6 +29,8 @@ impl ResourcesCollector {
             now: Box::new(now),
             booted: Box::new(booted),
             booted_at: Mutex::new(None),
+            busy: Mutex::new(BusyWindow::default()),
+            started: Instant::now(),
         }
     }
 }

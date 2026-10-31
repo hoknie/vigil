@@ -28,14 +28,20 @@ impl<'a> Programs<'a> {
         };
         match showing.narrowed() {
             false => gathered.0.iter().for_each(|(path, _)| note(path)),
-            true => reading.items.values().filter_map(holder).for_each(note),
+            true => super::fields::doors(reading)
+                .map(|(_, item)| item)
+                .filter_map(holder)
+                .for_each(note),
         }
         Programs { by_name }
     }
 
     pub(super) fn whole(reading: &'a Snapshot) -> Programs<'a> {
         let mut by_name: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
-        for path in reading.items.values().filter_map(holder) {
+        for path in super::fields::doors(reading)
+            .map(|(_, item)| item)
+            .filter_map(holder)
+        {
             by_name.entry(basename(path)).or_default().insert(path);
         }
         Programs { by_name }
@@ -70,18 +76,16 @@ pub(super) fn gathered<'a>(reading: &'a Snapshot, showing: &Showing<'_>) -> Gath
 
 pub(super) fn counted(reading: &Snapshot, heading: &str) -> usize {
     let path = heading.strip_prefix(HEADING);
-    reading
-        .items
-        .values()
+    super::fields::doors(reading)
+        .map(|(_, item)| item)
         .filter(|item| holder(item) == path)
         .count()
 }
 
 pub(super) fn named_from_the_reading(reading: &Snapshot, path: &str) -> String {
     let name = basename(path);
-    let mut seen: Vec<&str> = reading
-        .items
-        .values()
+    let mut seen: Vec<&str> = super::fields::doors(reading)
+        .map(|(_, item)| item)
         .filter_map(holder)
         .filter(|other| basename(other) == name)
         .collect();

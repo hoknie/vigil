@@ -36,13 +36,33 @@ pub struct SocketRow {
     pub inode: u64,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Connection {
+    pub protocol: Protocol,
+    pub local_address: String,
+    pub local_port: u16,
+    pub remote_address: String,
+    pub remote_port: u16,
+    pub uid: u32,
+    pub inode: u64,
+}
+
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct NetTable {
     pub listening: Vec<SocketRow>,
+    pub established: Vec<Connection>,
     pub unparsed: usize,
 }
 
 const TCP_LISTEN: &str = "0A";
+
+const TCP_ESTABLISHED: &str = "01";
+
+enum Row {
+    Listening(SocketRow),
+    Established(Connection),
+    Neither,
+}
 
 pub fn parse_net_table(text: &str, protocol: Protocol) -> NetTable {
     let mut table = NetTable::default();
@@ -52,8 +72,9 @@ pub fn parse_net_table(text: &str, protocol: Protocol) -> NetTable {
             continue;
         }
         match parse_row(line, protocol) {
-            Some(Some(row)) => table.listening.push(row),
-            Some(None) => {}
+            Some(Row::Listening(row)) => table.listening.push(row),
+            Some(Row::Established(connection)) => table.established.push(connection),
+            Some(Row::Neither) => {}
             None => table.unparsed += 1,
         }
     }
@@ -61,7 +82,7 @@ pub fn parse_net_table(text: &str, protocol: Protocol) -> NetTable {
     table
 }
 
-fn parse_row(line: &str, protocol: Protocol) -> Option<Option<SocketRow>> {
+fn parse_row(line: &str, protocol: Protocol) -> Option<Row> {
     let mut fields = line.split_whitespace();
     let _slot = fields.next()?;
     let local = fields.next()?;
@@ -75,7 +96,19 @@ fn parse_row(line: &str, protocol: Protocol) -> Option<Option<SocketRow>> {
     let inode = fields.next()?;
 
     let (address, port) = parse_endpoint(local, protocol.is_v6())?;
-    let (_, remote_port) = parse_endpoint(remote, protocol.is_v6())?;
+    let (remote_address, remote_port) = parse_endpoint(remote, protocol.is_v6())?;
+
+    if protocol.is_tcp() && state.eq_ignore_ascii_case(TCP_ESTABLISHED) {
+        return Some(Row::Established(Connection {
+            protocol,
+            local_address: address,
+            local_port: port,
+            remote_address,
+            remote_port,
+            uid: uid.parse().ok()?,
+            inode: inode.parse().ok()?,
+        }));
+    }
 
     let listening = if protocol.is_tcp() {
         state.eq_ignore_ascii_case(TCP_LISTEN)
@@ -83,10 +116,10 @@ fn parse_row(line: &str, protocol: Protocol) -> Option<Option<SocketRow>> {
         remote_port == 0
     };
     if !listening {
-        return Some(None);
+        return Some(Row::Neither);
     }
 
-    Some(Some(SocketRow {
+    Some(Row::Listening(SocketRow {
         protocol,
         address,
         port,
@@ -208,5 +241,42 @@ mod tests {
             table.unparsed, 1,
             "a kernel whose columns we cannot read must degrade the collector, not shrink it"
         );
+    }
+
+    #[test]
+    fn an_established_connection_is_kept_with_both_of_its_ends() {
+        let table = parse_net_table(TCP, Protocol::Tcp);
+
+        assert_eq!(
+            table.established,
+            vec![Connection {
+                protocol: Protocol::Tcp,
+                local_address: "127.0.0.1".into(),
+                local_port: 0x8AE2,
+                remote_address: "127.0.0.1".into(),
+                remote_port: 0xCFDA,
+                uid: 1000,
+                inode: 55120,
+            }],
+            "an established socket is not a door, and it is the conversation the pairs are made of"
+        );
+    }
+
+    #[test]
+    fn an_established_v4_in_v6_connection_reads_its_peer_as_the_mapped_address() {
+        let tcp6 = "  sl  local_address remote_address st tx_queue rx_queue tr tm->when retrnsmt uid timeout inode\n   0: 0000000000000000FFFF00000A00040F:A1B2 0000000000000000FFFF00007C00710A:01BB 01 00000000:00000000 00:00000000 00000000 1000 0 66001 1 0000000000000000 20 4 30 10 -1\n";
+
+        let table = parse_net_table(tcp6, Protocol::Tcp6);
+
+        assert_eq!(table.established.len(), 1);
+        assert_eq!(table.established[0].remote_address, "::ffff:10.113.0.124");
+        assert_eq!(table.established[0].remote_port, 443);
+    }
+
+    #[test]
+    fn a_udp_socket_with_a_peer_is_no_conversation_read_here() {
+        let table = parse_net_table(UDP, Protocol::Udp);
+
+        assert!(table.established.is_empty());
     }
 }

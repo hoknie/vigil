@@ -1,6 +1,6 @@
 use super::{
     ClosedListeningPort, ExposedListeningPort, ListenFromWritablePath, ListeningBinaryDeleted,
-    ListeningPortOwnerChanged, NewListeningPort,
+    ListeningPortOwnerChanged, NewListeningPort, OutboundFromWritablePath,
 };
 use vigil_rules::RuleSet;
 
@@ -13,6 +13,7 @@ pub fn listening_port_rules() -> RuleSet {
             Box::new(NewListeningPort),
             Box::new(ListeningPortOwnerChanged),
             Box::new(ClosedListeningPort),
+            Box::new(OutboundFromWritablePath),
         ],
     )
 }

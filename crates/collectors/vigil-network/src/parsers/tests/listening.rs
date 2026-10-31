@@ -35,8 +35,11 @@ fn reading<'a>(
         unnamed_unix: 0,
         owners,
         users,
+        pairs: Some(&NO_PAIRS),
     }
 }
+
+static NO_PAIRS: BTreeMap<String, serde_json::Value> = BTreeMap::new();
 
 #[test]
 fn keys_a_socket_by_protocol_address_and_port() {
@@ -122,6 +125,7 @@ fn sockets_listening_under_no_name_are_counted_rather_than_dropped() {
             unnamed_unix: 3,
             owners: &BTreeMap::new(),
             users: &BTreeMap::new(),
+            pairs: Some(&NO_PAIRS),
         },
     );
 

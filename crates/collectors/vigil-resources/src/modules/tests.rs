@@ -16,6 +16,8 @@ fn a_finding_about_this_host_walks_to_the_row_of_the_reading_it_is_about() {
         ("resource|clock", "boot|current"),
         ("resource|disk|/var", "fs|/var"),
         ("resource|inodes|/var", "fs|/var"),
+        ("resource|cpu", "cpu|summary"),
+        ("resource|memory", "memory|summary"),
     ] {
         assert_eq!(Resources.row_of(key), Some(row.to_string()), "{key}");
     }
@@ -95,5 +97,49 @@ fn vigil_rules_limits() -> crate::rules::ResourceLimits {
         clock_skew_seconds: i64::from(CLOCK_SKEW_SECONDS),
         disk_free_percent: u64::from(DISK_FREE_PERCENT),
         inode_free_percent: u64::from(INODE_FREE_PERCENT),
+        cpu_busy_percent: u64::from(crate::rules::CPU_BUSY_PERCENT),
+        memory_available_percent: u64::from(crate::rules::MEMORY_AVAILABLE_PERCENT),
     }
+}
+
+#[test]
+fn a_block_without_the_new_thresholds_reads_as_before() {
+    let thresholds: Thresholds =
+        Settings::of(at_noon, "resources", json!({"disk_free_percent": 25}))
+            .read()
+            .expect("the former block parses");
+
+    assert_eq!(thresholds.limits().cpu_busy_percent, 90);
+    assert_eq!(thresholds.limits().memory_available_percent, 10);
+}
+
+#[test]
+fn a_cpu_threshold_of_zero_is_refused_at_start() {
+    for (said, complained_about) in [
+        (json!({"cpu_busy_percent": 0}), "cpu_busy_percent"),
+        (json!({"cpu_busy_percent": 101}), "cpu_busy_percent"),
+        (
+            json!({"memory_available_percent": 101}),
+            "memory_available_percent",
+        ),
+    ] {
+        let refusal = Resources
+            .check(&Settings::of(at_noon, "resources", said.clone()))
+            .expect_err("refused at the door");
+
+        assert!(refusal.contains(complained_about), "{said}: {refusal}");
+    }
+}
+
+#[test]
+fn a_typo_in_a_new_threshold_is_refused_by_name() {
+    let refusal = Resources
+        .check(&Settings::of(
+            at_noon,
+            "resources",
+            json!({"cpu_busy_percnt": 80}),
+        ))
+        .expect_err("an unknown key is refused");
+
+    assert!(refusal.contains("cpu_busy_percnt"), "{refusal}");
 }

@@ -8,22 +8,21 @@ pub(super) fn tally(
     shown: usize,
     grouped: bool,
 ) -> String {
-    let unresolved = reading
-        .items
-        .values()
+    let unresolved = super::fields::doors(reading)
+        .map(|(_, item)| item)
         .filter(|item| item.get("owner_resolved").and_then(Value::as_bool) == Some(false))
         .count();
 
     let mut parts = vec![match showing.narrowed() {
         false => format!(
             "{} listening socket(s), read at {}",
-            reading.items.len(),
+            super::fields::doors(reading).count(),
             time_of_day(&reading.taken_at)
         ),
         true => format!(
             "{} of {} listening socket(s), read at {}",
             shown,
-            reading.items.len(),
+            super::fields::doors(reading).count(),
             time_of_day(&reading.taken_at)
         ),
     }];

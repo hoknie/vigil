@@ -5,9 +5,8 @@ use vigil_view::{Counts, Rows, Showing, time_of_day};
 const NOT_VISIBLE: &str = "sockets whose process is not visible";
 
 pub(super) fn counts(reading: &Snapshot) -> Counts {
-    let unresolved = reading
-        .items
-        .values()
+    let unresolved = super::fields::doors(reading)
+        .map(|(_, item)| item)
         .filter(|item| item.get("owner_resolved").and_then(Value::as_bool) == Some(false))
         .count();
     Counts::default().counted(NOT_VISIBLE, unresolved)
@@ -21,7 +20,7 @@ pub(super) fn tallied(
     grouped: bool,
 ) -> String {
     let read_at = time_of_day(&reading.taken_at);
-    let whole = reading.items.len();
+    let whole = super::fields::doors(reading).count();
 
     let mut parts = vec![match showing.narrowed() {
         false => format!("{whole} listening socket(s), read at {read_at}"),

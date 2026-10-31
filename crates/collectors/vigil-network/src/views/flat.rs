@@ -156,10 +156,7 @@ pub(super) fn wanted<'a>(
     reading: &'a Snapshot,
     showing: &Showing<'_>,
 ) -> impl Iterator<Item = (&'a String, &'a serde_json::Value)> {
-    reading
-        .items
-        .iter()
-        .filter(|(key, item)| showing.wants(protocol(item, key)))
+    super::fields::doors(reading).filter(|(key, item)| showing.wants(protocol(item, key)))
 }
 
 fn sort(rows: &mut [RowKey], reading: &Snapshot, sorting: Sorting) {

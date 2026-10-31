@@ -39,3 +39,71 @@ fn a_module_names_the_reading_it_takes_and_how_often_it_takes_it() {
     assert!(!Network.subject().is_empty());
     assert!(Network.section().is_some());
 }
+
+#[test]
+fn a_network_block_without_the_key_reads_connections() {
+    let reading: super::network::Reading = vigil_module::Settings::of(
+        || "2026-10-31T12:00:00.000Z".to_string(),
+        "network",
+        serde_json::json!({}),
+    )
+    .read()
+    .expect("an empty block parses");
+
+    assert!(reading.connections);
+}
+
+#[test]
+fn a_connections_key_that_is_not_true_or_false_stops_the_daemon_by_name() {
+    use vigil_module::Module;
+
+    for said in [
+        serde_json::json!({"connections": "yes"}),
+        serde_json::json!({"connectoins": false}),
+    ] {
+        let refusal = super::Network
+            .check(&vigil_module::Settings::of(
+                || "2026-10-31T12:00:00.000Z".to_string(),
+                "network",
+                said.clone(),
+            ))
+            .expect_err("refused at the door");
+
+        assert!(refusal.contains("connect"), "{said}: {refusal}");
+    }
+}
+
+#[test]
+fn connections_switched_off_leave_only_the_listening_sockets() {
+    let snapshot = crate::parsers::listening_snapshot(
+        "2026-10-31T12:00:00.000Z",
+        &crate::parsers::SocketsReading {
+            network: &[],
+            unix: &[],
+            unnamed_unix: 0,
+            owners: &std::collections::BTreeMap::new(),
+            users: &std::collections::BTreeMap::new(),
+            pairs: None,
+        },
+    );
+
+    assert!(
+        !snapshot
+            .items
+            .keys()
+            .any(|key| key.starts_with("outbound|") || key.starts_with("inbound|"))
+    );
+    assert!(
+        snapshot.items.contains_key(crate::parsers::SWITCHED_OFF),
+        "the screen says the pairs are switched off rather than that nobody talks"
+    );
+}
+
+#[test]
+fn a_finding_about_a_conversation_walks_to_its_row_in_the_outbound_list() {
+    assert_eq!(
+        Network.row_of("connection.outbound|tcp|203.0.113.7:4444|/tmp/.x/nc"),
+        Some("outbound|tcp|203.0.113.7:4444|/tmp/.x/nc".to_string())
+    );
+    assert!(Network.raised("connection.outbound|tcp|203.0.113.7:4444|/tmp/.x/nc"));
+}

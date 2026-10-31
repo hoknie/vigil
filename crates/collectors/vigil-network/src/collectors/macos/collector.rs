@@ -4,15 +4,29 @@ use vigil_model::{Rfc3339, Snapshot};
 use super::gathering::gathered;
 use super::health::health;
 use super::owners::described;
-use crate::parsers::{SocketRow, SocketsReading, UnixSocketRow, listening_snapshot};
+use crate::parsers::{
+    Connection, PairsReading, SocketRow, SocketsReading, UnixSocketRow, connection_pairs,
+    listening_snapshot,
+};
 
 pub struct NetworkCollector {
     now: Box<dyn Fn() -> Rfc3339 + Send + Sync>,
+    connections: bool,
 }
 
 impl NetworkCollector {
     pub fn new(now: impl Fn() -> Rfc3339 + Send + Sync + 'static) -> Self {
-        NetworkCollector { now: Box::new(now) }
+        NetworkCollector {
+            now: Box::new(now),
+            connections: true,
+        }
+    }
+
+    pub fn reading_connections(self, connections: bool) -> Self {
+        NetworkCollector {
+            connections,
+            ..self
+        }
     }
 }
 
@@ -54,13 +68,33 @@ impl Collector for NetworkCollector {
                 ..row
             })
             .collect();
+        let established: Vec<Connection> = gathered
+            .established
+            .into_iter()
+            .map(|(handle, connection)| Connection {
+                uid: owners
+                    .get(&handle)
+                    .and_then(|owner| owner.uid)
+                    .unwrap_or(connection.uid),
+                ..connection
+            })
+            .collect();
         let unix: Vec<UnixSocketRow> = gathered.unix.into_values().collect();
         let users = names_of_users(
             network
                 .iter()
                 .map(|row| row.uid)
+                .chain(established.iter().map(|connection| connection.uid))
                 .chain(owners.values().filter_map(|owner| owner.uid)),
         );
+        let pairs = self.connections.then(|| {
+            connection_pairs(&PairsReading {
+                listening: &network,
+                established: &established,
+                owners: &owners,
+                users: &users,
+            })
+        });
 
         Ok(listening_snapshot(
             &(self.now)(),
@@ -70,6 +104,7 @@ impl Collector for NetworkCollector {
                 unnamed_unix: gathered.unnamed.len(),
                 owners: &owners,
                 users: &users,
+                pairs: pairs.as_ref(),
             },
         ))
     }
