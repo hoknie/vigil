@@ -8,13 +8,27 @@ The versions follow [Semantic Versioning](https://semver.org/).
 
 ### Features
 
+- The dependency graph carries no async runtime ([7b2e2f5](https://github.com/hoknie/vigil/commit/7b2e2f5fef2fd89ea892f6c5d1207653ea37dae8))
+- The resources collector reads processor busyness over 15 minutes and available memory ([c43b071](https://github.com/hoknie/vigil/commit/c43b07157fd2b562c160bc9350fe4bbe88600337))
+- Documents carry the host's addresses and fqdn ([80a3cfb](https://github.com/hoknie/vigil/commit/80a3cfb6ffbb35118945faced2a1994cdfa0e4be))
+- Updated justice ([7fccd61](https://github.com/hoknie/vigil/commit/7fccd61cde433d49b1227ff5cc7f7425c9c1d738))
 - **GH-44:** Updated findings, sudo actions, secrets clean (#47) ([5dce2ee](https://github.com/hoknie/vigil/commit/5dce2eecce8444c89b71e95ae741da115b4aecc2))
 - **GH-43:** Updated state and loops (#46) ([96b673d](https://github.com/hoknie/vigil/commit/96b673d0e8f6733fa1ecdaa9bdbe8d6971af36c5))
 - **GH-41:** Added wild mute for findings (#45) ([4eb42c5](https://github.com/hoknie/vigil/commit/4eb42c5f690045e374ade0dec5cfda04b14ef50d))
 
+### Fixes
+
+- The engine dump is called stale by the period the dumps show ([97c249d](https://github.com/hoknie/vigil/commit/97c249de7e780d5d379ebaa29c7d4c7b2736f301))
+- The ndjson reporter file is owner-only whatever the umask ([e1220bd](https://github.com/hoknie/vigil/commit/e1220bd598893aa7ac2967b185b0a68451b58fe4))
+
 ### Dependencies
 
 - Bump rustix in the cargo-minor-and-patch group (#37) ([643940b](https://github.com/hoknie/vigil/commit/643940b1c313ca898fe7bec66abf1d391459920b))
+
+### Other
+
+- **build:** Updated macos ver in release ([8ca3523](https://github.com/hoknie/vigil/commit/8ca3523a81347f116a51313a01f3aab421dc4da7))
+-  fix: the launch card shows the audit id and no longer calls an unseen path missing ([9bfeee8](https://github.com/hoknie/vigil/commit/9bfeee89e1f5a85d42718c9ba1fec7d22d49d52b))
 
 [Full diff](https://github.com/hoknie/vigil/compare/v1.0.10...HEAD)
 
