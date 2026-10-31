@@ -1,31 +1,39 @@
 # vigil-network
 
-The sockets this host listens on, the process holding each one, and the conversations this host
-holds, as pairs of a program and a peer.
+> The sockets this host listens on, the program behind each one, and the conversations it holds.
 
-## The decision it follows from
+## Why
 
-A listening socket is a door into this host, and a door that appears is a finding. Sockets are
-read from the kernel's own tables (`/proc/net` on Linux), and the program holding each one is
-named, so a program that keeps moving its ports can be silenced by name rather than by port.
+A listening socket is a door into this host, and a new door is worth a finding. The agent
+reads the sockets from the kernel's own tables (`/proc/net` on Linux) and names the program that
+holds each one. A program that moves its ports is then one suppression entry, written by name.
 
-## Settings
+Established connections are kept as pairs: a program and the peer it talks to, outbound and
+inbound, with loopback set aside.
 
-Its block is `network`, shipped in `config/collectors/network.yaml` with the defaults and a comment above
-every key saying what it means.
+## What's inside
 
-## Dependencies
+| | |
+|---|---|
+| **Reads** | listening TCP, UDP and unix sockets; established connections as program–peer pairs |
+| **Raises** | `port.listen.*`, `connection.from_writable_path` |
+| **Every** | 30 seconds |
+| **Settings** | the `network` block, shipped in `config/collectors/network.yaml` with a comment above every key |
 
-`vigil-model`, `vigil-collect` (the `Collector` port), `vigil-rules` (`RuleSet`), `vigil-module`, `vigil-view`, `serde_json`; `libc` on macOS.
+## Depends on
 
-## Context
+- `vigil-model` · `vigil-collect` · `vigil-rules` · `vigil-module` · `vigil-view`
+- `serde_json`; `libc` on macOS
 
-```
-vigil-model · vigil-collect · vigil-rules · vigil-module · vigil-view
-                                   ▲
+## Where it fits
+
+```text
+vigil-model   vigil-collect   vigil-rules   vigil-module   vigil-view
+     └──────────────┴──────────────┼──────────────┴──────────────┘
+                                   ▼
                              vigil-network
                                    │
-                    ┌──────────────┴──────────────┐
-                    ▼                             ▼
-             bin/vigild (reading, rules)   bin/vigil (its screen)
+                   ┌───────────────┴───────────────┐
+                   ▼                               ▼
+          vigild · reads and judges        vigil · draws its screen
 ```

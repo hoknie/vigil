@@ -1,30 +1,38 @@
 # vigil-resources
 
-The boot this host is running, the moment it started, its clock, how busy its processors are,
-how much of its memory is available and the room left on its filesystems.
+> The boot, the clock, the processors, the memory and the room left on the disks.
 
-## The decision it follows from
+## Why
 
 A host that runs out of room, reboots unasked or has its clock stepped is a host whose other
-readings stop meaning what they meant.
+readings lose their meaning. The agent watches the ground the other readings stand on.
 
-## Settings
+Processor busyness is averaged over 15 minutes in steps of 10 %, available memory in steps of
+5 %, so a finding marks a threshold crossed.
 
-Its block is `resources`, shipped in `config/collectors/resources.yaml` with the defaults and a comment above
-every key saying what it means.
+## What's inside
 
-## Dependencies
+| | |
+|---|---|
+| **Reads** | boot id and time, clock, processor busyness, available memory, filesystems |
+| **Raises** | `resource.*` |
+| **Every** | 60 seconds |
+| **Settings** | the `resources` block, shipped in `config/collectors/resources.yaml` with a comment above every key |
 
-`vigil-model`, `vigil-collect` (the `Collector` port), `vigil-rules` (`RuleSet`), `vigil-module`, `vigil-view`, `serde`, `serde_json`.
+## Depends on
 
-## Context
+- `vigil-model` · `vigil-collect` · `vigil-rules` · `vigil-module` · `vigil-view`
+- `serde`, `serde_json`
 
-```
-vigil-model · vigil-collect · vigil-rules · vigil-module · vigil-view
-                                   ▲
-                             vigil-resources
+## Where it fits
+
+```text
+vigil-model   vigil-collect   vigil-rules   vigil-module   vigil-view
+     └──────────────┴──────────────┼──────────────┴──────────────┘
+                                   ▼
+                            vigil-resources
                                    │
-                    ┌──────────────┴──────────────┐
-                    ▼                             ▼
-             bin/vigild (reading, rules)   bin/vigil (its screen)
+                   ┌───────────────┴───────────────┐
+                   ▼                               ▼
+          vigild · reads and judges        vigil · draws its screen
 ```

@@ -1,48 +1,36 @@
 # vigil-module
 
-What a subject watched by this agent tells the two binaries about itself.
+> What a watched subject tells the two programs about itself.
 
-## The decision it follows from
+## Why
 
-One subject is one crate — reading, parsers, rules and screen together. That only pays if the binaries stop keeping
-lists of what exists: a table of collector names, a table pairing a collector with its rules,
-a numbered list of screens, a map from a finding to the row it is about. Every such table is
-a place a new module is forgotten, and forgotten quietly.
+One subject is one crate: its reading, parsers, rules and screen together. Each module answers for
+itself, and the programs ask. `vigild` holds one `Vec<Box<dyn Module>>`, and `vigil` walks the same
+list for the sections it draws. A new subject joins by being added to that list.
 
-So the module answers, and the root only asks. `bin/vigild` holds one `Vec<Box<dyn Module>>`
-and nothing else about any subject; `bin/vigil` walks the same list for the sections to draw.
+## What's inside
 
-## What a module answers
+| | |
+|---|---|
+| **`name`** | the name of its reading — the word in `collectors:` and in `vigild collector enable` |
+| **`subject`, `every_seconds`, `unit`** | what it watches, how often, and the systemd unit it needs |
+| **`settings_key`, `Settings`** | its own block of the configuration, already parsed, plus the clock it stamps a reading with |
+| **`follows_the_file`** | whether an edit to its block is taken up while the daemon runs; today that is `files` |
+| **`collector`, `rules`** | what it reads and what it makes of the difference |
+| **`families`, `row_of`** | which finding keys belong to it, and which row a finding is about |
+| **`section`** | its screen, described with `vigil-view` |
 
-- **`name`** — the name of its reading, the word in `collectors:` in the configuration file
-  and the word an operator types into `vigild collector enable`;
-- **`subject`, `every_seconds`, `unit`** — what it watches in one sentence, how often, and the
-  systemd unit (if any) that has to be running for it to read anything;
-- **`settings_key`** and `Settings` — its own fragment of `vigil.yaml`, already parsed into a
-  value, plus the clock it stamps a reading with. A module never reads the file and never
-  reads the host's time;
-- **`follows_the_file`** — whether the daemon hands it its fragment again while it runs, when
-  the file changes and still loads. The default is no: a fragment is read once, at start-up,
-  and a module that says otherwise is saying that an edit to its block is safe to take up on
-  the next round. Today that is `files` alone;
-- **`collector`, `rules`** — the two halves of the watch: what it reads, and what it makes of
-  the difference between two readings;
-- **`families`, `row_of`** — which finding keys are its own, and which row of its reading a
-  finding is about. The default is the whole key after the family, which is what a collector
-  that keys its rows the ordinary way wants;
-- **`section`** — its screen, described with `vigil-view` and drawn by nobody here.
+## Depends on
 
-## Dependencies
+- `vigil-model` · `vigil-collect` · `vigil-rules` · `vigil-view`
+- `serde`, `serde_json` for the settings block
 
-`vigil-model`, `vigil-collect` (the `Collector` port), `vigil-rules` (`RuleSet`), `vigil-view`
-(`Section`), `serde`/`serde_json` for the settings fragment. No io of its own.
+## Where it fits
 
-## Context
-
-```
+```text
 vigil-collect ─┐
-vigil-rules  ──┼─► vigil-module ◄── collectors/vigil-<subject>/modules/
+vigil-rules  ──┼──► vigil-module ◄── collectors/vigil-<subject>/modules
 vigil-view   ──┘                              │
-                                              ├──► bin/vigild  (collector + rules)
-                                              └──► bin/vigil   (section + row_of)
+                                              ├──► vigild · collector and rules
+                                              └──► vigil  · section and row_of
 ```

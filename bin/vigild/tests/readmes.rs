@@ -3,9 +3,10 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 const SECTIONS: &[&str] = &[
-    "## The decision it follows from",
-    "## Dependencies",
-    "## Context",
+    "## Why",
+    "## What's inside",
+    "## Depends on",
+    "## Where it fits",
 ];
 
 fn members() -> Vec<(String, PathBuf)> {
@@ -48,17 +49,16 @@ fn missing_from(name: &str, text: &str) -> Vec<String> {
 
 #[test]
 fn the_readme_reader_names_what_is_missing() {
-    let whole =
-        "# vigil-x\n\nWhy.\n\n## The decision it follows from\n\n## Dependencies\n\n## Context\n";
+    let whole = "# vigil-x\n\n> What it is.\n\n## Why\n\n## What's inside\n\n## Depends on\n\n## Where it fits\n";
     assert!(missing_from("vigil-x", whole).is_empty());
 
     let untitled = whole.replacen("# vigil-x", "# something else", 1);
     assert_eq!(missing_from("vigil-x", &untitled).len(), 1);
 
-    let without_context = whole.replace("## Context\n", "");
+    let without_place = whole.replace("## Where it fits\n", "");
     assert_eq!(
-        missing_from("vigil-x", &without_context),
-        vec!["`## Context`".to_string()]
+        missing_from("vigil-x", &without_place),
+        vec!["`## Where it fits`".to_string()]
     );
 }
 
@@ -79,8 +79,8 @@ fn every_member_of_the_workspace_has_a_readme_that_says_why_it_exists() {
 
     assert!(
         found.is_empty(),
-        "every crate says what it is for, the decision it follows from, what it depends on and \
-         where it sits, so a reader of the workspace does not have to work it out from the code:\n{}",
+        "every crate says why it exists, what is inside it, what it depends on and where it fits, \
+         so a reader of the workspace learns it from one page:\n{}",
         found.join("\n")
     );
 }

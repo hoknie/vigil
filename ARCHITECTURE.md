@@ -446,8 +446,9 @@ Content that would otherwise be a comment goes elsewhere:
 - **the reason for a decision goes into a test** that fails if the decision is reversed. The
   test name carries the explanation: `a_file_in_a_shape_we_do_not_know_is_not_an_empty_host`
   states the decision clearly, and it cannot go stale without the test failing;
-- **prose for a reader of the code goes into the crate's `README.md`**: its purpose, the
-  decision it follows from, its dependencies and a context graph;
+- **prose for a reader of the code goes into the crate's `README.md`**: a one-line summary
+  and four sections — `## Why`, `## What's inside`, `## Depends on`, `## Where it fits` (a
+  graph);
 - **prose for an operator goes into the systemd units, the conffiles installed from
   `packaging/audit/`, and `docs/contract/`** — places that are read without the source code.
   The shipped configuration files (`config/vigil.example.yaml`, `config/watch_fs.yaml`,
@@ -649,7 +650,7 @@ suite (samples that must be accepted and samples that must be rejected). Rules f
 | Tests | `cargo test --workspace`; no host state, no network | ✅ |
 | Linux-specific code | `just docker-gates all` — the same gate on musl | ✅ |
 | Console keyboard handling | `just docker-gates console-pty` — under a real terminal | ✅ |
-| README in every crate | purpose, decision, dependencies, graph | ✅ held by `bin/vigild/tests/readmes.rs` |
+| README in every crate | summary, why, what's inside, dependencies, graph | ✅ held by `bin/vigild/tests/readmes.rs` |
 | Comments in `.rs` and build files | none (§3.5) | ✅ held by `bin/vigild/tests/comments.rs` |
 | `#[allow(...)]` in the tree | forbidden; fix the cause of the warning | ✅ zero |
 | `main.rs` is a shim, the root is in `boot/` | all three binaries | ✅ |

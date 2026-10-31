@@ -1,59 +1,41 @@
 # vigil-firewall-dump
 
-A program of the macOS package. It asks pf and the Application Firewall of this Mac what they
-hold and writes what each answered, whole, `0600`, to
-`/usr/local/var/lib/vigil/firewall/firewall.json`.
+> Asks pf and the Application Firewall of this Mac what they hold and writes their answers to disk.
 
-## The decision it follows from
+## Why
 
-The daemon starts no program, and `pfctl` answers root alone. So the privileged half of the
-firewall reading is a launchd job an operator can read and switch off — `vigil.firewall`,
-every 60 seconds, as root — exactly as `vigil-firewall.timer` runs `nft` on Linux. On Linux
-this program says so and writes nothing.
+`pfctl` answers root alone, and the daemon starts no program. So the privileged half of the
+firewall reading on macOS is a launchd job an operator can read and switch off — `vigil.firewall`,
+every 60 seconds, as root. On Linux `vigil-firewall.timer` plays the same part with `nft`, and this
+program says so and writes nothing.
 
-## What it runs
+## What's inside
 
-Nothing of it comes from the Mac except the names of pf's anchors, which are checked to be
-names pf could have given (letters, digits, `._-/`, no leading `-` or `/`, no `..`) before
-one becomes an argument:
+| | |
+|---|---|
+| **Asks** | `pfctl -s info`, `-s rules`, `-s nat`, `-v -s Anchors`, then rules and nat for each anchor (64 at most); `socketfilterfw` for its global state and app list |
+| **Safety** | the questions live in `vigil-firewall`, where a test refuses any flag that switches, loads, flushes or kills; anchor names are checked before they become arguments; each command runs by absolute path with an empty environment, outside any shell |
+| **Limits** | a deadline per command (`--deadline`, 10 s) and a ceiling on output (`--ceiling`, 4 MiB) |
+| **Writes** | one document, `0600`, renamed into place: `/usr/local/var/lib/vigil/firewall/firewall.json` |
 
-```
-/sbin/pfctl -s info
-/sbin/pfctl -s rules
-/sbin/pfctl -s nat
-/sbin/pfctl -v -s Anchors
-/sbin/pfctl -a <anchor> -s rules     for each anchor listed, 64 at most
-/sbin/pfctl -a <anchor> -s nat
-/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate --getblockall
-    --getstealthmode --getallowsigned --listapps
-```
+Each answer carries `state` (`answered`, `failed`, `timed_out`), the program and arguments, the
+time it took, what it printed and what it said on standard error. `vigil-firewall` parses the
+answers on the daemon's round.
 
-The list is in `vigil-firewall` (`types::Question`), and a test refuses any flag that switches,
-loads, flushes or kills. `-v` is not given to `-s rules`: it adds the counters of every rule,
-which move on every run. Each command runs by its absolute path, with an empty environment,
-never through a shell, with a deadline of its own (`--deadline`, ten seconds), its output going
-to a scratch file rather than a pipe and cut at `--ceiling` (4 MiB).
+Run by hand without root, the Application Firewall still answers and every `pfctl` question fails
+with "Permission denied"; the collector reads that as "pf is unknown". On a Mac, unprivileged, a run
+takes 0.17 s and 2.5 MB.
 
-## What it writes
+## Depends on
 
-One document, built as `serde_json` and renamed into place: the time, the program that wrote
-it, and one answer per question with `state` (`answered`, `failed`, `timed_out`), the program
-and arguments, how long it took, what it printed verbatim, and what it said on standard error.
-It decides nothing else: `vigil-firewall` parses the answers, on the daemon's round.
+- `vigil-firewall` — the questions and the document
+- `serde_json`
 
-Run by hand without root it still writes the document: the Application Firewall answered and
-every `pfctl` question failed with "Permission denied", which the collector reads as "pf is
-unknown", not as "pf filters nothing". Release, on this Mac, unprivileged: 0.17 s, 2.5 MB.
+## Where it fits
 
-## Dependencies
-
-`vigil-firewall` for the questions and the document, and `serde_json`.
-
-## Context
-
-```
-vigil.firewall (launchd) ──► vigil-firewall-dump ──► /usr/local/var/lib/vigil/firewall/firewall.json
-                                  │                                   │
-                        (/sbin/pfctl, socketfilterfw)                 ▼
-                                  └────── vigil-firewall ◄──────── bin/vigild
+```text
+vigil.firewall · launchd ──► vigil-firewall-dump ──► firewall.json
+                                   │                       │
+                       pfctl · socketfilterfw              ▼
+                                   └──── vigil-firewall ◄── vigild
 ```

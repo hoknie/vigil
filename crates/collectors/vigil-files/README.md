@@ -1,31 +1,39 @@
 # vigil-files
 
-The files this host is expected to keep as they are: their content, their permissions and a new suid bit, for every path the watch list names.
+> The files this host is expected to keep as they are.
 
-## The decision it follows from
+## Why
 
-A recursive walk that hashes everything is the shortest path to an agent the customer
-disables first. So only what the watch list names is read, under a ceiling of paths per reading
-and of bytes per file, and a walk that reaches a ceiling says what it left unwalked rather than
-pretending it saw everything.
+The watch list names the paths that matter. For each of them the agent keeps the content hash,
+the permissions and the suid bit, and reports a change in any of them.
 
-## Settings
+A walk has a ceiling of paths per reading and of bytes per file, so the cost stays within the
+agent's budget on any host. When a walk reaches a ceiling, the reading says what it left
+unwalked.
 
-Its block is `files`, shipped in `config/collectors/files.yaml` with the defaults and a comment above
-every key saying what it means.
+## What's inside
 
-## Dependencies
+| | |
+|---|---|
+| **Reads** | the paths named in `watch_fs.yaml` |
+| **Raises** | `file.*` |
+| **Every** | 300 seconds |
+| **Settings** | the `files` block, shipped in `config/collectors/files.yaml` with a comment above every key |
 
-`vigil-model`, `vigil-collect` (the `Collector` port), `vigil-rules` (`RuleSet`), `vigil-module`, `vigil-view`, `serde`, `serde_json`, `yaml_serde` for the watch list; `libc` on macOS.
+## Depends on
 
-## Context
+- `vigil-model` · `vigil-collect` · `vigil-rules` · `vigil-module` · `vigil-view`
+- `serde`, `serde_json`, `yaml_serde` for the watch list; `libc` on macOS
 
-```
-vigil-model · vigil-collect · vigil-rules · vigil-module · vigil-view
-                                   ▲
-                             vigil-files
+## Where it fits
+
+```text
+vigil-model   vigil-collect   vigil-rules   vigil-module   vigil-view
+     └──────────────┴──────────────┼──────────────┴──────────────┘
+                                   ▼
+                              vigil-files
                                    │
-                    ┌──────────────┴──────────────┐
-                    ▼                             ▼
-             bin/vigild (reading, rules)   bin/vigil (its screen)
+                   ┌───────────────┴───────────────┐
+                   ▼                               ▼
+          vigild · reads and judges        vigil · draws its screen
 ```

@@ -1,31 +1,39 @@
 # vigil-processes
 
-The programs running on this host.
+> The programs running on this host.
 
-## The decision it follows from
+## Why
 
-The processes are read from the kernel, and secrets in a command line are redacted on the
-agent before anything is written. The console may close a listening socket or stop a program a
-person marked — SIGTERM, SIGKILL or closing the socket itself — only when the operator switches
-it on in this block.
+Processes are read from the kernel. Secrets in a command line — `mysql -p…`, an
+`Authorization` header — are hidden on the agent before anything is written to disk.
 
-## Settings
+The console can close a listening socket or stop a program a person marked, with SIGTERM or
+SIGKILL. That ability is off until the operator switches it on in this block, and every attempt
+is itself a finding.
 
-Its block is `processes`, shipped in `config/collectors/processes.yaml` with the defaults and a comment above
-every key saying what it means.
+## What's inside
 
-## Dependencies
+| | |
+|---|---|
+| **Reads** | the process table: program, arguments, owner, parent |
+| **Raises** | `process.*` |
+| **Every** | 30 seconds |
+| **Settings** | the `processes` block, shipped in `config/collectors/processes.yaml` with a comment above every key |
 
-`vigil-model`, `vigil-collect` (the `Collector` port), `vigil-rules` (`RuleSet`), `vigil-module`, `vigil-view`, `serde_json`; `libc` on macOS.
+## Depends on
 
-## Context
+- `vigil-model` · `vigil-collect` · `vigil-rules` · `vigil-module` · `vigil-view`
+- `serde_json`; `libc` on macOS
 
-```
-vigil-model · vigil-collect · vigil-rules · vigil-module · vigil-view
-                                   ▲
-                             vigil-processes
+## Where it fits
+
+```text
+vigil-model   vigil-collect   vigil-rules   vigil-module   vigil-view
+     └──────────────┴──────────────┼──────────────┴──────────────┘
+                                   ▼
+                            vigil-processes
                                    │
-                    ┌──────────────┴──────────────┐
-                    ▼                             ▼
-             bin/vigild (reading, rules)   bin/vigil (its screen)
+                   ┌───────────────┴───────────────┐
+                   ▼                               ▼
+          vigild · reads and judges        vigil · draws its screen
 ```

@@ -1,30 +1,40 @@
 # vigil-users
 
-Who may log in to this host, as whom, and with what: accounts, groups, sudo grants, keys, sessions.
+> Who may log in to this host, as whom, and with what.
 
-## The decision it follows from
+## Why
 
-The accounts are read from the files the system keeps them in. The console may change an
-account, a group, a sudo grant in `/etc/sudoers.d`, a key or a session — it edits and removes,
-it never creates an account or a grant — only when the operator switches it on in this block.
+Accounts, groups, sudo grants, SSH keys and sessions are read from the files the system keeps
+them in. A new account, an unlocked one, a key added to `authorized_keys` or a member added to a
+privileged group each becomes a finding.
 
-## Settings
+The console can edit and remove accounts, groups, grants in `/etc/sudoers.d`, keys and sessions.
+That ability is off until the operator switches it on in this block, and every attempt is itself
+a finding.
 
-Its block is `users`, shipped in `config/collectors/users.yaml` with the defaults and a comment above
-every key saying what it means.
+## What's inside
 
-## Dependencies
+| | |
+|---|---|
+| **Reads** | `/etc/passwd`, `/etc/group`, `/etc/shadow`, sudoers, SSH keys, sessions |
+| **Raises** | `user.*` |
+| **Every** | 300 seconds |
+| **Settings** | the `users` block, shipped in `config/collectors/users.yaml` with a comment above every key |
 
-`vigil-model`, `vigil-collect` (the `Collector` port), `vigil-rules` (`RuleSet`), `vigil-module`, `vigil-view`, `serde_json`; `libc` on macOS.
+## Depends on
 
-## Context
+- `vigil-model` · `vigil-collect` · `vigil-rules` · `vigil-module` · `vigil-view`
+- `serde_json`; `libc` on macOS
 
-```
-vigil-model · vigil-collect · vigil-rules · vigil-module · vigil-view
-                                   ▲
-                             vigil-users
+## Where it fits
+
+```text
+vigil-model   vigil-collect   vigil-rules   vigil-module   vigil-view
+     └──────────────┴──────────────┼──────────────┴──────────────┘
+                                   ▼
+                              vigil-users
                                    │
-                    ┌──────────────┴──────────────┐
-                    ▼                             ▼
-             bin/vigild (reading, rules)   bin/vigil (its screen)
+                   ┌───────────────┴───────────────┐
+                   ▼                               ▼
+          vigild · reads and judges        vigil · draws its screen
 ```

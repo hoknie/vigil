@@ -1,31 +1,39 @@
 # vigil-persistence
 
-What this host starts by itself: units, timers, cron, kernel modules, shell profiles and launchd jobs.
+> Everything this host starts by itself.
 
-## The decision it follows from
+## Why
 
-Persistence is how an intruder outlives a reboot, so everything the host starts by itself is
-read and compared with the reading before. The console may stop, start, disable, enable, mask
-and unmask a unit or a timer, and comment a cron line out and back in — six words and their
-opposites and nothing else — only when the operator switches it on in this block.
+Persistence is how an intruder survives a reboot. The agent reads every way this host starts
+something on its own — systemd units and timers, cron, kernel modules, `ld.so.preload`, shell
+profiles, launchd jobs — and compares each reading with the one before.
 
-## Settings
+From the console an operator can stop, start, disable, enable, mask and unmask a unit or a timer,
+and comment a cron line out and back in. That ability is off until switched on in this block.
 
-Its block is `persistence`, shipped in `config/collectors/persistence.yaml` with the defaults and a comment above
-every key saying what it means.
+## What's inside
 
-## Dependencies
+| | |
+|---|---|
+| **Reads** | units, timers, cron, kernel modules, preload, shell profiles, launchd jobs |
+| **Raises** | `persistence.*` |
+| **Every** | 300 seconds |
+| **Settings** | the `persistence` block, shipped in `config/collectors/persistence.yaml` with a comment above every key |
 
-`vigil-model`, `vigil-collect` (the `Collector` port), `vigil-rules` (`RuleSet`), `vigil-module`, `vigil-view`, `serde_json`.
+## Depends on
 
-## Context
+- `vigil-model` · `vigil-collect` · `vigil-rules` · `vigil-module` · `vigil-view`
+- `serde_json`
 
-```
-vigil-model · vigil-collect · vigil-rules · vigil-module · vigil-view
-                                   ▲
-                             vigil-persistence
+## Where it fits
+
+```text
+vigil-model   vigil-collect   vigil-rules   vigil-module   vigil-view
+     └──────────────┴──────────────┼──────────────┴──────────────┘
+                                   ▼
+                           vigil-persistence
                                    │
-                    ┌──────────────┴──────────────┐
-                    ▼                             ▼
-             bin/vigild (reading, rules)   bin/vigil (its screen)
+                   ┌───────────────┴───────────────┐
+                   ▼                               ▼
+          vigild · reads and judges        vigil · draws its screen
 ```
