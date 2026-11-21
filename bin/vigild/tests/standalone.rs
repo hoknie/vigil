@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::OnceLock;
 
 const FOREIGN_PREFIXES: [&str; 2] = ["waf-", "waf_"];
 
@@ -163,7 +164,12 @@ fn what_links(manifest_directory: &str) -> Vec<String> {
         .collect()
 }
 
-fn metadata() -> serde_json::Value {
+fn metadata() -> &'static serde_json::Value {
+    static METADATA: OnceLock<serde_json::Value> = OnceLock::new();
+    METADATA.get_or_init(read_metadata)
+}
+
+fn read_metadata() -> serde_json::Value {
     let output = Command::new(std::env::var("CARGO").unwrap_or_else(|_| "cargo".into()))
         .args([
             "metadata",

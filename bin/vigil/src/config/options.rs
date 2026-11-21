@@ -1,4 +1,4 @@
-use super::silence::DEFAULT_PATH;
+use crate::cli::default_configuration;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Options {
@@ -24,7 +24,7 @@ impl Default for Options {
             prefix: false,
             program: None,
             pattern: None,
-            path: DEFAULT_PATH.to_string(),
+            path: default_configuration(),
             file: None,
             dry_run: false,
         }

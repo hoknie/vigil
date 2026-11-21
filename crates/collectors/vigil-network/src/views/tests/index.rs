@@ -52,20 +52,30 @@ fn indexed(pane: &dyn Pane, reading: &Snapshot, showing: &Showing<'_>) -> usize 
 
 #[test]
 fn the_socket_list_with_kinds_switched_off_lists_every_search_and_sort_as_its_rows_do() {
+    every_kind_switched_off_lists_as_its_rows_do(&network());
+}
+
+#[test]
+#[ignore = "heavy"]
+fn the_socket_list_of_a_larger_reading_with_kinds_switched_off_lists_as_its_rows_do() {
+    every_kind_switched_off_lists_as_its_rows_do(&scaled(6));
+}
+
+fn every_kind_switched_off_lists_as_its_rows_do(reading: &Snapshot) {
     let pane = &panes()[0];
 
-    for reading in [network(), scaled(6)] {
+    {
         for hidden in KINDS_SWITCHED_OFF {
             let showing = Showing::default().hiding(hidden);
             the_index_lists_every_search_and_sort_as_the_rows_do_in(
                 pane.as_ref(),
-                &reading,
+                reading,
                 showing,
             );
 
             assert_eq!(
-                indexed(pane.as_ref(), &reading, &showing),
-                pane.rows(&reading, &showing).len(),
+                indexed(pane.as_ref(), reading, &showing),
+                pane.rows(reading, &showing).len(),
                 "the index is built once for the kinds the reader left on, so it holds every \
                  socket of those kinds and not one socket of a kind switched off: {hidden:?}"
             );
@@ -74,6 +84,7 @@ fn the_socket_list_with_kinds_switched_off_lists_every_search_and_sort_as_its_ro
 }
 
 #[test]
+#[ignore = "heavy"]
 fn the_tree_opened_at_any_heading_lists_every_search_as_its_rows_do() {
     let pane = &panes()[1];
     let reading = scaled(4);
@@ -108,6 +119,7 @@ fn the_tree_opened_at_any_heading_lists_every_search_as_its_rows_do() {
 }
 
 #[test]
+#[ignore = "heavy"]
 fn a_larger_reading_with_ties_and_programs_sharing_a_name_lists_from_the_index_as_it_is_read() {
     let reading = scaled(24);
     let opened = [

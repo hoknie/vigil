@@ -1,5 +1,5 @@
+use super::layout::Layout;
 use super::service::Service;
-use crate::helpers::directories::{directory_renamed, parent_of};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Installation {
@@ -38,22 +38,7 @@ impl Installation {
     }
 
     pub fn moved_from(&self, shipped: &Installation, text: &str) -> String {
-        let mut moved = text.to_string();
-        for (from, to) in [
-            (shipped.state_directory, self.state_directory),
-            (shipped.log_directory, self.log_directory),
-            (parent_of(shipped.socket), parent_of(self.socket)),
-            (
-                shipped.configuration_directory,
-                self.configuration_directory,
-            ),
-        ] {
-            if from == to {
-                continue;
-            }
-            moved = directory_renamed(&moved, from, to);
-        }
-        moved
+        Layout::system(*self).moved_from(shipped, text)
     }
 }
 

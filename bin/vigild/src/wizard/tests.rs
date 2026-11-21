@@ -1,13 +1,13 @@
 use std::path::{Path, PathBuf};
 
 use vigil_collect::Health;
-use vigil_config::{Installation, Switched, blocks_in, switched};
+use vigil_config::{Installation, Layout, Switched, blocks_in, switched};
 
 use super::Surveyed;
 use super::documents::{documents, names};
 use super::plan::{Planned, plan};
 use super::progress::{self, Action, WIDTH};
-use super::run::{Options, configure_with};
+use super::run::{Options, configure_with as configure_in};
 use super::shipped::{COLLECTORS, CONFIGURATION, WATCH_LIST};
 use crate::Config;
 
@@ -51,6 +51,14 @@ fn directory(name: &str) -> PathBuf {
     ));
     std::fs::create_dir_all(&directory).expect("a directory");
     directory
+}
+
+fn system() -> Layout {
+    Layout::system(Installation::here())
+}
+
+fn configure_with(options: &Options, survey: &[Surveyed]) -> Result<String, String> {
+    configure_in(&system(), options, survey, None)
 }
 
 fn options(directory: &Path) -> Options {
@@ -146,7 +154,7 @@ fn what_it_writes_on_a_host_where_everything_runs_is_a_file_the_daemon_reads() {
 
 #[test]
 fn a_collector_that_cannot_run_here_gets_no_file_and_the_console_says_why() {
-    let planned = plan(Path::new("/etc/vigil/vigil.yaml"), &survey());
+    let planned = plan(&system(), Path::new("/etc/vigil/vigil.yaml"), &survey());
 
     assert_eq!(written(&planned, "collectors/launches.yaml"), None);
     assert!(written(&planned, "collectors/network.yaml").is_some());
@@ -173,7 +181,7 @@ fn a_degraded_collector_is_written_and_the_console_says_what_it_is_missing() {
         Health::Degraded("the audit rule is not loaded; run augenrules --load".into()),
     )];
 
-    let planned = plan(Path::new("/etc/vigil/vigil.yaml"), &survey);
+    let planned = plan(&system(), Path::new("/etc/vigil/vigil.yaml"), &survey);
     let said = progress::survey(&survey).join("\n");
 
     assert!(written(&planned, "collectors/launches.yaml").is_some());
@@ -191,7 +199,7 @@ fn a_file_of_two_collectors_is_written_with_the_block_of_the_one_that_runs_here(
     ];
 
     let text = written(
-        &plan(Path::new("/etc/vigil/vigil.yaml"), &survey),
+        &plan(&system(), Path::new("/etc/vigil/vigil.yaml"), &survey),
         "collectors/containers.yaml",
     )
     .expect("containers runs here");
@@ -202,7 +210,11 @@ fn a_file_of_two_collectors_is_written_with_the_block_of_the_one_that_runs_here(
 
 #[test]
 fn every_key_that_lets_the_console_change_this_host_is_written_out_and_switched_off() {
-    let planned = plan(Path::new("/etc/vigil/vigil.yaml"), &every_one_runs());
+    let planned = plan(
+        &system(),
+        Path::new("/etc/vigil/vigil.yaml"),
+        &every_one_runs(),
+    );
     let text: String = planned
         .iter()
         .filter_map(|file| file.text.clone())
@@ -227,7 +239,7 @@ fn every_key_that_lets_the_console_change_this_host_is_written_out_and_switched_
 #[test]
 fn on_a_host_where_everything_runs_it_writes_exactly_the_files_this_product_ships() {
     let here = Installation::here();
-    let planned = plan(Path::new(here.configuration), &every_one_runs());
+    let planned = plan(&system(), Path::new(here.configuration), &every_one_runs());
     let shipped = shipped_directory();
 
     for file in &planned {
@@ -552,7 +564,7 @@ fn no_line_it_prints_is_wider_than_eighty_columns_or_broken_in_the_middle_of_a_p
     let mut survey = every_one_runs();
     survey.push(surveyed("launches", Health::Unavailable(long.into())));
     let mut said = progress::survey(&survey);
-    for file in plan(Path::new("/etc/vigil/vigil.yaml"), &survey) {
+    for file in plan(&system(), Path::new("/etc/vigil/vigil.yaml"), &survey) {
         for action in [
             Action::Write,
             Action::Unchanged,

@@ -274,6 +274,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "heavy"]
     fn a_journal_longer_than_the_console_holds_says_how_much_stays_behind() {
         let directory = temporary_directory("longer");
         let store = open(&directory).expect("opens");

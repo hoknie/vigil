@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use vigil_config::new_block;
+use vigil_config::{Layout, new_block};
 
 use super::Surveyed;
 use super::documents::{kept, names};
@@ -16,7 +16,7 @@ pub struct Planned {
     pub holds: Vec<String>,
 }
 
-pub fn plan(configuration: &Path, survey: &[Surveyed]) -> Vec<Planned> {
+pub fn plan(layout: &Layout, configuration: &Path, survey: &[Surveyed]) -> Vec<Planned> {
     let directory = directory_of(configuration);
     let runs = |name: &str| {
         survey
@@ -26,14 +26,14 @@ pub fn plan(configuration: &Path, survey: &[Surveyed]) -> Vec<Planned> {
 
     let mut planned = vec![Planned {
         path: configuration.to_path_buf(),
-        text: Some(placed(CONFIGURATION, &directory)),
+        text: Some(placed(layout, CONFIGURATION, &directory)),
         holds: Vec::new(),
     }];
 
     for shipped in COLLECTORS {
         planned.push(Planned {
             path: directory.join(shipped.path),
-            text: kept(shipped.text, runs).map(|text| placed(&text, &directory)),
+            text: kept(shipped.text, runs).map(|text| placed(layout, &text, &directory)),
             holds: names(shipped.text),
         });
     }
@@ -61,7 +61,7 @@ pub fn plan(configuration: &Path, survey: &[Surveyed]) -> Vec<Planned> {
     if runs(WATCHED_BY) {
         planned.push(Planned {
             path: directory.join(WATCH_LIST.path),
-            text: Some(placed(WATCH_LIST.text, &directory)),
+            text: Some(placed(layout, WATCH_LIST.text, &directory)),
             holds: Vec::new(),
         });
     }

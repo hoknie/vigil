@@ -24,6 +24,7 @@ fn narrowings() -> Vec<Vec<Facet>> {
 }
 
 #[test]
+#[ignore = "heavy"]
 fn every_search_and_every_sort_of_many_launches_lists_from_the_index_what_the_reading_lists() {
     let reading = many_launches(30);
     let pane = pane();

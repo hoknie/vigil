@@ -13,9 +13,12 @@ pub use services::sources::{
 pub use services::suppressions::{Edit, add, named, remove, remove_one, remove_written};
 pub use services::switching::{new_block, switched, with_block};
 pub use services::watched_paths::{listed, paths, put, put_listed, stop, stop_listed};
+pub use types::account::Account;
 pub use types::block::Block;
 pub use types::entry::{Entry, Naming};
+pub use types::homebrew::{FORMULA, Homebrew, SERVICE_RESTART, SERVICE_START, SERVICE_STATUS};
 pub use types::installation::Installation;
+pub use types::layout::{JOB_LABEL, Layout, NO_HOME};
 pub use types::service::Service;
 pub use types::source::Source;
 pub use types::suppression::Suppression;

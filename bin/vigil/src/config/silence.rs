@@ -1,14 +1,10 @@
 use std::path::{Path, PathBuf};
 
-use vigil_config::{
-    Edit, Entry, Installation, Naming, Source, Suppression, apart, moment, silenced, write,
-};
+use vigil_config::{Edit, Entry, Naming, Source, Suppression, apart, moment, silenced, write};
 
 use super::done::Done;
 use super::options::Options;
 use super::shape::known;
-
-pub const DEFAULT_PATH: &str = Installation::here().configuration;
 
 pub const NEXT_ROUND: &str = "the agent takes it up on its next round";
 

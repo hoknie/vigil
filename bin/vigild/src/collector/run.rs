@@ -4,8 +4,9 @@ use super::apart::{collectors_at, switch};
 use super::edit::{self, Edit};
 use super::host::{self, Standing};
 use super::manager::Manager;
+use super::rights::only_with_the_rights_it_needs;
 use super::waiting::{FIRST_READING, LOOK_AGAIN, first_reading};
-use crate::wizard::{DEFAULT_PATH, Surveyed, take};
+use crate::wizard::{Surveyed, default_path, named, take};
 use crate::{Config, config};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -19,7 +20,7 @@ impl Default for Options {
     fn default() -> Self {
         Options {
             name: String::new(),
-            path: DEFAULT_PATH.to_string(),
+            path: default_path(),
             dry_run: false,
         }
     }
@@ -27,6 +28,8 @@ impl Default for Options {
 
 pub fn enable(options: &Options) -> Result<String, String> {
     let name = known(&options.name)?;
+    only_with_the_rights_it_needs(name)?;
+    named(&options.path)?;
     let mut said = Vec::new();
     let text = read(&options.path)?;
     let apart = collectors_at(options, &text)?;
@@ -63,6 +66,8 @@ pub fn enable(options: &Options) -> Result<String, String> {
 
 pub fn disable(options: &Options) -> Result<String, String> {
     let name = known(&options.name)?;
+    only_with_the_rights_it_needs(name)?;
+    named(&options.path)?;
     let mut said = Vec::new();
 
     let text = read(&options.path)?;

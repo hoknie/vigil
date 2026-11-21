@@ -9,6 +9,7 @@ fn pane() -> Box<dyn Pane> {
 }
 
 #[test]
+#[ignore = "heavy"]
 fn every_search_and_every_sort_of_many_watched_paths_lists_from_the_index_what_the_reading_lists() {
     let reading = many_files(40);
     let pane = pane();

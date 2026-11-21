@@ -6,6 +6,7 @@ use crate::fixture::launches;
 use crate::views::WhatHasRunHere;
 
 #[test]
+#[ignore = "heavy"]
 fn the_footer_of_many_launches_narrowed_or_not_says_from_the_counts_what_it_says_from_the_reading()
 {
     let pane = WhatHasRunHere.panes().remove(0);

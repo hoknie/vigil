@@ -1,8 +1,10 @@
 use std::path::Path;
 
-use vigil_config::{Installation, write};
+use vigil_config::write;
 
-pub const RESTART: &str = Installation::here().service.restart;
+pub fn restart() -> String {
+    crate::wizard::restart_words()
+}
 
 pub const READS_AT_START: &str = "the daemon reads its configuration at start";
 
@@ -48,7 +50,11 @@ pub fn put_beside(
 }
 
 pub fn restart_note() -> String {
-    format!("{READS_AT_START}: {RESTART}")
+    note_of(&restart())
+}
+
+pub fn note_of(restart: &str) -> String {
+    format!("{READS_AT_START}: {restart}")
 }
 
 #[cfg(test)]
@@ -126,8 +132,45 @@ mod tests {
     }
 
     #[test]
+    fn an_account_is_told_to_kickstart_its_gui_job() {
+        let layout = vigil_config::Layout::for_account(
+            vigil_config::Installation::MACOS,
+            &vigil_config::Account {
+                uid: 501,
+                home: Some("/Users/ann".into()),
+            },
+        )
+        .expect("a layout");
+
+        assert_eq!(
+            note_of(&layout.restart),
+            "the daemon reads its configuration at start: launchctl kickstart -k gui/501/vigil.vigild"
+        );
+    }
+
+    #[test]
     fn every_command_that_edits_the_file_says_the_same_thing_about_when_it_is_read() {
-        assert!(restart_note().contains(RESTART));
+        assert!(restart_note().contains(&restart()));
         assert!(restart_note().contains("reads its configuration at start"));
+    }
+
+    #[test]
+    fn under_homebrew_the_restart_line_names_brew_services_restart() {
+        let layout = vigil_config::Layout::for_account(
+            vigil_config::Installation::MACOS,
+            &vigil_config::Account {
+                uid: 501,
+                home: Some("/Users/ann".into()),
+            },
+        )
+        .expect("a layout")
+        .under(Some(&vigil_config::Homebrew {
+            prefix: "/opt/homebrew".into(),
+        }));
+
+        assert_eq!(
+            note_of(&layout.restart),
+            "the daemon reads its configuration at start: brew services restart vigil"
+        );
     }
 }

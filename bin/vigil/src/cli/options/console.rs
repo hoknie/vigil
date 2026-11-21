@@ -1,17 +1,14 @@
-use clap::Args;
-use vigil_config::Installation;
-
 use super::opening::Opening;
+use super::places::default_socket;
 use super::screen::{help_for_screen, screen};
 use crate::cli::style;
 use crate::ui::Screen;
-
-pub const DEFAULT_SOCKET: &str = Installation::here().socket;
+use clap::Args;
 
 #[derive(Debug, Clone, PartialEq, Eq, Args)]
 #[command(styles = style::HELP)]
 pub struct Console {
-    #[arg(long, value_name = "PATH", default_value = DEFAULT_SOCKET)]
+    #[arg(long, value_name = "PATH", default_value_t = default_socket())]
     pub socket: String,
 
     #[arg(

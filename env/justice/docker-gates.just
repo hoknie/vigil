@@ -9,7 +9,7 @@ default:
 
 # The whole gate, on musl, inside the container
 all:
-    {{ RUN }} just qa-gates
+    {{ RUN }} just qa-gates full
 
 # Build the product, test it and start it, the same thing `docker compose up` does
 smoke:

@@ -81,6 +81,7 @@ fn the_ruleset_lists_every_search_and_sort_from_its_index_as_its_rows_do() {
 }
 
 #[test]
+#[ignore = "heavy"]
 fn a_larger_ruleset_full_of_ties_lists_from_the_index_in_the_order_it_is_read() {
     let pane = pane();
     let reading = scaled(30);

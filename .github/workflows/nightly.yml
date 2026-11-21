@@ -1,0 +1,108 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  CARGO_NET_RETRY: 10
+
+jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      code: ${{ steps.window.outputs.code }}
+      sha: ${{ steps.window.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Code that reached main in the last day
+        id: window
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          sha="$(git rev-parse HEAD)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT" = workflow_dispatch ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "Started by hand: the full set runs on $sha." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          commits="$(git log --first-parent --since='26 hours ago' --format='%h %s' HEAD -- . \
+            ':(exclude)openspec' ':(exclude)*.md' ':(exclude)docs/brand' ':(exclude)docs/assets' \
+            ':(exclude)LICENSE' ':(exclude)NOTICE')"
+          if [ -n "$commits" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            printf 'Code that reached main in the last day:\n\n%s\n' "$commits" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+            echo "No code reached main in the last day; the night is skipped." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  gate:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    uses: ./.github/workflows/ci.yml
+    with:
+      set: full
+      ref: ${{ needs.changes.outputs.sha }}
+
+  packages:
+    needs: [changes, gate]
+    if: needs.changes.outputs.code == 'true'
+    uses: ./.github/workflows/packages.yml
+    with:
+      ref: ${{ needs.changes.outputs.sha }}
+
+  containers:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.changes.outputs.sha }}
+
+      - name: just
+        run: cargo install just --locked --version 1.59.0
+
+      - name: Build, test and start the agent in a container
+        run: just docker-gates smoke
+
+      - name: Drive the console under a real terminal
+        run: just docker-gates console-pty
+
+  cost:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.changes.outputs.sha }}
+
+      - uses: dtolnay/rust-toolchain@1.98.1
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: cost
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: just
+        run: cargo install just --locked --version 1.59.0
+
+      - name: What a reading, a diff and a judgement cost
+        run: just qa-test cost

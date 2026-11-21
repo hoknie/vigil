@@ -237,3 +237,39 @@ fn workspace() -> PathBuf {
         .canonicalize()
         .expect("the workspace root")
 }
+
+const AGENT_JOB: &str = "packaging/macos/launch-agent/vigil.vigild.plist";
+
+#[test]
+fn the_job_of_an_account_is_the_daemon_job_without_a_user_name() {
+    let daemon = job("vigil.vigild.plist");
+    let agent: Job = (
+        "vigil.vigild.plist".to_string(),
+        fs::read_to_string(workspace().join(AGENT_JOB)).expect("the template of the job"),
+    );
+
+    assert!(value(&agent, "UserName").is_none());
+    let daemon_in_the_labels = daemon
+        .1
+        .replace("\t<key>UserName</key>\n\t<string>root</string>\n", "")
+        .replace("/usr/local/sbin/vigild", "@VIGILD@")
+        .replace("/usr/local/etc/vigil/vigil.yaml", "@CONFIGURATION@")
+        .replace("/usr/local/var/log/vigil", "@LOGS@");
+    assert_eq!(agent.1, daemon_in_the_labels);
+    assert_eq!(
+        arguments(&agent),
+        vec!["@VIGILD@".to_string(), "@CONFIGURATION@".to_string()]
+    );
+    assert_eq!(
+        value(&agent, "StandardOutPath").as_deref(),
+        Some("@LOGS@/vigild.log")
+    );
+    assert!(!agent.1.contains("<!--"), "a plist carries no comment");
+}
+
+#[test]
+fn the_package_installs_no_job_of_an_account() {
+    let script = fs::read_to_string(workspace().join(PACKAGE)).expect("the packaging script");
+
+    assert!(!script.contains("launch-agent"), "{PACKAGE}");
+}

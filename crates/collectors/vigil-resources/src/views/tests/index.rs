@@ -9,6 +9,7 @@ fn pane() -> Box<dyn Pane> {
 }
 
 #[test]
+#[ignore = "heavy"]
 fn every_search_and_every_sort_of_a_host_with_many_filesystems_lists_from_the_index_what_the_reading_lists()
  {
     let reading = many_filesystems(40);

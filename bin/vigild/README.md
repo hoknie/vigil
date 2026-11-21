@@ -9,6 +9,12 @@ rules and its settings. What it owns is what a running process owns: the loaded 
 identity of this host and installation, the clock, the watch round, the store, the reporters and
 the socket.
 
+On macOS it also runs under an ordinary account, with no `sudo`: the default places then lie under
+the account's home (`~/.config/vigil`, `~/.local/state/vigil`, `~/Library/Logs/vigil`), `vigild
+configure` writes a launchd job for the `gui/<uid>` domain, and each collector says what it cannot
+read without root. Installed with Homebrew, the job is the `brew services` service of the formula:
+`vigild configure` writes no launchd job and says `brew services start vigil`.
+
 It runs in one process on plain threads. A watch round is a few reads and a few writes, and the
 agent is a guest on the host, so the product carries no async runtime.
 

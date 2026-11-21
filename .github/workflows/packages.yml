@@ -1,0 +1,120 @@
+name: Packages
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  CARGO_NET_RETRY: 10
+
+jobs:
+  packages:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64-unknown-linux-musl, aarch64-unknown-linux-musl]
+    env:
+      TARGET: ${{ matrix.target }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: The tag and Cargo.toml agree
+        if: github.ref_type == 'tag'
+        run: ./env/scripts/release.sh check-tag "$TAG"
+
+      - name: Static musl binaries
+        run: ./env/scripts/package.sh binaries
+
+      - name: deb, built on debian:12
+        run: |
+          docker run --rm --volume "$PWD":/work --workdir /work --env TARGET \
+            debian:12 ./env/scripts/package.sh deb
+          sudo chown -R "$(id -u):$(id -g)" dist
+
+      - name: rpm, built on almalinux:9
+        run: |
+          docker run --rm --volume "$PWD":/work --workdir /work --env TARGET \
+            almalinux:9 bash -c 'dnf -y -q install rpm-build >/dev/null && ./env/scripts/package.sh rpm'
+          sudo chown -R "$(id -u):$(id -g)" dist
+
+      - name: The deb installs, runs and is removed on a clean debian:12
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: |
+          docker run --rm --volume "$PWD":/work --workdir /work \
+            debian:12 timeout -s KILL 300 ./env/scripts/package-check.sh deb
+
+      - name: The rpm installs, runs and is removed on a clean almalinux:9
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: |
+          docker run --rm --volume "$PWD":/work --workdir /work \
+            almalinux:9 timeout -s KILL 300 ./env/scripts/package-check.sh rpm
+
+      - name: The assets collect
+        run: ./env/scripts/release.sh collect
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: vigil-${{ matrix.target }}
+          path: dist/release/*
+          if-no-files-found: error
+          retention-days: 7
+
+  macos:
+    runs-on: macos-15
+    env:
+      TARGET: universal-apple-darwin
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          targets: aarch64-apple-darwin, x86_64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: macos
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: The tag and Cargo.toml agree
+        if: github.ref_type == 'tag'
+        run: ./env/scripts/release.sh check-tag "$TAG"
+
+      - name: Universal binaries, the .pkg and the .tar.gz, checked
+        run: ./env/scripts/package-macos.sh all
+
+      - name: The Homebrew formula installs, tests, audits and is removed
+        run: ./env/scripts/homebrew.sh check
+
+      - name: The assets collect
+        run: ./env/scripts/release.sh collect
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: vigil-${{ env.TARGET }}
+          path: dist/release/*
+          if-no-files-found: error
+          retention-days: 7

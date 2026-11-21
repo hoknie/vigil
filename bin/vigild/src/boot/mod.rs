@@ -1,3 +1,4 @@
+mod account;
 mod console;
 mod following;
 mod greeting;
@@ -8,6 +9,8 @@ mod run;
 mod schedule;
 mod start;
 mod store;
+#[cfg(test)]
+mod tests;
 mod watches;
 
 pub use run::run;

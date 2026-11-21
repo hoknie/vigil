@@ -349,3 +349,115 @@ fn workspace() -> PathBuf {
         .canonicalize()
         .expect("the workspace root")
 }
+
+fn formula() -> String {
+    let path = workspace().join("packaging/homebrew/vigil.rb");
+    fs::read_to_string(&path).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
+}
+
+fn macos_script() -> String {
+    let path = workspace().join("env/scripts/package-macos.sh");
+    fs::read_to_string(&path).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
+}
+
+fn programs_of_the_macos_archive() -> Vec<String> {
+    let script = macos_script();
+    let line = script
+        .lines()
+        .find(|line| line.starts_with("PROGRAMS=("))
+        .expect("the script names its programs");
+    line.trim_start_matches("PROGRAMS=(")
+        .trim_end_matches(')')
+        .split_whitespace()
+        .map(str::to_string)
+        .collect()
+}
+
+#[test]
+fn the_formula_description_fits_the_eighty_characters_brew_audit_allows() {
+    let formula = formula();
+    let description = formula
+        .lines()
+        .find_map(|line| line.trim().strip_prefix("desc \""))
+        .and_then(|rest| rest.strip_suffix('"'))
+        .expect("the formula describes itself");
+
+    assert!(
+        description.chars().count() <= 80,
+        "{description}: {}",
+        description.chars().count()
+    );
+}
+
+#[test]
+fn the_formula_installs_every_program_the_macos_archive_carries() {
+    let formula = formula();
+    let programs = programs_of_the_macos_archive();
+    assert!(programs.len() >= 5, "{programs:?}");
+
+    for program in &programs {
+        assert!(
+            formula.contains(&format!("\"{program}\"")),
+            "the archive carries {program} and the formula does not install it"
+        );
+    }
+    assert!(formula.contains("sbin.install \"vigild\""));
+    assert!(formula.contains("bin.install \"vigil\""));
+    assert!(formula.contains("\"uninstall\""));
+    assert!(formula.contains("pkgshare.install \"config\" => \"defaults\""));
+}
+
+#[test]
+fn the_formula_service_runs_the_opt_daemon_with_the_configuration_configure_writes_for_an_account()
+{
+    let formula = formula();
+    let service: Vec<&str> = formula
+        .lines()
+        .skip_while(|line| line.trim() != "service do")
+        .take_while(|line| line.trim() != "end")
+        .collect();
+    let service = service.join("\n");
+
+    assert!(service.contains("opt_sbin/\"vigild\""), "{service}");
+    assert!(service.contains(".config/vigil/vigil.yaml"), "{service}");
+    assert!(
+        service.contains("Library/Logs/vigil/vigild.log"),
+        "{service}"
+    );
+    assert!(!service.contains("Cellar"), "{service}");
+    assert!(!formula.contains("Cellar"));
+
+    let layout = vigil_config::Layout::for_account(
+        vigil_config::Installation::MACOS,
+        &vigil_config::Account {
+            uid: 501,
+            home: Some("/h".into()),
+        },
+    )
+    .expect("a layout");
+    assert_eq!(layout.configuration, "/h/.config/vigil/vigil.yaml");
+    assert_eq!(layout.log_directory, "/h/Library/Logs/vigil");
+}
+
+#[test]
+fn the_formula_is_for_macos_only_from_the_version_the_archive_is_built_for() {
+    let formula = formula();
+    let script = macos_script();
+    let target = script
+        .lines()
+        .find_map(|line| line.split("MACOSX_DEPLOYMENT_TARGET:-").nth(1))
+        .and_then(|rest| rest.split('}').next())
+        .expect("the script names its deployment target");
+
+    let name = match target.split('.').next().expect("a major") {
+        "11" => "big_sur",
+        "12" => "monterey",
+        "13" => "ventura",
+        "14" => "sonoma",
+        "15" => "sequoia",
+        other => panic!("name the release for macOS {other} in this test"),
+    };
+    assert!(formula.contains("depends_on :macos\n"));
+    assert!(formula.contains(&format!("depends_on macos: :{name}")));
+    assert!(!formula.contains("on_linux"));
+}

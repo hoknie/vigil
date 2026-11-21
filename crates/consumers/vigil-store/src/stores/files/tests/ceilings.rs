@@ -76,6 +76,7 @@ fn what_the_ceiling_threw_away_is_counted_and_not_only_rewritten() {
 }
 
 #[test]
+#[ignore = "heavy"]
 fn a_full_store_does_not_rewrite_its_journal_on_every_write() {
     let directory = temporary_directory("hysteresis");
     let store = FileStore::with_limits(

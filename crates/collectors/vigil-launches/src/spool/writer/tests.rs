@@ -82,6 +82,7 @@ fn a_line_longer_than_any_record_is_given_up_on_rather_than_buffered_for_ever() 
 }
 
 #[test]
+#[ignore = "heavy"]
 fn the_ceiling_drops_the_oldest_and_says_so_when_nothing_is_reading() {
     let path = workspace("ceiling");
     let ceiling = 8 * 1024;

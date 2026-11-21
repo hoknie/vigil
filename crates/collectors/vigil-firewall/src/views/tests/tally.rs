@@ -25,6 +25,7 @@ fn the_footer_from_what_was_counted_once_says_what_the_whole_ruleset_says() {
 }
 
 #[test]
+#[ignore = "heavy"]
 fn the_footer_counts_the_policies_of_the_chains_listed_whatever_else_the_console_keeps() {
     let pane = pane();
     let reading = scaled(4);

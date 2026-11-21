@@ -11,20 +11,28 @@ fn panes() -> Vec<Box<dyn Pane>> {
 
 #[test]
 fn the_footer_of_either_list_with_kinds_switched_off_says_what_the_whole_reading_says() {
+    the_footer_of_either_list_says_what_the_whole_reading_says(&network());
+}
+
+#[test]
+#[ignore = "heavy"]
+fn the_footer_of_either_list_of_a_larger_reading_with_kinds_switched_off_says_what_it_says() {
+    the_footer_of_either_list_says_what_the_whole_reading_says(&scaled(4));
+}
+
+fn the_footer_of_either_list_says_what_the_whole_reading_says(reading: &vigil_model::Snapshot) {
     for pane in panes() {
-        for reading in [network(), scaled(4)] {
+        the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_in(
+            pane.as_ref(),
+            reading,
+            Showing::default(),
+        );
+        for hidden in KINDS_SWITCHED_OFF {
             the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_in(
                 pane.as_ref(),
-                &reading,
-                Showing::default(),
+                reading,
+                Showing::default().hiding(hidden),
             );
-            for hidden in KINDS_SWITCHED_OFF {
-                the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_in(
-                    pane.as_ref(),
-                    &reading,
-                    Showing::default().hiding(hidden),
-                );
-            }
         }
     }
 }

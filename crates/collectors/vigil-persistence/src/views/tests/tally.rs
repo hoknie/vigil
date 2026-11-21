@@ -8,6 +8,7 @@ use crate::views::WhatStartsByItself;
 const TREE: &str = "tree";
 
 #[test]
+#[ignore = "heavy"]
 fn the_footer_of_every_list_as_a_list_or_as_a_tree_says_from_the_counts_what_it_says_from_the_reading()
  {
     for reading in [persistence(), pulled_in_twice(), many_things_started(12)] {

@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+    inputs:
+      set:
+        type: string
+        default: quick
+      ref:
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ inputs.set || 'quick' }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  CARGO_NET_RETRY: 10
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: gate
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Lint
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Tests, the quick set
+        if: inputs.set != 'full'
+        run: cargo test --workspace
+
+      - name: Tests, every one of them
+        if: inputs.set == 'full'
+        run: cargo test --workspace -- --include-ignored
+
+  macos:
+    if: inputs.set == 'full'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: macos-gate
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Lint, as macOS compiles it
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Tests, as macOS runs them
+        run: cargo test --workspace -- --include-ignored

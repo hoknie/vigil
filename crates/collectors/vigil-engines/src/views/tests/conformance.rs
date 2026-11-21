@@ -55,6 +55,7 @@ fn the_section_gives_every_list_an_engine_and_names_the_engines_in_the_order_the
 }
 
 #[test]
+#[ignore = "heavy"]
 fn a_host_of_six_hundred_rows_lists_from_the_index_and_counts_the_footer_as_from_the_reading() {
     let reading = scaled(20);
     assert!(reading.items.len() >= 580, "{}", reading.items.len());
@@ -68,6 +69,7 @@ fn a_host_of_six_hundred_rows_lists_from_the_index_and_counts_the_footer_as_from
 }
 
 #[test]
+#[ignore = "heavy"]
 fn a_list_narrowed_to_a_compose_project_lists_from_its_index_what_it_lists_from_the_reading() {
     let reading = scaled(3);
     let shop = [Facet::new("project", "shop")];

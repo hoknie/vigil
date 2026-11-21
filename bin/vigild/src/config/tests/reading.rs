@@ -1,5 +1,6 @@
 use super::bench::bench;
 use crate::config::load;
+use crate::config::load::load_for;
 
 #[test]
 fn an_empty_file_is_a_working_configuration() {
@@ -8,7 +9,8 @@ fn an_empty_file_is_a_working_configuration() {
     let path = dir.join("empty.yaml");
     std::fs::write(&path, "{}\n").expect("write");
 
-    let config = load(path.to_str().expect("utf-8")).expect("parses");
+    let system = vigil_config::Layout::system(vigil_config::Installation::here());
+    let config = load_for(path.to_str().expect("utf-8"), &Ok(system)).expect("parses");
 
     assert_eq!(
         config.state_dir,

@@ -3,6 +3,7 @@ mod command;
 mod console;
 mod moved;
 mod opening;
+mod places;
 mod screen;
 mod suppression;
 mod ui;
@@ -17,5 +18,6 @@ pub use moved::{
     CAPTURE_MOVED, COLLECTOR_LIVES_IN_THE_DAEMON, CONFIGURE_LIVES_IN_THE_DAEMON, the_old_shape,
 };
 pub use opening::Opening;
+pub use places::default_configuration;
 pub use suppression::Silencing;
 pub use ui::Ui;

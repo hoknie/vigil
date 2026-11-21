@@ -1,6 +1,9 @@
+pub mod account;
 pub mod block;
 pub mod entry;
+pub mod homebrew;
 pub mod installation;
+pub mod layout;
 pub mod service;
 pub mod source;
 pub mod suppression;

@@ -185,6 +185,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "heavy"]
     fn the_second_dump_names_the_moment_of_the_first() {
         let at = workspace("second");
         dump(&options(&at), "2026-09-17T09:00:00.000Z").expect("writes");

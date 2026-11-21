@@ -29,16 +29,19 @@ Everything else in this document follows from four principles.
    `crates/*` — along the stages of the pipeline (§3.3): `collector → differ → rule → sink`.
 
 3. **Separate deployment units along the "observe ↔ display" axis.** The daemon runs under
-   systemd as root with a reduced capability set and **does not link `ratatui`**. The console
+   systemd as root with a reduced capability set — on macOS under launchd as root, or under an
+   ordinary account in a layout of its own under that account's home — and **does not link
+   `ratatui`**. The console
    reads the socket and **links none of the host readers, rules or storage**. The audit plugin
    is executed by `auditd`, holds none of the daemon's capabilities and knows nothing about
    findings or the socket. The three binaries have disjoint heavy dependencies and communicate
    only through a local unix socket and a spool file, each of them one-way.
 
 4. **Quality is enforced by gates.** Formatting, linting and tests are fixed commands in the
-   `justfile`, identical locally and in CI: `just qa-gates` (fmt · clippy `-D warnings` · test),
-   `just docker-gates all` (the same gate on musl, the only environment where the
-   Linux-specific half of the code compiles), and `just docker-gates console-pty` (the console's
+   `justfile`, identical locally and in CI: `just qa-gates` (fmt · clippy `-D warnings` · the quick set,
+   what every push and pull request runs), `just qa-gates full` (the same with every test, the heavy
+   ones too, what the night and a tag run), `just docker-gates all` (the full gate on musl, the
+   only environment where the Linux-specific half of the code compiles), and `just docker-gates console-pty` (the console's
    keyboard handling under a real terminal). The current state of each gate is in §9.
 
 ---
@@ -647,8 +650,9 @@ suite (samples that must be accepted and samples that must be rejected). Rules f
 | Abbreviations in names | forbidden; write `organization_id` in full | ✅ |
 | Style | `cargo fmt --all --check` | ✅ |
 | Linter | `cargo clippy --workspace --all-targets -- -D warnings` | ✅ |
-| Tests | `cargo test --workspace`; no host state, no network | ✅ |
-| Linux-specific code | `just docker-gates all` — the same gate on musl | ✅ |
+| Tests | `cargo test --workspace` is the quick set; `-- --include-ignored` is the full one; no host state, no network | ✅ |
+| Test sets | a test over 300 ms alone in a debug build is `#[ignore = "heavy"]` and runs in the full set only; a test on a scaled reading under that threshold stays quick; guards, golden samples, screen tests on the sample reading and the console screens are never heavy, even when slower (ADR-0071) | ✅ held by `bin/vigild/tests/sets.rs` |
+| Linux-specific code | `just docker-gates all` — the full gate on musl | ✅ |
 | Console keyboard handling | `just docker-gates console-pty` — under a real terminal | ✅ |
 | README in every crate | summary, why, what's inside, dependencies, graph | ✅ held by `bin/vigild/tests/readmes.rs` |
 | Comments in `.rs` and build files | none (§3.5) | ✅ held by `bin/vigild/tests/comments.rs` |

@@ -2,9 +2,10 @@ use clap::{CommandFactory, Parser};
 
 use super::cli::Cli;
 use super::command::Command;
-use super::console::{Console, DEFAULT_SOCKET};
+use super::console::Console;
 use super::moved::{CAPTURE_MOVED, CONFIGURE_LIVES_IN_THE_DAEMON, UI_MOVED, the_old_shape};
 use super::opening::Opening;
+use super::places::default_socket;
 use super::ui::Ui;
 use crate::ui::Screen;
 use crate::ui::fixture::screen;
@@ -39,7 +40,7 @@ fn opening_the_console_is_a_subcommand_with_the_flags_it_always_had() {
     assert_eq!(
         ui(&["ui"]).console,
         Console {
-            socket: DEFAULT_SOCKET.to_string(),
+            socket: default_socket(),
             config: None,
             screen: None,
         }
@@ -100,7 +101,7 @@ fn printing_a_page_is_a_command_of_its_own_and_takes_the_same_two_flags() {
     assert_eq!(
         capture(&["capture"]),
         Console {
-            socket: DEFAULT_SOCKET.to_string(),
+            socket: default_socket(),
             config: None,
             screen: None,
         }
@@ -274,18 +275,6 @@ fn asking_this_program_what_it_is_is_never_read_as_the_shape_it_used_to_have() {
             "vigil {asked} was answered with a note about a move"
         );
     }
-}
-
-#[cfg(target_os = "linux")]
-#[test]
-fn on_linux_the_console_reads_the_socket_the_daemon_opens_under_run() {
-    assert_eq!(DEFAULT_SOCKET, "/run/vigil/vigil.sock");
-}
-
-#[cfg(target_os = "macos")]
-#[test]
-fn on_macos_the_console_reads_the_socket_the_daemon_opens_under_var_run() {
-    assert_eq!(DEFAULT_SOCKET, "/var/run/vigil/vigil.sock");
 }
 
 #[test]

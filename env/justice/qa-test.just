@@ -7,13 +7,17 @@ import 'common.just'
 default:
     @{{ JUST }} --list qa-test --list-heading $'just qa-test <what>\n' --list-prefix '    '
 
-# Tests. They need no machine state, no network and no database; keep it that way
-all:
+# The quick set: every test that is not marked heavy, the same that every push runs
+quick:
     {{ CARGO }} test --workspace
+
+# Every test, the heavy ones too: what the night and a tag run
+all:
+    {{ CARGO }} test --workspace -- --include-ignored
 
 # Write the samples again from what the code declares and the parsers build, then show what the console owes
 golden:
-    VIGIL_GOLDEN=write {{ CARGO }} test -p vigil-resources -p vigil-files -p vigild
+    VIGIL_GOLDEN=write {{ CARGO }} test -p vigil-resources -p vigil-files -p vigild -- --include-ignored
     -{{ CARGO }} test -p vigil
 
 # Test coverage, one line per file and a total; only the code this machine compiles

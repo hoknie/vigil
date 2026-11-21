@@ -73,6 +73,7 @@ fn the_containers_list_every_search_and_sort_from_their_index_as_their_rows_do()
 }
 
 #[test]
+#[ignore = "heavy"]
 fn a_larger_host_full_of_ties_lists_its_containers_from_the_index_in_the_order_they_are_read() {
     let pane = pane();
     let reading = scaled(60);

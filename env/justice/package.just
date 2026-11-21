@@ -25,3 +25,7 @@ rpm: binaries
 # Build the macOS .pkg and .tar.gz into ./dist from universal binaries, and check them
 macos:
     ./env/scripts/package-macos.sh all
+
+# Render the Homebrew formula for the macOS .tar.gz in ./dist into dist/release/vigil.rb
+homebrew:
+    ./env/scripts/homebrew.sh formula

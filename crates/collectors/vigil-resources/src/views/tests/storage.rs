@@ -170,6 +170,7 @@ fn two_filesystems_of_one_size_under_two_headings_are_named_as_a_hint_and_never_
 }
 
 #[test]
+#[ignore = "heavy"]
 fn every_search_and_every_opening_of_a_host_with_many_filesystems_lists_what_the_reading_lists() {
     let reading = many_filesystems(40);
 

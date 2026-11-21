@@ -1,7 +1,7 @@
 use clap::Parser;
 
 use super::options::{Cli, Collector, Command, Configure, Switch};
-use crate::wizard::DEFAULT_PATH;
+use crate::wizard::default_path;
 
 fn collector(line: &[&str]) -> Collector {
     match parse(line).expect("parses").command {
@@ -16,7 +16,8 @@ fn the_name_of_the_collector_is_an_argument_and_not_half_the_name_of_the_command
 
     assert_eq!(asked.name, "firewall");
     assert!(matches!(asked.doing, Switch::Enable(_)));
-    assert_eq!(asked.switching().config, DEFAULT_PATH);
+    assert_eq!(asked.switching().config, None);
+    assert_eq!(asked.options().path, default_path());
     assert!(!asked.switching().dry_run);
 }
 
@@ -37,7 +38,7 @@ fn both_ways_round_are_spelled_the_same_and_take_the_same_flags() {
 fn the_file_it_edits_can_be_named_so_a_check_need_not_write_the_real_one() {
     let asked = collector(&["collector", "network", "enable", "--config", "/tmp/v.yaml"]);
 
-    assert_eq!(asked.switching().config, "/tmp/v.yaml");
+    assert_eq!(asked.switching().config.as_deref(), Some("/tmp/v.yaml"));
     assert_eq!(asked.options().path, "/tmp/v.yaml");
     assert_eq!(asked.options().name, "network");
 }
@@ -90,7 +91,7 @@ fn configure_with_nothing_else_writes_where_the_package_installs() {
     assert_eq!(
         configure(&["configure"]),
         Configure {
-            path: DEFAULT_PATH.to_string(),
+            path: None,
             force: false,
             dry_run: false,
         }
@@ -102,7 +103,7 @@ fn both_flags_have_a_short_form_and_a_long_one_and_a_path_can_be_named() {
     assert_eq!(
         configure(&["configure", "-f", "-d", "/tmp/v.yaml"]),
         Configure {
-            path: "/tmp/v.yaml".to_string(),
+            path: Some("/tmp/v.yaml".to_string()),
             force: true,
             dry_run: true,
         }
@@ -110,7 +111,7 @@ fn both_flags_have_a_short_form_and_a_long_one_and_a_path_can_be_named() {
     assert_eq!(
         configure(&["configure", "--force", "--dry-run"]),
         Configure {
-            path: DEFAULT_PATH.to_string(),
+            path: None,
             force: true,
             dry_run: true,
         }
@@ -156,4 +157,29 @@ fn the_help_says_what_the_two_things_it_does_are() {
     assert!(help.contains("configure"), "{help}");
     assert!(help.contains("CONFIG"), "{help}");
     assert!(help.contains("vigil ui"), "the console is named: {help}");
+}
+
+#[test]
+fn configure_without_a_path_writes_where_the_layout_of_this_account_says() {
+    let asked = configure(&["configure"]);
+
+    assert_eq!(asked.path, None);
+    assert_eq!(
+        crate::wizard::Options::from(asked).path,
+        default_path(),
+        "the default is worked out when the command runs, from the account that runs it"
+    );
+}
+
+#[test]
+fn the_help_of_configure_names_both_places_of_a_mac() {
+    let help = parse(&["configure", "--help"])
+        .expect_err("help is not a parse")
+        .to_string();
+
+    assert!(help.contains("/usr/local/etc/vigil/vigil.yaml"), "{help}");
+    assert!(help.contains("~/.config/vigil/vigil.yaml"), "{help}");
+    for line in help.lines() {
+        assert!(line.chars().count() <= 100, "{line}");
+    }
 }

@@ -7,6 +7,9 @@
 Everything the console shows comes from the daemon over the local socket, so an operator sees
 exactly what the agent knows. The console keeps nothing of its own.
 
+On macOS the console opens the socket of the account's own agent when that file exists, and the
+system one otherwise; `--socket` always wins.
+
 It draws what each subject describes: sections, subject screens and cards come from the subject
 crates, in the order the modules are linked. The console adds what belongs to it — navigation,
 search, history, the difference behind a finding, and the questions it asks before a verb.

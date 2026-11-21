@@ -1,6 +1,7 @@
 use std::fmt;
 use std::path::Path;
 
+use vigil_config::{Installation, Layout};
 use vigil_module::Settings;
 use vigil_report::SyslogFacility;
 
@@ -8,11 +9,20 @@ use super::{Config, Receiver, apart, collectors, former, split};
 use crate::helpers::rfc3339;
 
 pub fn load(path: &str) -> Result<Config, ConfigError> {
+    let account = crate::helpers::account::this();
+    load_for(path, &Layout::for_account(Installation::here(), &account))
+}
+
+pub fn load_for(path: &str, layout: &Result<Layout, String>) -> Result<Config, ConfigError> {
     let text = std::fs::read_to_string(path).map_err(|e| ConfigError {
         path: path.to_string(),
         cause: e.to_string(),
     })?;
     let mut read = split::read(&text, &keys()).map_err(|cause| ConfigError {
+        path: path.to_string(),
+        cause,
+    })?;
+    placed(&mut read.of_the_daemon, layout).map_err(|cause| ConfigError {
         path: path.to_string(),
         cause,
     })?;
@@ -101,6 +111,30 @@ pub fn load(path: &str) -> Result<Config, ConfigError> {
     })?;
 
     Ok(config)
+}
+
+fn placed(daemon: &mut yaml_serde::Value, layout: &Result<Layout, String>) -> Result<(), String> {
+    let yaml_serde::Value::Mapping(written) = daemon else {
+        return Ok(());
+    };
+    for key in ["state_dir", "socket_path"] {
+        if written.contains_key(key) {
+            continue;
+        }
+        let place = match layout {
+            Ok(layout) => match key {
+                "state_dir" => &layout.state_directory,
+                _ => &layout.socket,
+            },
+            Err(cause) => {
+                return Err(format!(
+                    "{cause}; write state_dir and socket_path in this file to say where this agent keeps its files"
+                ));
+            }
+        };
+        written.insert(key.into(), place.as_str().into());
+    }
+    Ok(())
 }
 
 fn read_collectors(path: &str, config: &mut Config) -> Result<(), String> {

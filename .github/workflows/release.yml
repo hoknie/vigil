@@ -2,9 +2,7 @@ name: Release
 
 on:
   push:
-    branches: [main]
     tags: ['v*']
-  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -12,144 +10,20 @@ permissions:
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref_type == 'branch' }}
-
-env:
-  CARGO_TERM_COLOR: always
-  RUST_BACKTRACE: 1
-  CARGO_NET_RETRY: 10
+  cancel-in-progress: false
 
 jobs:
   gate:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: dtolnay/rust-toolchain@1.98.1
-        with:
-          components: rustfmt, clippy
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: gate
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-
-      - name: Format
-        run: cargo fmt --all --check
-
-      - name: Lint
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
-      - name: Tests
-        run: cargo test --workspace
+    uses: ./.github/workflows/ci.yml
+    with:
+      set: full
 
   packages:
     needs: gate
-    runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [x86_64-unknown-linux-musl, aarch64-unknown-linux-musl]
-    env:
-      TARGET: ${{ matrix.target }}
-      TAG: ${{ github.ref_name }}
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: dtolnay/rust-toolchain@1.98.1
-        with:
-          targets: ${{ matrix.target }}
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ matrix.target }}
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-
-      - name: The tag and Cargo.toml agree
-        if: github.ref_type == 'tag'
-        run: ./env/scripts/release.sh check-tag "$TAG"
-
-      - name: Static musl binaries
-        run: ./env/scripts/package.sh binaries
-
-      - name: deb, built on debian:12
-        run: |
-          docker run --rm --volume "$PWD":/work --workdir /work --env TARGET \
-            debian:12 ./env/scripts/package.sh deb
-          sudo chown -R "$(id -u):$(id -g)" dist
-
-      - name: rpm, built on almalinux:9
-        run: |
-          docker run --rm --volume "$PWD":/work --workdir /work --env TARGET \
-            almalinux:9 bash -c 'dnf -y -q install rpm-build >/dev/null && ./env/scripts/package.sh rpm'
-          sudo chown -R "$(id -u):$(id -g)" dist
-
-      - name: The deb installs, runs and is removed on a clean debian:12
-        if: matrix.target == 'x86_64-unknown-linux-musl'
-        run: |
-          docker run --rm --volume "$PWD":/work --workdir /work \
-            debian:12 timeout -s KILL 300 ./env/scripts/package-check.sh deb
-
-      - name: The rpm installs, runs and is removed on a clean almalinux:9
-        if: matrix.target == 'x86_64-unknown-linux-musl'
-        run: |
-          docker run --rm --volume "$PWD":/work --workdir /work \
-            almalinux:9 timeout -s KILL 300 ./env/scripts/package-check.sh rpm
-
-      - name: The assets collect
-        run: ./env/scripts/release.sh collect
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: vigil-${{ matrix.target }}
-          path: dist/release/*
-          if-no-files-found: error
-          retention-days: 7
-
-  macos:
-    needs: gate
-    runs-on: macos-15
-    env:
-      TARGET: universal-apple-darwin
-      TAG: ${{ github.ref_name }}
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: dtolnay/rust-toolchain@1.98.1
-        with:
-          targets: aarch64-apple-darwin, x86_64-apple-darwin
-          components: clippy
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: macos
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-
-      - name: The tag and Cargo.toml agree
-        if: github.ref_type == 'tag'
-        run: ./env/scripts/release.sh check-tag "$TAG"
-
-      - name: Lint, as macOS compiles it
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
-      - name: Tests, as macOS runs them
-        run: cargo test --workspace
-
-      - name: Universal binaries, the .pkg and the .tar.gz, checked
-        run: ./env/scripts/package-macos.sh all
-
-      - name: The assets collect
-        run: ./env/scripts/release.sh collect
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: vigil-${{ env.TARGET }}
-          path: dist/release/*
-          if-no-files-found: error
-          retention-days: 7
+    uses: ./.github/workflows/packages.yml
 
   publish:
-    needs: [packages, macos]
+    needs: packages
     if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     permissions:
@@ -195,3 +69,50 @@ jobs:
               "${marking[@]}" \
               dist/release/*
           fi
+
+  homebrew:
+    needs: publish
+    if: github.ref_type == 'tag' && !contains(github.ref_name, '-') && !contains(github.ref_name, '~')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+      TAP: hoknie/homebrew-vigil
+      TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: The tag and Cargo.toml agree
+        run: ./env/scripts/release.sh check-tag "$TAG"
+
+      - name: The archive and its checksums, from the release
+        run: |
+          mkdir -p dist/release
+          gh release download "$TAG" --dir dist/release \
+            --pattern 'vigil_*.macos.universal.tar.gz' --pattern SHA256SUMS
+
+      - name: The formula
+        run: ./env/scripts/homebrew.sh formula
+
+      - name: The formula is an asset of the release
+        run: gh release upload "$TAG" --clobber dist/release/vigil.rb
+
+      - name: The formula is committed to the tap
+        run: |
+          if [ -z "$TAP_TOKEN" ]; then
+            echo "::warning::HOMEBREW_TAP_TOKEN is not set, so the formula is an asset of the release and the tap is not updated"
+            exit 0
+          fi
+          git clone --depth 1 "https://x-access-token:${TAP_TOKEN}@github.com/${TAP}.git" "$RUNNER_TEMP/tap"
+          ./env/scripts/homebrew.sh publish "$RUNNER_TEMP/tap"
+          cd "$RUNNER_TEMP/tap"
+          git add Formula/vigil.rb README.md
+          if git diff --cached --quiet; then
+            echo "the tap already holds this formula"
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --message "vigil ${TAG#v}"
+          git push origin HEAD

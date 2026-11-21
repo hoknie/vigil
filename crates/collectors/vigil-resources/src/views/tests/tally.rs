@@ -9,6 +9,7 @@ fn pane() -> Box<dyn Pane> {
 }
 
 #[test]
+#[ignore = "heavy"]
 fn the_footer_of_many_filesystems_says_from_the_listed_rows_what_it_says_from_the_reading() {
     the_tally_from_the_counts_says_what_the_tally_from_the_reading_says_in(
         pane().as_ref(),

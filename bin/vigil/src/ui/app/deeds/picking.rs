@@ -37,7 +37,7 @@ impl App {
             .status
             .as_ref()
             .and_then(|status| status.agent.configuration_path.clone())
-            .unwrap_or_else(|| config::DEFAULT_PATH.to_string())
+            .unwrap_or_else(crate::cli::default_configuration)
     }
 
     pub(in crate::ui::app) fn pick_along(&mut self, motion: Motion) {

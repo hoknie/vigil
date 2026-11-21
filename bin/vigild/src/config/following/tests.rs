@@ -197,7 +197,7 @@ fn a_console_switch_turned_on_in_the_file_while_the_daemon_runs_stays_as_the_dae
         "killing",
         "accounts",
         "units",
-        vigil_config::Installation::here().service.restart,
+        crate::config::put::restart().as_str(),
     ] {
         assert!(
             looked.said[0].contains(key),
@@ -459,7 +459,7 @@ fn an_edit_to_another_collectors_block_waits_for_a_restart_and_is_said_to_by_nam
     for said in [
         "resources",
         "collectors",
-        vigil_config::Installation::here().service.restart,
+        crate::config::put::restart().as_str(),
     ] {
         assert!(
             looked.said[0].contains(said),

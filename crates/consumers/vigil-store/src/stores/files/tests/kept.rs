@@ -68,6 +68,7 @@ fn a_store_with_nothing_in_it_says_so_and_does_not_answer_zero_bytes() {
 }
 
 #[test]
+#[ignore = "heavy"]
 fn the_age_of_the_oldest_record_costs_nothing_to_ask_for() {
     let directory = temporary_directory("cheap");
     let store = FileStore::open(&directory).expect("opens");

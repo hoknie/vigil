@@ -5,6 +5,7 @@ use super::scaled::many_files;
 use crate::views::TheHostAndItsFiles;
 
 #[test]
+#[ignore = "heavy"]
 fn the_footer_of_many_watched_paths_says_from_the_listed_rows_what_it_says_from_the_reading() {
     let pane = TheHostAndItsFiles.panes().remove(0);
 

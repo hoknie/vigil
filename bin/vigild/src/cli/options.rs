@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 
 use super::style;
 use crate::collector;
-use crate::wizard::{DEFAULT_PATH, Options};
+use crate::wizard::{Options, default_path};
 
 #[derive(Debug, Parser)]
 #[command(
@@ -101,13 +101,8 @@ pub enum Switch {
 #[derive(Debug, Clone, PartialEq, Eq, Parser)]
 #[command(styles = style::HELP)]
 pub struct Switching {
-    #[arg(
-        long,
-        value_name = "PATH",
-        default_value = DEFAULT_PATH,
-        help = "The configuration file to edit"
-    )]
-    pub config: String,
+    #[arg(long, value_name = "PATH", help = "The configuration file to edit")]
+    pub config: Option<String>,
 
     #[arg(
         short = 'd',
@@ -127,7 +122,7 @@ impl Collector {
     pub fn options(&self) -> collector::Options {
         collector::Options {
             name: self.name.clone(),
-            path: self.switching().config.clone(),
+            path: self.switching().config.clone().unwrap_or_else(default_path),
             dry_run: self.switching().dry_run,
         }
     }
@@ -138,10 +133,15 @@ impl Collector {
 pub struct Configure {
     #[arg(
         value_name = "PATH",
-        default_value = DEFAULT_PATH,
-        help = "The configuration file to write; the rest is written beside it"
+        help = "The configuration file to write; the rest is written beside it",
+        long_help = "\
+The configuration file to write; the rest is written beside it.
+
+Without it, root on macOS writes /usr/local/etc/vigil/vigil.yaml, root on
+Linux writes /etc/vigil/vigil.yaml, and any other account on macOS writes
+~/.config/vigil/vigil.yaml."
     )]
-    pub path: String,
+    pub path: Option<String>,
 
     #[arg(
         short,
@@ -172,7 +172,7 @@ on stderr."
 impl From<Configure> for Options {
     fn from(asked: Configure) -> Self {
         Options {
-            path: asked.path,
+            path: asked.path.unwrap_or_else(default_path),
             force: asked.force,
             dry_run: asked.dry_run,
         }

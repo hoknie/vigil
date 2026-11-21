@@ -16,6 +16,7 @@ fn units() -> Box<dyn Pane> {
 }
 
 #[test]
+#[ignore = "heavy"]
 fn every_search_of_every_list_of_a_host_starting_many_things_lists_from_the_index_what_the_reading_lists()
  {
     let reading = many_things_started(12);

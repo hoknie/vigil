@@ -2,6 +2,7 @@ mod apart;
 mod edit;
 mod host;
 mod manager;
+mod rights;
 mod run;
 #[cfg(test)]
 mod tests;

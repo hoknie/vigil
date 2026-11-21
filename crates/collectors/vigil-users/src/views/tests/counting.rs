@@ -5,6 +5,7 @@ use crate::types::Subject;
 use crate::views::pane::Of;
 
 #[test]
+#[ignore = "heavy"]
 fn every_footer_written_from_the_counts_says_word_for_word_what_the_footer_from_the_reading_says() {
     let reading = scaled();
 

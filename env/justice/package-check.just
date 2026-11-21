@@ -36,6 +36,10 @@ unit:
 macos:
     ./env/scripts/package-macos.sh check
 
+# Install the Homebrew formula from a local tap, run its test and audit it, then remove it
+homebrew:
+    ./env/scripts/homebrew.sh check
+
 # Install the agent on eleven Linux distributions in containers and print what each collector reads there
 distributions *images:
     ./env/scripts/distributions.sh build

@@ -16,6 +16,17 @@ write byte for byte the same way.
 | **Suppression** | one statement of what the host is expected to do, with a `reason` and an optional `until` |
 | **Blocks** | the collector blocks under the collectors directory |
 | **Safe write** | temporary file, rename, `.previous`, `0600` |
+| **Account** | the user id and home directory of the account that runs the agent, as data |
+| **Homebrew** | whether a program path is a Homebrew installation, and the `brew services` words |
+| **Layout** | the places of one agent: configuration, state, socket, logs, and the words that start, restart and ask about it |
+
+### Two layouts on macOS
+
+An agent run by root keeps its files where the package puts them. An agent run by any other account
+on macOS keeps everything under that account's home — `~/.config/vigil`, `~/.local/state/vigil`,
+`~/Library/Logs/vigil` — and is started by launchd in the account's own `gui/<uid>` domain. Linux has
+one layout. `Layout::for_account` takes the user id and the home directory as arguments, so it reads
+nothing from the host.
 
 ### A suppression entry
 

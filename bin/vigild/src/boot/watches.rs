@@ -99,6 +99,28 @@ mod tests {
         }
     }
 
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn a_daemon_of_an_account_starts_and_every_collector_says_what_it_cannot_read() {
+        if rustix::process::geteuid().is_root() {
+            eprintln!("skipped: this test runs as an ordinary account");
+            return;
+        }
+        let config = Config::default();
+
+        let (watches, _) = open(&config).expect("the collectors open");
+
+        assert!(!watches.is_empty());
+        for (name, health) in healths(&watches) {
+            match health {
+                Health::Ok => {}
+                Health::Degraded(why) | Health::Unavailable(why) => {
+                    assert!(!why.trim().is_empty(), "{name} says nothing about why")
+                }
+            }
+        }
+    }
+
     fn all() -> Vec<Family> {
         vec![family("network"), family("users"), family("launches")]
     }

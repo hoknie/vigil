@@ -103,6 +103,7 @@ fn the_scaled_reading_holds_every_row_a_search_from_the_index_could_get_wrong() 
 }
 
 #[test]
+#[ignore = "heavy"]
 fn every_list_answers_each_keystroke_from_its_index_exactly_as_its_rows_answer_it() {
     let reading = scaled();
 

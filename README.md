@@ -35,6 +35,17 @@ package this host manages and the architecture it runs, checks the download agai
 `SHA256SUMS` of that release, and keeps `/etc/vigil/vigil.yaml` as this host has it.
 `--dry-run` says what it would do and stops.
 
+On a Mac, with Homebrew:
+
+```bash
+brew install hoknie/vigil/vigil
+vigild configure
+brew services start vigil
+vigil ui
+```
+
+The agent then runs as your own account, with no `sudo`; see `packaging/macos/README.md`.
+
 By hand, from the release page:
 
 ```bash
@@ -58,7 +69,7 @@ just package-check systemd    # the unit under a real systemd; measures what its
 ## Build and run
 
 ```bash
-cargo test --workspace                                  # test the project
+cargo test --workspace                                  # test the project (the quick set)
 cargo run --bin vigild -- config/vigil.example.yaml     # daemon start
 cargo run --bin vigil -- ui                             # the console
 cargo run --bin vigil -- capture                        # print info for a script or a pipe

@@ -5,7 +5,8 @@ cat <<'BANNER'
 
     vigil ui                  the console
     vigild <config.yaml>      the daemon
-    just qa-gates             fmt, clippy and the tests
+    just qa-gates             fmt, clippy and the quick set
+    just qa-gates full        fmt, clippy and every test
     ./env/docker/smoke.sh     build, test, start, report
 
     cat /var/log/vigil/findings.ndjson   what it has reported

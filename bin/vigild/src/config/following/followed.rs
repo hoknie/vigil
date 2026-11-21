@@ -7,7 +7,7 @@ use vigil_module::{Module, Settings};
 
 use super::follower::Follower;
 use super::{Looked, Stamp};
-use crate::config::put::RESTART;
+use crate::config::put::restart;
 use crate::config::{Config, load};
 use crate::helpers::rfc3339;
 
@@ -162,8 +162,9 @@ impl Followed {
         };
         looked.said.push(format!(
             "configuration {place}: {} changed and is read at start-up only, so this daemon goes \
-             on as it started until {RESTART}",
-            waiting.join(", ")
+             on as it started until {}",
+            waiting.join(", "),
+            restart()
         ));
     }
 }

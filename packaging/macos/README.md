@@ -99,3 +99,57 @@ configuration in `config/` (already with the paths of a Mac) and `uninstall`:
 
 A binary downloaded by a browser carries the quarantine attribute; `xattr -d
 com.apple.quarantine <file>` takes it off once you have checked the checksum.
+
+## With Homebrew
+
+    brew install hoknie/vigil/vigil
+    vigild configure
+    brew services start vigil
+    vigil ui
+
+The formula installs the universal build of the release for macOS 11 and later, and the agent
+it starts is the one described under "Without sudo": it runs as your account, with the same
+places. Homebrew puts the programs in its own prefix instead (`vigild` in `sbin`, `vigil` in `bin`,
+the helper programs and `uninstall` in `libexec`, the defaults in `share/vigil/defaults`), and
+`vigild configure` writes no launchd job, because the service is `brew services`.
+
+If an earlier install from the archive left `~/Library/LaunchAgents/vigil.vigild.plist`, `vigild
+configure` names it and leaves it alone: it would start a second agent on the same socket, so
+boot it out and delete it first.
+
+Upgrade with `brew upgrade vigil`, then `brew services restart vigil`. Remove with
+`brew services stop vigil` and `brew uninstall vigil`; the configuration, the state and the logs
+in your home directory stay.
+
+An agent run by root is not a Homebrew service: install the `.pkg` for it.
+
+## Without sudo
+
+An ordinary account can run its own agent, with no package and no `sudo`. Unpack the `.tar.gz` of the
+release, put `vigild` and `vigil` on your `PATH` (if Gatekeeper refuses them, run
+`xattr -d com.apple.quarantine vigild vigil`), then:
+
+    vigild configure
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/vigil.vigild.plist
+    vigil ui
+
+Instead of the launchd job, `vigild ~/.config/vigil/vigil.yaml` runs the agent in a terminal.
+
+| what | where |
+|---|---|
+| configuration | `~/.config/vigil/vigil.yaml`, `collectors/`, `suppressions/`, `reporters/`, `watch_fs.yaml` |
+| baselines, findings journal | `~/.local/state/vigil` |
+| the console socket | `~/.local/state/vigil/vigil.sock` |
+| what the daemon says about itself | `~/Library/Logs/vigil/vigild.log` |
+| the launchd job | `~/Library/LaunchAgents/vigil.vigild.plist`, in the `gui/<uid>` domain |
+
+Without root the agent does not see the processes and sockets of other accounts, the crontab of
+other accounts, the firewall, program launches or the container engines. Each collector that sees
+less says so itself, in the console and as `agent.collector.degraded`.
+
+An account's agent and the system agent can live on one Mac; the console opens the account's socket
+when it exists and the system one otherwise (`vigil ui --socket PATH` names one).
+
+An agent that was run without root before with a configuration that writes no `state_dir` kept its
+state under `/usr/local/var/lib/vigil`; it now starts a new baseline under `~/.local/state/vigil`.
+Write `state_dir: /usr/local/var/lib/vigil` in its configuration to keep the old one.
