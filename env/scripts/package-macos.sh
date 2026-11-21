@@ -275,7 +275,15 @@ check_pkg() {
             && printf '  ok    the %s script parses\n' "$script" \
             || { printf '  FAIL  the %s script does not parse\n' "$script"; failed=1; }
     done
-    "$work/payload/usr/local/sbin/vigild" configure --dry-run "$MACOS_ETC/vigil.yaml" 2>/dev/null \
+    local as_root=()
+    if [ "$(id -u)" -ne 0 ]; then
+        if sudo -n true 2>/dev/null; then
+            as_root=(sudo -n)
+        else
+            printf '  FAIL  vigild configure writes the layout of root only as root: run this as root, or after sudo -v\n'; failed=1
+        fi
+    fi
+    ${as_root[@]+"${as_root[@]}"} "$work/payload/usr/local/sbin/vigild" configure --dry-run "$MACOS_ETC/vigil.yaml" 2>/dev/null \
         | awk -v want="==> $MACOS_ETC/vigil.yaml <==" '/^==> .* <==$/ { inside = ($0 == want); next } inside' \
         > "$work/configured.yaml"
     if diff -u <(cat "$work/payload/usr/local/share/vigil/defaults/vigil.yaml"; echo) "$work/configured.yaml"; then
