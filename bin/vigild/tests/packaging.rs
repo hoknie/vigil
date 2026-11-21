@@ -450,14 +450,32 @@ fn the_formula_is_for_macos_only_from_the_version_the_archive_is_built_for() {
         .expect("the script names its deployment target");
 
     let name = match target.split('.').next().expect("a major") {
-        "11" => "big_sur",
-        "12" => "monterey",
-        "13" => "ventura",
-        "14" => "sonoma",
-        "15" => "sequoia",
+        "11" => None,
+        "12" => Some("monterey"),
+        "13" => Some("ventura"),
+        "14" => Some("sonoma"),
+        "15" => Some("sequoia"),
         other => panic!("name the release for macOS {other} in this test"),
     };
-    assert!(formula.contains("depends_on :macos\n"));
-    assert!(formula.contains(&format!("depends_on macos: :{name}")));
+    match name {
+        None => {
+            assert!(
+                formula.contains("depends_on :macos\n"),
+                "Big Sur is the oldest macOS Homebrew runs on, so the bare dependency already says it"
+            );
+            assert!(
+                !formula.contains("depends_on macos:"),
+                "brew audit refuses a minimum no older than the oldest macOS it runs on"
+            );
+        }
+        Some(name) => {
+            assert!(formula.contains(&format!("depends_on macos: :{name}\n")));
+            assert!(
+                !formula.contains("depends_on :macos\n"),
+                "brew audit refuses the bare dependency beside a minimum"
+            );
+        }
+    }
     assert!(!formula.contains("on_linux"));
+    assert!(!formula.contains("on_macos"));
 }

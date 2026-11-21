@@ -8,10 +8,6 @@ class Vigil < Formula
 
   depends_on :macos
 
-  on_macos do
-    depends_on macos: :big_sur
-  end
-
   def install
     sbin.install "vigild"
     bin.install "vigil"
