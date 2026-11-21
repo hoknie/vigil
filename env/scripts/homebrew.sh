@@ -16,6 +16,7 @@ VERSION="${VERSION:-$(awk '/^\[workspace\.package\]/{p=1} p && /^version *= *"/{
 [ -n "$VERSION" ] || { echo "homebrew: cannot read the version out of Cargo.toml" >&2; exit 2; }
 
 ARCHIVE_NAME="vigil_${VERSION}.macos.universal.tar.gz"
+WORK=""
 
 say() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 die() { printf 'homebrew: %s\n' "$*" >&2; exit 1; }
@@ -63,11 +64,11 @@ check() {
     [ -f "$archive" ] || archive="$RELEASE/$ARCHIVE_NAME"
     [ -f "$archive" ] || die "$ARCHIVE_NAME is missing: run 'env/scripts/package-macos.sh all' first"
 
-    local work; work="$(mktemp -d)"
+    local work; work="$(mktemp -d)"; WORK="$work"
     cleanup() {
         brew uninstall --formula --force "$LOCAL_TAP/vigil" >/dev/null 2>&1 || true
         brew untap "$LOCAL_TAP" >/dev/null 2>&1 || true
-        rm -rf "$work"
+        [ -z "$WORK" ] || rm -rf "$WORK"
     }
     trap cleanup EXIT
 
