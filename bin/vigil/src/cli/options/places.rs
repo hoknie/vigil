@@ -61,6 +61,7 @@ mod tests {
         true
     }
 
+    #[cfg(target_os = "macos")]
     fn nowhere(_: &Path) -> bool {
         false
     }
