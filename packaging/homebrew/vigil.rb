@@ -7,7 +7,10 @@ class Vigil < Formula
   license "Apache-2.0"
 
   depends_on :macos
-  depends_on macos: :big_sur
+
+  on_macos do
+    depends_on macos: :big_sur
+  end
 
   def install
     sbin.install "vigild"
