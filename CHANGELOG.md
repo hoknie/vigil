@@ -4,6 +4,14 @@ Every notable change of vigil. Sections are written by `env/scripts/changelog.sh
 Conventional Commits between release tags; the release on GitHub carries the section of its tag.
 The versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-11-22
+
+### Features
+
+- Added limited mode ([2770e10](https://github.com/hoknie/vigil/commit/2770e107746ebd0f9577c786665162936284a824))
+
+[Full diff](https://github.com/hoknie/vigil/compare/v1.2.0...v1.3.0)
+
 ## [1.2.0] - 2026-11-21
 
 ### Features
