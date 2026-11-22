@@ -22,11 +22,9 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       code: ${{ steps.window.outputs.code }}
-      sha: ${{ steps.window.outputs.sha }}
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: main
           fetch-depth: 0
 
       - name: Code that reached main in the last day
@@ -35,7 +33,6 @@ jobs:
           EVENT: ${{ github.event_name }}
         run: |
           sha="$(git rev-parse HEAD)"
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
           if [ "$EVENT" = workflow_dispatch ]; then
             echo "code=true" >> "$GITHUB_OUTPUT"
             echo "Started by hand: the full set runs on $sha." >> "$GITHUB_STEP_SUMMARY"
@@ -58,14 +55,11 @@ jobs:
     uses: ./.github/workflows/ci.yml
     with:
       set: full
-      ref: ${{ needs.changes.outputs.sha }}
 
   packages:
     needs: [changes, gate]
     if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/packages.yml
-    with:
-      ref: ${{ needs.changes.outputs.sha }}
 
   containers:
     needs: changes
@@ -73,8 +67,6 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.changes.outputs.sha }}
 
       - name: just
         run: cargo install just --locked --version 1.59.0
@@ -91,8 +83,6 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.changes.outputs.sha }}
 
       - uses: dtolnay/rust-toolchain@1.98.1
 

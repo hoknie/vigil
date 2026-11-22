@@ -2,10 +2,6 @@ name: Packages
 
 on:
   workflow_call:
-    inputs:
-      ref:
-        type: string
-        default: ''
 
 permissions:
   contents: read
@@ -27,8 +23,6 @@ jobs:
       TAG: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.ref }}
 
       - uses: dtolnay/rust-toolchain@1.98.1
         with:
@@ -87,8 +81,6 @@ jobs:
       TAG: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.ref }}
 
       - uses: dtolnay/rust-toolchain@1.98.1
         with:

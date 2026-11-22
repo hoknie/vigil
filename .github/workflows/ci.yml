@@ -9,9 +9,6 @@ on:
       set:
         type: string
         default: quick
-      ref:
-        type: string
-        default: ''
 
 permissions:
   contents: read
@@ -30,8 +27,6 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.ref }}
 
       - uses: dtolnay/rust-toolchain@1.98.1
         with:
@@ -61,8 +56,6 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.ref }}
 
       - uses: dtolnay/rust-toolchain@1.98.1
         with:
