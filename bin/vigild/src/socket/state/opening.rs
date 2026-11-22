@@ -21,6 +21,7 @@ impl State {
         let watching: Vec<CollectorStatus> = collectors
             .iter()
             .map(|(name, health)| CollectorStatus {
+                limit: None,
                 name: (*name).to_string(),
                 state: match health {
                     Health::Ok => CollectorState::Ok,
@@ -44,6 +45,7 @@ impl State {
             })
             .collect();
         let told_not_to = switched_off.iter().map(|(name, reason)| CollectorStatus {
+            limit: None,
             name: name.clone(),
             state: CollectorState::Off,
             reason: Some(reason.clone()),

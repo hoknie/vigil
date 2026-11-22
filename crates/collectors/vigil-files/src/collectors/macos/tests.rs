@@ -230,3 +230,28 @@ fn a_watch_list_on_a_mac_longer_than_the_ceiling_says_which_paths_are_not_watche
         "{why}"
     );
 }
+
+#[test]
+fn a_watched_file_this_account_may_not_open_is_a_limit_and_not_a_failure() {
+    let bench = Bench::new("refused");
+    let secret = bench.write("secret.conf", "token = 1\n");
+    fs::set_permissions(&secret, fs::Permissions::from_mode(0o000)).expect("sets the mode");
+    let collector = bench.named(std::slice::from_ref(&secret));
+
+    collector.collect().expect("reads");
+    let standing = collector.standing();
+
+    match this_account() {
+        0 => {
+            assert_eq!(standing.limit, None);
+            assert_eq!(standing.health, Health::Ok, "root opens a file of mode 000");
+        }
+        _ => {
+            assert_eq!(standing.health, Health::Ok);
+            let why = standing.limit.expect("a limit").to_string();
+            assert!(why.contains(&secret), "{why}");
+            assert!(why.contains("cannot be read by this account"), "{why}");
+            assert!(why.ends_with("; run as root"), "{why}");
+        }
+    }
+}

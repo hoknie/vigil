@@ -98,6 +98,7 @@ impl Palette {
     pub fn collector(self, state: &CollectorState) -> Style {
         match state {
             CollectorState::Ok => self.healthy(),
+            CollectorState::Limited => self.tint(Style::default(), Color::Cyan),
             CollectorState::Degraded => self.tint(Style::default(), Color::Yellow),
             CollectorState::Off => self.quiet(),
             _ => self.alarm(),
@@ -145,6 +146,7 @@ mod tests {
             monochrome.alarm(),
             monochrome.healthy(),
             monochrome.collector(&CollectorState::Ok),
+            monochrome.collector(&CollectorState::Limited),
             monochrome.collector(&CollectorState::Degraded),
             monochrome.collector(&CollectorState::Unavailable),
             monochrome.collector(&CollectorState::Off),

@@ -1,4 +1,4 @@
-use vigil_collect::{Collector, Health};
+use vigil_collect::{Collector, Standing};
 use vigil_module::{Module, Settings};
 use vigil_rules::RuleSet;
 
@@ -48,10 +48,10 @@ pub fn open(config: &Config) -> Result<(Vec<Watch>, Vec<String>), String> {
     Ok((watches, switched_off))
 }
 
-pub fn healths(watches: &[Watch]) -> Vec<(&'static str, Health)> {
+pub fn standings(watches: &[Watch]) -> Vec<(&'static str, Standing)> {
     watches
         .iter()
-        .map(|watch| (watch.name(), watch.health()))
+        .map(|watch| (watch.name(), watch.standing()))
         .collect()
 }
 
@@ -73,7 +73,7 @@ pub fn split(families: Vec<Family>, wanted: Option<&[String]>) -> (Vec<Family>, 
 
 #[cfg(test)]
 mod tests {
-    use vigil_collect::CollectError;
+    use vigil_collect::{CollectError, Health};
     use vigil_model::Snapshot;
 
     use super::*;
@@ -111,14 +111,31 @@ mod tests {
         let (watches, _) = open(&config).expect("the collectors open");
 
         assert!(!watches.is_empty());
-        for (name, health) in healths(&watches) {
-            match health {
+        let standings = standings(&watches);
+        for (name, standing) in &standings {
+            match &standing.health {
                 Health::Ok => {}
                 Health::Degraded(why) | Health::Unavailable(why) => {
                     assert!(!why.trim().is_empty(), "{name} says nothing about why")
                 }
             }
+            if let Some(limit) = &standing.limit {
+                assert!(
+                    !limit.said().trim().is_empty(),
+                    "{name} is limited and says nothing about what it is not shown"
+                );
+                assert!(
+                    !matches!(&standing.health, Health::Degraded(why) if why.contains("run as root")),
+                    "{name} tells a limit of the mode as a failure"
+                );
+            }
         }
+        assert!(
+            standings
+                .iter()
+                .any(|(name, standing)| *name == "processes" && standing.limit.is_some()),
+            "an ordinary account on a Mac is not shown the command lines of other accounts"
+        );
     }
 
     fn all() -> Vec<Family> {

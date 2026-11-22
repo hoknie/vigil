@@ -1,7 +1,7 @@
 use vigil_collect::Health;
 use vigil_model::Finding;
 
-use crate::helpers::{agent_finding, health, rfc3339};
+use crate::helpers::{account, agent_finding, health, rfc3339};
 use crate::types::Said;
 
 use super::Round;
@@ -27,28 +27,34 @@ impl Round {
         if self.watches[index].switched_off().is_some() {
             return Vec::new();
         }
-        let state_of_it = match self.watches[index].examine() {
-            Ok(state_of_it) => state_of_it,
+        let standing = match self.watches[index].examine() {
+            Ok(standing) => standing,
             Err(why) => {
                 self.failed(name, &why, said);
                 return Vec::new();
             }
         };
-        self.shared
-            .with(|state| state.record_health(name, &state_of_it));
+        let state_of_it = standing.health;
+        let limit = standing.limit.map(|limit| limit.said());
+        self.shared.with(|state| {
+            state.record_limit(name, limit.as_deref());
+            state.record_health(name, &state_of_it);
+        });
 
         let moved = said.health_moved(name, health::describe(&state_of_it));
         if !announce {
             return Vec::new();
         }
 
-        match &state_of_it {
+        let mut raised = match &state_of_it {
             Health::Ok => self.of_a_collector_that_is_well(name, said),
             Health::Degraded(why) => self.of_a_collector_that_is_not(name, why, false, said, moved),
             Health::Unavailable(why) => {
                 self.of_a_collector_that_is_not(name, why, true, said, moved)
             }
-        }
+        };
+        raised.extend(of_a_limit(name, limit, said));
+        raised
     }
 
     fn of_a_collector_that_is_well(&self, name: &'static str, said: &mut Said) -> Vec<Finding> {
@@ -94,5 +100,29 @@ impl Round {
         let fresh = self.remember(&raised);
         self.shared.with(|state| state.record_findings(&fresh));
         self.hand_over(&fresh);
+    }
+}
+
+fn of_a_limit(name: &'static str, limit: Option<String>, said: &mut Said) -> Vec<Finding> {
+    said.limit_confirmed(name);
+    match limit {
+        Some(limit) => {
+            if !said.limited(name, limit.clone()) {
+                return Vec::new();
+            }
+            eprintln!("{} collector {name}: limited — {limit}", rfc3339::now());
+            vec![agent_finding::collector_limited(
+                name,
+                &limit,
+                &account::named(),
+            )]
+        }
+        None => {
+            let Some(was) = said.unlimited(name) else {
+                return Vec::new();
+            };
+            eprintln!("{} collector {name}: no longer limited", rfc3339::now());
+            vec![agent_finding::collector_limit_lifted(name, &was)]
+        }
     }
 }

@@ -11,6 +11,10 @@ holds each one. A program that moves its ports is then one suppression entry, wr
 Established connections are kept as pairs: a program and the peer it talks to, outbound and
 inbound, with loopback set aside.
 
+On a Mac the agent may run as an ordinary account. macOS shows the open files of a process to
+its own account and to root only, so the sockets of every other account are not seen. The
+collector names that as a limit of the mode, beside a health that stays `ok`.
+
 ## What's inside
 
 | | |

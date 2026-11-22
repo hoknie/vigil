@@ -11,6 +11,10 @@ The console can close a listening socket or stop a program a person marked, with
 SIGKILL. That ability is off until the operator switches it on in this block, and every attempt
 is itself a finding.
 
+On a Mac run by an ordinary account, the command lines of other accounts' processes are kept by
+macOS for root. The collector names that as a limit of the mode, and a reading that went wrong
+stays `degraded`.
+
 ## What's inside
 
 | | |

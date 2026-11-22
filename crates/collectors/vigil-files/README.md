@@ -11,6 +11,10 @@ A walk has a ceiling of paths per reading and of bytes per file, so the cost sta
 agent's budget on any host. When a walk reaches a ceiling, the reading says what it left
 unwalked.
 
+On a Mac run by an ordinary account, a watched path the account may not open or list is a limit
+of the mode and says `run as root`. On Linux the agent runs as root, so every path it cannot read
+is a `degraded` health.
+
 ## What's inside
 
 | | |

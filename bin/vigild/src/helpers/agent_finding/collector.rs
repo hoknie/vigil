@@ -77,6 +77,72 @@ pub fn collector_recovered(collector: &str, was: &str) -> Finding {
     }
 }
 
+pub fn collector_limited(collector: &str, limit: &str, account: &str) -> Finding {
+    let now = rfc3339::now();
+
+    Finding {
+        event_id: uuid7::mint(),
+        finding_key: format!("agent.collector.limited|{collector}"),
+        kind: Kind::Known(KnownKind::AgentCollectorLimited),
+        severity: Severity::Low,
+        state: State::Open,
+        observed_at: now.clone(),
+        first_seen_at: now,
+        occurrences: 1,
+        title: format!(
+            "Collector {collector}: limited, part of what it watches is not shown to this account"
+        ),
+        subject: Subject {
+            object: "collector".into(),
+            key: json!({ "name": collector }),
+        },
+        before: None,
+        after: None,
+        evidence: vec![
+            Evidence {
+                kind: "note".into(),
+                value: limit.to_string(),
+            },
+            Evidence {
+                kind: "account".into(),
+                value: account.to_string(),
+            },
+        ],
+        redacted: Vec::new(),
+        rule: Some("collector_limits".into()),
+        labels: Default::default(),
+    }
+}
+
+pub fn collector_limit_lifted(collector: &str, was: &str) -> Finding {
+    let now = rfc3339::now();
+
+    Finding {
+        event_id: uuid7::mint(),
+        finding_key: format!("agent.collector.limited|{collector}"),
+        kind: Kind::Known(KnownKind::AgentCollectorLimitLifted),
+        severity: Severity::Info,
+        state: State::Open,
+        observed_at: now.clone(),
+        first_seen_at: now,
+        occurrences: 1,
+        title: format!("Collector {collector}: no longer limited"),
+        subject: Subject {
+            object: "collector".into(),
+            key: json!({ "name": collector }),
+        },
+        before: None,
+        after: None,
+        evidence: vec![Evidence {
+            kind: "was".into(),
+            value: was.to_string(),
+        }],
+        redacted: Vec::new(),
+        rule: Some("collector_limits".into()),
+        labels: Default::default(),
+    }
+}
+
 pub fn collector_failing(collector: &str, status: &CollectorStatus) -> Finding {
     let now = rfc3339::now();
     let mut evidence = vec![Evidence {

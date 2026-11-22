@@ -2,6 +2,7 @@ use vigil_collect::{Collector, Health, name_of_user, outside_the_sample, this_ac
 use vigil_model::{Golden, Shape, Snapshot};
 
 use super::UsersCollector;
+use super::health::judged;
 
 fn read() -> Snapshot {
     UsersCollector::new(|| "2026-09-19T12:00:00.000Z".to_string())
@@ -119,18 +120,78 @@ fn a_reading_of_macos_has_the_shape_of_the_reading_the_rules_and_the_console_wer
 
 #[test]
 fn an_agent_not_running_as_root_says_the_grants_of_sudo_are_out_of_its_sight() {
-    let health = UsersCollector::new(String::new).available();
+    let standing = UsersCollector::new(String::new).standing();
 
     match this_account() {
-        0 => assert_eq!(health, Health::Ok),
+        0 => assert_eq!(standing.limit, None),
         _ => {
-            let Health::Degraded(why) = health else {
-                panic!("{health:?}")
-            };
+            let why = standing.limit.expect("sudoers is root's alone").to_string();
             assert!(why.contains("/private/etc/sudoers"), "{why}");
             assert!(why.contains("run as root"), "{why}");
+            if let Health::Degraded(failure) = &standing.health {
+                assert!(
+                    !failure.contains("/private/etc/sudoers"),
+                    "a refusal to this account is a limit and nothing else: {failure}"
+                );
+            }
         }
     }
+}
+
+fn refused() -> std::io::Result<()> {
+    Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied))
+}
+
+#[test]
+fn a_sudoers_root_alone_reads_is_a_limit_of_an_account() {
+    let standing = judged(refused(), None, 501);
+
+    assert_eq!(standing.health, Health::Ok);
+    let why = standing.limit.expect("a limit").to_string();
+    assert!(
+        why.contains("/private/etc/sudoers is not readable"),
+        "{why}"
+    );
+}
+
+#[test]
+fn a_sudoers_refused_to_root_is_degraded() {
+    let standing = judged(refused(), None, 0);
+
+    assert_eq!(standing.limit, None);
+    let Health::Degraded(why) = standing.health else {
+        panic!("{:?}", standing.health)
+    };
+    assert!(
+        why.contains("/private/etc/sudoers could not be read"),
+        "{why}"
+    );
+}
+
+#[test]
+fn a_logins_source_that_fails_is_degraded_beside_the_limit() {
+    let standing = judged(refused(), Some("utmpx is not there".into()), 501);
+
+    assert_eq!(
+        standing.health,
+        Health::Degraded("utmpx is not there: who is logged in will be missing".into())
+    );
+    assert!(
+        standing.limit.is_some(),
+        "the limit stays beside the failure"
+    );
+}
+
+#[test]
+fn a_mac_with_no_sudoers_at_all_hides_nothing() {
+    let standing = judged(
+        Err(std::io::Error::from(std::io::ErrorKind::NotFound)),
+        None,
+        501,
+    );
+
+    assert_eq!(standing.health, Health::Ok);
+    assert_eq!(standing.limit, None);
 }
 
 #[test]

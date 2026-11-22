@@ -1,10 +1,10 @@
 use std::path::Path;
 
-use super::files::{Listed, files_in, listed, read_capped};
+use super::files::{Listed, Unread, files_in, listed, read_capped};
 use super::places::{CRON_TABLES, CRONTAB, PERIODIC_DIRECTORIES};
 use crate::parsers::{CronEntry, CronFormat, cron_script, parse_crontab};
 
-pub(super) fn read_cron() -> (Vec<CronEntry>, Option<String>) {
+pub(super) fn read_cron() -> (Vec<CronEntry>, Option<Unread>) {
     let mut jobs = Vec::new();
 
     if let Some(text) = text_of(Path::new(CRONTAB)) {

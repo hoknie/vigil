@@ -29,6 +29,8 @@ pub struct Round {
     pub meter: Meter,
     pub opening: Vec<Finding>,
     pub standing: Vec<(&'static str, String)>,
+    pub limits: Vec<(&'static str, String)>,
+    pub limits_before: Vec<(&'static str, String)>,
     pub followed: Followed,
     pub silences: Silences,
     pub retention_days: u32,
@@ -44,6 +46,12 @@ impl Round {
         );
         for (name, why) in std::mem::take(&mut self.standing) {
             said.opened(name, why);
+        }
+        for (name, was) in std::mem::take(&mut self.limits_before) {
+            said.limited_before(name, was);
+        }
+        for (name, limit) in std::mem::take(&mut self.limits) {
+            said.limited(name, limit);
         }
         let mut health = Due::new(HEALTH, HEALTH_EVERY_SECONDS, Instant::now());
         let mut retention = Due::new(

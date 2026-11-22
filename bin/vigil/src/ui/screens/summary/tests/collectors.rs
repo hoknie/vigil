@@ -199,3 +199,67 @@ fn the_mark_on_a_row_that_has_something_to_say_reads_the_same_with_no_colour() {
         "the mark is a character before it is a colour"
     );
 }
+
+fn with(
+    state: vigil_model::CollectorState,
+    reason: Option<&str>,
+    limit: Option<&str>,
+) -> crate::ui::View {
+    let mut view = fixture::view();
+    if let Some(status) = view.status.as_mut() {
+        status.agent.collectors[0].state = state;
+        status.agent.collectors[0].reason = reason.map(str::to_string);
+        status.agent.collectors[0].limit = limit.map(str::to_string);
+    }
+    view
+}
+
+#[test]
+fn a_limited_collector_says_limited_and_is_marked_apart_from_a_degraded_one() {
+    let view = with(
+        vigil_model::CollectorState::Limited,
+        None,
+        Some("the sockets of every other account are not seen"),
+    );
+
+    let folded = saying(&view, 80, false);
+    let row = folded
+        .lines()
+        .find(|line| line.contains("network"))
+        .unwrap_or_else(|| panic!("no row for network: {folded}"));
+    assert!(row.contains("limited"), "{row}");
+    assert!(row.contains('~'), "{row}");
+    assert!(
+        !row.contains('!'),
+        "a limit of the mode is marked apart from a failure, and without colour: {row}"
+    );
+
+    let unfolded = saying(&view, 80, true);
+    assert!(
+        unfolded.contains("not shown to this account: the sockets of every other account"),
+        "{unfolded}"
+    );
+}
+
+#[test]
+fn a_limited_and_degraded_collector_says_the_failure_first_and_the_limit_under_it() {
+    let view = with(
+        vigil_model::CollectorState::Degraded,
+        Some("the source of logins stopped answering"),
+        Some("/private/etc/sudoers is not readable"),
+    );
+
+    let page = saying(&view, 80, true);
+    let row = page
+        .lines()
+        .find(|line| line.contains("network"))
+        .unwrap_or_else(|| panic!("no row for network: {page}"));
+    assert!(row.contains("degraded") && row.contains('!'), "{row}");
+    let failure = page
+        .find("the source of logins stopped answering")
+        .unwrap_or_else(|| panic!("{page}"));
+    let limit = page
+        .find("not shown to this account: /private/etc/sudoers")
+        .unwrap_or_else(|| panic!("{page}"));
+    assert!(failure < limit, "{page}");
+}

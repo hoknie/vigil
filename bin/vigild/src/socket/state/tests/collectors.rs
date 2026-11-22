@@ -158,3 +158,93 @@ fn a_collector_that_has_not_read_yet_still_says_how_often_it_is_going_to() {
         "the daemon has not read once; there is nothing to date"
     );
 }
+
+fn watching(collectors: &[(&str, Health)]) -> State {
+    State::new(
+        Startup {
+            configuration_path: "/etc/vigil/vigil.yaml".to_string(),
+            host: fixture::host(),
+            started_at: "2026-11-22T08:00:00.000Z".into(),
+            interval_seconds: 30,
+            periods: collectors
+                .iter()
+                .map(|(name, _)| (name.to_string(), 30u32))
+                .collect(),
+            killing_from_the_console: false,
+            accounts_from_the_console: false,
+            units_from_the_console: false,
+        },
+        collectors,
+        &[],
+        &[],
+    )
+}
+
+#[test]
+fn a_limited_collector_is_answered_as_limited_with_what_it_is_not_shown() {
+    let mut state = watching(&[("network", Health::Ok)]);
+
+    state.record_limit(
+        "network",
+        Some("the sockets of every other account are not seen"),
+    );
+
+    let row = &state.agent().collectors[0];
+    assert_eq!(row.state, CollectorState::Limited);
+    assert_eq!(row.reason, None);
+    assert_eq!(
+        row.limit.as_deref(),
+        Some("the sockets of every other account are not seen")
+    );
+}
+
+#[test]
+fn a_failure_of_a_limited_collector_is_answered_as_the_failure_and_keeps_the_limit() {
+    let mut state = watching(&[("users", Health::Ok)]);
+    state.record_limit("users", Some("/private/etc/sudoers is not readable"));
+
+    state.record_health("users", &Health::Degraded("utmpx is not there".into()));
+
+    let row = &state.agent().collectors[0];
+    assert_eq!(row.state, CollectorState::Degraded);
+    assert_eq!(row.reason.as_deref(), Some("utmpx is not there"));
+    assert_eq!(
+        row.limit.as_deref(),
+        Some("/private/etc/sudoers is not readable")
+    );
+
+    state.record_health("users", &Health::Ok);
+    assert_eq!(state.agent().collectors[0].state, CollectorState::Limited);
+}
+
+#[test]
+fn a_reading_that_failed_turns_a_limited_collector_into_one_in_trouble() {
+    let mut state = watching(&[("network", Health::Ok)]);
+    state.record_limit(
+        "network",
+        Some("the sockets of every other account are not seen"),
+    );
+
+    state.record_failure(
+        "network",
+        "2026-11-22T08:00:30.000Z".into(),
+        "sysctl refused",
+    );
+
+    assert_eq!(state.agent().collectors[0].state, CollectorState::Degraded);
+}
+
+#[test]
+fn a_limit_that_went_away_leaves_the_collector_well() {
+    let mut state = watching(&[("network", Health::Ok)]);
+    state.record_limit(
+        "network",
+        Some("the sockets of every other account are not seen"),
+    );
+
+    state.record_limit("network", None);
+
+    let row = &state.agent().collectors[0];
+    assert_eq!(row.state, CollectorState::Ok);
+    assert_eq!(row.limit, None);
+}

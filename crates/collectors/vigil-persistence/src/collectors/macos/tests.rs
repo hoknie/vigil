@@ -5,7 +5,9 @@ use vigil_collect::{Collector, Health, name_of_user, outside_the_sample, this_ac
 use vigil_model::{Golden, Shape, Snapshot};
 
 use super::PersistenceCollector;
+use super::files::Unread;
 use super::files::files_in;
+use super::health::{Unseen, judged};
 use super::places::LAUNCHD_DIRECTORIES;
 use crate::parsers::{launchd_facts, parse_plist};
 
@@ -113,22 +115,122 @@ fn a_mac_is_read_with_no_row_of_a_thing_it_does_not_have() {
 
 #[test]
 fn an_agent_not_running_as_root_says_which_places_it_cannot_see() {
-    let health = PersistenceCollector::new(String::new).available();
+    let standing = PersistenceCollector::new(String::new).standing();
 
     match this_account() {
-        0 => assert!(
-            matches!(health, Health::Ok | Health::Degraded(_)),
-            "{health:?}"
-        ),
+        0 => assert_eq!(standing.limit, None),
         _ => {
-            let Health::Degraded(why) = health else {
-                panic!("{health:?}")
-            };
+            let why = standing
+                .limit
+                .expect("cron and the hooks are root's")
+                .to_string();
             assert!(why.contains("/usr/lib/cron/tabs"), "{why}");
             assert!(why.contains("login"), "{why}");
             assert!(why.contains("run as root"), "{why}");
+            if let Health::Degraded(failure) = &standing.health {
+                assert!(!failure.contains("/usr/lib/cron/tabs"), "{failure}");
+            }
         }
     }
+}
+
+fn nothing_unseen() -> Unseen {
+    Unseen {
+        jobs: 40,
+        unlisted: Vec::new(),
+        unopened: Vec::new(),
+        cron: None,
+        hooks: None,
+    }
+}
+
+fn refused_to(uid: u32, said: &str) -> Unread {
+    Unread::as_account(said.into(), std::io::ErrorKind::PermissionDenied, uid)
+}
+
+#[test]
+fn a_crontab_refused_to_an_account_is_a_limit() {
+    let standing = judged(Unseen {
+        cron: Some(refused_to(501, "/usr/lib/cron/tabs: Permission denied")),
+        ..nothing_unseen()
+    });
+
+    assert_eq!(standing.health, Health::Ok);
+    assert_eq!(
+        standing.limit.expect("a limit").to_string(),
+        "the crontab of every account is not read (/usr/lib/cron/tabs: Permission denied); the \
+         directory is root's alone; run as root"
+    );
+}
+
+#[test]
+fn a_crontab_refused_to_root_is_degraded() {
+    let standing = judged(Unseen {
+        cron: Some(refused_to(0, "/usr/lib/cron/tabs: Operation not permitted")),
+        ..nothing_unseen()
+    });
+
+    assert_eq!(standing.limit, None);
+    assert_eq!(
+        standing.health,
+        Health::Degraded(
+            "the crontab of every account is not read (/usr/lib/cron/tabs: Operation not \
+             permitted)"
+                .into()
+        )
+    );
+}
+
+#[test]
+fn hooks_and_agents_of_other_accounts_refused_to_an_account_are_one_limit() {
+    let standing = judged(Unseen {
+        unlisted: vec![refused_to(
+            501,
+            "/Users/bob/Library/LaunchAgents: Permission denied",
+        )],
+        hooks: Some(refused_to(501, "loginwindow.plist: Permission denied")),
+        ..nothing_unseen()
+    });
+
+    assert_eq!(standing.health, Health::Ok);
+    let why = standing.limit.expect("a limit").to_string();
+    assert!(why.contains("/Users/bob/Library/LaunchAgents"), "{why}");
+    assert!(why.contains("login and logout hooks"), "{why}");
+    assert!(why.ends_with("; run as root"), "{why}");
+}
+
+#[test]
+fn a_job_file_that_failed_to_open_is_degraded_beside_the_limit() {
+    let standing = judged(Unseen {
+        unopened: vec![Unread::Failed("/Library/LaunchDaemons/x.plist".into())],
+        cron: Some(refused_to(501, "/usr/lib/cron/tabs: Permission denied")),
+        ..nothing_unseen()
+    });
+
+    assert_eq!(
+        standing.health,
+        Health::Degraded(
+            "1 launchd job file(s) cannot be read, so what they start is unknown: \
+             /Library/LaunchDaemons/x.plist"
+                .into()
+        )
+    );
+    assert!(standing.limit.is_some());
+}
+
+#[test]
+fn a_mac_where_not_one_job_was_read_is_unavailable_whatever_the_reason() {
+    let standing = judged(Unseen {
+        jobs: 0,
+        cron: Some(refused_to(501, "/usr/lib/cron/tabs: Permission denied")),
+        ..nothing_unseen()
+    });
+
+    assert_eq!(standing.limit, None);
+    let Health::Unavailable(why) = standing.health else {
+        panic!("{:?}", standing.health)
+    };
+    assert!(why.contains("/usr/lib/cron/tabs"), "{why}");
 }
 
 #[test]

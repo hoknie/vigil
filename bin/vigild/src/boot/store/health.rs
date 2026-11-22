@@ -23,6 +23,33 @@ pub fn standing(store: &dyn Store, watches: &[Watch]) -> Vec<(&'static str, Stri
     complaints
 }
 
+pub fn limits_standing(store: &dyn Store, watches: &[Watch]) -> Vec<(&'static str, String)> {
+    let mut standing = Vec::new();
+
+    for watch in watches {
+        let key = format!("agent.collector.limited|{}", watch.name());
+        match store.open_finding(&key, KnownKind::AgentCollectorLimited.as_str()) {
+            Ok(None) => {}
+            Ok(Some(open)) => standing.push((watch.name(), limit_of(&open))),
+            Err(error) => eprintln!("  history: {key} not read ({error}), so it stays open"),
+        }
+    }
+
+    for (name, limit) in &standing {
+        eprintln!("  history: {name} — a limit from a previous run stands: {limit}");
+    }
+
+    standing
+}
+
+fn limit_of(open: &Finding) -> String {
+    open.evidence
+        .iter()
+        .find(|evidence| evidence.kind == "note")
+        .map(|evidence| evidence.value.clone())
+        .unwrap_or_else(|| open.title.clone())
+}
+
 pub fn renamed(store: &dyn Store, now: &str) -> Vec<String> {
     let mut said = Vec::new();
 
@@ -219,6 +246,57 @@ mod tests {
             "what stands stands whatever the collector says today: closing it is a decision \
              for the reading, not for the greeting"
         );
+        let _ = fs::remove_dir_all(&directory);
+    }
+
+    #[test]
+    fn a_limit_the_last_run_left_open_is_read_with_what_it_did_not_see() {
+        let directory = temporary_directory("limit-stands");
+        let store = FileStore::open(&directory).expect("opens");
+        store
+            .record(&agent_finding::collector_limited(
+                "launches",
+                "the spool of another account is not read",
+                "ann (uid 501)",
+            ))
+            .expect("records");
+
+        let limits = limits_standing(&store, &watching_a(Health::Ok));
+
+        assert_eq!(
+            limits,
+            [(
+                "launches",
+                "the spool of another account is not read".to_string()
+            )]
+        );
+        assert!(
+            standing(&store, &watching_a(Health::Ok)).is_empty(),
+            "a limit left open is not a failure left open"
+        );
+        let _ = fs::remove_dir_all(&directory);
+    }
+
+    #[test]
+    fn a_limit_the_last_run_already_lifted_does_not_stand() {
+        let directory = temporary_directory("limit-lifted");
+        let store = FileStore::open(&directory).expect("opens");
+        store
+            .record(&agent_finding::collector_limited(
+                "launches",
+                "the spool of another account is not read",
+                "ann (uid 501)",
+            ))
+            .expect("records");
+        store
+            .resolve(
+                "agent.collector.limited|launches",
+                KnownKind::AgentCollectorLimited.as_str(),
+                "2026-11-22T09:00:00.000Z",
+            )
+            .expect("resolves");
+
+        assert!(limits_standing(&store, &watching_a(Health::Ok)).is_empty());
         let _ = fs::remove_dir_all(&directory);
     }
 }

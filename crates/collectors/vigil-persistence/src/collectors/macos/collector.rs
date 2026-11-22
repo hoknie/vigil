@@ -1,4 +1,4 @@
-use vigil_collect::{CollectError, Collector, Health};
+use vigil_collect::{CollectError, Collector, Health, Standing};
 use vigil_model::{Rfc3339, Snapshot};
 
 use super::cron::read_cron;
@@ -23,7 +23,11 @@ impl Collector for PersistenceCollector {
     }
 
     fn available(&self) -> Health {
-        super::health::health()
+        super::health::standing().health
+    }
+
+    fn standing(&self) -> Standing {
+        super::health::standing()
     }
 
     fn collect(&self) -> Result<Snapshot, CollectError> {

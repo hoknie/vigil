@@ -246,6 +246,8 @@
             "agent.baseline.ready",
             "agent.collector.degraded",
             "agent.collector.recovered",
+            "agent.collector.limited",
+            "agent.collector.limit_lifted",
             "agent.buffer.dropping",
             "agent.buffer.drained",
             "agent.budget.exceeded",

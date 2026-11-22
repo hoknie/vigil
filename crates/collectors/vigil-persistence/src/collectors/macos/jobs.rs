@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use vigil_collect::name_of_user;
 
-use super::files::{Listed, listed, read_capped};
+use super::files::{Listed, Unread, listed, read_capped};
 use super::places::{HOMES, LAUNCHD_DIRECTORIES, NOT_A_PERSON, PERSONAL_AGENTS};
 use crate::parsers::{Domain, LaunchdJob, Scope, launchd_facts, parse_plist};
 
@@ -45,7 +45,7 @@ pub(super) fn homes() -> Vec<Home> {
     homes
 }
 
-pub(super) fn unseen(homes: &[Home]) -> (usize, Vec<String>, Vec<String>) {
+pub(super) fn unseen(homes: &[Home]) -> (usize, Vec<Unread>, Vec<Unread>) {
     let mut listed_files = 0usize;
     let mut unlisted = Vec::new();
     let mut unopened = Vec::new();
@@ -66,8 +66,10 @@ pub(super) fn unseen(homes: &[Home]) -> (usize, Vec<String>, Vec<String>) {
                     .filter(|path| path.extension().is_some_and(|kind| kind == PLIST))
                 {
                     listed_files += 1;
-                    if scope != Scope::Vendor && fs::File::open(path).is_err() {
-                        unopened.push(path.display().to_string());
+                    if scope != Scope::Vendor
+                        && let Err(error) = fs::File::open(path)
+                    {
+                        unopened.push(Unread::of(path.display().to_string(), &error));
                     }
                 }
             }
@@ -112,7 +114,7 @@ fn read_directory(
         Listed::Files(files) => files,
         Listed::Absent => return,
         Listed::Unreadable(why) => {
-            read.unread.push(why);
+            read.unread.push(why.said().to_string());
             return;
         }
     };

@@ -83,7 +83,13 @@ fn an_agent_that_does_not_say_which_file_it_read_is_answered_with_the_one_the_pa
     because(&mut app, "ours");
 
     let page = drawn_at(&app, 200, 30);
-    assert!(page.contains("/etc/vigil/vigil.yaml"), "{page}");
+    let installed = crate::cli::default_configuration();
+    assert!(
+        installed.ends_with("vigil/vigil.yaml"),
+        "the file this console falls back to is the configuration of this system or of this \
+         account: {installed}"
+    );
+    assert!(page.contains(&installed), "{installed}: {page}");
 }
 
 #[test]

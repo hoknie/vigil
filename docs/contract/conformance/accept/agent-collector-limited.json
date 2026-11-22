@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.10",
+  "batch_id": "019a8b2e-6f10-7c4d-9e21-3b5a7c9d1e02",
+  "sent_at": "2026-11-22T09:00:05.118Z",
+  "producer": {
+    "name": "vigil",
+    "version": "1.3.0"
+  },
+  "host": {
+    "host_id": "5d0e3b7a19c24f6e8a2b4c6d8e0f1a23",
+    "install_id": "019a8b2c-0a11-7e32-8b54-6c7d8e9f0a12",
+    "boot_id": "3C9E1A72-5B4D-4E86-9F10-2A3B4C5D6E7F",
+    "hostname": "studio-02.local",
+    "os": {
+      "family": "macos",
+      "distro": "macos",
+      "version": "27.2",
+      "kernel": "27.2.0",
+      "arch": "aarch64"
+    },
+    "addresses": [
+      "192.168.1.24"
+    ],
+    "tags": {
+      "host_id_source": "gethostuuid"
+    }
+  },
+  "findings": [
+    {
+      "event_id": "019a8b2e-6f12-7a30-8c41-5d6e7f8a9b01",
+      "finding_key": "agent.collector.limited|network",
+      "kind": "agent.collector.limited",
+      "severity": "low",
+      "state": "open",
+      "observed_at": "2026-11-22T08:12:40.511Z",
+      "first_seen_at": "2026-11-22T08:12:40.511Z",
+      "occurrences": 1,
+      "title": "Collector network: limited, part of what it watches is not shown to this account",
+      "subject": {
+        "type": "collector",
+        "key": {
+          "name": "network"
+        }
+      },
+      "evidence": [
+        {
+          "kind": "note",
+          "value": "the sockets held by the processes of every account other than ann (uid 501) are not seen at all, a port they listen on included: macOS lists the open files of a process only to its own account and to root; run as root"
+        },
+        {
+          "kind": "account",
+          "value": "ann (uid 501)"
+        }
+      ],
+      "rule": "collector_limits"
+    },
+    {
+      "event_id": "019a8b2e-6f13-7b11-9d52-6e7f8a9b0c12",
+      "finding_key": "agent.collector.limited|processes",
+      "kind": "agent.collector.limit_lifted",
+      "severity": "info",
+      "state": "open",
+      "observed_at": "2026-11-22T09:00:04.902Z",
+      "first_seen_at": "2026-11-22T09:00:04.902Z",
+      "occurrences": 1,
+      "title": "Collector processes: no longer limited",
+      "subject": {
+        "type": "collector",
+        "key": {
+          "name": "processes"
+        }
+      },
+      "evidence": [
+        {
+          "kind": "was",
+          "value": "the command lines of the processes of every account other than ann (uid 501) are not read, and a program of theirs whose file was deleted is not named: macOS shows the arguments of a process only to its own account and to root; run as root"
+        }
+      ],
+      "rule": "collector_limits"
+    }
+  ]
+}

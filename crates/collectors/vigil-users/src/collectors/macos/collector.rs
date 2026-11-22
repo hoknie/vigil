@@ -1,7 +1,7 @@
-use vigil_collect::{CollectError, Collector, Health};
+use vigil_collect::{CollectError, Collector, Health, Standing};
 use vigil_model::{Rfc3339, Snapshot};
 
-use super::health::health;
+use super::health::standing;
 use super::reading::reading;
 
 pub struct UsersCollector {
@@ -20,7 +20,11 @@ impl Collector for UsersCollector {
     }
 
     fn available(&self) -> Health {
-        health()
+        standing().health
+    }
+
+    fn standing(&self) -> Standing {
+        standing()
     }
 
     fn collect(&self) -> Result<Snapshot, CollectError> {

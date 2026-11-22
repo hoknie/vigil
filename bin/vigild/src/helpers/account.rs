@@ -9,6 +9,14 @@ pub fn this() -> Account {
     }
 }
 
+pub fn named() -> String {
+    let uid = this().uid;
+    match name_of(uid) {
+        Some(name) => format!("{name} (uid {uid})"),
+        None => format!("uid {uid}"),
+    }
+}
+
 pub fn name_of(uid: u32) -> Option<String> {
     let mut buffer = vec![0u8; 4096];
     loop {

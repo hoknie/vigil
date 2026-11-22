@@ -12,6 +12,10 @@ The console can edit and remove accounts, groups, grants in `/etc/sudoers.d`, ke
 That ability is off until the operator switches it on in this block, and every attempt is itself
 a finding.
 
+On a Mac run by an ordinary account, `/private/etc/sudoers` is root's to read. A refusal to the
+account is a limit of the mode; any other error reading it, and a source of logins that fails,
+is a `degraded` health.
+
 ## What's inside
 
 | | |

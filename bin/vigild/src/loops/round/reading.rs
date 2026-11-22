@@ -46,7 +46,11 @@ impl Round {
                 if had_failed {
                     eprintln!("{} collector reading again: {name}", rfc3339::now());
                 }
-                if had_failed || tick.changes > 0 || said.standing(name) {
+                if had_failed
+                    || tick.changes > 0
+                    || said.standing(name)
+                    || said.limit_unconfirmed(name)
+                {
                     self.take_health_of(index, said);
                 }
             }

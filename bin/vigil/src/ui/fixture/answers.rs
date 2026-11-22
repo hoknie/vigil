@@ -7,12 +7,16 @@ use vigil_model::{
 };
 
 use super::agent::{
-    agent, behind, caught_up, collector, collector_degraded, collector_failing, collector_off,
-    collector_unavailable, losing, reporter, reporter_failing,
+    agent, behind, caught_up, collector, collector_degraded, collector_failing, collector_limited,
+    collector_off, collector_unavailable, losing, reporter, reporter_failing,
 };
 use super::store::store;
 
 const SEES_LESS: &str = "the owner of one socket could not be resolved: some rows name no program";
+
+const NOT_SHOWN: &str = "/private/etc/sudoers is not readable: grants made there and in the files beside it will not be seen; run as root";
+
+const NOT_OPENED: &str = "/etc/master.passwd is there and cannot be read by this account, so a change to its content will pass unseen; run as root";
 
 const READING_NOBODY_REFRESHED: &str = "the reading this collector reads was written longer ago than it allows: what it says here may no longer be what the host does";
 
@@ -26,14 +30,17 @@ pub fn watching() -> AgentStatus {
     let mut watching = agent();
     watching.collectors = vec![
         collector("network", 30, 2, 0),
-        collector_degraded("users", 300, SEES_LESS),
+        vigil_model::CollectorStatus {
+            limit: Some(NOT_SHOWN.into()),
+            ..collector_degraded("users", 300, SEES_LESS)
+        },
         collector_unavailable("processes"),
         collector_failing("persistence"),
         collector_degraded("firewall", 60, READING_NOBODY_REFRESHED),
         collector("resources", 60, 5, 0),
         collector("containers", 60, 3, 0),
         collector("containers-engines", 120, 31, 0),
-        collector("files", 300, 8, 0),
+        collector_limited("files", 300, NOT_OPENED),
         collector_off(),
     ];
     watching.reporters = vec![reporter("ndjson"), reporter_failing("webhook")];

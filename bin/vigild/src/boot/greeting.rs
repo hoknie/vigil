@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use vigil_collect::Health;
+use vigil_collect::{Health, Standing};
 use vigil_model::{Finding, Host};
 
 use super::account::account_line;
@@ -17,6 +17,7 @@ pub struct Greeting<'a> {
     pub moved: Option<&'a Moved>,
     pub identity_said: &'a [String],
     pub watches: &'a [Watch],
+    pub standings: &'a [(&'static str, Standing)],
     pub switched_off: &'a [String],
     pub reporters: usize,
     pub damaged: usize,
@@ -57,21 +58,10 @@ impl Greeting<'_> {
             findings.push(agent_finding::clone_suspected(moved));
         }
 
-        for watch in self.watches {
-            match watch.health() {
-                Health::Ok => {}
-                Health::Degraded(detail) => findings.push(agent_finding::collector_degraded(
-                    watch.name(),
-                    &detail,
-                    false,
-                )),
-                Health::Unavailable(detail) => findings.push(agent_finding::collector_degraded(
-                    watch.name(),
-                    &detail,
-                    true,
-                )),
-            }
-        }
+        findings.extend(health_findings(
+            self.standings,
+            &crate::helpers::account::named(),
+        ));
         if self.damaged > 0 {
             findings.push(agent_finding::store_damaged(
                 "findings",
@@ -109,18 +99,56 @@ impl Greeting<'_> {
     }
 
     fn say_health(&self) {
-        for watch in self.watches {
-            match watch.health() {
-                Health::Ok => eprintln!("  collector {}: ok", watch.name()),
-                Health::Degraded(detail) => {
-                    eprintln!("  collector {}: degraded — {detail}", watch.name())
-                }
-                Health::Unavailable(detail) => {
-                    eprintln!("  collector {}: unavailable — {detail}", watch.name())
-                }
-            }
+        for line in health_lines(self.standings) {
+            eprintln!("{line}");
         }
     }
+}
+
+pub(super) fn health_lines(standings: &[(&'static str, Standing)]) -> Vec<String> {
+    let mut said = Vec::new();
+    for (name, standing) in standings {
+        match (&standing.health, &standing.limit) {
+            (Health::Ok, None) => said.push(format!("  collector {name}: ok")),
+            (Health::Ok, Some(_)) => {}
+            (Health::Degraded(detail), _) => {
+                said.push(format!("  collector {name}: degraded — {detail}"))
+            }
+            (Health::Unavailable(detail), _) => {
+                said.push(format!("  collector {name}: unavailable — {detail}"))
+            }
+        }
+        if let Some(limit) = &standing.limit {
+            said.push(format!("  collector {name}: limited — {limit}"));
+        }
+    }
+    said
+}
+
+pub(super) fn health_findings(
+    standings: &[(&'static str, Standing)],
+    account: &str,
+) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    for (name, standing) in standings {
+        match &standing.health {
+            Health::Ok => {}
+            Health::Degraded(detail) => {
+                findings.push(agent_finding::collector_degraded(name, detail, false))
+            }
+            Health::Unavailable(detail) => {
+                findings.push(agent_finding::collector_degraded(name, detail, true))
+            }
+        }
+        if let Some(limit) = &standing.limit {
+            findings.push(agent_finding::collector_limited(
+                name,
+                &limit.said(),
+                account,
+            ));
+        }
+    }
+    findings
 }
 
 pub(super) fn collectors(

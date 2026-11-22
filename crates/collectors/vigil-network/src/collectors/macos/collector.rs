@@ -1,8 +1,8 @@
-use vigil_collect::{CollectError, Collector, Health, arguments_buffer, names_of_users};
+use vigil_collect::{CollectError, Collector, Health, Standing, arguments_buffer, names_of_users};
 use vigil_model::{Rfc3339, Snapshot};
 
 use super::gathering::gathered;
-use super::health::health;
+use super::health::standing;
 use super::owners::described;
 use crate::parsers::{
     Connection, PairsReading, SocketRow, SocketsReading, UnixSocketRow, connection_pairs,
@@ -36,7 +36,11 @@ impl Collector for NetworkCollector {
     }
 
     fn available(&self) -> Health {
-        health()
+        standing().health
+    }
+
+    fn standing(&self) -> Standing {
+        standing()
     }
 
     fn collect(&self) -> Result<Snapshot, CollectError> {

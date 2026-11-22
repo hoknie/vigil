@@ -49,13 +49,7 @@ pub(super) fn collectors(
         let cells = row(collector);
         let said = says(collector);
         let mut drawn: Vec<(&str, usize)> = vec![
-            (
-                match said.is_empty() {
-                    true => "",
-                    false => MARK,
-                },
-                1,
-            ),
+            (mark(collector, &said), 1),
             (&collector.name, 10),
             (collector.state.as_str(), 11),
             (&cells.every, 12),
@@ -92,12 +86,29 @@ pub(super) fn collectors(
 
 pub(super) const MARK: &str = "!";
 
+pub(super) const LIMITED: &str = "~";
+
+pub(super) const NOT_SHOWN: &str = "not shown to this account";
+
+fn mark(collector: &CollectorStatus, said: &[String]) -> &'static str {
+    match (said.is_empty(), collector.state.is_limited()) {
+        (true, _) => "",
+        (false, true) => LIMITED,
+        (false, false) => MARK,
+    }
+}
+
 pub(super) fn says(collector: &CollectorStatus) -> Vec<String> {
     let mut said = Vec::new();
     if let Some(reason) = collector.reason.as_deref()
         && !reason.is_empty()
     {
         said.push(reason.to_string());
+    }
+    if let Some(limit) = collector.limit.as_deref()
+        && !limit.is_empty()
+    {
+        said.push(format!("{NOT_SHOWN}: {limit}"));
     }
     if collector.skipped > 0 {
         said.push(skipped(collector));

@@ -12,6 +12,7 @@ pub fn collector_off() -> CollectorStatus {
              looking at what it looks at: a decision somebody made, not a failure"
                 .into(),
         ),
+        limit: None,
         last_run_at: None,
         duration_ms: None,
         items: 0,
@@ -30,6 +31,7 @@ pub fn collector(name: &str, every_seconds: u32, items: usize, skipped: u64) -> 
         name: name.into(),
         state: CollectorState::Ok,
         reason: None,
+        limit: None,
         last_run_at: Some("2026-09-09T09:00:00.000Z".into()),
         duration_ms: Some(5),
         items,
@@ -48,6 +50,7 @@ pub fn collector_degraded(name: &str, every_seconds: u32, reason: &str) -> Colle
         name: name.into(),
         state: CollectorState::Degraded,
         reason: Some(reason.into()),
+        limit: None,
         last_run_at: None,
         duration_ms: None,
         items: 0,
@@ -61,10 +64,19 @@ pub fn collector_degraded(name: &str, every_seconds: u32, reason: &str) -> Colle
     }
 }
 
+pub fn collector_limited(name: &str, every_seconds: u32, limit: &str) -> CollectorStatus {
+    CollectorStatus {
+        state: CollectorState::Limited,
+        limit: Some(limit.into()),
+        ..collector(name, every_seconds, 8, 0)
+    }
+}
+
 pub fn collector_failing(name: &str) -> CollectorStatus {
     CollectorStatus {
         last_error: Some("not permitted to read /proc/modules".into()),
         reason: Some("not permitted to read /proc/modules".into()),
+        limit: None,
         state: CollectorState::Degraded,
         failures: 1,
         ..collector(name, 300, 7, 0)
@@ -77,6 +89,7 @@ pub fn collector_unavailable(name: &str) -> CollectorStatus {
         reason: Some(
             "auditd is not running on this host, so nothing is delivering launches".into(),
         ),
+        limit: None,
         last_run_at: None,
         duration_ms: None,
         next_run_at: None,

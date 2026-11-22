@@ -20,6 +20,10 @@ pub(super) fn status(view: &View, width: u16) -> String {
         .iter()
         .filter(|collector| collector.state == vigil_model::CollectorState::Off)
         .count();
+    let limited = collectors
+        .iter()
+        .filter(|collector| collector.state.is_limited())
+        .count();
     let by_severity = match status.agent.findings.by_severity.is_empty() {
         true => String::new(),
         false => format!(
@@ -39,11 +43,19 @@ pub(super) fn status(view: &View, width: u16) -> String {
     if let Some(trouble) = view.stale() {
         parts.push(format!("NOT ANSWERING · {}", trouble.headline()));
     }
-    let health = match (unwell, off) {
-        (0, 0) => "all reading".to_string(),
-        (0, off) => format!("{} reading, {off} off", collectors.len() - off),
-        (unwell, 0) => format!("{unwell} not reading everything"),
-        (unwell, off) => format!("{unwell} not reading everything, {off} off"),
+    let health = match (unwell, limited, off) {
+        (0, 0, 0) => "all reading".to_string(),
+        (0, 0, off) => format!("{} reading, {off} off", collectors.len() - off),
+        (unwell, limited, off) => [
+            (unwell, "not reading everything"),
+            (limited, "limited"),
+            (off, "off"),
+        ]
+        .iter()
+        .filter(|(count, _)| *count > 0)
+        .map(|(count, what)| format!("{count} {what}"))
+        .collect::<Vec<_>>()
+        .join(", "),
     };
     parts.push(format!("{} collector(s), {health}", collectors.len()));
     parts.push(format!(

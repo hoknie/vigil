@@ -43,6 +43,16 @@
         "from": "the name this build gives the collector"
       }
     },
+    "collector-limited|files": {
+      "every_seconds": {
+        "value": 300,
+        "from": "the period the collectors of this build declare for files"
+      },
+      "name": {
+        "value": "files",
+        "from": "the name this build gives the collector"
+      }
+    },
     "collector-off|launches": {
       "name": {
         "value": "launches",
@@ -66,16 +76,6 @@
       },
       "name": {
         "value": "containers-engines",
-        "from": "the name this build gives the collector"
-      }
-    },
-    "collector-ok|files": {
-      "every_seconds": {
-        "value": 300,
-        "from": "the period the collectors of this build declare for files"
-      },
-      "name": {
-        "value": "files",
         "from": "the name this build gives the collector"
       }
     },

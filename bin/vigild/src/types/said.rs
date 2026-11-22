@@ -1,10 +1,12 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Default)]
 pub struct Said {
     failures: BTreeMap<&'static str, String>,
     health: BTreeMap<&'static str, String>,
     standing: BTreeMap<&'static str, String>,
+    limits: BTreeMap<&'static str, String>,
+    unconfirmed: BTreeSet<&'static str>,
 }
 
 impl Said {
@@ -20,6 +22,8 @@ impl Said {
             failures: BTreeMap::new(),
             health,
             standing,
+            limits: BTreeMap::new(),
+            unconfirmed: BTreeSet::new(),
         }
     }
 
@@ -58,6 +62,27 @@ impl Said {
 
     pub fn closed(&mut self, collector: &'static str) -> Option<String> {
         self.standing.remove(collector)
+    }
+
+    pub fn limited(&mut self, collector: &'static str, words: String) -> bool {
+        self.limits.insert(collector, words.clone()).as_deref() != Some(words.as_str())
+    }
+
+    pub fn limited_before(&mut self, collector: &'static str, words: String) {
+        self.limits.insert(collector, words);
+        self.unconfirmed.insert(collector);
+    }
+
+    pub fn limit_unconfirmed(&self, collector: &'static str) -> bool {
+        self.unconfirmed.contains(collector)
+    }
+
+    pub fn limit_confirmed(&mut self, collector: &'static str) {
+        self.unconfirmed.remove(collector);
+    }
+
+    pub fn unlimited(&mut self, collector: &'static str) -> Option<String> {
+        self.limits.remove(collector)
     }
 }
 
@@ -150,5 +175,34 @@ mod tests {
             !said.reading_again("network"),
             "and the readings after that are not"
         );
+    }
+
+    #[test]
+    fn a_limit_that_did_not_move_is_not_news_and_one_that_moved_is() {
+        let mut said = Said::default();
+
+        assert!(said.limited("network", "the sockets of bob".into()));
+        assert!(!said.limited("network", "the sockets of bob".into()));
+        assert!(said.limited("network", "the sockets of bob and eve".into()));
+        assert_eq!(
+            said.unlimited("network").as_deref(),
+            Some("the sockets of bob and eve")
+        );
+        assert_eq!(said.unlimited("network"), None);
+    }
+
+    #[test]
+    fn a_limit_left_by_the_previous_run_is_looked_at_once_and_then_trusted() {
+        let mut said = Said::default();
+
+        said.limited_before("network", "the sockets of bob".into());
+        assert!(said.limit_unconfirmed("network"));
+        assert!(
+            !said.limited("network", "the sockets of bob".into()),
+            "the limit the previous run left is the one this run sees: nothing to say"
+        );
+
+        said.limit_confirmed("network");
+        assert!(!said.limit_unconfirmed("network"));
     }
 }

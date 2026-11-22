@@ -582,6 +582,11 @@ wrong shape.
 - **"Could not read" and "empty" are distinct results.** Every collector has a `Health`, and
   every snapshot element carries an incompleteness marker. A silent zero reads as "no attack",
   which is the worst possible answer.
+- **A limit of the mode is a third result.** A refusal to an agent that is not root, from a
+  source root would read, is a `Limit`: the collector is `limited`, the finding is
+  `agent.collector.limited` under a key of its own, closed by `agent.collector.limit_lifted`.
+  `degraded` stays for a reading that went wrong, so it stays rare. What root is refused is a
+  failure (ADR-0074).
 - **An open door in a closed vocabulary.** `Kind::Unknown`, `Severity::Unknown`,
   `CollectorState::Unknown`: a receiver one version behind must **display** a value it does not
   recognise and keep the record.

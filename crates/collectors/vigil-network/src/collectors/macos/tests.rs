@@ -171,14 +171,20 @@ fn every_row_is_keyed_the_way_the_rules_read_it() {
 
 #[test]
 fn an_agent_not_running_as_root_says_so_and_says_whose_sockets_it_cannot_see() {
-    let health = NetworkCollector::new(String::new).available();
+    let standing = NetworkCollector::new(String::new).standing();
 
+    assert_eq!(
+        standing.health,
+        Health::Ok,
+        "what this account is not shown is a limit of the mode, and the reading itself is whole"
+    );
     match this_account() {
-        0 => assert_eq!(health, Health::Ok),
+        0 => assert_eq!(standing.limit, None),
         me => {
-            let Health::Degraded(why) = health else {
-                panic!("{health:?}")
-            };
+            let why = standing
+                .limit
+                .expect("another account runs a process here")
+                .to_string();
             assert!(why.contains("run as root"), "{why}");
             assert!(why.contains(&format!("uid {me}")), "{why}");
         }
@@ -186,17 +192,20 @@ fn an_agent_not_running_as_root_says_so_and_says_whose_sockets_it_cannot_see() {
 }
 
 #[test]
-fn the_words_of_an_agent_that_cannot_see_every_socket_name_what_it_cannot_see() {
-    assert_eq!(shown_to(0, true), Health::Ok);
-    assert_eq!(shown_to(501, false), Health::Ok);
+fn root_is_neither_limited_nor_degraded() {
+    assert_eq!(shown_to(0, true), None);
+    assert_eq!(shown_to(501, false), None);
+}
+
+#[test]
+fn an_account_that_sees_other_accounts_is_limited_and_healthy() {
+    let limit = shown_to(3_999_999_999, true).expect("the sockets of other accounts are not seen");
+
     assert_eq!(
-        shown_to(3_999_999_999, true),
-        Health::Degraded(
-            "the sockets held by the processes of every account other than uid 3999999999 are \
-             not seen at all, a port they listen on included: macOS lists the open files of a \
-             process only to its own account and to root; run as root"
-                .into()
-        ),
+        limit.to_string(),
+        "the sockets held by the processes of every account other than uid 3999999999 are \
+         not seen at all, a port they listen on included: macOS lists the open files of a \
+         process only to its own account and to root; run as root",
         "the words stay the same from one reading to the next, and a port of another account \
          is said to be missing rather than shown as closed"
     );

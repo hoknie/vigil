@@ -21,6 +21,11 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let (mut watches, switched_off) = watches::open(&config)?;
     let store = history::open(state_dir)?;
     let schedule = schedule::of(&config, &watches, &host.host_id);
+    let standings = watches::standings(&watches);
+    let healths: Vec<(&'static str, vigil_collect::Health)> = standings
+        .iter()
+        .map(|(name, standing)| (*name, standing.health.clone()))
+        .collect();
 
     let shared = Shared::new(State::new(
         Startup {
@@ -37,10 +42,17 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
             accounts_from_the_console: config.accounts.from_the_console,
             units_from_the_console: config.units.from_the_console,
         },
-        &watches::healths(&watches),
+        &healths,
         &reporters::names(&reporters),
         &switched_off_reasons(&config, &switched_off),
     ));
+
+    shared.with(|state| {
+        for (name, standing) in &standings {
+            let limit = standing.limit.as_ref().map(|limit| limit.said());
+            state.record_limit(name, limit.as_deref());
+        }
+    });
 
     let greeting = greeting::Greeting {
         config_path,
@@ -49,6 +61,7 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         moved: described.moved.as_ref(),
         identity_said: &described.said,
         watches: &watches,
+        standings: &standings,
         switched_off: &switched_off,
         reporters: reporters.len(),
         damaged: store.damaged_on_open(),
@@ -67,6 +80,11 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
 
     let mut opening = at_start;
     let standing = health::standing(&store, &watches);
+    let limits_before = health::limits_standing(&store, &watches);
+    let limits: Vec<(&'static str, String)> = standings
+        .iter()
+        .filter_map(|(name, standing)| standing.limit.as_ref().map(|limit| (*name, limit.said())))
+        .collect();
     for (reporter, lines) in delivery.damaged() {
         opening.push(agent_finding::store_damaged(
             &format!("outgoing/{reporter}"),
@@ -93,6 +111,8 @@ pub fn run(config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         meter: Meter::default(),
         opening,
         standing,
+        limits,
+        limits_before,
         followed,
         silences,
         retention_days: config.retention_days,

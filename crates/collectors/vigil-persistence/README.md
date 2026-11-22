@@ -11,6 +11,11 @@ profiles, launchd jobs — and compares each reading with the one before.
 From the console an operator can stop, start, disable, enable, mask and unmask a unit or a timer,
 and comment a cron line out and back in. That ability is off until switched on in this block.
 
+On a Mac run by an ordinary account, the crontabs, the login and logout hooks and the launchd
+jobs of other accounts are root's to read. Each refusal to the account is a limit of the mode; a
+job file that fails for another reason is a `degraded` health, and a Mac where no job reads at
+all is `unavailable`.
+
 ## What's inside
 
 | | |

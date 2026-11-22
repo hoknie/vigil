@@ -1,6 +1,6 @@
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
-use vigil_collect::{Collector, Health};
+use vigil_collect::{Collector, Health, Standing};
 use vigil_model::{Finding, Snapshot};
 use vigil_rules::{RuleContext, RuleSet, diff};
 
@@ -60,25 +60,29 @@ impl Watch {
     }
 
     pub fn health(&self) -> Health {
+        self.standing().health
+    }
+
+    pub fn standing(&self) -> Standing {
         if let Some(why) = &self.off {
-            return Health::Unavailable(why.clone());
+            return Standing::of(Health::Unavailable(why.clone()));
         }
         let collector = &self.collector;
-        catch_unwind(AssertUnwindSafe(|| collector.available())).unwrap_or_else(|payload| {
-            Health::Unavailable(format!(
+        catch_unwind(AssertUnwindSafe(|| collector.standing())).unwrap_or_else(|payload| {
+            Standing::of(Health::Unavailable(format!(
                 "{}: the collector panicked: {}",
                 collector.name(),
                 panic::message(payload.as_ref())
-            ))
+            )))
         })
     }
 
-    pub fn examine(&mut self) -> Result<Health, String> {
+    pub fn examine(&mut self) -> Result<Standing, String> {
         if let Some(why) = &self.off {
             return Err(why.clone());
         }
         let collector = &self.collector;
-        catch_unwind(AssertUnwindSafe(|| collector.available()))
+        catch_unwind(AssertUnwindSafe(|| collector.standing()))
             .map_err(|payload| self.switch_off(payload.as_ref()))
     }
 

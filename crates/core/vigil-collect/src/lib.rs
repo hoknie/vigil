@@ -14,9 +14,9 @@ pub use helpers::{
 };
 #[cfg(target_os = "macos")]
 pub use helpers::{
-    arguments_buffer, arguments_of, executable_of, mounted, name_of_user, names_of_users,
-    process_entry, process_table, processes_running, program_of, sysctl_into, sysctl_named,
-    sysctl_numbered, this_account,
+    arguments_buffer, arguments_of, denied_to, denied_to_this_account, executable_of, mounted,
+    name_of_user, named_account, names_of_users, process_entry, process_table, processes_running,
+    program_of, sysctl_into, sysctl_named, sysctl_numbered, this_account,
 };
 pub use parsers::{
     PROCESS_ENTRY_BYTES, PasswdEntry, parse_passwd, parse_passwd_entries, parse_process_arguments,
@@ -24,6 +24,6 @@ pub use parsers::{
 };
 pub use ports::Collector;
 pub use types::{
-    CollectError, Health, KnownCollector, Mounted, Presence, ProcessArguments, ProcessEntry,
-    Program,
+    CollectError, Health, KnownCollector, Limit, Mounted, Presence, ProcessArguments, ProcessEntry,
+    Program, Standing,
 };

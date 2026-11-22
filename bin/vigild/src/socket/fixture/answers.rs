@@ -16,6 +16,10 @@ const UNAVAILABLE: &str = "auditd is not running on this host, so nothing is del
 
 const FAILED: &str = "not permitted to read /proc/modules";
 
+const NOT_SHOWN: &str = "/private/etc/sudoers is not readable: grants made there and in the files beside it will not be seen; run as root";
+
+const NOT_OPENED: &str = "/etc/master.passwd is there and cannot be read by this account, so a change to its content will pass unseen; run as root";
+
 const NO_RULESET_YET: &str = "the ruleset in /var/lib/vigil/firewall/ruleset.json was written 214 seconds ago, more than the 120 this collector allows: what it says about this host may have been true and no longer is";
 
 pub fn store() -> StoreStatus {
@@ -108,6 +112,8 @@ pub fn every_state() -> State {
         &crate::socket::switched_off_reasons(&crate::Config::default(), &["launches".to_string()]),
     );
 
+    state.record_limit("users", Some(NOT_SHOWN));
+    state.record_limit("files", Some(NOT_OPENED));
     state.record_reading(reading(snapshot()));
     state.record_reading(reading_of("persistence", snapshot()));
     state.record_reading(reading_of("resources", snapshot()));

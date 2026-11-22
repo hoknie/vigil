@@ -11,6 +11,8 @@ pub struct CollectorStatus {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub limit: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_run_at: Option<Rfc3339>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub duration_ms: Option<u64>,
@@ -32,6 +34,7 @@ pub struct CollectorStatus {
 #[serde(from = "String", into = "String")]
 pub enum CollectorState {
     Ok,
+    Limited,
     Degraded,
     Unavailable,
     Off,
@@ -42,6 +45,7 @@ impl CollectorState {
     pub fn as_str(&self) -> &str {
         match self {
             CollectorState::Ok => "ok",
+            CollectorState::Limited => "limited",
             CollectorState::Degraded => "degraded",
             CollectorState::Unavailable => "unavailable",
             CollectorState::Off => "off",
@@ -50,7 +54,14 @@ impl CollectorState {
     }
 
     pub fn is_trouble(&self) -> bool {
-        !matches!(self, CollectorState::Ok | CollectorState::Off)
+        !matches!(
+            self,
+            CollectorState::Ok | CollectorState::Limited | CollectorState::Off
+        )
+    }
+
+    pub fn is_limited(&self) -> bool {
+        matches!(self, CollectorState::Limited)
     }
 }
 
@@ -64,6 +75,7 @@ impl From<String> for CollectorState {
     fn from(text: String) -> Self {
         match text.as_str() {
             "ok" => CollectorState::Ok,
+            "limited" => CollectorState::Limited,
             "degraded" => CollectorState::Degraded,
             "unavailable" => CollectorState::Unavailable,
             "off" => CollectorState::Off,
@@ -97,6 +109,7 @@ mod tests {
     fn the_known_states_round_trip_through_their_wire_form() {
         for state in [
             CollectorState::Ok,
+            CollectorState::Limited,
             CollectorState::Degraded,
             CollectorState::Unavailable,
             CollectorState::Off,
@@ -127,6 +140,7 @@ mod tests {
             name: "network".into(),
             state: CollectorState::Ok,
             reason: None,
+            limit: None,
             last_run_at: None,
             duration_ms: None,
             items: 0,
@@ -144,6 +158,51 @@ mod tests {
         assert!(wire.get("every_seconds").is_none());
         assert!(wire.get("next_run_at").is_none());
         assert_eq!(wire["skipped"], 0);
+    }
+
+    #[test]
+    fn a_status_without_a_limit_is_read_as_before() {
+        let from_a_daemon_of_the_previous_version = r#"{
+            "name": "network", "state": "degraded", "reason": "one owner unresolved",
+            "items": 4, "readings": 9, "failures": 0, "baseline": true
+        }"#;
+
+        let status: CollectorStatus =
+            serde_json::from_str(from_a_daemon_of_the_previous_version).expect("reads");
+
+        assert_eq!(status.state, CollectorState::Degraded);
+        assert_eq!(status.limit, None);
+        assert!(
+            serde_json::to_value(&status)
+                .expect("serialises")
+                .get("limit")
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn a_console_of_the_previous_version_reads_limited_as_an_unknown_state_and_ignores_the_limit() {
+        let from_this_daemon = serde_json::json!({
+            "name": "network", "state": "limited",
+            "limit": "the sockets of every other account are not seen",
+            "items": 4, "readings": 9, "failures": 0, "baseline": true,
+            "a_field_a_later_daemon_adds": 1
+        });
+
+        let status: CollectorStatus = serde_json::from_value(from_this_daemon)
+            .expect("a field it does not know is not a refusal");
+        assert_eq!(status.state, CollectorState::Limited);
+
+        let older: CollectorState = "limited".to_string().into();
+        assert_eq!(older.as_str(), "limited");
+    }
+
+    #[test]
+    fn a_limited_collector_reads_everything_it_is_shown_and_is_not_in_trouble() {
+        assert!(!CollectorState::Limited.is_trouble());
+        assert!(CollectorState::Limited.is_limited());
+        assert!(!CollectorState::Degraded.is_limited());
+        assert!(!CollectorState::Unknown("limited-ish".into()).is_limited());
     }
 
     #[test]

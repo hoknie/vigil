@@ -21,9 +21,9 @@ pub use hex::hex;
 pub use jitter::steadied;
 #[cfg(target_os = "macos")]
 pub use macos::{
-    arguments_buffer, arguments_of, executable_of, mounted, name_of_user, names_of_users,
-    process_entry, process_table, processes_running, program_of, sysctl_into, sysctl_named,
-    sysctl_numbered, this_account,
+    arguments_buffer, arguments_of, denied_to, denied_to_this_account, executable_of, mounted,
+    name_of_user, named_account, names_of_users, process_entry, process_table, processes_running,
+    program_of, sysctl_into, sysctl_named, sysctl_numbered, this_account,
 };
 pub use private_tmp::shown_to_the_agent;
 pub use sample::outside_the_sample;

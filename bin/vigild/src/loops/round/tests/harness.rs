@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 
 use serde_json::json;
-use vigil_collect::{CollectError, Collector, Health};
+use vigil_collect::{CollectError, Collector, Health, Limit, Standing};
 use vigil_model::{CollectorState, Finding, Snapshot};
 use vigil_module::{Module, Settings};
 use vigil_store::FileStore;
@@ -17,6 +17,7 @@ use crate::loops::{Round, Watch};
 
 pub struct Scripted {
     pub health: Mutex<Health>,
+    pub limit: Mutex<Option<String>>,
     pub readings: Mutex<Vec<Snapshot>>,
     pub asked: AtomicUsize,
 }
@@ -25,6 +26,7 @@ impl Scripted {
     fn new(health: Health, readings: Vec<Snapshot>) -> Self {
         Scripted {
             health: Mutex::new(health),
+            limit: Mutex::new(None),
             readings: Mutex::new(readings),
             asked: AtomicUsize::new(0),
         }
@@ -39,6 +41,16 @@ impl Collector for Scripted {
     fn available(&self) -> Health {
         self.asked.fetch_add(1, Ordering::Relaxed);
         self.health.lock().expect("not poisoned").clone()
+    }
+
+    fn standing(&self) -> Standing {
+        let limit = self
+            .limit
+            .lock()
+            .expect("not poisoned")
+            .clone()
+            .and_then(|said| Limit::of(vec![said]));
+        Standing::limited(self.available(), limit)
     }
 
     fn collect(&self) -> Result<Snapshot, CollectError> {
@@ -109,6 +121,9 @@ pub fn watching_beside(
         fn available(&self) -> Health {
             self.0.available()
         }
+        fn standing(&self) -> Standing {
+            self.0.standing()
+        }
         fn collect(&self) -> Result<Snapshot, CollectError> {
             self.0.collect()
         }
@@ -172,6 +187,8 @@ pub fn watching_beside(
             meter: Meter::default(),
             opening: Vec::new(),
             standing: Vec::new(),
+            limits: Vec::new(),
+            limits_before: Vec::new(),
             followed: Followed::nothing(),
             silences: Silences::nothing(),
             retention_days: 90,

@@ -97,14 +97,20 @@ fn two_readings_a_moment_apart_describe_the_same_host() {
 
 #[test]
 fn an_agent_not_running_as_root_says_so_and_says_whose_processes_it_cannot_read() {
-    let health = ProcessesCollector::new(at_noon).available();
+    let standing = ProcessesCollector::new(at_noon).standing();
 
+    assert_eq!(
+        standing.health,
+        Health::Ok,
+        "what this account is not shown is a limit of the mode, and the reading itself is whole"
+    );
     match this_account() {
-        0 => assert_eq!(health, Health::Ok),
+        0 => assert_eq!(standing.limit, None),
         me => {
-            let Health::Degraded(why) = health else {
-                panic!("{health:?}")
-            };
+            let why = standing
+                .limit
+                .expect("another account runs a process here")
+                .to_string();
             assert!(why.contains("run as root"), "{why}");
             assert!(why.contains(&format!("uid {me}")), "{why}");
         }
@@ -112,16 +118,21 @@ fn an_agent_not_running_as_root_says_so_and_says_whose_processes_it_cannot_read(
 }
 
 #[test]
-fn the_words_of_an_agent_that_cannot_read_every_process_name_the_account_it_runs_as() {
-    assert_eq!(shown_to(0, true), Health::Ok);
+fn root_is_neither_limited_nor_degraded() {
+    assert_eq!(shown_to(0, true), None);
     assert_eq!(
         shown_to(501, false),
-        Health::Ok,
+        None,
         "a host where every process is this agent's own hides nothing from it"
     );
-    let Health::Degraded(why) = shown_to(3_999_999_999, true) else {
-        panic!("degraded")
-    };
+}
+
+#[test]
+fn an_account_that_sees_other_accounts_is_limited_and_healthy() {
+    let why = shown_to(3_999_999_999, true)
+        .expect("the processes of other accounts are not read whole")
+        .to_string();
+
     assert_eq!(
         why,
         "the command lines of the processes of every account other than uid 3999999999 are not \

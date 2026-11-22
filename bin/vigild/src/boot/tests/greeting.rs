@@ -3,7 +3,10 @@ use std::path::{Path, PathBuf};
 use vigil_config::Block;
 
 use crate::Config;
-use crate::boot::greeting::collectors;
+use vigil_collect::{Health, Limit, Standing};
+use vigil_model::{Kind, KnownKind};
+
+use crate::boot::greeting::{collectors, health_findings, health_lines};
 
 fn block(name: &str, file: &str, enabled: bool) -> Block {
     Block {
@@ -120,4 +123,72 @@ fn a_file_of_the_former_layout_is_still_told_about_in_the_words_it_was_written_i
         "{said}"
     );
     assert!(!said.contains("read from"), "{said}");
+}
+
+fn limit(said: &str) -> Option<Limit> {
+    Limit::of(vec![said.to_string()])
+}
+
+#[test]
+fn a_limited_collector_says_so_at_start_and_raises_no_degraded() {
+    let standings = [
+        (
+            "processes",
+            Standing::limited(
+                Health::Ok,
+                limit("the command lines of the processes of every other account are not read"),
+            ),
+        ),
+        ("resources", Standing::of(Health::Ok)),
+    ];
+
+    assert_eq!(
+        health_lines(&standings),
+        [
+            "  collector processes: limited — the command lines of the processes of every other \
+             account are not read",
+            "  collector resources: ok",
+        ]
+    );
+    let findings = health_findings(&standings, "ann (uid 501)");
+    let kinds: Vec<&Kind> = findings.iter().map(|finding| &finding.kind).collect();
+    assert_eq!(kinds, [&Kind::Known(KnownKind::AgentCollectorLimited)]);
+    assert_eq!(findings[0].finding_key, "agent.collector.limited|processes");
+    assert_eq!(findings[0].severity, vigil_model::Severity::Low);
+}
+
+#[test]
+fn a_limited_and_degraded_collector_says_both_at_start() {
+    let standings = [(
+        "users",
+        Standing::limited(
+            Health::Degraded("utmpx is not there: who is logged in will be missing".into()),
+            limit("/private/etc/sudoers is not readable"),
+        ),
+    )];
+
+    assert_eq!(
+        health_lines(&standings),
+        [
+            "  collector users: degraded — utmpx is not there: who is logged in will be missing",
+            "  collector users: limited — /private/etc/sudoers is not readable",
+        ]
+    );
+    let keys: Vec<(String, String)> = health_findings(&standings, "ann (uid 501)")
+        .into_iter()
+        .map(|finding| (finding.finding_key, finding.kind.to_string()))
+        .collect();
+    assert_eq!(
+        keys,
+        [
+            (
+                "agent.collector|users".to_string(),
+                "agent.collector.degraded".to_string()
+            ),
+            (
+                "agent.collector.limited|users".to_string(),
+                "agent.collector.limited".to_string()
+            ),
+        ]
+    );
 }

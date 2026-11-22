@@ -1,8 +1,8 @@
-use vigil_collect::{CollectError, Collector, Health, names_of_users};
+use vigil_collect::{CollectError, Collector, Health, Standing, names_of_users};
 use vigil_model::{Rfc3339, Snapshot};
 
 use super::gathering::gathered;
-use super::health::health;
+use super::health::standing;
 use crate::parsers::{ProcessesReading, processes_snapshot_on};
 use crate::types::MACOS;
 
@@ -22,7 +22,11 @@ impl Collector for ProcessesCollector {
     }
 
     fn available(&self) -> Health {
-        health()
+        standing().health
+    }
+
+    fn standing(&self) -> Standing {
+        standing()
     }
 
     fn collect(&self) -> Result<Snapshot, CollectError> {

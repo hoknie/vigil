@@ -1,7 +1,7 @@
 use super::FilesCollector;
 use super::walk::Stop;
 use crate::parsers::WatchedFile;
-use vigil_collect::Health;
+use vigil_collect::{Health, Limit, Standing};
 
 pub(super) const NAMED_AT_MOST: usize = 3;
 
@@ -9,6 +9,7 @@ pub(super) const NAMED_AT_MOST: usize = 3;
 pub(super) struct Notes {
     nothing: Option<String>,
     complaints: Vec<String>,
+    hidden: Vec<String>,
 }
 
 pub(super) struct Walked<'a> {
@@ -24,6 +25,7 @@ impl Notes {
         Notes {
             nothing: Some(why),
             complaints: Vec::new(),
+            hidden: Vec::new(),
         }
     }
 
@@ -47,33 +49,65 @@ impl Notes {
             "file(s) over the size they are hashed to",
         ));
 
-        let unreadable: Vec<String> = walked
+        let (refused, unreadable): (Vec<&WatchedFile>, Vec<&WatchedFile>) = walked
             .files
             .iter()
             .filter(|file| file.present && !file.readable && !file.over_the_ceiling)
-            .map(|file| {
-                format!(
-                    "{} is there and cannot be read by this agent, so a change to its content \
-                     will pass unseen",
-                    file.path
-                )
-            })
-            .collect();
-        complaints.extend(named_at_most(unreadable, "file(s) this agent cannot read"));
+            .partition(|file| refused_to_this_account(&file.path, false));
+        let mut hidden = named_at_most(
+            refused
+                .iter()
+                .map(|file| {
+                    format!(
+                        "{} is there and cannot be read by this account, so a change to its \
+                         content will pass unseen",
+                        file.path
+                    )
+                })
+                .collect(),
+            "file(s) this account cannot read",
+        );
+        complaints.extend(named_at_most(
+            unreadable
+                .iter()
+                .map(|file| {
+                    format!(
+                        "{} is there and cannot be read by this agent, so a change to its \
+                         content will pass unseen",
+                        file.path
+                    )
+                })
+                .collect(),
+            "file(s) this agent cannot read",
+        ));
 
-        let unlisted: Vec<String> = walked
+        let (refused, unlisted): (Vec<&String>, Vec<&String>) = walked
             .stopped
             .unlisted
             .iter()
-            .map(|directory| {
-                format!(
-                    "{directory} cannot be listed by this agent, so what is put in it passes \
-                     unseen"
-                )
-            })
-            .collect();
+            .partition(|directory| refused_to_this_account(directory, true));
+        hidden.extend(named_at_most(
+            refused
+                .iter()
+                .map(|directory| {
+                    format!(
+                        "{directory} cannot be listed by this account, so what is put in it \
+                         passes unseen"
+                    )
+                })
+                .collect(),
+            "directories this account cannot list",
+        ));
         complaints.extend(named_at_most(
-            unlisted,
+            unlisted
+                .iter()
+                .map(|directory| {
+                    format!(
+                        "{directory} cannot be listed by this agent, so what is put in it \
+                         passes unseen"
+                    )
+                })
+                .collect(),
             "directories this agent cannot list",
         ));
 
@@ -91,6 +125,7 @@ impl Notes {
         Notes {
             nothing: None,
             complaints,
+            hidden,
         }
     }
 
@@ -103,15 +138,45 @@ impl Notes {
             false => Health::Degraded(self.complaints.join("; ")),
         }
     }
+
+    pub(super) fn standing(&self) -> Standing {
+        let limit = match (&self.nothing, self.hidden.is_empty()) {
+            (None, false) => Limit::of(vec![format!("{}; run as root", self.hidden.join("; "))]),
+            _ => None,
+        };
+        Standing::limited(self.health(), limit)
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn refused_to_this_account(path: &str, directory: bool) -> bool {
+    let opened = match directory {
+        true => std::fs::read_dir(path).map(|_| ()),
+        false => std::fs::File::open(path).map(|_| ()),
+    };
+    opened.is_err_and(|error| vigil_collect::denied_to_this_account(&error))
+}
+
+#[cfg(not(target_os = "macos"))]
+fn refused_to_this_account(_: &str, _: bool) -> bool {
+    false
 }
 
 impl FilesCollector {
     pub(super) fn health(&self) -> Health {
+        self.notes().health()
+    }
+
+    pub(super) fn standing(&self) -> Standing {
+        self.notes().standing()
+    }
+
+    fn notes(&self) -> Notes {
         if let Some(notes) = self.remembered() {
-            return notes.health();
+            return notes;
         }
         let _ = self.reading();
-        self.remembered().unwrap_or_default().health()
+        self.remembered().unwrap_or_default()
     }
 
     pub(super) fn remember(&self, notes: Notes) {

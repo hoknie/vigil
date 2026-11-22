@@ -47,6 +47,7 @@ impl State {
         }
 
         status.state = match health {
+            Health::Ok if status.limit.is_some() => CollectorState::Limited,
             Health::Ok => CollectorState::Ok,
             Health::Degraded(_) => CollectorState::Degraded,
             Health::Unavailable(_) => CollectorState::Unavailable,
@@ -57,12 +58,28 @@ impl State {
         };
     }
 
+    pub fn record_limit(&mut self, collector: &str, limit: Option<&str>) {
+        let Some(status) = self.collector_mut(collector) else {
+            return;
+        };
+        if status.state == CollectorState::Off {
+            return;
+        }
+
+        status.limit = limit.map(str::to_string);
+        status.state = match (&status.state, &status.limit) {
+            (CollectorState::Ok, Some(_)) => CollectorState::Limited,
+            (CollectorState::Limited, None) => CollectorState::Ok,
+            (other, _) => other.clone(),
+        };
+    }
+
     pub fn record_failure(&mut self, collector: &str, at: Rfc3339, error: &str) {
         if let Some(status) = self.collector_mut(collector) {
             status.failures += 1;
             status.last_run_at = Some(at);
             status.last_error = Some(error.to_string());
-            if status.state == CollectorState::Ok {
+            if matches!(status.state, CollectorState::Ok | CollectorState::Limited) {
                 status.state = CollectorState::Degraded;
                 status.reason = Some(error.to_string());
             }

@@ -58,6 +58,22 @@ fn a_collector_that_reads_again_closes_the_finding_that_it_could_not() {
 }
 
 #[test]
+fn a_lifted_limit_closes_the_limit_and_nothing_else() {
+    assert_eq!(
+        KnownKind::AgentCollectorLimitLifted.resolves(),
+        Some(KnownKind::AgentCollectorLimited),
+        "what this account is not shown ends when the agent runs as one that is, and that end \
+         is an event of its own"
+    );
+    assert_ne!(
+        KnownKind::AgentCollectorLimitLifted.resolves(),
+        Some(KnownKind::AgentCollectorDegraded),
+        "a limit lifted says nothing about a reading that failed"
+    );
+    assert_eq!(KnownKind::AgentCollectorLimited.resolves(), None);
+}
+
+#[test]
 fn a_buffer_that_stopped_losing_findings_closes_the_finding_that_it_was_losing_them() {
     assert_eq!(
         KnownKind::AgentBufferDrained.resolves(),
@@ -71,6 +87,7 @@ fn a_buffer_that_stopped_losing_findings_closes_the_finding_that_it_was_losing_t
 fn every_thing_the_agent_says_about_itself_that_can_end_has_a_kind_that_ends_it() {
     let opened_by_the_agent_and_ended_by_the_host = [
         KnownKind::AgentCollectorDegraded,
+        KnownKind::AgentCollectorLimited,
         KnownKind::AgentBufferDropping,
         KnownKind::AgentBudgetExceeded,
     ];

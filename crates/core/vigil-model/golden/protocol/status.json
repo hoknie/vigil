@@ -128,6 +128,12 @@
         ],
         "always": false
       },
+      "collectors/[]/limit": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
       "collectors/[]/name": {
         "types": [
           "string"
@@ -436,6 +442,12 @@
         ],
         "always": false
       },
+      "limit": {
+        "types": [
+          "string"
+        ],
+        "always": false
+      },
       "name": {
         "types": [
           "string"
@@ -457,6 +469,80 @@
       "reason": {
         "types": [
           "string"
+        ],
+        "always": true
+      },
+      "skipped": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "state": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      }
+    },
+    "collector-limited": {
+      "baseline": {
+        "types": [
+          "boolean"
+        ],
+        "always": true
+      },
+      "duration_ms": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "every_seconds": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "failures": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "items": {
+        "types": [
+          "number"
+        ],
+        "always": true
+      },
+      "last_run_at": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "limit": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "name": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "next_run_at": {
+        "types": [
+          "string"
+        ],
+        "always": true
+      },
+      "readings": {
+        "types": [
+          "number"
         ],
         "always": true
       },

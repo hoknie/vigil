@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
 
-use vigil_collect::{CollectError, Collector, Health};
+use vigil_collect::{CollectError, Collector, Health, Standing};
 use vigil_model::{Rfc3339, Snapshot};
 
 use super::health::Notes;
@@ -22,6 +22,10 @@ impl Collector for FilesCollector {
 
     fn available(&self) -> Health {
         self.health()
+    }
+
+    fn standing(&self) -> Standing {
+        self.standing()
     }
 
     fn collect(&self) -> Result<Snapshot, CollectError> {

@@ -3,7 +3,7 @@ use vigil_store::Held;
 
 use super::{
     budget_exceeded, budget_recovered, buffer_drained, buffer_dropping, collector_degraded,
-    collector_failing, store_damaged,
+    collector_failing, collector_limit_lifted, collector_limited, store_damaged,
 };
 use crate::budget::{CPU, Meter};
 use crate::types::Reading;
@@ -64,6 +64,7 @@ fn going_back_under_the_ceiling_closes_the_finding_rather_than_opening_a_second_
 
 fn tried(readings: u64, failures: u64, last_error: &str) -> CollectorStatus {
     CollectorStatus {
+        limit: None,
         name: "launches".into(),
         state: vigil_model::CollectorState::Degraded,
         reason: None,
@@ -249,4 +250,57 @@ fn the_clone_finding_says_which_identifier_moved_and_never_the_hardware_hash() {
         !said.contains("hardware_id"),
         "the hardware hash stays in the state directory and is never published: {said}"
     );
+}
+
+#[test]
+fn a_limit_is_a_finding_of_its_own_under_a_key_of_its_own() {
+    let limited = collector_limited(
+        "network",
+        "the sockets of every other account are not seen",
+        "ann (uid 501)",
+    );
+
+    assert_eq!(limited.kind, Kind::Known(KnownKind::AgentCollectorLimited));
+    assert_eq!(limited.severity, vigil_model::Severity::Low);
+    assert_eq!(limited.finding_key, "agent.collector.limited|network");
+    assert_eq!(
+        limited.title,
+        "Collector network: limited, part of what it watches is not shown to this account"
+    );
+    assert_eq!(limited.subject.object, "collector");
+    assert_eq!(limited.subject.key["name"], "network");
+    assert_eq!(limited.rule.as_deref(), Some("collector_limits"));
+    let said: Vec<(&str, &str)> = limited
+        .evidence
+        .iter()
+        .map(|evidence| (evidence.kind.as_str(), evidence.value.as_str()))
+        .collect();
+    assert_eq!(
+        said,
+        [
+            ("note", "the sockets of every other account are not seen"),
+            ("account", "ann (uid 501)")
+        ]
+    );
+    assert_ne!(
+        limited.finding_key,
+        collector_degraded("network", "x", false).finding_key,
+        "a failure and a limit of one collector open and close apart"
+    );
+}
+
+#[test]
+fn a_lifted_limit_closes_under_the_key_of_the_limit_and_says_what_it_was() {
+    let lifted =
+        collector_limit_lifted("network", "the sockets of every other account are not seen");
+
+    assert_eq!(
+        lifted.kind,
+        Kind::Known(KnownKind::AgentCollectorLimitLifted)
+    );
+    assert_eq!(lifted.severity, vigil_model::Severity::Info);
+    assert_eq!(lifted.finding_key, "agent.collector.limited|network");
+    assert_eq!(lifted.title, "Collector network: no longer limited");
+    assert_eq!(lifted.evidence.len(), 1);
+    assert_eq!(lifted.evidence[0].kind, "was");
 }
