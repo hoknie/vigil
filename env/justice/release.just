@@ -27,6 +27,10 @@ assets-macos:
     TARGET=universal-apple-darwin ./env/scripts/release.sh collect
     ./env/scripts/release.sh checksums
 
+# Bring a clone of the Homebrew tap to the formula of a published release (the last tag by default)
+tap version='' directory='../homebrew-vigil':
+    VERSION="{{ version }}"; VERSION="${VERSION:-$(git describe --tags --abbrev=0 --match 'v*')}"; VERSION="${VERSION#v}" ./env/scripts/homebrew.sh tap {{ directory }}
+
 # The notes the release would carry, read out of CHANGELOG.md
 notes:
     ./env/scripts/release.sh notes

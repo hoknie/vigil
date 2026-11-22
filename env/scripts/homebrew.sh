@@ -110,12 +110,36 @@ publish() {
     echo "$tap/Formula/vigil.rb"
 }
 
+tap() {
+    local tap="${1:-}"
+    [ -d "$tap/.git" ] || die "usage: env/scripts/homebrew.sh tap <clone-of-the-tap>"
+    local base="https://github.com/$REPOSITORY/releases/download/v$VERSION"
+    local fetched; fetched="$(mktemp -d)"; WORK="$fetched"
+    trap '[ -z "$WORK" ] || rm -rf "$WORK"' EXIT
+
+    say "the tap, up to date"
+    git -C "$tap" pull --ff-only --quiet || die "git pull in $tap failed: see the line above"
+
+    say "the archive and its checksums of v$VERSION"
+    curl -fsSL --retry 3 -o "$fetched/SHA256SUMS" "$base/SHA256SUMS" \
+        || die "v$VERSION has no SHA256SUMS at $base: is that release published?"
+    curl -fsSL --retry 3 -o "$fetched/$ARCHIVE_NAME" "$base/$ARCHIVE_NAME" \
+        || die "v$VERSION has no $ARCHIVE_NAME at $base"
+
+    say "the formula of v$VERSION in $tap"
+    RELEASE="$fetched"
+    formula "$base" >/dev/null
+    publish "$tap"
+    git -C "$tap" status --short
+}
+
 case "${1:-}" in
 formula) shift; formula "$@" ;;
 check) check ;;
 publish) shift; publish "$@" ;;
+tap) shift; tap "$@" ;;
 *)
-    echo "usage: env/scripts/homebrew.sh {formula [url-base]|check|publish <tap-directory>}" >&2
+    echo "usage: env/scripts/homebrew.sh {formula [url-base]|check|publish <tap-directory>|tap <clone-of-the-tap>}" >&2
     exit 2
     ;;
 esac
